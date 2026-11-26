@@ -46,6 +46,7 @@ from dndsheet.shared.rules import (
     ClassMechanics,
     SpeciesMechanics,
     ability_bonus_totals,
+    prepared_spell_limit,
 )
 
 
@@ -559,6 +560,7 @@ class Character:
 
     def learn_spell(self, spell: KnownSpell) -> None:
         self._validate_spell_limits(self.spells + (spell,))
+        self._check_prepared_limit(self.spells + (spell,), spell.class_key)
         if spell in self.spells:
             return
         self.spells = self.spells + (spell,)
@@ -665,6 +667,101 @@ class Character:
     def spells_of(self, class_key: str) -> tuple[KnownSpell, ...]:
         wanted = class_key.strip().casefold()
         return tuple(spell for spell in self.spells if spell.class_key == wanted)
+
+    # ------------------------------------------------------------------
+    # закляття: щоденна підготовка (PHB, p. 201)
+    # ------------------------------------------------------------------
+
+    def prepared_limit(self, class_key: str) -> int:
+        """Скільки заклять клас готує на день: модифікатор + рівень, мінімум 1."""
+        wanted = class_key.strip().casefold()
+        if not self.has_class(wanted):
+            raise ValidationError(f"персонаж не має класу {class_key!r}")
+        definition = self.class_definition(wanted)
+        ability = definition.spellcasting_ability
+        if not definition.prepares_spells or ability is None:
+            raise ValidationError(
+                f"{definition.name_en}: клас не готує закляття на день"
+            )
+        modifier = (self.ability_total(ability) - 10) // 2
+        return prepared_spell_limit(modifier, self.class_level(wanted))
+
+    def ability_total(self, ability: Ability) -> int:
+        """Підсумок характеристики на листі: база + бонуси виду."""
+        return self.abilities[ability].value + self.ability_bonus_from_origin(ability)
+
+    def prepare_spells(self, class_key: str, spells: Iterable[KnownSpell]) -> None:
+        """Підготовка на день: **замінити** підготовлені закляття класу.
+
+        Чому заміна, а не позначка по одному: у книгах підготовка — це вибір
+        набору на день («prepare the list of spells available to you»), а не
+        прапорець. Заговори й власні закляття лишаються як були: перші
+        змінюються лише з рівнем, другі гравець додав сам, і правило про них
+        нічого не каже.
+
+        Ліміт і найвищий рівень беруться з правил класу: клас без підготовки
+        сюди не доходить, рівень закляття понад слоти — відмова.
+        """
+        wanted = class_key.strip().casefold()
+        limit = self.prepared_limit(wanted)
+        definition = self.class_definition(wanted)
+        entry = next(item for item in self.classes if item.class_key == wanted)
+        max_level = self._max_spell_level(entry, definition)
+
+        chosen: list[KnownSpell] = []
+        seen: set[str] = set()
+        for spell in spells:
+            if spell.class_key != wanted:
+                raise ValidationError(
+                    f"{spell.name_en}: закляття належить класу {spell.class_key!r}, "
+                    f"а підготовка — для {wanted!r}"
+                )
+            if spell.is_cantrip:
+                raise ValidationError(
+                    f"{spell.name_en}: заговори не змінюються під час підготовки"
+                )
+            if spell.custom:
+                raise ValidationError(
+                    f"{spell.name_en}: власне закляття не входить у підготовку — "
+                    f"воно завжди доступне"
+                )
+            key = spell.name_en.casefold()
+            if key in seen:
+                raise ValidationError(f"{spell.name_en}: закляття повторюється")
+            seen.add(key)
+            if max_level and spell.level > max_level:
+                raise ValidationError(
+                    f"{definition.name_en}: на {entry.level} рівні немає заклять "
+                    f"{spell.level} рівня (максимум {max_level})"
+                )
+            chosen.append(spell.prepare(True))
+
+        if len(chosen) > limit:
+            raise ValidationError(
+                f"{definition.name_en}: підготувати можна {limit}, обрано {len(chosen)}"
+            )
+
+        kept = tuple(
+            spell
+            for spell in self.spells
+            if spell.class_key != wanted or spell.is_cantrip or spell.custom
+        )
+        updated = kept + tuple(chosen)
+        # Власні закляття теж рахуються: вони вже підготовлені й займають місце.
+        prepared_total = sum(
+            1
+            for spell in updated
+            if spell.class_key == wanted and spell.prepared and not spell.is_cantrip
+        )
+        if prepared_total > limit:
+            raise ValidationError(
+                f"{definition.name_en}: з власними закляттями підготовлено "
+                f"{prepared_total}, а можна {limit}"
+            )
+        self._validate_spell_limits(updated)
+        self.spells = updated
+        self.bump_version()
+
 
     # ------------------------------------------------------------------
     # службове
@@ -841,14 +938,30 @@ class Character:
                             f"заклять {spell.level} рівня (максимум {max_level})"
                         )
 
+    def _check_prepared_limit(
+        self, spells: tuple[KnownSpell, ...], class_key: str
+    ) -> None:
+        """Підготовлених не більше за ліміт класу; клас без підготовки — без ліміту."""
+        wanted = class_key.strip().casefold()
+        if not self.has_class(wanted):
+            return
+        definition = self.class_definition(wanted)
+        if not definition.prepares_spells:
+            return
+        limit = self.prepared_limit(wanted)
+        prepared = sum(
+            1
+            for spell in spells
+            if spell.class_key == wanted and spell.prepared and not spell.is_cantrip
+        )
+        if prepared > limit:
+            raise ValidationError(
+                f"{definition.name_en}: підготовлених заклять {prepared}, а можна {limit}"
+            )
+
     @staticmethod
     def _max_spell_level(entry: CharacterClass, definition: ClassMechanics) -> int:
-        if definition.is_pact_magic:
-            slots, level = definition.pact_at(entry.level)
-            return level if slots else 0
-        table = definition.slots_at(entry.level)
-        levels = [index for index, count in enumerate(table, start=1) if count]
-        return max(levels, default=0)
+        return definition.max_spell_level(entry.level)
 
     def _validate_hit_points(self) -> None:
         if len(self.hp.rolls) > max(0, self.total_level - 1):

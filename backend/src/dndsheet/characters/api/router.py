@@ -403,6 +403,60 @@ def remove_inventory_item(
     return {"sheet": _sheet_payload(request, character), "version": character.version}
 
 
+@router.post("/{character_id}/spells")
+def add_spell(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Додати закляття поза рівнем: зі списку класу або власне (`custom`)."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    try:
+        character = _sheet_service(request).add_spell(
+            character_id, body, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.delete("/{character_id}/spells")
+def remove_spell(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Прибрати закляття з листа (назва + клас)."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    try:
+        character = _sheet_service(request).remove_spell(
+            character_id, body, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.post("/{character_id}/spells/prepare")
+def prepare_spells(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Денна підготовка: замінити набір підготовлених заклять класу."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    try:
+        character = _sheet_service(request).prepare_spells(
+            character_id, body, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
 def _pop_version(body: dict[str, Any]) -> int | None:
     version = body.pop("version", None)
     if version is not None and (isinstance(version, bool) or not isinstance(version, int)):

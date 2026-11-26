@@ -16,15 +16,18 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   addCharacterItem,
+  addCharacterSpell,
   exportUrl,
   fetchRenderers,
   patchCharacter,
+  prepareCharacterSpells,
   removeCharacterItem,
+  removeCharacterSpell,
   restCharacter,
   spendHitDie,
   updateCharacterItem,
 } from "../../api";
-import type { ItemBody } from "../../api";
+import type { ItemBody, SpellBody } from "../../api";
 import type { RestReport, SheetViewPayload } from "../wizard/types";
 import {
   ABILITY_LABELS,
@@ -50,6 +53,7 @@ import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
 import { BackgroundPanel } from "./background";
 import { ActionPanel } from "./actions";
+import { AddSpellForm, SpellsPreparePanel } from "./spells";
 import { termLabel, ukSubclass, ukTerm, withEnglish } from "./uk";
 import {
   CastingBlock,
@@ -57,8 +61,7 @@ import {
   FeatsList,
   FeaturesList,
   ProficienciesList,
-  SpellsKnownList,
-} from "./panels";
+  SpellsKnownList,} from "./panels";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
 
@@ -199,6 +202,47 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
     run(removeCharacterItem(id, index, versionRef.current)).then(
       (result) => result !== null,
     );
+
+  // Закляття: помилки не ковтаємо — форма показує текст відмови сервера
+  // («можна 5», «клас не готує»), а не загальне «не вдалося».
+  async function applySpellChange(action: Promise<{ sheet: SheetViewPayload }>): Promise<void> {
+    setBusy(true);
+    try {
+      const result = await action;
+      versionRef.current = result.sheet.character.version;
+      setSheet(result.sheet);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addSpell(spell: SpellBody): Promise<boolean> {
+    await applySpellChange(addCharacterSpell(id, spell, versionRef.current));
+    return true;
+  }
+
+  async function removeSpell(spell: SheetViewPayload["spells"][number]): Promise<boolean> {
+    if (!spell.class_key) return false;
+    try {
+      await applySpellChange(
+        removeCharacterSpell(id, spell.name_en, spell.class_key, versionRef.current),
+      );
+      return true;
+    } catch (failure) {
+      setError(messageOf(failure));
+      return false;
+    }
+  }
+
+  async function savePrepared(
+    classKey: string,
+    picks: { name_en: string; level: number; entry_id: string | null }[],
+  ): Promise<boolean> {
+    await applySpellChange(
+      prepareCharacterSpells(id, classKey, picks, versionRef.current),
+    );
+    return true;
+  }
 
   async function rest(kind: "short" | "long") {
     setBusy(true);
@@ -364,10 +408,18 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             }}
             onPactUsed={(used) => patch({ pact_used: used })}
           />
+          <SpellsPreparePanel
+            casting={casting}
+            spells={sheet.spells}
+            busy={busy}
+            onSave={savePrepared}
+          />
           <h3 className="ddb-work__title">
             <span>Відомі закляття</span>
+            <span className="short">натисніть, щоб читати</span>
           </h3>
-          <SpellsKnownList spells={sheet.spells} />
+          <AddSpellForm casting={casting} busy={busy} onAdd={addSpell} />
+          <SpellsKnownList spells={sheet.spells} onRemove={(spell) => void removeSpell(spell)} />
         </>
       );
     }

@@ -64,6 +64,10 @@ def enrich_spells(
     """Дописати кожному рядку закляття його короткі дані (на місці)."""
     store = cache if cache is not None else {}
     for spell in spells:
+        # Власне закляття довідник не знає: його текст дав гравець, і
+        # підміняти його книжковим (навіть якщо назва збіглася) не можна.
+        if spell.get("custom"):
+            continue
         key = spell.get("entry_id") or str(spell.get("name_en") or "").strip().casefold()
         if not key:
             continue

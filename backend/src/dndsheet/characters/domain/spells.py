@@ -23,17 +23,36 @@ class KnownSpell:
     entry_id: str | None = None
     prepared: bool = False
     always_prepared: bool = False
+    #: Власне (домашнє) закляття: у довіднику його немає, назву й текст дав
+    #: гравець. Лист і експорт кажуть «власне», щоб його не плутали з
+    #: книжковим — жодних чисел правила з нього не виводяться.
+    custom: bool = False
+    #: Текст власного закляття (для книжкових він приходить із довідника).
+    description: str | None = None
 
     def __post_init__(self) -> None:
-        if not self.name_en.strip():
+        name = self.name_en.strip()
+        if not name:
             raise ValidationError("закляття без назви")
+        object.__setattr__(self, "name_en", name)
         if not self.class_key.strip():
             raise ValidationError(f"{self.name_en}: закляття без класу")
+        object.__setattr__(self, "class_key", self.class_key.strip().casefold())
         if isinstance(self.level, bool) or not isinstance(self.level, int):
             raise ValidationError(f"{self.name_en}: рівень закляття має бути числом")
         if not 0 <= self.level <= MAX_SPELL_LEVEL:
             raise ValidationError(
                 f"{self.name_en}: рівень закляття має бути 0..{MAX_SPELL_LEVEL}"
+            )
+        if self.custom and self.entry_id:
+            raise ValidationError(
+                f"{self.name_en}: власне закляття не має запису в довіднику"
+            )
+        text = (self.description or "").strip()
+        object.__setattr__(self, "description", text or None)
+        if text and not self.custom:
+            raise ValidationError(
+                f"{self.name_en}: власний текст буває лише у власного закляття"
             )
 
     @property

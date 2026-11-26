@@ -31,6 +31,9 @@ class SpellRow:
     prepared: bool
     always_prepared: bool
     source: SpellSource
+    #: Власне закляття: довідник його не знає, тому й опис — від гравця.
+    custom: bool = False
+    description: str | None = None
 
     @property
     def is_cantrip(self) -> bool:
@@ -92,6 +95,8 @@ def spell_rows(character: Character, computed: ComputedSheet) -> tuple[SpellRow,
             prepared=spell.prepared or spell.always_prepared,
             always_prepared=spell.always_prepared,
             source="class",
+            custom=spell.custom,
+            description=spell.description,
         )
         for spell in character.spells
     ]

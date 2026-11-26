@@ -214,6 +214,8 @@ export interface SheetSpell {
   prepared: boolean;
   always_prepared: boolean;
   source: string;
+  /** Власне закляття: у довіднику його немає, текст дав гравець. */
+  custom?: boolean;
   /** Короткі дані з довідника — для вкладки «Дії». */
   casting_time?: string;
   range?: string;
@@ -408,6 +410,8 @@ export interface SheetSpellcasting {
     spells_known_limit: number | null;
     prepared_limit: number | null;
     prepares: boolean;
+    /** Найвищий рівень закляття цього класу на його рівні. */
+    max_spell_level: number;
   }[];
 }
 

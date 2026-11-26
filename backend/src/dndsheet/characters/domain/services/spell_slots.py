@@ -26,6 +26,7 @@ from dndsheet.shared.rules import (
     PACT_SLOT_TABLE,
     ClassMechanics,
     caster_level,
+    prepared_spell_limit,
     spell_slots,
 )
 
@@ -47,6 +48,8 @@ class ClassCasting:
     spells_known_limit: int | None
     prepared_limit: int | None
     prepares: bool
+    #: Найвищий рівень закляття цього класу на його рівні (для вибору).
+    max_spell_level: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,7 +127,9 @@ class SpellSlotService:
             modifier = (score - 10) // 2
             known = definition.spells_known_at(entry.level)
             prepared = (
-                max(1, modifier + entry.level) if definition.prepares_spells else None
+                prepared_spell_limit(modifier, entry.level)
+                if definition.prepares_spells
+                else None
             )
             details.append(
                 ClassCasting(
@@ -139,6 +144,7 @@ class SpellSlotService:
                     spells_known_limit=known,
                     prepared_limit=prepared,
                     prepares=definition.prepares_spells,
+                    max_spell_level=definition.max_spell_level(entry.level),
                 )
             )
 

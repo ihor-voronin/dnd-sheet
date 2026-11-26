@@ -214,6 +214,8 @@ def spells_to_record(spells: tuple[KnownSpell, ...]) -> list[dict[str, Any]]:
             "entry_id": spell.entry_id,
             "prepared": spell.prepared,
             "always_prepared": spell.always_prepared,
+            "custom": spell.custom,
+            "description": spell.description,
         }
         for spell in spells
     ]
@@ -231,6 +233,8 @@ def spells_from_record(records: list[Mapping[str, Any]] | None) -> tuple[KnownSp
                     entry_id=record.get("entry_id") or None,
                     prepared=bool(record.get("prepared")),
                     always_prepared=bool(record.get("always_prepared")),
+                    custom=bool(record.get("custom")),
+                    description=record.get("description") or None,
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:

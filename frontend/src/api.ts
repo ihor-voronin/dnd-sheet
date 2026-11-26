@@ -154,6 +154,54 @@ export function spendHitDie(id: string, die: number, roll: number): Promise<Shee
   });
 }
 
+// --- закляття -------------------------------------------------------------
+
+export interface SpellBody {
+  class_key: string;
+  name_en: string;
+  level: number;
+  entry_id?: string | null;
+  prepared?: boolean;
+  /** Власне закляття: його немає в книзі, текст дав гравець. */
+  custom?: boolean;
+  description?: string | null;
+}
+
+export function addCharacterSpell(
+  id: string,
+  spell: SpellBody,
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/spells`, {
+    method: "POST",
+    body: JSON.stringify({ ...spell, version }),
+  });
+}
+
+export function removeCharacterSpell(
+  id: string,
+  nameEn: string,
+  classKey: string,
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/spells`, {
+    method: "DELETE",
+    body: JSON.stringify({ name_en: nameEn, class_key: classKey, version }),
+  });
+}
+
+export function prepareCharacterSpells(
+  id: string,
+  classKey: string,
+  spells: { name_en: string; level: number; entry_id?: string | null }[],
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/spells/prepare`, {
+    method: "POST",
+    body: JSON.stringify({ class_key: classKey, spells, version }),
+  });
+}
+
 // --- інвентар -------------------------------------------------------------
 
 export interface ItemBody {

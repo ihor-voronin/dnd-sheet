@@ -651,6 +651,13 @@ def _spell_sections(
             value=_spell_value(row),
             origin="computed",
             label=english_name(row.name_en),
+            # Власне закляття не має тексту в книзі: у документ іде те, що
+            # гравець написав сам (у підказці, щоб не ламати сітку).
+            hint=(
+                LocalizedText(uk=row.description, en=row.description)
+                if row.custom and row.description
+                else None
+            ),
             editable=False,
         )
         spell_ids.append(field_id)
@@ -668,6 +675,8 @@ def _spell_sections(
 
 def _spell_value(row: SpellRow) -> str:
     level = spell_level_label(row.level).uk
+    if row.custom:
+        return f"{level} · власне"
     if row.source != "class":
         return f"{level} · {spell_source_label(row.source).uk}"
     if row.always_prepared:

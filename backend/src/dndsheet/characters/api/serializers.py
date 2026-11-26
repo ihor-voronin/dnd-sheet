@@ -235,6 +235,11 @@ def spells(character: Character, computed: ComputedSheet) -> list[dict[str, Any]
             "prepared": row.prepared,
             "always_prepared": row.always_prepared,
             "source": row.source,
+            # Власне закляття: лист має позначити його, а не вдавати книжкове.
+            "custom": row.custom,
+            # Текст власного закляття йде як опис; книжковим його допише
+            # довідник (див. `spell_meta.enrich_spells`).
+            "description": row.description,
         }
         for row in spell_rows(character, computed)
     ]
@@ -270,6 +275,7 @@ def spellcasting(casting: Spellcasting) -> dict[str, Any]:
                 "spells_known_limit": item.spells_known_limit,
                 "prepared_limit": item.prepared_limit,
                 "prepares": item.prepares,
+                "max_spell_level": item.max_spell_level,
             }
             for item in casting.classes
         ],

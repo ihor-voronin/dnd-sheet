@@ -172,6 +172,15 @@ def spell_slots(level: int) -> tuple[int, ...]:
     return CASTER_SLOT_TABLE[_check_level(level) - 1]
 
 
+def prepared_spell_limit(modifier: int, class_level: int) -> int:
+    """Скільки заклять готує клас на день (PHB, p. 201): мод + рівень, мінімум 1.
+
+    Формула одна на обчислювач листа й на щоденну підготовку: якщо їх дві,
+    екран і перевірка рано чи пізно розійдуться.
+    """
+    return max(1, modifier + class_level)
+
+
 # ---------------------------------------------------------------------------
 # дрібні ознаки правил
 # ---------------------------------------------------------------------------
@@ -361,6 +370,20 @@ class ClassMechanics:
         if len(self.pact_slots) < level:
             return (0, 0)
         return self.pact_slots[level - 1]
+
+    def max_spell_level(self, level: int) -> int:
+        """Найвищий рівень закляття, який клас має на цьому рівні.
+
+        Формула одна на лист, підготовку й підвищення рівня: інакше екран
+        пропонував би закляття, яких клас ще не дає.
+        """
+        if self.is_pact_magic:
+            slots, slot_level = self.pact_at(level)
+            return slot_level if slots else 0
+        return max(
+            (index for index, count in enumerate(self.slots_at(level), start=1) if count),
+            default=0,
+        )
 
     def features_at(self, level: int) -> tuple[ClassFeature, ...]:
         _check_level(level)

@@ -158,11 +158,25 @@ class LevelUpService:
 
         # 5. закляття
         added: list[str] = []
+        # Скільки ще можна підготувати: рівень міг дати більше заклять, ніж
+        # клас готує на день (жрець з низькою МУД). Такі лишаються відомими,
+        # а не ламають увесь запит: підготовку можна змінити на листі.
+        prepared_room = None
+        definition = character.class_definition(plan.class_key)
+        if definition.prepares_spells:
+            prepared_room = character.prepared_limit(plan.class_key) - sum(
+                1
+                for spell in character.spells_of(plan.class_key)
+                if spell.prepared and not spell.is_cantrip
+            )
         for spell in spells:
-            character.learn_spell(spell)
+            character.learn_spell(spell.prepare(False))
             added.append(spell.name_en)
             if spell.prepared and not spell.always_prepared:
-                character.prepare_spell(spell.name_en, spell.class_key, True)
+                if prepared_room is None or prepared_room > 0:
+                    character.prepare_spell(spell.name_en, spell.class_key, True)
+                    if prepared_room is not None:
+                        prepared_room -= 1
 
         after = self.calculator.compute(character)
         # 6. поточні хіти ростуть разом із максимумом, якщо їх задано

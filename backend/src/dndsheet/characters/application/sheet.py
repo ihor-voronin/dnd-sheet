@@ -20,6 +20,7 @@ from dndsheet.characters.domain.ports import CharacterRepository
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.domain.services.feature_resources import resources_for
 from dndsheet.characters.domain.services.rest import RestReport, RestService
+from dndsheet.characters.domain.spells import KnownSpell
 from dndsheet.characters.domain.state import DeathSaves
 from dndsheet.shared.errors import ConflictError, NotFoundError, ValidationError
 
@@ -184,6 +185,57 @@ class SheetService:
                 character.heal(heal)
                 if (character.hp.current or 0) > fresh.hit_points.maximum:
                     character.set_hp(current=fresh.hit_points.maximum)
+        self.characters.save(character)
+        return character
+
+    # ------------------------------------------------------------------
+    # закляття: додати, прибрати, підготувати на день
+    # ------------------------------------------------------------------
+
+    def add_spell(
+        self,
+        character_id: str,
+        payload: Mapping[str, Any],
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        """Додати закляття поза підвищенням рівня: зі списку класу або власне."""
+        character = self._load_versioned(character_id, expected_version)
+        character.learn_spell(_spell(payload))
+        self.characters.save(character)
+        return character
+
+    def remove_spell(
+        self,
+        character_id: str,
+        payload: Mapping[str, Any],
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        character = self._load_versioned(character_id, expected_version)
+        character.forget_spell(_text(payload, "name_en"), _text(payload, "class_key"))
+        self.characters.save(character)
+        return character
+
+    def prepare_spells(
+        self,
+        character_id: str,
+        payload: Mapping[str, Any],
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        """Денна підготовка: замінити набір підготовлених заклять класу."""
+        character = self._load_versioned(character_id, expected_version)
+        class_key = _text(payload, "class_key")
+        raw = payload.get("spells")
+        if raw is None:
+            raw = []
+        if not isinstance(raw, list):
+            raise ValidationError("spells має бути списком заклять")
+        character.prepare_spells(
+            class_key,
+            tuple(_prepared_spell(item, class_key, character) for item in raw),
+        )
         self.characters.save(character)
         return character
 
@@ -400,3 +452,90 @@ def _kind(value: Any) -> ItemKind:
     except ValueError as exc:
         kinds = ", ".join(kind.value for kind in ItemKind)
         raise ValidationError(f"невідомий тип предмета {value!r} ({kinds})") from exc
+
+# ---------------------------------------------------------------------------
+# закляття
+# ---------------------------------------------------------------------------
+
+
+def _spell(payload: Mapping[str, Any]) -> KnownSpell:
+    """Закляття з тіла запиту: книжкове (з довідника) або власне.
+
+    Власне закляття завжди підготовлене: у нього немає «списку класу», з
+    якого його можна було б готувати, а гравець додає його саме щоб грати.
+    Місце в ліміті воно при цьому займає — інакше власними можна було б
+    обійти правило підготовки.
+    """
+    if not isinstance(payload, Mapping):
+        raise ValidationError("закляття має бути обʼєктом")
+    custom = payload.get("custom", False)
+    if not isinstance(custom, bool):
+        raise ValidationError("custom має бути true або false")
+    return KnownSpell(
+        name_en=_text(payload, "name_en"),
+        level=_int(payload.get("level"), "рівень закляття"),
+        class_key=_text(payload, "class_key"),
+        entry_id=_optional_str(payload.get("entry_id")),
+        prepared=True if custom else bool(payload.get("prepared", False)),
+        custom=custom,
+        description=_optional_str(payload.get("description")),
+    )
+
+
+def _prepared_spell(item: Any, class_key: str, character: Character) -> KnownSpell:
+    """Один пункт денної підготовки: назва або обʼєкт із рівнем.
+
+    Рівень можна не надсилати, якщо закляття вже є в листі персонажа: тоді
+    його беруть звідти, а не з клієнта.
+    """
+    payload: Mapping[str, Any]
+    if isinstance(item, str):
+        payload = {"name_en": item}
+    elif isinstance(item, Mapping):
+        payload = dict(item)
+    else:
+        raise ValidationError("закляття у підготовці має бути назвою або обʼєктом")
+    name = _text(payload, "name_en")
+    own_class = payload.get("class_key")
+    if (
+        own_class is not None
+        and str(own_class).strip().casefold() != class_key.strip().casefold()
+    ):
+        raise ValidationError(f"{name}: закляття належить іншому класу")
+    known = _find_spell(character, name, class_key)
+    if known is not None and known.custom:
+        raise ValidationError(
+            f"{name}: власне закляття не входить у денну підготовку — воно завжди доступне"
+        )
+    level = payload.get("level")
+    if level is None:
+        if known is None:
+            raise ValidationError(f"{name}: вкажіть рівень закляття")
+        level = known.level
+    entry_id = _optional_str(payload.get("entry_id"))
+    if entry_id is None and known is not None:
+        entry_id = known.entry_id
+    return KnownSpell(
+        name_en=name,
+        level=_int(level, f"рівень закляття {name}"),
+        class_key=class_key,
+        entry_id=entry_id,
+        prepared=True,
+    )
+
+
+def _find_spell(character: Character, name: str, class_key: str) -> KnownSpell | None:
+    wanted = name.strip().casefold()
+    own = class_key.strip().casefold()
+    for spell in character.spells:
+        if spell.class_key == own and spell.name_en.casefold() == wanted:
+            return spell
+    return None
+
+
+def _text(payload: Mapping[str, Any], key: str) -> str:
+    value = payload.get(key) if isinstance(payload, Mapping) else None
+    text = str(value or "").strip()
+    if not text:
+        raise ValidationError(f"{key} обовʼязковий")
+    return text

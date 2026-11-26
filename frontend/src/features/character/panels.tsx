@@ -261,7 +261,13 @@ export function CastingBlock({
   );
 }
 
-export function SpellsKnownList({ spells }: { spells: SheetViewPayload["spells"] }) {
+export function SpellsKnownList({
+  spells,
+  onRemove,
+}: {
+  spells: SheetViewPayload["spells"];
+  onRemove?: (spell: SheetViewPayload["spells"][number]) => void;
+}) {
   if (!spells.length) return <p className="hint">—</p>;
 
   const sorted = [...spells].sort(
@@ -293,8 +299,13 @@ export function SpellsKnownList({ spells }: { spells: SheetViewPayload["spells"]
                 <li key={`${spell.name_en}-${spell.source}`}>
                   <details className="spell">
                     <summary className="spell__summary">
-                      <span className="spell__name">{spellLabel(spell.name_en)}</span>
+                      <span className="spell__name">
+                        {spell.custom ? spell.name_en : spellLabel(spell.name_en)}
+                      </span>
                       <span className="spell__tags">
+                        {spell.custom ? (
+                          <span className="spell-tag spell-tag--custom">власне</span>
+                        ) : null}
                         {spell.school ? (
                           <span className="spell-tag">{schoolLabel(spell.school)}</span>
                         ) : null}
@@ -312,6 +323,21 @@ export function SpellsKnownList({ spells }: { spells: SheetViewPayload["spells"]
                       <span className="spell__chevron" aria-hidden>
                         ▾
                       </span>
+                      {onRemove && spell.source === "class" ? (
+                        <button
+                          type="button"
+                          className="spell__remove"
+                          title="Прибрати закляття з листа"
+                          onClick={(event) => {
+                            // Клік усередині <summary> інакше ще й розкриває картку.
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onRemove(spell);
+                          }}
+                        >
+                          ×
+                        </button>
+                      ) : null}
                     </summary>
                     <div className="spell__body">
                       {meta.length ? <p className="spell__meta">{meta.join(" · ")}</p> : null}
@@ -339,7 +365,15 @@ export function SpellsKnownList({ spells }: { spells: SheetViewPayload["spells"]
                           <span className="action-chip action-chip--quiet">ритуал</span>
                         ) : null}
                       </div>
-                      <RuleText text={spellText(spell.name_en, spell.description)} />
+                      <RuleText
+                        text={
+                          spell.custom
+                            ? // Власне закляття: текст дав гравець, і навіть
+                              // однойменне книжкове не має його підміняти.
+                              spell.description ?? ""
+                            : spellText(spell.name_en, spell.description)
+                        }
+                      />
                       {spell.at_higher_levels ? (
                         <div className="spell__higher">
                           <span className="spell__higher-label">На вищих рівнях</span>

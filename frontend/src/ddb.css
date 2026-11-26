@@ -1623,6 +1623,33 @@ body.board {
   color: #ffd27d;
 }
 
+/* Власне закляття: не книжкове, тому й позначка інша — не золота. */
+.spell-tag--custom {
+  border-color: rgb(126 196 255 / 55%);
+  color: #a8d8ff;
+}
+
+.spell__remove {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--ddb-dim);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.spell__remove:hover {
+  border-color: rgb(255 120 120 / 55%);
+  color: #ff9d9d;
+}
+
 .spell__chevron {
   flex: none;
   color: var(--ddb-dim);
@@ -2392,6 +2419,100 @@ body.board {
   display: flex;
   gap: 8px;
   margin-top: 11px;
+}
+
+/* --- денна підготовка заклять ----------------------------------------- */
+
+.spell-prep {
+  margin: 4px 0 12px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--ddb-frame-soft);
+  border-radius: 8px;
+  background: rgb(30 20 46 / 85%);
+}
+
+.spell-prep__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.spell-prep__class {
+  color: #cbb6ee;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.spell-prep__count {
+  color: var(--ddb-muted);
+  font-size: 11px;
+}
+
+.spell-prep__count.is-over {
+  color: #ff9d9d;
+}
+
+.spell-prep__tools {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.spell-prep__tools .inv-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.spell-prep__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 5px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 2px;
+}
+
+.spell-prep__list .chip--row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.spell-prep__list .chip--row .meta {
+  margin-left: auto;
+  color: var(--ddb-dim);
+  font-size: 9.5px;
+}
+
+.spell-add__open {
+  margin-bottom: 10px;
+}
+
+.spell-add__results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  grid-column: 1 / -1;
+  max-height: 190px;
+  overflow: auto;
+}
+
+.spell-add__text {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--ddb-frame-soft);
+  border-radius: 6px;
+  background: rgb(20 13 31 / 90%);
+  color: var(--ddb-ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
 }
 
 .inv-row__actions {
