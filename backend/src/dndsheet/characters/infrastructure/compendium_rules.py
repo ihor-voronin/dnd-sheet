@@ -70,3 +70,26 @@ class CompendiumSubclassCatalog:
             return None
         entries = self.service.subclasses(definition.name_en)
         return tuple(entry.id for entry in entries)
+
+
+@dataclass(slots=True)
+class CompendiumFeatCatalog:
+    """Рисі з довідника: перевірка, що ключ існує.
+
+    Індекс збирається один раз: рис кілька сотень, а питання «чи є така»
+    виникає лише під час підвищення рівня.
+    """
+
+    service: CompendiumService
+    _keys: set[str] | None = field(default=None, init=False, repr=False)
+
+    def has(self, feat_key: str) -> bool:
+        cleaned = (feat_key or "").strip().casefold()
+        if not cleaned:
+            return False
+        return cleaned in self._index()
+
+    def _index(self) -> set[str]:
+        if self._keys is None:
+            self._keys = {entry.id.casefold() for entry in self.service.feats()}
+        return self._keys

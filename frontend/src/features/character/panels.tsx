@@ -385,6 +385,35 @@ export function FeaturesList({ features }: { features: SheetViewPayload["feature
   );
 }
 
+/** Риси (feats): не клас і не підклас, тому окремим списком. */
+export function FeatsList({
+  feats,
+}: {
+  feats: NonNullable<SheetViewPayload["feat_details"]>;
+}) {
+  if (!feats.length) return null;
+  return (
+    <ul className="feature-list feature-list--rich">
+      {feats.map((feat) => (
+        <li key={feat.key}>
+          <details className="feature">
+            <summary className="feature__summary">
+              <span className="feature-name">{feat.name_uk || feat.name_en}</span>
+              <span className="feature-meta">
+                риса{feat.source_id ? ` · ${feat.source_id}` : ""}
+              </span>
+              <span className="feature__chevron" aria-hidden>
+                ▾
+              </span>
+            </summary>
+            <RuleText text={feat.description} />
+          </details>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Текст правила як є: абзаци, списки, курсивний підпис рівня. */
 export function RuleText({ text }: { text: string }) {
   if (!text.trim()) return <p className="hint">Опис недоступний.</p>;

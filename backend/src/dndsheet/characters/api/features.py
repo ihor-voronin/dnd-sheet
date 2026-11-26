@@ -75,6 +75,38 @@ def enrich_features(
         )
     )
     payload["features"] = features
+    payload["feat_details"] = _feat_details(store, service, character)
+
+
+def _feat_details(
+    store: dict[str, Any], service: CompendiumService, character: Character
+) -> list[dict[str, Any]]:
+    """Вибрані риси з текстом: на екрані вони живуть разом з уміннями."""
+    details: list[dict[str, Any]] = []
+    for key in character.feats:
+        entry = _feat_entry(store, service, key)
+        if entry is None:
+            details.append({"key": key, "name_en": key, "description": ""})
+            continue
+        details.append(
+            {
+                "key": key,
+                "name_en": entry.name_en,
+                "name_uk": entry.name_uk,
+                "source_id": entry.source_id,
+                "description": entry.text_en or "",
+            }
+        )
+    return details
+
+
+def _feat_entry(store: dict[str, Any], service: CompendiumService, key: str) -> Any:
+    cache_key = "feat-entries"
+    entries = store.get(cache_key)
+    if entries is None:
+        entries = {entry.id.casefold(): entry for entry in service.feats()}
+        store[cache_key] = entries
+    return entries.get((key or "").strip().casefold())
 
 
 def _class_texts(
@@ -140,6 +172,15 @@ def _subclass_features(
     return items
 
 
+def subclass_features(
+    service: CompendiumService,
+    subclass_key: str,
+    cache: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Уміння підкласу з рівнями — для вкладки «Уміння» і вибору підкласу."""
+    return _subclass_features(cache if cache is not None else {}, service, subclass_key)
+
+
 def _sections(
     text: str, heading: re.Pattern[str], boundary: re.Pattern[str]
 ) -> dict[str, str]:
@@ -168,4 +209,4 @@ def _sections(
     return sections
 
 
-__all__ = ["enrich_features"]
+__all__ = ["enrich_features", "subclass_features"]

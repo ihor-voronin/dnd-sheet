@@ -29,7 +29,11 @@ class HitPointState:
     #: `None` — «не задано»: показуємо максимум. `0` — непритомний.
     current: int | None = None
     temporary: int = 0
-    rolls: tuple[int, ...] = ()
+    #: Кидки на рівнях **після першого**, у порядку класів. `None` на місці
+    #: кидка — «на цьому рівні взято середнє»; це потрібно, коли рівень
+    #: узято в класі, який стоїть у списку не останнім, і кидок доводиться
+    #: вставляти в середину.
+    rolls: tuple[int | None, ...] = ()
     bonus: int = 0
     override_max: int | None = None
 
@@ -44,10 +48,13 @@ class HitPointState:
         if self.temporary < 0:
             raise ValidationError("temporary хітів не може бути відʼємним")
         for roll in self.rolls:
-            if not MIN_HIT_DIE <= roll <= MAX_HIT_DIE:
-                raise ValidationError(
-                    f"кидок хіт-дайса має бути в межах d{MIN_HIT_DIE}..d{MAX_HIT_DIE}, отримано {roll}"
-                )
+            if roll is None:
+                continue
+            if MIN_HIT_DIE <= roll <= MAX_HIT_DIE:
+                continue
+            raise ValidationError(
+                f"кидок хіт-дайса має бути в межах d{MIN_HIT_DIE}..d{MAX_HIT_DIE}, отримано {roll}"
+            )
         if self.override_max is not None:
             if isinstance(self.override_max, bool) or not isinstance(self.override_max, int):
                 raise ValidationError("власний максимум хітів має бути цілим числом")
@@ -60,8 +67,24 @@ class HitPointState:
     def with_temporary(self, temporary: int) -> "HitPointState":
         return replace(self, temporary=temporary)
 
-    def with_rolls(self, rolls: tuple[int, ...]) -> "HitPointState":
+    def with_rolls(self, rolls: tuple[int | None, ...]) -> "HitPointState":
         return replace(self, rolls=rolls)
+
+    def with_roll_at(self, index: int, roll: int | None) -> "HitPointState":
+        """Вставити кидок на місце рівня, зсунувши пізніші кидки.
+
+        Кидки впорядковані за рівнями, тому кидок у класі, який стоїть не
+        останнім у списку, **вставляється**, а не дописується: інакше чужі
+        рівні отримали б не свої числа. Місця, яких ще не було в кортежі,
+        стають `None` — «середнє».
+        """
+        if index < 0:
+            raise ValidationError("місце кидка не може бути відʼємним")
+        values: list[int | None] = list(self.rolls)
+        while len(values) < index:
+            values.append(None)
+        values.insert(index, roll)
+        return replace(self, rolls=tuple(values))
 
     def with_bonus(self, bonus: int) -> "HitPointState":
         return replace(self, bonus=bonus)

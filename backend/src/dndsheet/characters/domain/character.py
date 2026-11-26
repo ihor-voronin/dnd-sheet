@@ -41,7 +41,12 @@ from dndsheet.shared.events import (
     LevelGained,
 )
 from dndsheet.shared.kernel import MAX_LEVEL, Ability, AbilityScore, Money
-from dndsheet.shared.rules import BackgroundMechanics, ClassMechanics, SpeciesMechanics
+from dndsheet.shared.rules import (
+    BackgroundMechanics,
+    ClassMechanics,
+    SpeciesMechanics,
+    ability_bonus_totals,
+)
 
 
 @dataclass(slots=True)
@@ -67,6 +72,10 @@ class Character:
     #: Самі бонуси виду (thaumaturgy тифлінга) не зберігаються — вони похідні.
     spell_choices: tuple[str, ...] = ()
     feats: tuple[str, ...] = ()
+    #: Скільки разів гравець уже взяв покращення характеристик або рису.
+    #: Їх дають рівні з рисою «Ability Score Improvement», тож кількість
+    #: використаних мусить бути не більшою за кількість таких рівнів.
+    asi_taken: int = 0
     hp: HitPointState = field(default_factory=HitPointState)
     #: Лічильники й виправлення листа (слоти, хіт-дайси, кидки смерті, нотатки).
     state: SheetState = field(default_factory=SheetState)
@@ -91,6 +100,7 @@ class Character:
         self._validate_spells()
         self._validate_spell_choices()
         self._validate_hit_points()
+        self._validate_asi()
 
     # ------------------------------------------------------------------
     # похідні властивості
@@ -144,6 +154,36 @@ class Character:
             die = self.class_definition(entry.class_key).hit_die
             pool[die] = pool.get(die, 0) + entry.level
         return pool
+
+    @property
+    def asi_slots(self) -> int:
+        """Скільки покращень характеристик (або рис) персонаж уже заробив.
+
+        Рівні з рисою «Ability Score Improvement» рахуються з правил класу, а
+        не з окремого списку: у Воїна їх більше, ніж у мага, і це вже є в
+        індексі механік.
+        """
+        return sum(
+            1
+            for entry, definition in self.class_entries()
+            for feature in definition.features_at(entry.level)
+            if feature.name_en == "Ability Score Improvement"
+        )
+
+    def roll_index_for(self, class_key: str) -> int:
+        """Місце кидка хіт-дайса для наступного рівня в `hp.rolls`.
+
+        Кидки впорядковані за рівнями всіх класів (спершу рівні 2..N першого,
+        далі 1..M другого), тому рівень узятий у класі, який стоїть не
+        останнім, вимагає вставки в середину, а не дописування в кінець.
+        """
+        wanted = class_key.strip().casefold()
+        passed = 0
+        for entry in self.classes:
+            if entry.class_key == wanted:
+                return max(0, passed + entry.level - 1)
+            passed += entry.level
+        return max(0, self.total_level - 1)
 
     # ------------------------------------------------------------------
     # зміни: імʼя, характеристики
@@ -213,6 +253,17 @@ class Character:
             self.bump_version()
             return
         raise ValidationError(f"персонаж не має класу {class_key!r}")
+
+    def raise_level(self, class_key: str) -> None:
+        """Узяти наступний рівень у наявному класі (мультиклас не додає).
+
+        Числа (хіти, слоти, вміння) не змінюються тут: вони похідні від
+        рівнів. Цей метод лише рухає рівень і тримає інваріант сумарного.
+        """
+        wanted = class_key.strip().casefold()
+        if not self.has_class(wanted):
+            raise ValidationError(f"персонаж не має класу {class_key!r}")
+        self.set_class_level(wanted, self.class_level(wanted) + 1)
 
     def remove_class(self, class_key: str) -> None:
         wanted = class_key.strip().casefold()
@@ -526,6 +577,60 @@ class Character:
         self.feats = self.feats + (key,)
         self.bump_version()
 
+    def ability_bonus_from_origin(self, ability: Ability) -> int:
+        """Бонус характеристики від виду (разом із зробленим вибором)."""
+        return ability_bonus_totals(self.species, self.ability_bonus_choices)[ability]
+
+    def increase_ability(self, ability: Ability, amount: int) -> None:
+        """Покращення характеристики за рівень (PHB, p. 165).
+
+        Межа 20 рахується **після** бонусів виду: гравець підвищує базову
+        оцінку, але підсумок на листі не може перевищити 20.
+        """
+        if isinstance(amount, bool) or not isinstance(amount, int) or amount < 1:
+            raise ValidationError("покращення характеристики має бути додатним цілим")
+        base = self.abilities[ability].value
+        total = base + self.ability_bonus_from_origin(ability) + amount
+        if total > 20:
+            raise ValidationError(
+                f"{ability.value}: підсумок не може бути більшим за 20 "
+                f"({base} + {self.ability_bonus_from_origin(ability)} бонус виду + {amount})"
+            )
+        self.set_ability(ability, base + amount)
+
+    def take_asi(
+        self,
+        *,
+        increases: Mapping[Ability, int] | None = None,
+        feat_key: str | None = None,
+    ) -> None:
+        """Використати одне покращення характеристик: +2/+1+1 **або** риса."""
+        if self.asi_taken >= self.asi_slots:
+            raise ValidationError(
+                f"покращень характеристик більше немає "
+                f"(зароблено {self.asi_slots}, використано {self.asi_taken})"
+            )
+        given = {ability: amount for ability, amount in (increases or {}).items() if amount}
+        if given and feat_key:
+            raise ValidationError("покращення характеристик і риса — це окремий вибір")
+        if not given and not feat_key:
+            raise ValidationError("треба обрати покращення характеристик або рису")
+        if given:
+            if len(given) > 2:
+                raise ValidationError("покращити можна не більше двох характеристик")
+            if sum(given.values()) != 2:
+                raise ValidationError(
+                    f"покращення дає рівно +2 (або +1 і +1), надіслано {sum(given.values())}"
+                )
+            if any(amount != 1 for amount in given.values()) and len(given) > 1:
+                raise ValidationError("дві характеристики покращуються лише по +1")
+            for ability, amount in given.items():
+                self.increase_ability(ability, amount)
+        if feat_key:
+            self.add_feat(feat_key)
+        self.asi_taken += 1
+        self.bump_version()
+
     def spells_of(self, class_key: str) -> tuple[KnownSpell, ...]:
         wanted = class_key.strip().casefold()
         return tuple(spell for spell in self.spells if spell.class_key == wanted)
@@ -702,4 +807,14 @@ class Character:
         if len(self.hp.rolls) > max(0, self.total_level - 1):
             raise ValidationError(
                 f"кидків хіт-дайсів не може бути більше за {max(0, self.total_level - 1)}"
+            )
+
+    def _validate_asi(self) -> None:
+        if isinstance(self.asi_taken, bool) or not isinstance(self.asi_taken, int):
+            raise ValidationError("лічильник покращень характеристик має бути цілим")
+        if self.asi_taken < 0:
+            raise ValidationError("лічильник покращень характеристик не може бути відʼємним")
+        if self.asi_taken > self.asi_slots:
+            raise ValidationError(
+                f"покращень характеристик {self.asi_taken}, а рівні дають лише {self.asi_slots}"
             )

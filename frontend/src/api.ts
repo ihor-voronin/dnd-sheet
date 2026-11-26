@@ -1,7 +1,11 @@
 import type { SheetDocument } from "./contract/sheetDocument";
 import type {
+  ClassSpell,
   DraftView,
+  FeatEntry,
   FinishedCharacter,
+  LevelUpReport,
+  LevelUpView,
   RestReport,
   SheetViewPayload,
   StepView,
@@ -97,6 +101,50 @@ export function restCharacter(id: string, kind: "short" | "long"): Promise<RestM
     method: "POST",
     body: JSON.stringify({ kind }),
   });
+}
+
+// --- підвищення рівня -----------------------------------------------------
+
+export function fetchLevelUp(id: string): Promise<LevelUpView> {
+  return getJson<LevelUpView>(`/api/v1/characters/${id}/level-up`);
+}
+
+export interface LevelUpMutation extends SheetMutation {
+  level_up: LevelUpReport;
+}
+
+export function levelUpCharacter(
+  id: string,
+  body: Record<string, unknown>,
+): Promise<LevelUpMutation> {
+  return request<LevelUpMutation>(`/api/v1/characters/${id}/level-up`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/** Закляття класу до рівня включно — зі «Spell Lists» книг. */
+export function fetchClassSpells(
+  classKey: string,
+  maxLevel: number,
+): Promise<{ items: ClassSpell[]; total: number }> {
+  const params = new URLSearchParams({ max_level: String(maxLevel) });
+  return getJson(`/api/v1/compendium/classes/${encodeURIComponent(classKey)}/spells?${params}`);
+}
+
+/** Усі риси корпусу — для вибору на рівні покращення характеристик. */
+export function fetchFeats(): Promise<FeatEntry[]> {
+  return (async () => {
+    const all: FeatEntry[] = [];
+    for (let offset = 0; ; offset += CATALOG_PAGE) {
+      const page = await getJson<{ items: FeatEntry[]; total: number }>(
+        `/api/v1/compendium/entries?category=feat&limit=${CATALOG_PAGE}&offset=${offset}`,
+      );
+      all.push(...(page.items ?? []));
+      if (!page.items?.length || all.length >= page.total) break;
+    }
+    return all;
+  })();
 }
 
 export function spendHitDie(id: string, die: number, roll: number): Promise<SheetMutation> {

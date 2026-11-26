@@ -88,16 +88,18 @@ def build_sheet_document(
     character: Character,
     computed: ComputedSheet,
     attacks: Iterable[Mapping[str, Any]] | None = None,
+    feat_titles: Mapping[str, str] | None = None,
 ) -> SheetDocument:
     """Повний документ листа: шість розділів, як на екрані.
 
-    `attacks` приходить ззовні (з довідника), бо домен не читає корпус:
-    немає списку атак — немає й розділу, а не порожній заголовок.
+    `attacks` і `feat_titles` приходять ззовні (з довідника), бо домен не
+    читає корпус: немає списку атак — немає й розділу, а не порожній
+    заголовок; немає назви риси — показуємо її ключ, а не вигаданий текст.
     """
     fields: dict[str, Field] = {}
     pages: list[Page] = []
 
-    identity = _identity_fields(character, computed)
+    identity = _identity_fields(character, computed, feat_titles)
     fields.update(identity)
     ability_ids = _ability_fields(fields, computed)
     combat_ids = _combat_fields(character, computed, fields)
@@ -161,7 +163,11 @@ def build_sheet_document(
 # ---------------------------------------------------------------------------
 
 
-def _identity_fields(character: Character, computed: ComputedSheet) -> dict[str, Field]:
+def _identity_fields(
+    character: Character,
+    computed: ComputedSheet,
+    feat_titles: Mapping[str, str] | None = None,
+) -> dict[str, Field]:
     fields: dict[str, Field] = {
         "identity.level": _computed_number(
             "identity.level",
@@ -208,9 +214,10 @@ def _identity_fields(character: Character, computed: ComputedSheet) -> dict[str,
             LocalizedText(uk="Стійкість до урону", en="Damage Resistances"),
         )
     if character.feats:
+        titles = feat_titles or {}
         fields["identity.feats"] = _computed_list(
             "identity.feats",
-            list(character.feats),
+            [titles.get(key, key) for key in character.feats],
             LocalizedText(uk="Риси", en="Feats"),
         )
     return fields

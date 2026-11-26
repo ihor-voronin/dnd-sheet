@@ -37,7 +37,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest backend -q
 ```
 
-Очікувано: **460 passed, 1 skipped** (скіп — PDF, див. розділ 6).
+Очікувано: **557 passed, 2 skipped** (скіп — PDF, див. розділ 6).
 
 ### 1.2 Фронтенд
 
@@ -167,6 +167,7 @@ PostgreSQL у compose є, але застосунок його поки не в�
 | `http://127.0.0.1:8000/` | SPA: список збережених персонажів, візард (`#/create`), демо-листок |
 | `http://127.0.0.1:8000/healthz` | `{"status":"ok"}` |
 | `http://127.0.0.1:8000/#/create` | візард створення персонажа (6 кроків) |
+| `http://127.0.0.1:8000/#/character/<id>/level-up` | підвищення рівня: клас, хіти, підклас, характеристики, закляття |
 | `http://127.0.0.1:8000/api/v1/characters` | збережені персонажі |
 | `http://127.0.0.1:8000/api/v1/demo/sheet` | `SheetDocument` (JSON) |
 | `http://127.0.0.1:8000/api/v1/renderers` | `{"formats":["markdown","pdf"]}` |

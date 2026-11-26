@@ -13,6 +13,10 @@
 (спершу рівні 2..N першого класу, далі рівні 1..M другого). Такий порядок
 обрано тому, що іншого джерело не дає: гравець записує кидки, коли бере
 рівень, а порядок класів у агрегаті — це і є порядок узяття.
+
+`None` на місці кидка означає «взято середнє»: рівень узятий у класі, який
+стоїть не останнім у списку, тому кидки за ним доводиться вставляти в
+середину, лишаючи перед ними позначені місця.
 """
 
 from __future__ import annotations
@@ -87,13 +91,17 @@ def hit_point_maximum(
                 value = definition.hit_die + constitution_modifier
                 label = f"level-1-max: d{definition.hit_die}"
                 first = False
-            elif roll_index < len(rolls):
-                value = rolls[roll_index] + constitution_modifier
-                label = f"level-{level}-roll: d{definition.hit_die}"
-                roll_index += 1
             else:
-                value = average_hit_points(definition.hit_die) + constitution_modifier
-                label = f"level-{level}-average: d{definition.hit_die}"
+                # Кожен рівень після першого займає своє місце в `rolls`,
+                # навіть якщо кидка там немає (`None` — середнє).
+                rolled = rolls[roll_index] if roll_index < len(rolls) else None
+                roll_index += 1
+                if rolled is not None:
+                    value = rolled + constitution_modifier
+                    label = f"level-{level}-roll: d{definition.hit_die}"
+                else:
+                    value = average_hit_points(definition.hit_die) + constitution_modifier
+                    label = f"level-{level}-average: d{definition.hit_die}"
             value = max(1, value)
             total += value
             parts.append(HitPointPart(label=label, value=value, source=source))

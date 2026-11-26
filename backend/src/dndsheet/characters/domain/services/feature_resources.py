@@ -249,6 +249,15 @@ ACTIONS: dict[str, str] = {
 }
 
 
+def name_of(key: str) -> str | None:
+    """Назва ресурсу за ключем («fighter:action-surge» → «Action Surge»)."""
+    cleaned = (key or "").strip()
+    for rule in RULES:
+        if rule.key == cleaned:
+            return rule.name_en
+    return None
+
+
 def _uses(
     rule: _Rule, level: int, ability_modifiers: Mapping[Ability, int]
 ) -> int:

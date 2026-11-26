@@ -257,6 +257,10 @@ class CompendiumService:
     ) -> tuple[CompendiumEntry, ...]:
         return self._all(Category.OPTIONAL_FEATURE, feature_type=feature_type)
 
+    def feats(self) -> tuple[CompendiumEntry, ...]:
+        """Усі риси корпусу, за назвою (для вибору на підвищенні рівня)."""
+        return tuple(sorted(self._all(Category.FEAT), key=lambda entry: entry.name_en))
+
     def spells(
         self,
         level: int | None = None,

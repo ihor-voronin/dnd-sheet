@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 import {
@@ -10,6 +15,7 @@ import {
   fetchRenderers,
 } from "./api";
 import { CharacterView } from "./features/character/CharacterView";
+import { LevelUpWizard } from "./features/character/LevelUp";
 import { CreateWizard } from "./features/wizard/CreateWizard";
 import { SheetView } from "./features/sheet/SheetView";
 
@@ -17,13 +23,21 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5_000, retry: 1 } },
 });
 
-type Route = { name: "home" } | { name: "create" } | { name: "character"; id: string };
+type Route =
+  | { name: "home" }
+  | { name: "create" }
+  | { name: "character"; id: string }
+  | { name: "levelup"; id: string };
 
 function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "create") return { name: "create" };
   if (hash.startsWith("character/")) {
-    return { name: "character", id: decodeURIComponent(hash.slice("character/".length)) };
+    const rest = hash.slice("character/".length);
+    if (rest.endsWith("/level-up")) {
+      return { name: "levelup", id: decodeURIComponent(rest.slice(0, -"/level-up".length)) };
+    }
+    return { name: "character", id: decodeURIComponent(rest) };
   }
   return { name: "home" };
 }
@@ -41,7 +55,9 @@ function useRoute(): [Route, (next: Route) => void] {
         ? "#/"
         : next.name === "create"
           ? "#/create"
-          : `#/character/${encodeURIComponent(next.id)}`;
+          : next.name === "levelup"
+            ? `#/character/${encodeURIComponent(next.id)}/level-up`
+            : `#/character/${encodeURIComponent(next.id)}`;
     if (window.location.hash === target) setRoute(next);
     else window.location.hash = target;
   }, []);
@@ -152,6 +168,39 @@ function CharacterPage({ id, navigate }: { id: string; navigate: (next: Route) =
   );
 }
 
+function LevelUpPage({ id, navigate }: { id: string; navigate: (next: Route) => void }) {
+  const queryClient = useQueryClient();
+
+  return (
+    <>
+      <p className="crumbs">
+        <button
+          type="button"
+          className="link-button"
+          onClick={() => navigate({ name: "character", id })}
+        >
+          ← до листа
+        </button>
+      </p>
+      <LevelUpWizard
+        characterId={id}
+        onCancel={() => navigate({ name: "character", id })}
+        onDone={(report) => {
+          // Лист уже змінився на сервері: стара відповідь у кеші недійсна.
+          void queryClient.invalidateQueries({ queryKey: ["character", id] });
+          void queryClient.invalidateQueries({ queryKey: ["level-up", id] });
+          void queryClient.invalidateQueries({ queryKey: ["characters"] });
+          window.location.hash = `#/character/${encodeURIComponent(id)}`;
+          console.info(
+            `рівень ${report.total_level_before} → ${report.total_level_after}: ` +
+              `${report.class_name} ${report.from_level} → ${report.to_level}`,
+          );
+        }}
+      />
+    </>
+  );
+}
+
 function Shell() {
   const [route, navigate] = useRoute();
 
@@ -184,6 +233,7 @@ function Shell() {
         <CreateWizard onFinished={(characterId) => navigate({ name: "character", id: characterId })} />
       ) : null}
       {route.name === "character" ? <CharacterPage id={route.id} navigate={navigate} /> : null}
+      {route.name === "levelup" ? <LevelUpPage id={route.id} navigate={navigate} /> : null}
     </main>
   );
 }

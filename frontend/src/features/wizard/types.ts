@@ -437,6 +437,14 @@ export interface SheetViewPayload {
   };
   overridden: string[];
   features: SheetFeature[];
+  /** Вибрані риси з текстом: показуємо разом з уміннями. */
+  feat_details?: {
+    key: string;
+    name_en: string;
+    name_uk?: string | null;
+    source_id?: string;
+    description: string;
+  }[];
   feature_resources: SheetFeatureResource[];
   background_details: BackgroundDetails | null;
   attacks: {
@@ -469,4 +477,108 @@ export interface SheetViewPayload {
 export interface FinishedCharacter {
   character_id: string;
   sheet: SheetViewPayload;
+}
+
+// --- підвищення рівня -----------------------------------------------------
+
+export interface LevelUpSlotRow {
+  level: number;
+  before: number;
+  after: number;
+}
+
+export interface LevelUpSubclassOption {
+  id: string;
+  name_en: string;
+  name_uk: string | null;
+  /** Назви вмінь, які цей підклас дає саме на новому рівні. */
+  features: string[];
+}
+
+export interface LevelUpSubclass {
+  title: string | null;
+  level: number;
+  required: boolean;
+  current: string | null;
+  options: LevelUpSubclassOption[];
+}
+
+export interface LevelUpLimits {
+  cantrips: { before: number; after: number };
+  spells_known: { before: number | null; after: number | null };
+  prepared: { before: number | null; after: number | null };
+}
+
+export interface LevelUpPlan {
+  class_key: string;
+  class_name: string;
+  is_new_class: boolean;
+  current_level: number;
+  new_level: number;
+  total_level_before: number;
+  total_level_after: number;
+  hit_die: number;
+  constitution_modifier: number;
+  hp: { average: number; best_roll: number };
+  features: { name_en: string; level: number }[];
+  subclass: LevelUpSubclass | null;
+  subclass_features: { name_en: string; description: string }[];
+  asi: { slots: number; taken: number; pending: boolean };
+  proficiency_bonus: { before: number; after: number };
+  limits: LevelUpLimits;
+  slots: LevelUpSlotRow[];
+  pact: { before: [number, number] | null; after: [number, number] | null };
+  caster_level: { before: number; after: number };
+  max_spell_level: number;
+  resources_added: { key: string; name_en: string }[];
+  allowed: boolean;
+  blocked_reason: string | null;
+  requirements: string[];
+}
+
+export interface LevelUpView {
+  character_id: string;
+  name: string;
+  version: number;
+  total_level: number;
+  max_level: number;
+  can_level_up: boolean;
+  plans: LevelUpPlan[];
+}
+
+export interface LevelUpReport {
+  class_key: string;
+  class_name: string;
+  is_new_class: boolean;
+  from_level: number;
+  to_level: number;
+  total_level_before: number;
+  total_level_after: number;
+  hp_max_before: number;
+  hp_max_after: number;
+  hp_current_before: number;
+  hp_current_after: number;
+  proficiency_bonus_before: number;
+  proficiency_bonus_after: number;
+  features: string[];
+  subclass_key: string | null;
+  ability_increases: [string, number][];
+  feat_key: string | null;
+  slots: LevelUpSlotRow[];
+  spells_added: string[];
+  resources_added: string[];
+}
+
+export interface ClassSpell {
+  id: string;
+  name_en: string;
+  name_uk: string | null;
+  data: Record<string, unknown>;
+}
+
+export interface FeatEntry {
+  id: string;
+  name_en: string;
+  name_uk: string | null;
+  source_id: string;
 }

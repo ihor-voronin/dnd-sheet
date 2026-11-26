@@ -54,6 +54,7 @@ import { termLabel, ukSubclass, ukTerm, withEnglish } from "./uk";
 import {
   CastingBlock,
   FeatureResources,
+  FeatsList,
   FeaturesList,
   ProficienciesList,
   SpellsKnownList,
@@ -148,6 +149,17 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
   // Версія для оптимістичного контролю: беремо з ref, а не з рендера, бо
   // клік може статися до того, як React перемалює після попередньої відповіді.
   const versionRef = useRef(initial.character.version);
+  // Скільки версії листа екран уже прийняв від батька. Потрібно, щоб після
+  // підвищення рівня (окремий маршрут) повернення на лист показало **нові**
+  // числа, а не ті, що були в кеші на момент відкриття.
+  const adoptedVersion = useRef(initial.character.version);
+  useEffect(() => {
+    if (initial.character.version <= adoptedVersion.current) return;
+    adoptedVersion.current = initial.character.version;
+    versionRef.current = initial.character.version;
+    setSheet(initial);
+    setNotesDraft({ ...initial.state.notes });
+  }, [initial]);
 
   // PDF збирається на сервері через WeasyPrint: без GTK його немає, і тоді
   // посилання не показуємо, замість того щоб віддати 503 у новій вкладці.
@@ -382,6 +394,14 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             <span className="short">натисніть, щоб читати</span>
           </h3>
           <FeaturesList features={sheet.features} />
+          {sheet.feat_details?.length ? (
+            <>
+              <h3 className="ddb-work__title">
+                <span>Риси</span>
+              </h3>
+              <FeatsList feats={sheet.feat_details} />
+            </>
+          ) : null}
           <h3 className="ddb-work__title">
             <span>Володіння з джерелами</span>
           </h3>
@@ -432,6 +452,13 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
           </div>
         </div>
         <div className="ddb-top__actions">
+          <a
+            className="ddb-btn ddb-btn--link"
+            href={`#/character/${encodeURIComponent(id)}/level-up`}
+            title="Узяти наступний рівень: клас, хіти, підклас, характеристики"
+          >
+            +1 рівень
+          </a>
           <div className="ddb-rest">
             <button
               type="button"

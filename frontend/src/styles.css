@@ -1421,3 +1421,102 @@ body {
   color: var(--muted);
   font-size: 11px;
 }
+
+/* --- підвищення рівня --------------------------------------------------- */
+
+.levelup .wizard-body {
+  display: grid;
+  gap: 14px;
+}
+
+.levelup-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.levelup-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.levelup-row .radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.levelup-row .number {
+  width: 72px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.levelup-row .select {
+  min-width: 170px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.chip--column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  max-width: 260px;
+  text-align: left;
+}
+
+.chip--column .meta {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.levelup-feat-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px;
+  max-height: 240px;
+  overflow: auto;
+  padding: 4px;
+}
+
+.levelup-feat-list .chip--row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.levelup-feat-list .chip--row .meta {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.levelup-summary .levelup-list {
+  margin: 8px 0 16px;
+  padding-left: 18px;
+  line-height: 1.7;
+  font-size: 13px;
+}
+
+.levelup .spell-grid {
+  max-height: 260px;
+  overflow: auto;
+}

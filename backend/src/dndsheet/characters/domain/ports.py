@@ -63,6 +63,19 @@ class CharacterRepository(Protocol):
 
 
 @runtime_checkable
+class FeatCatalog(Protocol):
+    """Які риси існують у довіднику — домен знає лише ключ.
+
+    Потрібно, щоб у поле `feats` не потрапив ключ, якого немає в корпусі:
+    інакше лист показував би рису без тексту, а помилку було б видно лише
+    через півроку.
+    """
+
+    def has(self, feat_key: str) -> bool:
+        """Чи є така риса в довіднику."""
+
+
+@runtime_checkable
 class DraftRepository(Protocol):
     """Сховище чернеток візарда."""
 

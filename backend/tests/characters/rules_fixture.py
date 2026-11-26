@@ -55,6 +55,18 @@ def _class(
     )
 
 
+#: Рівні, на яких клас дає «Ability Score Improvement» (PHB, таблиця класу).
+FIGHTER_ASI = (4, 6, 8, 12, 14, 16, 19)
+WIZARD_ASI = (4, 8, 12, 16, 19)
+CLERIC_ASI = (4, 8, 12, 16, 19)
+ROGUE_ASI = (4, 8, 10, 12, 16, 19)
+WARLOCK_ASI = (4, 8, 12, 16, 19)
+
+
+def _asi(levels: tuple[int, ...]) -> tuple[ClassFeature, ...]:
+    return tuple(ClassFeature("Ability Score Improvement", level) for level in levels)
+
+
 FIGHTER = _class(
     "fighter",
     "Fighter",
@@ -66,7 +78,12 @@ FIGHTER = _class(
     weapons=("simple", "martial"),
     subclass_level=3,
     subclass_title="Martial Archetype",
-    features=(ClassFeature("Second Wind", 1), ClassFeature("Action Surge", 2)),
+    features=(
+        ClassFeature("Second Wind", 1),
+        ClassFeature("Action Surge", 2),
+        *_asi(FIGHTER_ASI),
+    ),
+    multiclass_requirements=({A.STR: 13}, {A.DEX: 13}),
 )
 
 WARLOCK = _class(
@@ -83,6 +100,8 @@ WARLOCK = _class(
     cantrips_known=(2, 2, 2, 3),
     spells_known=(2, 3, 4, 5),
     pact_slots=PACT_SLOT_TABLE,
+    features=_asi(WARLOCK_ASI),
+    multiclass_requirements=({A.CHA: 13},),
 )
 
 WIZARD = _class(
@@ -99,6 +118,8 @@ WIZARD = _class(
     subclass_title="Arcane Tradition",
     cantrips_known=(3, 3, 3, 4),
     spell_slots=CASTER_SLOT_TABLE,
+    features=_asi(WIZARD_ASI),
+    multiclass_requirements=({A.INT: 13},),
 )
 
 CLERIC = _class(
@@ -117,6 +138,8 @@ CLERIC = _class(
     subclass_spells=MappingProxyType(
         {"life-domain": SubclassSpells(prepared=("bless", "cure wounds"))}
     ),
+    features=_asi(CLERIC_ASI),
+    multiclass_requirements=({A.WIS: 13},),
 )
 
 ROGUE = _class(
@@ -129,6 +152,8 @@ ROGUE = _class(
             Skill.PERFORMANCE, Skill.PERSUASION, Skill.SLEIGHT_OF_HAND, Skill.STEALTH),
     subclass_level=3,
     subclass_title="Roguish Archetype",
+    features=_asi(ROGUE_ASI),
+    multiclass_requirements=({A.DEX: 13},),
 )
 
 HUMAN = SpeciesMechanics(

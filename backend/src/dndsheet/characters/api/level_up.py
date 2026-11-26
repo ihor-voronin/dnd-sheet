@@ -1,0 +1,179 @@
+"""HTTP-шар підвищення рівня: план і застосування.
+
+План — це відповідь на питання «що я отримаю, якщо візьму рівень?», і його
+збирає **не домен**, а цей шар: тут є довідник, а отже — підкласи, їхні
+вміння й списки заклять. Домен рахує лише числа (хіти, слоти, ліміти).
+
+Екран підвищення вміє те саме, що аркуш D&D Beyond: обрати клас (наявний або
+новий — мультиклас), кинути хіт-дайс або взяти середнє, обрати підклас на
+його рівні, покращити характеристики чи взяти рису, додати закляття.
+"""
+
+from __future__ import annotations
+
+from dataclasses import asdict
+from typing import Any
+
+from dndsheet.characters.api.features import subclass_features
+from dndsheet.characters.application.level_up import LevelUpService
+from dndsheet.characters.domain.services.feature_resources import name_of
+from dndsheet.characters.domain.services.level_up import LevelPlan
+from dndsheet.compendium.api.serializers import entry_brief
+from dndsheet.compendium.application.service import CompendiumService
+
+
+def level_up_payload(
+    character,  # noqa: ANN001 — Character
+    service: LevelUpService,
+    compendium: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """План наступного рівня для кожного класу."""
+    plans = service.planner.plans(character)
+    return {
+        "character_id": character.id,
+        "name": character.name,
+        "version": character.version,
+        "total_level": character.total_level,
+        "max_level": 20,
+        "can_level_up": bool(plans),
+        "plans": [
+            plan_payload(
+                plan,
+                compendium,
+                cache,
+                current_subclass=_current_subclass(character, plan.class_key),
+            )
+            for plan in plans
+        ],
+    }
+
+
+def plan_payload(
+    plan: LevelPlan,
+    compendium: CompendiumService,
+    cache: dict[str, Any] | None = None,
+    *,
+    current_subclass: str | None = None,
+) -> dict[str, Any]:
+    """Один план: числа домену + вибір із довідника."""
+    return {
+        "class_key": plan.class_key,
+        "class_name": plan.class_name,
+        "is_new_class": plan.is_new_class,
+        "current_level": plan.current_level,
+        "new_level": plan.new_level,
+        "total_level_before": plan.total_level_before,
+        "total_level_after": plan.total_level_after,
+        "hit_die": plan.hit_die,
+        "constitution_modifier": plan.constitution_modifier,
+        "hp": {"average": plan.hp_average, "best_roll": plan.hp_best_roll},
+        "features": [
+            {"name_en": feature.name_en, "level": feature.level}
+            for feature in plan.features
+        ],
+        "subclass": _subclass_payload(plan, compendium, cache, current=current_subclass),
+        "subclass_features": _subclass_features_payload(
+            compendium, cache, current_subclass, plan.new_level
+        ),
+        "asi": {
+            "slots": plan.asi_slots,
+            "taken": plan.asi_taken,
+            "pending": plan.asi_pending,
+        },
+        "proficiency_bonus": {
+            "before": plan.proficiency_bonus_before,
+            "after": plan.proficiency_bonus_after,
+        },
+        "limits": {
+            "cantrips": {"before": plan.cantrips_before, "after": plan.cantrips_after},
+            "spells_known": {
+                "before": plan.spells_known_before,
+                "after": plan.spells_known_after,
+            },
+            "prepared": {"before": plan.prepared_before, "after": plan.prepared_after},
+        },
+        "slots": [asdict(row) for row in plan.slots],
+        "pact": {
+            "before": list(plan.pact_before) if plan.pact_before else None,
+            "after": list(plan.pact_after) if plan.pact_after else None,
+        },
+        "caster_level": {"before": plan.caster_level_before, "after": plan.caster_level_after},
+        "max_spell_level": plan.max_spell_level,
+        "resources_added": [
+            {"key": key, "name_en": name_of(key) or key}
+            for key in plan.resources_after
+            if key not in plan.resources_before
+        ],
+        "allowed": plan.allowed,
+        "blocked_reason": plan.blocked_reason,
+        "requirements": list(plan.requirements),
+    }
+
+
+def _subclass_payload(
+    plan: LevelPlan,
+    compendium: CompendiumService,
+    cache: dict[str, Any] | None,
+    *,
+    current: str | None,
+) -> dict[str, Any] | None:
+    if plan.subclass_level is None:
+        return None
+    options: list[dict[str, Any]] = []
+    if plan.subclass_required:
+        definition = compendium.class_mechanics(plan.class_key)
+        for entry in compendium.subclasses(definition.name_en):
+            # Лише те, що потрібно для вибору: повний запис довідника тут
+            # роздував би відповідь у десять разів (у жреця 20 доменів).
+            brief = entry_brief(entry)
+            options.append(
+                {
+                    "id": brief["id"],
+                    "name_en": brief["name_en"],
+                    "name_uk": brief["name_uk"],
+                    "source_id": brief["source_id"],
+                    "features": [
+                        item["name_en"]
+                        for item in subclass_features(compendium, entry.id, cache)
+                        if item["level"] == plan.new_level
+                    ],
+                }
+            )
+    return {
+        "title": plan.subclass_title,
+        "level": plan.subclass_level,
+        "required": plan.subclass_required,
+        "current": current,
+        "options": options,
+    }
+
+
+def _subclass_features_payload(
+    compendium: CompendiumService,
+    cache: dict[str, Any] | None,
+    subclass_key: str | None,
+    level: int,
+) -> list[dict[str, Any]]:
+    """Що підклас дає саме на новому рівні."""
+    if not subclass_key:
+        return []
+    return [
+        {"name_en": item["name_en"], "description": item["description"]}
+        for item in subclass_features(compendium, subclass_key, cache)
+        if item["level"] == level
+    ]
+
+
+def _current_subclass(character, class_key: str) -> str | None:  # noqa: ANN001
+    for entry in character.classes:
+        if entry.class_key == class_key:
+            return entry.subclass_key
+    return None
+
+
+def report_payload(report) -> dict[str, Any]:  # noqa: ANN001 — LevelUpReport
+    return asdict(report)
+
+
+__all__ = ["level_up_payload", "plan_payload", "report_payload"]

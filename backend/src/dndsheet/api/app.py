@@ -10,10 +10,12 @@ from fastapi.staticfiles import StaticFiles
 
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.router import build_cases, router as characters_router
+from dndsheet.characters.application.level_up import LevelUpService
 from dndsheet.characters.application.sheet import SheetService
 from dndsheet.characters.application.wizard import WizardService
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.infrastructure.compendium_rules import (
+    CompendiumFeatCatalog,
     CompendiumRulesSource,
     CompendiumSubclassCatalog,
 )
@@ -71,6 +73,11 @@ def create_app() -> FastAPI:
         subclasses=CompendiumSubclassCatalog(compendium),
     )
     app.state.sheet = SheetService(characters=characters)
+    app.state.level_up = LevelUpService(
+        characters=characters,
+        subclasses=CompendiumSubclassCatalog(compendium),
+        feats=CompendiumFeatCatalog(compendium),
+    )
     # Кеш профілів зброї: імена не змінюються, тому читаємо довідник раз.
     app.state.attack_cache = {}
     # Кеш коротких даних заклять (час, дистанція, урон) для вкладки «Дії».

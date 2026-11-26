@@ -29,9 +29,11 @@ from dndsheet.characters.api.serializers import (
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.background_info import enrich_background
 from dndsheet.characters.api.features import enrich_features
+from dndsheet.characters.api.level_up import level_up_payload, report_payload
 from dndsheet.characters.api.spell_meta import enrich_spells
 from dndsheet.characters.api.wizard_options import build_options
 from dndsheet.characters.application.golden import GoldenCase, build_golden_cases
+from dndsheet.characters.application.level_up import LevelUpService
 from dndsheet.characters.application.sheet import SheetService
 from dndsheet.characters.application.wizard import WizardService
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
@@ -131,6 +133,13 @@ def _sheet_service(request: Request) -> SheetService:
     service = getattr(request.app.state, "sheet", None)
     if service is None:  # pragma: no cover — так не буває, якщо app зібрано create_app
         raise HTTPException(status_code=503, detail="сервіс листа не підключений")
+    return service
+
+
+def _level_up_service(request: Request) -> LevelUpService:
+    service = getattr(request.app.state, "level_up", None)
+    if service is None:  # pragma: no cover — так не буває, якщо app зібрано create_app
+        raise HTTPException(status_code=503, detail="підвищення рівня не підключене")
     return service
 
 
@@ -438,8 +447,58 @@ def spend_hit_die(
 
 
 # ---------------------------------------------------------------------------
+# підвищення рівня
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{character_id}/level-up")
+def level_up_preview(character_id: str, request: Request) -> dict:
+    """Що дасть наступний рівень — у кожному наявному класі й у кожному новому."""
+    try:
+        character, _ = _level_up_service(request).preview(character_id)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return level_up_payload(
+        character,
+        _level_up_service(request),
+        _compendium(request),
+        getattr(request.app.state, "feature_cache", {}),
+    )
+
+
+@router.post("/{character_id}/level-up")
+def level_up(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Узяти рівень: клас, хіти, підклас, характеристики, закляття."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    try:
+        character, report = _level_up_service(request).apply(
+            character_id, body, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {
+        "sheet": _sheet_payload(request, character),
+        "version": character.version,
+        "level_up": report_payload(report),
+    }
+
+
+# ---------------------------------------------------------------------------
 # експорт листа
 # ---------------------------------------------------------------------------
+
+
+def _feat_titles(request: Request) -> dict[str, str]:
+    """Назви рис за ключем: у документі показуємо текст, а не id запису."""
+    return {
+        entry.id.casefold(): entry.name_en
+        for entry in _compendium(request).feats()
+    }
 
 
 @router.get("/{character_id}/export/{render_format}")
@@ -460,6 +519,9 @@ def character_export(
         raise _http_error(exc) from exc
     computed = DerivedStatsCalculator().compute(character)
     document = build_sheet_document(
-        character, computed, _attacks(request, character, computed)
+        character,
+        computed,
+        _attacks(request, character, computed),
+        feat_titles=_feat_titles(request),
     )
     return _render(request, document, render_format, RenderOptions(show_originals=originals))
