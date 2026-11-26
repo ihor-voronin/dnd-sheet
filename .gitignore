@@ -1,0 +1,50 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.import_linter_cache/
+
+# --- Node ---
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# --- Дані/секрети ---
+.env
+*.local
+*.sqlite3
+.tmp/
+
+# --- База знань: сирі тексти книг (copyright) і сесія ---
+content/raw/
+content/compendium/
+content/bestiary/
+content/.session/
+
+# --- Згенеровані артефакти ---
+artifacts/
+*.pdf
+!docs/**/*.pdf
+server.out.log
+server.err.log
+.server.pid
+logs/
+sink-*.log
+ingest-status*.txt
+
+# --- IDE ---
+.idea/
+.vscode/
+!_vscode/
+
+# --- Бекапи/чернетки ---
+*.bak
+*.bak.*
+

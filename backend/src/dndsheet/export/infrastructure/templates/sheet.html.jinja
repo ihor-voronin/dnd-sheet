@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <title>{{ doc.title.uk }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 12mm 14mm 12mm;
+      @bottom-center {
+        content: counter(page) " / " counter(pages);
+        font-size: 8pt;
+        color: #777;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "Noto Sans", "DejaVu Sans", "Segoe UI", sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.35;
+      color: #1a1a1a;
+      margin: 0;
+    }
+
+    .page { page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+
+    .sheet-header {
+      border-bottom: 1.5pt solid #333;
+      padding-bottom: 3mm;
+      margin-bottom: 4mm;
+    }
+
+    .sheet-header h1 {
+      font-size: 17pt;
+      margin: 0;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .sheet-header .orig { font-size: 10pt; }
+
+    .meta {
+      font-size: 7.5pt;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 1mm;
+    }
+
+    .section {
+      margin-bottom: 5mm;
+      break-inside: avoid;
+    }
+
+    .section h2 {
+      font-size: 10.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 0 0 2mm 0;
+      padding-bottom: 1mm;
+      border-bottom: 0.6pt solid #999;
+    }
+
+    .section h2 .orig {
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: normal;
+    }
+
+    .fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2mm;
+    }
+
+    .field {
+      border: 0.5pt solid #b5b5b5;
+      border-radius: 1.5mm;
+      padding: 1.6mm 2mm;
+      min-width: 0;
+    }
+
+    .cols-1 .field { width: 100%; }
+    .cols-2 .field { width: calc(50% - 1mm); }
+    .cols-3 .field { width: calc(33.333% - 1.34mm); }
+    .cols-4 .field { width: calc(25% - 1.5mm); }
+    .cols-5 .field { width: calc(20% - 1.6mm); }
+    .cols-6 .field { width: calc(16.666% - 1.67mm); }
+
+    .field .label {
+      font-size: 7.6pt;
+      color: #444;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .field .value {
+      font-size: 13pt;
+      font-weight: 700;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .field--longtext .value,
+    .field--list .value {
+      font-size: 9pt;
+      font-weight: 400;
+    }
+
+    .field .hint {
+      font-size: 6.8pt;
+      color: #666;
+      line-height: 1.25;
+      margin-top: 0.8mm;
+    }
+
+    .orig {
+      font-size: 7.2pt;
+      color: #888;
+      font-style: italic;
+    }
+
+    .origin {
+      font-size: 8pt;
+      color: #666;
+    }
+
+    .foot {
+      margin-top: 4mm;
+      padding-top: 2mm;
+      border-top: 0.5pt solid #ccc;
+      font-size: 6.8pt;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  {% for page in doc.pages %}
+  <div class="page">
+    <header class="sheet-header">
+      <h1>{{ doc.title.uk }}</h1>
+      {% if o.show_originals and doc.title.en and doc.title.en != doc.title.uk %}
+      <div class="orig">{{ doc.title.en }}</div>
+      {% endif %}
+      <div class="meta">D&amp;D 5e · 2014 · {{ page.size }} · {{ page.sections | length }} секцій</div>
+    </header>
+
+    {% for section in page.sections %}
+    <div class="section">
+      <h2>
+        {{ section.title.uk }}
+        {% if o.show_originals and section.title.en != section.title.uk %}
+        <span class="orig">{{ section.title.en }}</span>
+        {% endif %}
+      </h2>
+      <div class="fields cols-{{ section.columns }}">
+        {% for field_id in section.fields %}
+        {% set f = doc.fields[field_id] %}
+        <div class="field field--{{ f.type }}">
+          <div class="label">
+            {{ f.label.uk }}
+            {% if o.show_originals and f.label.en != f.label.uk %}
+            <span class="orig">{{ f.label.en }}</span>
+            {% endif %}
+            {% if f.origin != 'input' %}<span class="origin">•</span>{% endif %}
+          </div>
+          <div class="value">
+            {%- if f.value is none -%}
+              —
+            {%- elif f.type == 'checkbox' -%}
+              {{ 'так' if f.value else 'ні' }}
+            {%- elif f.type == 'list' -%}
+              {{ f.value | join(', ') }}
+            {%- else -%}
+              {{ f.value }}
+            {%- endif -%}
+          </div>
+          {% if f.hint %}
+          <div class="hint">
+            {{ f.hint.uk }}
+            {% if o.show_originals and f.hint.en != f.hint.uk %}
+            <span class="orig">{{ f.hint.en }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="foot">
+      • — поле обчислюється автоматично; курсивом — оригінальний англійський текст.
+    </div>
+  </div>
+  {% endfor %}
+</body>
+</html>

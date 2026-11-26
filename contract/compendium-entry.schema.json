@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dnd-sheet.local/contract/compendium-entry.schema.json",
+  "title": "CompendiumEntry",
+  "description": "Один запис довідника (клас, підклас, вид, передісторія, риса, опційне вміння, закляття, предмет, монстр, правило). Джерело — content/sources.yml.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "schema", "source_id", "category", "name_en", "edition", "license", "text_en", "status"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+/[a-z-]+/[a-z0-9./-]+$",
+      "description": "<source_id>/<category>/<slug>"
+    },
+    "schema": { "type": "string", "const": "compendium-entry/1" },
+    "source_id": { "type": "string", "minLength": 1 },
+    "category": {
+      "type": "string",
+      "enum": [
+        "class",
+        "subclass",
+        "species",
+        "background",
+        "feat",
+        "optionalfeature",
+        "spell",
+        "item",
+        "monster",
+        "rule"
+      ]
+    },
+    "name_en": { "type": "string", "minLength": 1 },
+    "name_uk": { "type": ["string", "null"], "default": null },
+    "edition": { "type": "string", "const": "2014" },
+    "license": {
+      "type": "string",
+      "enum": ["srd", "proprietary", "free", "third_party"]
+    },
+    "url": { "type": ["string", "null"] },
+    "page": { "type": ["integer", "null"] },
+    "text_en": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Тіло запису в markdown, як у книзі. Переклад зберігається окремо (text_uk)."
+    },
+    "text_uk": { "type": ["string", "null"], "default": null },
+    "data": {
+      "type": "object",
+      "description": "Структуровані поля категорії. Набір ключів залежить від category; невідоме лишається null.",
+      "additionalProperties": true
+    },
+    "status": {
+      "type": "string",
+      "enum": ["raw", "parsed", "reviewed", "translated", "verified"]
+    },
+    "fetched_at": { "type": ["string", "null"] },
+    "notes": { "type": ["array", "null"], "items": { "type": "string" } }
+  }
+}

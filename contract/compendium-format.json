@@ -1,0 +1,183 @@
+{
+  "$comment": "Канонічний формат записів довідника: одна категорія — одна форма. Це джерело істини для scripts/normalize і для тестів. Якщо міняєте ключі або скелет тексту тут — проженіть `python -m scripts.normalize --write`, інакше корпус розійдеться зі специфікацією.",
+  "schema": "compendium-format/1",
+  "entry_keys": [
+    "id",
+    "schema",
+    "source_id",
+    "category",
+    "name_en",
+    "name_uk",
+    "edition",
+    "license",
+    "url",
+    "page",
+    "text_en",
+    "text_uk",
+    "data",
+    "status",
+    "fetched_at",
+    "notes"
+  ],
+  "categories": {
+    "spell": {
+      "text": "spell-block",
+      "data": {
+        "level": "int",
+        "school": "str",
+        "ritual": "bool",
+        "concentration": "bool",
+        "casting_time": "str",
+        "range": "str",
+        "components": "str",
+        "duration": "str",
+        "classes": "lower",
+        "at_higher_levels": "str"
+      }
+    },
+    "species": {
+      "text": "prose",
+      "data": {
+        "ability_increases": "ability_increases",
+        "size": "str_lower",
+        "speed": "int",
+        "subrace_of": "str"
+      }
+    },
+    "background": {
+      "text": "prose",
+      "data": {
+        "feature": "str"
+      }
+    },
+    "feat": {
+      "text": "prose",
+      "data": {
+        "prerequisite": "str"
+      }
+    },
+    "optionalfeature": {
+      "$comment": "Опційні вміння класів: invocations, maneuvers, metamagic, fighting styles, infusions, runes. Це не риси (feat) і не вміння підкласу: їх вибирають усередині вміння класу, і в книзі вони лежать окремим списком.",
+      "text": "prose",
+      "data": {
+        "feature_type": "lower",
+        "prerequisite": "str"
+      }
+    },
+    "class": {
+      "text": "section",
+      "data": {}
+    },
+    "subclass": {
+      "text": "prose",
+      "data": {
+        "class": "str",
+        "level": "int"
+      }
+    },
+    "item": {
+      "text": "prose",
+      "data": {
+        "item_type": "str",
+        "rarity": "str_lower",
+        "magical": "bool",
+        "attunement": "bool",
+        "base_item": "str",
+        "group": "str",
+        "cost": "str",
+        "weight": "str",
+        "armor_class": "str",
+        "damage": "str",
+        "properties": "str",
+        "stealth": "str",
+        "strength": "str"
+      }
+    },
+    "monster": {
+      "text": "prose",
+      "data": {
+        "size": "str_lower",
+        "creature_type": "str_lower",
+        "subtype": "str",
+        "alignment": "str_lower",
+        "armor_class": "int",
+        "hit_points": "int",
+        "hit_dice": "str",
+        "speed": "str",
+        "abilities": "abilities",
+        "challenge_rating": "str",
+        "xp": "int",
+        "saving_throws": "str",
+        "skills": "str",
+        "damage_vulnerabilities": "str",
+        "damage_resistances": "str",
+        "damage_immunities": "str",
+        "condition_immunities": "str",
+        "senses": "str",
+        "languages": "str"
+      }
+    },
+    "rule": {
+      "text": "section",
+      "data": {}
+    }
+  },
+  "corpora": {
+    "$comment": "Корпус — окрема тека з записами. Монстри живуть поза компендіумом: у листі персонажа вони не задіяні, а їхній обсяг перевищує решту сутностей разом. Формат запису в обох корпусах однаковий, тому читач спільний.",
+    "compendium": {
+      "dir": "content/compendium",
+      "categories": [
+        "class",
+        "subclass",
+        "species",
+        "background",
+        "feat",
+        "optionalfeature",
+        "spell",
+        "item",
+        "rule"
+      ],
+      "used_by_sheet": true,
+      "note": "усе, з чого збирається лист персонажа"
+    },
+    "bestiary": {
+      "dir": "content/bestiary",
+      "categories": [
+        "monster"
+      ],
+      "used_by_sheet": false,
+      "note": "статблоки; листок їх не читає, але корпус повний"
+    }
+  },
+  "refine": {
+    "$comment": "Механічне виправлення категорії: сторінка-розділ не має лежати серед сутностей, а закляття, що потрапило в монстрів, має називатися закляттям.",
+    "entity_categories": [
+      "spell",
+      "species",
+      "background",
+      "feat",
+      "class",
+      "subclass",
+      "item",
+      "monster"
+    ],
+    "chapter_prefixes": [
+      "chapter",
+      "appendix",
+      "part"
+    ],
+    "section_titles": [
+      "spells",
+      "spell lists",
+      "equipment",
+      "magic items",
+      "monsters",
+      "bestiary",
+      "backgrounds",
+      "races",
+      "classes",
+      "feats",
+      "items"
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dndsheet.local/contract/sheet-document.schema.json",
+  "title": "SheetDocument",
+  "description": "Канонічний документ листка персонажа. Єдине джерело правди для всіх рендерів.",
+  "type": "object",
+  "required": ["schemaVersion", "edition", "title", "pages", "fields"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "edition": { "const": "2014" },
+    "title": { "$ref": "#/$defs/LocalizedText" },
+    "pages": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/Page" } },
+    "fields": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/Field" }
+    }
+  },
+  "$defs": {
+    "LocalizedText": {
+      "type": "object",
+      "required": ["uk", "en"],
+      "additionalProperties": false,
+      "properties": {
+        "uk": { "type": "string" },
+        "en": { "type": "string" },
+        "glossaryId": { "type": ["string", "null"] }
+      }
+    },
+    "Formula": {
+      "type": "object",
+      "required": ["expr"],
+      "additionalProperties": false,
+      "properties": {
+        "expr": { "type": "string", "minLength": 1 },
+        "deps": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Field": {
+      "type": "object",
+      "required": ["id", "type", "value", "origin", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": {
+          "enum": ["text", "number", "longtext", "checkbox", "list", "counter", "formula", "dice"]
+        },
+        "value": {
+          "type": ["string", "integer", "number", "boolean", "null", "array"]
+        },
+        "origin": { "enum": ["input", "computed", "override"] },
+        "label": { "$ref": "#/$defs/LocalizedText" },
+        "hint": { "anyOf": [{ "$ref": "#/$defs/LocalizedText" }, { "type": "null" }] },
+        "editable": { "type": "boolean" },
+        "formula": { "anyOf": [{ "$ref": "#/$defs/Formula" }, { "type": "null" }] }
+      }
+    },
+    "Section": {
+      "type": "object",
+      "required": ["id", "title", "columns", "fields"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "$ref": "#/$defs/LocalizedText" },
+        "columns": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "fields": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      }
+    },
+    "Page": {
+      "type": "object",
+      "required": ["size", "sections"],
+      "additionalProperties": false,
+      "properties": {
+        "size": { "enum": ["A4", "A4-landscape", "A5"] },
+        "sections": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/Section" } }
+      }
+    }
+  }
+}

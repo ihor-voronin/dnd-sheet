@@ -1,0 +1,1218 @@
+# Реєстр джерел (база знань) — D&D 5e, лінійка 2014
+#
+# Призначення: машинний перелік книг, доступних у власній бібліотеці D&D Beyond,
+# з ознаками «що дає листку» і чергою конвеєра. Це індекс, а не текст книг.
+#
+# Наявність звірено 2026-11-25: 33 сорсбуки + 15 пригод. Плюс 1 безкоштовна книга поза бібліотекою (ddvram). # Безкоштовні промо, яких уже не взяти, — docs/books.md §9.1.
+
+meta:
+  version: 1
+  updated: "2026-11-26"
+  edition: "2014"
+  library_checked: "2026-11-25"
+  source_of_truth: "D&D Beyond, My Library, ownership=owned"
+  docs: "docs/books.md"
+  second_source: "5e.tools (неофіційне дзеркало) — docs/books.md §7.4; завантажувач scripts/ingest/fetch_5etools.py"
+  note: "Корпус: 93 джерела в content/sources.yml, з них 92 мають записи (у al тексту немає сутностей). 7272 записи у 9 категоріях: 52 книги власної бібліотеки D&D Beyond (у т. ч. добрані підкласи) + 41 тека, розібрана з дзеркала 5e.tools (scripts/ingest/mirror5e.py): 1714 записів. status=ingested означає, що книгу розібрано; translate/verify — наступні етапи. Перелік тек дзеркала, кількості й пастки — у блоці mirror нижче та docs/books.md §7.4."
+
+# Поля запису:
+#   id         — стабільний ідентифікатор (використовується в compendium_entries.source_id)
+#   title      — оригінальна назва
+#   type       — core | sourcebook | adventure | accessory | promo
+#   tier       — 1 | 1.5 | 2 | 3 | null (черга конвеєра; null = поза скоупом)
+#   ddb        — slug на D&D Beyond (/sources/dnd/<slug>)
+#   license    — srd | proprietary | free | third_party
+#   scope      — sheet | monsters | items | rules | excluded
+#   categories — що саме дає листку
+#   status     — registered | ingested | translated | verified
+
+sources:
+  # ---------- Ядро ----------
+  - id: phb-2014
+    title: "Player's Handbook (2014)"
+    type: core
+    year: 2014
+    tier: 1
+    ddb: phb-2014
+    license: proprietary
+    scope: sheet
+    categories: [class, subclass, species, background, feat, optionalfeature, spell, item, rules]
+    status: ingested
+    note: "12 класів, 40 підкласів, 9 видів, 18 передісторій, 42 риси, 82 опційні вміння (32 інвокації, 17 стихійних дисциплін, 16 маневрів, 8 метамагії, 3 пакти, 16 бойових стилів), ~360 заклять"
+
+  - id: dmg-2014
+    title: "Dungeon Master's Guide (2014)"
+    type: core
+    year: 2014
+    tier: 1
+    ddb: dmg-2014
+    license: proprietary
+    scope: sheet
+    categories: [item, subclass, rules]
+    status: ingested
+    note: "~270 магічних предметів; Death Domain, Oathbreaker"
+
+  - id: mm-2014
+    title: "Monster Manual (2014)"
+    type: core
+    year: 2014
+    tier: 2
+    ddb: mm-2014
+    license: proprietary
+    scope: monsters
+    categories: [monster]
+    status: ingested
+    note: "Тільки бестії: дикі форми, find familiar, find steed, поліморф"
+
+  - id: basic-rules-2014
+    title: "Basic Rules (2014)"
+    type: core
+    year: 2014
+    tier: 1
+    ddb: basic-rules-2014
+    license: srd
+    scope: rules
+    categories: [rules, class, species, spell, item]
+    status: ingested
+    note: "Єдиний legally чистий шар для майбутнього публічного режиму (CC-BY)"
+
+  - id: sac
+    title: "Sage Advice Compendium (2014)"
+    type: accessory
+    year: 2014
+    tier: 1
+    ddb: sac
+    license: free
+    scope: rules
+    categories: [rules]
+    status: ingested
+    note: "Офіційні трактування й еррата — джерело рішень для рушія, не контент"
+
+  # ---------- Tier 1: збірки правил і опцій ----------
+  - id: xgte
+    title: "Xanathar's Guide to Everything"
+    type: sourcebook
+    year: 2017
+    tier: 1
+    ddb: xgte
+    license: proprietary
+    scope: sheet
+    categories: [subclass, spell, feat, optionalfeature, item, rules]
+    status: ingested
+    note: "29 підкласів, 95 заклять, 15 расових рис, 22 опційні вміння (14 інвокацій, 8 аркан-стріл), ~48 предметів"
+
+  - id: tcoe
+    title: "Tasha's Cauldron of Everything"
+    type: sourcebook
+    year: 2020
+    tier: 1
+    ddb: tcoe
+    license: proprietary
+    scope: sheet
+    categories: [subclass, feat, optionalfeature, spell, item, rules]
+    status: ingested
+    note: "26 підкласів, 47 опційних умінь (16 інфузій артифіцера, 8 інвокацій, 7 маневрів, 6 рун, 11 бойових стилів, 2 метамагії, 1 пакт), Optional Class Features (окремий режим рушія), Custom Lineage"
+
+  - id: scag
+    title: "Sword Coast Adventurer's Guide"
+    type: sourcebook
+    year: 2015
+    tier: 1
+    ddb: scag
+    license: proprietary
+    scope: sheet
+    categories: [subclass, background, spell, rules]
+    status: ingested
+    note: "6 унікальних підкласів, фехтувальні кантріпи, 13 передісторій, варіанти напівельфів/тифлінгів"
+
+  - id: ftod
+    title: "Fizban's Treasury of Dragons"
+    type: sourcebook
+    year: 2021
+    tier: 1
+    ddb: ftod
+    license: proprietary
+    scope: sheet
+    categories: [subclass, species, feat, spell, item]
+    status: ingested
+    note: "Drakewarden, Ascendant Dragon; драконороджені; 7 заклять"
+
+  - id: egtw
+    title: "Explorer's Guide to Wildemount"
+    type: sourcebook
+    year: 2020
+    tier: 1
+    ddb: egtw
+    license: proprietary
+    scope: sheet
+    categories: [subclass, spell, species]
+    status: ingested
+    note: "Echo Knight, Chronurgy, Graviturgy; дунамічні закляття; підраси"
+
+  - id: ai
+    title: "Acquisitions Incorporated"
+    type: sourcebook
+    year: 2019
+    tier: 1
+    ddb: ai
+    license: proprietary
+    scope: sheet
+    categories: [species, background, spell]
+    status: ingested
+    note: "Verdan, 5 передісторій, 7 заклять"
+
+  # ---------- Tier 1.5: сетинги й збірки рас ----------
+  - id: vgtm
+    title: "Volo's Guide to Monsters"
+    type: sourcebook
+    year: 2016
+    tier: 1.5
+    ddb: vgtm
+    license: proprietary
+    scope: sheet
+    categories: [species, monster]
+    status: ingested
+    note: "12 монстроподібних видів"
+
+  - id: mtof
+    title: "Mordenkainen's Tome of Foes"
+    type: sourcebook
+    year: 2018
+    tier: 1.5
+    ddb: mtof
+    license: proprietary
+    scope: sheet
+    categories: [species, feat, monster]
+    status: ingested
+    note: "Підраси, гіти, варіанти тифлінгів; 1 риса"
+
+  - id: motm
+    title: "Mordenkainen Presents: Monsters of the Multiverse"
+    type: sourcebook
+    year: 2022
+    tier: 1.5
+    ddb: motm
+    license: proprietary
+    scope: sheet
+    categories: [species, monster]
+    status: ingested
+    note: "33 види/підраси у переглянутих версіях; закриває втрату EEPC"
+
+  - id: ggtr
+    title: "Guildmasters' Guide to Ravnica"
+    type: sourcebook
+    year: 2018
+    tier: 1.5
+    ddb: ggtr
+    license: proprietary
+    scope: sheet
+    categories: [species, subclass, background]
+    status: ingested
+    note: "5 видів, Order Domain, Circle of Spores, 10 передісторій"
+
+  - id: erftlw
+    title: "Eberron: Rising from the Last War"
+    type: sourcebook
+    year: 2019
+    tier: 1.5
+    ddb: erftlw
+    license: proprietary
+    scope: sheet
+    categories: [class, species, item, background]
+    status: ingested
+    note: "Клас Artificer, 4 види, драконячі мітки"
+
+  - id: moot
+    title: "Mythic Odysseys of Theros"
+    type: sourcebook
+    year: 2020
+    tier: 1.5
+    ddb: moot
+    license: proprietary
+    scope: sheet
+    categories: [species, subclass, rules]
+    status: ingested
+    note: "4 види, Oath of Glory, College of Eloquence, Piety"
+
+  - id: vrgtr
+    title: "Van Richten's Guide to Ravenloft"
+    type: sourcebook
+    year: 2021
+    tier: 1.5
+    ddb: vrgtr
+    license: proprietary
+    scope: sheet
+    categories: [species, subclass, feat]
+    status: ingested
+    note: "Dhampir, Hexblood, Reborn; College of Spirits, The Undead; Dark Gifts"
+
+  - id: sacoc
+    title: "Strixhaven: A Curriculum of Chaos"
+    type: sourcebook
+    year: 2021
+    tier: 1.5
+    ddb: sacoc
+    license: proprietary
+    scope: sheet
+    categories: [species, background, feat, spell]
+    status: ingested
+    note: "Owlin, 5 передісторій, 2 риси, 5 заклять"
+
+  - id: sais
+    title: "Spelljammer: Adventures in Space"
+    type: sourcebook
+    year: 2022
+    tier: 1.5
+    ddb: sais
+    license: proprietary
+    scope: sheet
+    categories: [species, item, monster, rules]
+    status: ingested
+    note: "6 видів ( Astral Elf, Autognome, Giff, Hadozee, Plasmoid, Thri-kreen )"
+
+  - id: tbomt
+    title: "The Book of Many Things"
+    type: sourcebook
+    year: 2023
+    tier: 1.5
+    ddb: tbomt
+    license: proprietary
+    scope: sheet
+    categories: [spell, feat, background, item]
+    status: ingested
+    note: "3 закляття, 1 риса, 2 передісторії, ~58 предметів"
+
+  - id: twbtw
+    title: "The Wild Beyond the Witchlight"
+    type: adventure
+    year: 2021
+    tier: 1.5
+    ddb: twbtw
+    license: proprietary
+    scope: sheet
+    categories: [species, background]
+    status: ingested
+    note: "Fairy, Harengon, Feylost, Witchlight Hand (у DDB — пригода)"
+
+  - id: ttp
+    title: "The Tortle Package"
+    type: accessory
+    year: 2017
+    tier: 1.5
+    ddb: ttp
+    license: proprietary
+    scope: sheet
+    categories: [species]
+    status: ingested
+    note: "Вид Tortle"
+
+  - id: oga
+    title: "One Grung Above"
+    type: accessory
+    year: 2017
+    tier: 1.5
+    ddb: oga
+    license: proprietary
+    scope: sheet
+    categories: [species]
+    status: ingested
+    note: "Вид Grung"
+
+  - id: wgte
+    title: "Wayfinder's Guide to Eberron"
+    type: sourcebook
+    year: 2018
+    tier: 1.5
+    ddb: wgte
+    license: proprietary
+    scope: sheet
+    categories: [species]
+    status: ingested
+    note: "Застарілий попередник erftlw; внесено, але в застосунку краще брати види з erftlw"
+
+  - id: dod
+    title: "Domains of Delight: A Feywild Accessory"
+    type: accessory
+    year: 2021
+    tier: 3
+    ddb: dod
+    license: free
+    scope: rules
+    categories: [rules, monster]
+    status: ingested
+    note: "Фейвайлд-домени; опційно"
+
+  # ---------- Tier 3: пригоди з предметами / передісторіями ----------
+  - id: pota
+    title: "Princes of the Apocalypse"
+    type: adventure
+    year: 2015
+    tier: 3
+    ddb: pota
+    license: proprietary
+    scope: items
+    categories: [item, spell]
+    status: ingested
+    note: "Предмети; містить закляття EEPC, яких немає окремо"
+
+  - id: skt
+    title: "Storm King's Thunder"
+    type: adventure
+    year: 2016
+    tier: 3
+    ddb: skt
+    license: proprietary
+    scope: items
+    categories: [item]
+    status: ingested
+    note: "~17 предметів"
+
+  - id: tod
+    title: "Tyranny of Dragons"
+    type: adventure
+    year: 2019
+    tier: 3
+    ddb: tod
+    license: proprietary
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: wdh
+    title: "Waterdeep: Dragon Heist"
+    type: adventure
+    year: 2018
+    tier: 3
+    ddb: wdh
+    license: proprietary
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: wdotmm
+    title: "Waterdeep: Dungeon of the Mad Mage"
+    type: adventure
+    year: 2018
+    tier: 3
+    ddb: wdotmm
+    license: proprietary
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: cm
+    title: "Candlekeep Mysteries"
+    type: adventure
+    year: 2021
+    tier: 3
+    ddb: cm
+    license: proprietary
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: tftyp
+    title: "Tales from the Yawning Portal"
+    type: adventure
+    year: 2017
+    tier: 3
+    ddb: tftyp
+    license: proprietary
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: llok
+    title: "Lost Laboratory of Kwalish"
+    type: adventure
+    year: 2018
+    tier: 3
+    ddb: llok
+    license: proprietary
+    scope: items
+    categories: [spell, item]
+    status: ingested
+    note: "3 закляття, 8 предметів"
+
+  - id: cotn
+    title: "Critical Role: Call of the Netherdeep"
+    type: adventure
+    year: 2022
+    tier: 3
+    ddb: cotn
+    license: proprietary
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: lmop
+    title: "Lost Mine of Phandelver"
+    type: adventure
+    year: 2014
+    tier: 3
+    ddb: lmop
+    license: proprietary
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: wa
+    title: "Frozen Sick"
+    type: adventure
+    year: 2020
+    tier: 3
+    ddb: wa
+    license: free
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: lke
+    title: "Lightning Keep"
+    type: adventure
+    year: 2023
+    tier: 3
+    ddb: lke
+    license: free
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: p13
+    title: "Prisoner 13"
+    type: adventure
+    year: 2023
+    tier: 3
+    ddb: p13
+    license: free
+    scope: items
+    categories: [item]
+    status: ingested
+
+  - id: ddia-mord
+    title: "Rrakkma"
+    type: adventure
+    year: 2018
+    tier: 3
+    ddb: ddia-mord
+    license: free
+    scope: items
+    categories: [item]
+    status: ingested
+
+  # ---------- Безкоштовне поза бібліотекою (перевірено 25.11.2026) ----------
+  # D&D vs. Rick and Morty читається без покупки, тому його беремо.
+  # Інші дев'ять «безкоштовних» позицій каталогу (Baldur's Gate Gazetteer,
+  # Descent into the Lost Caverns of Tsojcanth, Giants of the Star Forge,
+  # Intro to Stormwreck Isle, Legendary Magic Items, Monstrous Compendium
+  # Vol. 3, Spelljammer Academy, The Radiant Citadel, Thieves' Gallery)
+  # відкривають claim-сторінку з написом «This promotion is no longer
+  # available» або ведуть у маркетплейс — контенту в акаунті немає, тягнути
+  # нічого. Деталі — docs/books.md §9.
+  - id: ddvram
+    title: "Dungeons & Dragons vs. Rick and Morty"
+    type: adventure
+    year: 2019
+    tier: 3
+    ddb: ddvram
+    license: free
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "Безкоштовний кросовер-бокс; читається без покупки"
+
+  # ---------- Поза скоупом листка ----------
+  - id: ua
+    title: "Unearthed Arcana"
+    type: promo
+    year: 2014
+    tier: 3
+    ddb: ua
+    license: free
+    scope: rules
+    categories: []
+    status: ingested
+    note: "Плейтест-статті WotC; внесено як rule, у білдері не використовується"
+
+  - id: mpmv1
+    title: "Misplaced Monsters: Volume One"
+    type: promo
+    year: 2023
+    tier: null
+    ddb: mpmv1
+    license: free
+    scope: monsters
+    categories: [monster]
+    status: ingested
+
+  - id: mcv1
+    title: "Monstrous Compendium Vol. 1: Spelljammer Creatures"
+    type: promo
+    year: 2022
+    tier: null
+    ddb: mcv1
+    license: free
+    scope: monsters
+    categories: [monster]
+    status: ingested
+
+  - id: mcv2
+    title: "Monstrous Compendium Vol. 2: Dragonlance Creatures"
+    type: promo
+    year: 2022
+    tier: null
+    ddb: mcv2
+    license: free
+    scope: monsters
+    categories: [monster]
+    status: ingested
+
+  - id: mcv4
+    title: "Monstrous Compendium Vol. 4: Eldraine Creatures"
+    type: promo
+    year: 2023
+    tier: null
+    ddb: mcv4
+    license: free
+    scope: monsters
+    categories: [monster]
+    status: ingested
+
+  - id: mffv1
+    title: "Mordenkainen's Fiendish Folio Volume 1"
+    type: promo
+    year: 2019
+    tier: null
+    ddb: mffv1
+    license: free
+    scope: monsters
+    categories: [monster]
+    status: ingested
+
+  - id: tvd
+    title: "The Vecna Dossier"
+    type: promo
+    year: 2022
+    tier: null
+    ddb: tvd
+    license: free
+    scope: monsters
+    categories: [monster]
+    status: ingested
+
+  - id: hcs
+    title: "Humblewood Campaign Setting"
+    type: sourcebook
+    year: 2019
+    tier: 1.5
+    ddb: hcs
+    license: third_party
+    scope: sheet
+    categories: [species, subclass, background, spell, item]
+    status: ingested
+    note: "Третя сторона (Hit Point Press); внесено з license: third_party, вмикати окремим прапорцем"
+
+  # ---------- Куплено в PDF (немає в бібліотеці D&D Beyond) ----------
+  - id: gotg
+    title: "Bigby Presents: Glory of the Giants"
+    type: sourcebook
+    year: 2023
+    tier: 1
+    ddb: gotg
+    license: proprietary
+    scope: sheet
+    categories: [subclass, background, feat, item, rules]
+    status: ingested
+    note: "Друковане видання (PDF, 200 с., скан без текстового шару) → OCR → content/raw/gotg-pdf, записи: 1 підклас (Path of the Giant), 2 передісторії, 8 рис, 27 предметів, 5 правил. Звірено з другим незалежним OCR тієї самої книги: 37 із 41 записів повністю пояснюються книгою, 4 — випадки, де другий OCR гірший (див. scripts/pdf/validate_ref.py). Розділи 2–4, 6 і «Big Heroes, Big Stories» лишились лише в OCR-тексті: для листка не потрібні"
+
+  - id: eepc
+    title: "Elemental Evil Player's Companion"
+    type: sourcebook
+    year: 2015
+    tier: 1.5
+    ddb: eepc
+    license: free
+    scope: sheet
+    categories: [species, spell, rules]
+    status: ingested
+    note: "Безкоштовний PDF (25 с.) зі справжнім текстовим шаром — без OCR. 8 записів видів (Aarakocra, Deep Gnome як підраса гнома, Genasi + 4 підраси, Goliath), 43 закляття (8 кантріпів + 35 рівневих), 2 правила. Нового контенту нуль: усі 43 закляття вже в pota і xgte, раси — в motm/mtof/vgtm/egtw. Цінність — першоджерело; звірка: scripts/pdf/validate_eepc.py (0 структурних проблем)"
+
+  - id: sotdq
+    title: "Dragonlance: Shadow of the Dragon Queen"
+    type: adventure
+    year: 2022
+    tier: 1.5
+    license: proprietary
+    scope: sheet
+    language: ru
+    categories: [species, subclass, background, feat, item, monster, rules]
+    status: ingested
+    source_file: "PDF, 205 с., російський фанатський переклад (оригіналу немає)"
+    pipeline: "scripts/pdf/build_sotdq.py (текстовий шар, без OCR)"
+    note: "49 записів: 1 вид (Kender, варіант виду), 1 підклас (Lunar Sorcery), 2 передісторії (Knight of Solamnia, Mage of High Sorcery), 9 рис, 9 предметів (додаток А), 22 статблоки (додаток Б: драконіди, драконнелі, дракони смерті, Лорд Сот, Канзальді, Red Ruin…). Текст записів — російською, як у книзі; `data` перекладено в канонічний словник корпусу (small/huge, undead, legendary…). Заклять немає: книга не додає жодного. Напарники з додатку В (6 статблоків рівнів 1-X) не внесені: їхні блоки починаються не з рядка типу істоти, а з рівня класу"
+
+
+
+
+# ---------- З дзеркала 5e.tools ----------
+# Книги, чий текст узяли з дзеркала (не з власної бібліотеки D&D Beyond):
+# розібрано 2026-11-26, license=proprietary там, де безкоштовність не
+# підтверджена. Поле mirror — id книги на 5e.tools (він же суфікс URL).
+  - id: aitfr-avt
+    title: "Adventures in the Forgotten Realms: A Verdant Tomb"
+    type: adventure
+    year: 2021
+    tier: 3
+    mirror: AitFR-AVT
+    license: free
+    scope: sheet
+    categories: [spell, item]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 закляття, 3 предмети"
+  - id: aitfr-thp
+    title: "Adventures in the Forgotten Realms: The Hidden Page"
+    type: adventure
+    year: 2021
+    tier: 3
+    mirror: AitFR-THP
+    license: free
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 предмет, 3 статблоки"
+  - id: al
+    title: "Adventurers League"
+    type: accessory
+    year: 2016
+    tier: 3
+    mirror: AL
+    license: free
+    scope: excluded
+    status: ingested
+    note: "Текст книги на дзеркалі є, але жодної сутності для листка вона не дає"
+  - id: awm
+    title: "Adventure with Muk"
+    type: sourcebook
+    year: 2019
+    tier: 3
+    mirror: AWM
+    license: free
+    scope: sheet
+    categories: [species, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 вид, 11 статблоків"
+  - id: azfyt
+    title: "A Zib for Your Thoughts"
+    type: adventure
+    year: 2019
+    tier: 3
+    mirror: AZfyT
+    license: free
+    scope: items
+    categories: [item]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 предмет"
+  - id: bam
+    title: "Boo's Astral Menagerie"
+    type: sourcebook
+    year: 2022
+    tier: 3
+    mirror: BAM
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 предмет, 72 статблоки"
+  - id: bgdia
+    title: "Baldur's Gate: Descent Into Avernus"
+    type: adventure
+    year: 2019
+    tier: 3
+    mirror: BGDIA
+    license: proprietary
+    scope: sheet
+    categories: [background, item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 14 передісторій, 13 предметів, 53 статблоки"
+  - id: coa
+    title: "Chains of Asmodeus"
+    type: adventure
+    year: 2023
+    tier: 3
+    mirror: CoA
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 24 предмети, 61 статблок"
+  - id: cos
+    title: "Curse of Strahd"
+    type: adventure
+    year: 2016
+    tier: 3
+    mirror: CoS
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 14 предметів, 97 статблоків"
+  - id: dc
+    title: "Essentials Kit: Divine Contention"
+    type: adventure
+    year: 2019
+    tier: 3
+    mirror: DC
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 2 предмети, 5 статблоків"
+  - id: ditlcot
+    title: "Descent into the Lost Caverns of Tsojcanth"
+    type: adventure
+    year: 2024
+    tier: 3
+    mirror: DitLCoT
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 3 предмети, 1 статблок"
+  - id: gos
+    title: "Ghosts of Saltmarsh"
+    type: adventure
+    year: 2019
+    tier: 3
+    mirror: GoS
+    license: proprietary
+    scope: sheet
+    categories: [background, item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 4 передісторії, 6 предметів, 57 статблоків"
+  - id: hftt
+    title: "Hunt for the Thessalhydra"
+    type: adventure
+    year: 2019
+    tier: 3
+    mirror: HftT
+    license: free
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 предмет, 3 статблоки"
+  - id: hotdq
+    title: "Hoard of the Dragon Queen"
+    type: adventure
+    year: 2014
+    tier: 3
+    mirror: HotDQ
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 6 предметів, 23 статблоки"
+  - id: idrotf
+    title: "Icewind Dale: Rime of the Frostmaiden"
+    type: adventure
+    year: 2020
+    tier: 3
+    mirror: IDRotF
+    license: proprietary
+    scope: sheet
+    categories: [spell, item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 2 закляття, 31 предмет, 83 статблоки"
+  - id: imr
+    title: "Infernal Machine Rebuild"
+    type: adventure
+    year: 2019
+    tier: 3
+    mirror: IMR
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 11 предметів, 26 статблоків"
+  - id: jttrc
+    title: "Journeys through the Radiant Citadel"
+    type: adventure
+    year: 2022
+    tier: 3
+    mirror: JttRC
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 5 предметів, 71 статблок"
+  - id: kftgv
+    title: "Keys from the Golden Vault"
+    type: adventure
+    year: 2023
+    tier: 3
+    mirror: KftGV
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 8 предметів, 57 статблоків"
+  - id: lox
+    title: "Light of Xaryxis"
+    type: adventure
+    year: 2022
+    tier: 3
+    mirror: LoX
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 предмет, 15 статблоків"
+  - id: lr
+    title: "Locathah Rising"
+    type: adventure
+    year: 2019
+    tier: 3
+    mirror: LR
+    license: proprietary
+    scope: sheet
+    categories: [species, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 вид, 6 статблоків"
+  - id: mabjov
+    title: "Minsc and Boo's Journal of Villainy"
+    type: sourcebook
+    year: 2021
+    tier: 3
+    mirror: MaBJoV
+    license: proprietary
+    scope: monsters
+    categories: [monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 56 статблоків"
+  - id: mgelft
+    title: "Muk's Guide to Everything He Learned From Tasha"
+    type: sourcebook
+    year: 2020
+    tier: 3
+    mirror: MGELFT
+    license: free
+    scope: monsters
+    categories: [monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 6 статблоків"
+  - id: mpp
+    title: "Morte's Planar Parade"
+    type: sourcebook
+    year: 2023
+    tier: 3
+    mirror: MPP
+    license: proprietary
+    scope: monsters
+    categories: [monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 54 статблоки"
+  - id: nrh-at
+    title: "NERDS Restoring Harmony: Adventure Together"
+    type: adventure
+    year: 2021
+    tier: 3
+    mirror: NRH-AT
+    license: free
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 2 предмети, 3 статблоки"
+  - id: nrh-tlt
+    title: "NERDS Restoring Harmony: The Lost Tomb"
+    type: adventure
+    year: 2021
+    tier: 3
+    mirror: NRH-TLT
+    license: free
+    scope: items
+    categories: [item]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 предмет"
+  - id: oota
+    title: "Out of the Abyss"
+    type: adventure
+    year: 2015
+    tier: 3
+    mirror: OotA
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 18 предметів, 101 статблок"
+  - id: pabtso
+    title: "Phandelver and Below: The Shattered Obelisk"
+    type: adventure
+    year: 2023
+    tier: 3
+    mirror: PaBTSO
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 23 предмети, 56 статблоків"
+  - id: ps-amonkhet
+    title: "Plane Shift: Amonkhet"
+    type: sourcebook
+    year: 2017
+    tier: 3
+    mirror: PS-A
+    license: free
+    scope: sheet
+    categories: [subclass, species, background, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 5 підкласів, 7 видів, 4 передісторії, 24 статблоки"
+  - id: ps-dominaria
+    title: "Plane Shift: Dominaria"
+    type: sourcebook
+    year: 2018
+    tier: 3
+    mirror: PS-D
+    license: free
+    scope: sheet
+    categories: [species, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 2 види, 7 статблоків"
+  - id: ps-innistrad
+    title: "Plane Shift: Innistrad"
+    type: sourcebook
+    year: 2016
+    tier: 3
+    mirror: PS-I
+    license: free
+    scope: sheet
+    categories: [species, background, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 4 види, 1 передісторія, 20 статблоків"
+  - id: ps-ixalan
+    title: "Plane Shift: Ixalan"
+    type: sourcebook
+    year: 2018
+    tier: 3
+    mirror: PS-X
+    license: free
+    scope: sheet
+    categories: [species, feat, item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 7 видів, 1 риса, 50 предметів, 47 статблоків"
+  - id: ps-kaladesh
+    title: "Plane Shift: Kaladesh"
+    type: sourcebook
+    year: 2017
+    tier: 3
+    mirror: PS-K
+    license: free
+    scope: sheet
+    categories: [subclass, species, feat, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 підклас, 7 видів, 2 риси, 27 статблоків"
+  - id: ps-zendikar
+    title: "Plane Shift: Zendikar"
+    type: sourcebook
+    year: 2016
+    tier: 3
+    mirror: PS-Z
+    license: free
+    scope: sheet
+    categories: [species, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 18 видів, 43 статблоки"
+  - id: qftis
+    title: "Quests from the Infinite Staircase"
+    type: adventure
+    year: 2024
+    tier: 3
+    mirror: QftIS
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 11 предметів, 49 статблоків"
+  - id: rmbre
+    title: "The Lost Dungeon of Rickedness: Big Rick Energy"
+    type: adventure
+    year: 2019
+    tier: 3
+    mirror: RMBRE
+    license: free
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 предмет, 9 статблоків"
+  - id: rot
+    title: "Rise of Tiamat"
+    type: adventure
+    year: 2014
+    tier: 3
+    mirror: RoT
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 3 предмети, 25 статблоків"
+  - id: sato
+    title: "Sigil and the Outlands"
+    type: sourcebook
+    year: 2023
+    tier: 3
+    mirror: SatO
+    license: proprietary
+    scope: sheet
+    categories: [background, feat, spell, item]
+    status: ingested
+    note: "З дзеркала 5e.tools: 2 передісторії, 7 рис, 2 закляття, 5 предметів"
+  - id: sdw
+    title: "Essentials Kit: Sleeping Dragon's Wake"
+    type: adventure
+    year: 2019
+    tier: 3
+    mirror: SDW
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 1 предмет, 6 статблоків"
+  - id: toa
+    title: "Tomb of Annihilation"
+    type: adventure
+    year: 2017
+    tier: 3
+    mirror: ToA
+    license: proprietary
+    scope: sheet
+    categories: [background, item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 2 передісторії, 27 предметів, 89 статблоків"
+  - id: veor
+    title: "Vecna: Eve of Ruin"
+    type: adventure
+    year: 2024
+    tier: 3
+    mirror: VEoR
+    license: proprietary
+    scope: items
+    categories: [item, monster]
+    status: ingested
+    note: "З дзеркала 5e.tools: 3 предмети, 69 статблоків"
+  - id: xmts
+    title: "X Marks the Spot"
+    type: adventure
+    year: 2017
+    tier: 3
+    mirror: XMtS
+    license: free
+    scope: items
+    categories: [item]
+    status: ingested
+    note: "З дзеркала 5e.tools: 6 предметів"
+# Безкоштовне офіційне поза ядром: PDF-супутники WotC і безкоштовні модулі
+# Adventurers League. Файлів ще немає (status: planned) — записи описують, що
+# саме кожне джерело додає до листка, щоб конвеєр мав куди писати результат.
+# Деталі: docs/books.md §11.
+free_official:
+  - id: ddia01
+    title: "DDIA01: Defiance in Phlan"
+    type: adventure
+    year: 2014
+    license: free
+    scope: sheet
+    status: planned
+    adds: "правила модуля; нових опцій немає"
+  - id: ddia02
+    title: "DDIA02: The Dwarves of the Silver Marches"
+    type: adventure
+    year: 2014
+    license: free
+    scope: sheet
+    status: planned
+    adds: "правила модуля"
+  - id: ddia03
+    title: "DDIA03: A Night of Fangs and Steel"
+    type: adventure
+    year: 2015
+    license: free
+    scope: sheet
+    status: planned
+    adds: "правила модуля"
+  - id: ddia04
+    title: "DDIA04: Lair of the Grey Wolves"
+    type: adventure
+    year: 2015
+    license: free
+    scope: sheet
+    status: planned
+    adds: "правила модуля"
+  - id: ddia05
+    title: "DDIA05: A Great Upheaval"
+    type: adventure
+    year: 2015
+    license: free
+    scope: sheet
+    status: planned
+    adds: "правила модуля; пролог Storm King's Thunder"
+  # --- DMs Guild: офіційне від WotC поза ядром ---
+  - id: hotdq-supplement
+    title: "Tyranny of Dragons: online supplement"
+    type: supplement
+    year: 2014
+    license: free
+    scope: sheet
+    status: planned
+    adds: "монстри Hoard of the Dragon Queen / Rise of Tiamat"
+  - id: pota-supplement
+    title: "Princes of the Apocalypse: online supplement"
+    type: supplement
+    year: 2015
+    license: free
+    scope: sheet
+    status: planned
+    adds: "монстри й правила пригоди"
+  - id: blood-hunter
+    title: "Blood Hunter (Critical Role, DMs Guild)"
+    type: class
+    year: 2015
+    license: third_party
+    scope: sheet
+    status: planned
+    adds: "клас Blood Hunter + 4 підкласи; не WotC, тому license: third_party"
+
+# Прогалини — те, чого в корпусі немає й не буде з доступних джерел.
+# Деталі: docs/books.md §11. Усе, що можна було взяти з дзеркала 5e.tools,
+# узято й розібрано (див. блок mirror нижче).
+gaps:
+  - id: not-on-ddb
+    title: "AL-модулі, Runeterra, Blood Hunter, третя сторона"
+    status: unavailable
+    note: "State of Hillsfar / Mulmaster Bonds / CoS: Optional Backgrounds на дзеркалі відсутні — перевірено: книга AL містить лише Faction Guide, а в backgrounds.json немає жодного запису з source=AL. Лишаються тільки на DMs Guild. Runeterra (Dark Tides of Bilgewater) і Blood Hunter — третя сторона, на дзеркалі їх немає."
+  - id: paitm
+    title: "Planescape: Adventures in the Multiverse"
+    type: sourcebook
+    status: substituted
+    note: "Книги немає в бібліотеці, але її частини — Sigil and the Outlands (sato) і Morte's Planar Parade (mpp) — завантажено з дзеркала й розібрано: 7 рис, 2 передісторії, 2 закляття, 5 предметів, 54 статблоки. Загальних глав про Сіґіл (яких немає ні в SatO, ні в MPP) не буде."
+  - id: optional-features
+    title: "Опційні вміння (invocations, maneuvers, metamagic, fighting styles)"
+    type: supplement
+    status: not-modelled
+    note: "У дзеркалі 233 записи optionalfeature (PHB 82, TCE 47, XGE 22 …), але в контракті немає категорії optionalfeature — спершу її треба додати в contract/compendium-format.json. Поки що ці вміння є лише текстом у записах класів."
+
+# Розібране з дзеркала 5e.tools (scripts/ingest/mirror5e.py).
+# Кількості — з content/{compendium,bestiary}/<тека>/, тобто те, що реально
+# лягло в корпус, а не кількість посилань у тексті книги.
+mirror:
+  dirs: 41
+  records: 1714
+  backfilled_subclasses: 116
+  totals:
+    backgrounds: 27
+    feats: 10
+    species: 47
+    subclasses: 6
+    spells: 5
+    items: 282
+    monsters: 1337
+  note: "8 книг першої хвилі (ToA, CoS, GoS, OotA, IMR, BGDIA, SatO, MPP) + 33 теки другої. Окремо добрано підкласи 8 книг, які вже були в корпусі, але без них (PHB 40, XGE 31, TCE 30, SCAG 6, EGW 3, DMG 2, FTD 2, VRGR 2). Статблоки, що лише посилаються на Monster Manual (_copy), розкриті через content/raw/_index/bestiary/ (MM, VGM, MTF, MPMM, VRGR, SKT, LLK)."
+  empty:
+    - {folder: al, why: "лише Faction Guide — жодної сутності для листка"}

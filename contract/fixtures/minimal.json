@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0",
+  "edition": "2014",
+  "title": { "uk": "Елара Світлотінь", "en": "Elara Twilight" },
+  "pages": [
+    {
+      "size": "A4",
+      "sections": [
+        {
+          "id": "abilities",
+          "title": { "uk": "Характеристики", "en": "Ability Scores" },
+          "columns": 6,
+          "fields": ["str.score", "dex.score", "con.score"]
+        }
+      ]
+    }
+  ],
+  "fields": {
+    "str.score": {
+      "id": "str.score",
+      "type": "number",
+      "value": 16,
+      "origin": "computed",
+      "label": { "uk": "Сила", "en": "Strength", "glossaryId": "ability.str" },
+      "hint": { "uk": "Значення Сили", "en": "Strength score" },
+      "editable": false,
+      "formula": null
+    },
+    "dex.score": {
+      "id": "dex.score",
+      "type": "number",
+      "value": 14,
+      "origin": "computed",
+      "label": { "uk": "Спритність", "en": "Dexterity", "glossaryId": "ability.dex" },
+      "hint": { "uk": "Значення Спритності", "en": "Dexterity score" },
+      "editable": false,
+      "formula": null
+    },
+    "con.score": {
+      "id": "con.score",
+      "type": "number",
+      "value": 12,
+      "origin": "input",
+      "label": { "uk": "Статура", "en": "Constitution", "glossaryId": "ability.con" },
+      "hint": null,
+      "editable": true,
+      "formula": null
+    }
+  }
+}
