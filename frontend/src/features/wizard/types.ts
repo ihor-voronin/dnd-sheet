@@ -40,7 +40,17 @@ export interface SpeciesView {
   darkvision: number;
   resistances: string[];
   ability_unresolved: boolean;
+  shared_cantrips?: string[];
+  cantrip_choice?: { from_class: string; count: number } | null;
+  granted_spells?: { name: string; level: number; min_level: number }[];
   subspecies?: SpeciesView[];
+}
+
+export interface GrantedSpellOption {
+  name_en: string;
+  level: number;
+  source: string;
+  prepared: boolean;
 }
 
 export interface SpellcastingMechanics {
@@ -49,9 +59,15 @@ export interface SpellcastingMechanics {
   prepares: boolean;
 }
 
+export interface SubclassGrants {
+  prepared: string[];
+  expanded: string[];
+}
+
 export interface SubclassView {
   id: string;
   name_en: string;
+  grants?: SubclassGrants;
 }
 
 export interface ClassView {
@@ -69,7 +85,7 @@ export interface ClassView {
   spellcasting: SpellcastingMechanics | null;
   cantrips_at_level_1: number;
   spells_known_at_level_1: number | null;
-  subclass: { title: string; level: number; options: EntryBrief[] } | null;
+  subclass: { title: string; level: number; options: SubclassView[] } | null;
   features: { name_en: string; level: number }[];
 }
 
@@ -141,6 +157,8 @@ export interface SpellsOptions {
   casting: CastingView | null;
   cantrips?: EntryBrief[];
   spells?: EntryBrief[];
+  granted?: GrantedSpellOption[];
+  expanded?: string[];
   hint?: string;
 }
 
@@ -188,11 +206,22 @@ export interface SpellPayload {
   always_prepared?: boolean;
 }
 
+export interface SheetSpell {
+  name_en: string;
+  level: number;
+  class_key: string | null;
+  entry_id: string | null;
+  prepared: boolean;
+  always_prepared: boolean;
+  source: string;
+}
+
 export interface SpeciesAnswers {
   name: string;
   species_key: string | null;
   subspecies_key: string | null;
   ability_choices: string[];
+  spell_choices: string[];
 }
 
 export interface ClassAnswers {
@@ -313,6 +342,7 @@ export interface SheetViewPayload {
   };
   hit_dice: Record<string, number>;
   spellcasting: SheetSpellcasting;
+  spells: SheetSpell[];
   proficiencies: { kind: string; value: string; source: { kind: string; key: string } }[];
   carrying: { capacity: number; weight: number };
   inventory: {

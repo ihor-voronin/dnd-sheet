@@ -26,6 +26,7 @@ import type {
   BackgroundView,
   ClassAnswers,
   ClassView,
+  EntryBrief,
   EquipmentAnswers,
   ItemPayload,
   MoneyPayload,
@@ -59,17 +60,35 @@ function bonusesText(bonuses: Record<string, number>): string {
 // 1. вид
 // ---------------------------------------------------------------------------
 
-export function SpeciesStep({ answers, options, busy, onSubmit }: StepProps<{ species: SpeciesView[] }>) {
+export function SpeciesStep({
+  answers,
+  options,
+  busy,
+  onSubmit,
+}: StepProps<{ species: SpeciesView[]; class_cantrips?: Record<string, EntryBrief[]> }>) {
   const initial = answers as unknown as SpeciesAnswers;
   const [name, setName] = useState(initial.name ?? "");
   const [speciesKey, setSpeciesKey] = useState(initial.species_key ?? "");
   const [subspeciesKey, setSubspeciesKey] = useState(initial.subspecies_key ?? "");
   const [choices, setChoices] = useState<string[]>(initial.ability_choices ?? []);
+  const [spellChoices, setSpellChoices] = useState<string[]>(initial.spell_choices ?? []);
 
   const selected = options.species.find((item) => item.key === speciesKey);
   const children = selected?.subspecies ?? [];
+  const previousSubspecies = useRef(subspeciesKey);
+  useEffect(() => {
+    if (previousSubspecies.current === subspeciesKey) return;
+    previousSubspecies.current = subspeciesKey;
+    setSpellChoices([]);
+  }, [subspeciesKey]);
   const effective = children.find((item) => item.key === subspeciesKey) ?? selected;
   const choice = effective?.ability_choice ?? null;
+  const cantripChoice = effective?.cantrip_choice ?? null;
+  const cantripPool = cantripChoice
+    ? options.class_cantrips?.[cantripChoice.from_class] ?? []
+    : [];
+  const grantedCantrips = effective?.shared_cantrips ?? [];
+  const grantedSpells = effective?.granted_spells ?? [];
 
   // Скидання підрас і вибору — лише коли гравець справді змінив вид,
   // а не коли крок перемальовано з уже збереженою відповіддю.
@@ -79,6 +98,7 @@ export function SpeciesStep({ answers, options, busy, onSubmit }: StepProps<{ sp
     previousSpecies.current = speciesKey;
     setSubspeciesKey("");
     setChoices([]);
+    setSpellChoices([]);
   }, [speciesKey]);
 
   function toggleChoice(ability: string) {
@@ -163,6 +183,50 @@ export function SpeciesStep({ answers, options, busy, onSubmit }: StepProps<{ sp
         </section>
       ) : null}
 
+      {grantedCantrips.length || grantedSpells.length ? (
+        <p className="hint">
+          {grantedCantrips.length
+            ? `Вид дає заговори: ${grantedCantrips.join(", ")}.`
+            : ""}
+          {grantedSpells.length
+            ? ` Уроджені закляття з 1 рівня: ${grantedSpells.map((spell) => spell.name).join(", ")}.`
+            : ""}
+        </p>
+      ) : null}
+
+      {cantripChoice ? (
+        <section className="wizard-block">
+          <h3>Заговір від виду</h3>
+          <p className="hint">
+            {effective?.name_en}: оберіть {cantripChoice.count} заговір зі списку {
+              cantripChoice.from_class === "wizard" ? "візарда" : cantripChoice.from_class
+            }. Обрано {spellChoices.length} з {cantripChoice.count}.
+          </p>
+          <div className="chip-row">
+            {cantripPool.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                className={`chip ${spellChoices.includes(entry.name_en) ? "chip--active" : ""}`}
+                onClick={() =>
+                  setSpellChoices((current) => {
+                    if (current.includes(entry.name_en)) {
+                      return current.filter((item) => item !== entry.name_en);
+                    }
+                    if (cantripChoice.count > 0 && current.length >= cantripChoice.count) {
+                      return current;
+                    }
+                    return [...current, entry.name_en];
+                  })
+                }
+              >
+                {entry.name_en}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {effective ? (
         <p className="hint">
           Разом від виду: {bonusesText(effective.ability_bonuses)}
@@ -174,13 +238,20 @@ export function SpeciesStep({ answers, options, busy, onSubmit }: StepProps<{ sp
       <button
         type="button"
         className="button button--primary"
-        disabled={busy || !name.trim() || !speciesKey || Boolean(choice && choices.length !== choice.count)}
+        disabled={
+          busy ||
+          !name.trim() ||
+          !speciesKey ||
+          Boolean(choice && choices.length !== choice.count) ||
+          Boolean(cantripChoice && spellChoices.length !== cantripChoice.count)
+        }
         onClick={() =>
           onSubmit({
             name: name.trim(),
             species_key: speciesKey,
             subspecies_key: subspeciesKey || null,
             ability_choices: choices,
+            spell_choices: spellChoices,
           })
         }
       >
@@ -258,6 +329,23 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
             ) : null}
           </ul>
         </section>
+      ) : null}
+
+      {selected?.subclass && subclassKey ? (
+        (() => {
+          const option = selected.subclass.options.find((item) => item.id === subclassKey);
+          if (!option?.grants) return null;
+          const { prepared, expanded } = option.grants;
+          if (!prepared.length && !expanded.length) return null;
+          return (
+            <p className="hint">
+              {prepared.length
+                ? `Завжди підготовлені: ${prepared.join(", ")}.`
+                : ""}
+              {expanded.length ? ` Розширений список: ${expanded.join(", ")}.` : ""}
+            </p>
+          );
+        })()
       ) : null}
 
       {needsSubclass && selected?.subclass ? (

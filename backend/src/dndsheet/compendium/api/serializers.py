@@ -109,6 +109,10 @@ def class_mechanics_full(item: ClassMechanics) -> dict[str, Any]:
             name: [{"level": level, "count": count} for level, count in steps]
             for name, steps in item.optional_features.items()
         },
+        "subclass_spells": {
+            key: {"prepared": list(value.prepared), "expanded": list(value.expanded)}
+            for key, value in item.subclass_spells.items()
+        },
         "variants": list(item.variants),
     }
 
@@ -141,6 +145,19 @@ def species_mechanics_full(item: SpeciesMechanics) -> dict[str, Any]:
         "darkvision": item.darkvision,
         "resistances": list(item.resistances),
         "ability_unresolved": item.ability_unresolved,
+        "shared_cantrips": list(item.shared_cantrips),
+        "cantrip_choice": (
+            {
+                "from_class": item.cantrip_choice_class,
+                "count": item.cantrip_choice_count,
+            }
+            if item.cantrip_choice_class
+            else None
+        ),
+        "granted_spells": [
+            {"name": spell.name_en, "level": spell.spell_level, "min_level": spell.min_level}
+            for spell in item.granted_spells
+        ],
         "variants": list(item.variants),
     }
 

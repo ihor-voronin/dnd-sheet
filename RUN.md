@@ -37,7 +37,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest backend -q
 ```
 
-Очікувано: **414 passed, 1 skipped** (скіп — PDF, див. розділ 6).
+Очікувано: **435 passed, 1 skipped** (скіп — PDF, див. розділ 6).
 
 ### 1.2 Фронтенд
 

@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+from types import MappingProxyType
 from typing import Any
 
 from dndsheet.shared.kernel import Ability, Skill
@@ -21,9 +22,11 @@ from dndsheet.shared.rules import (
     CasterProgression,
     ClassFeature,
     ClassMechanics,
+    GrantedSpell,
     Size,
     SkillChoice,
     SpeciesMechanics,
+    SubclassSpells,
 )
 
 A = Ability
@@ -98,6 +101,24 @@ WIZARD = _class(
     spell_slots=CASTER_SLOT_TABLE,
 )
 
+CLERIC = _class(
+    "cleric",
+    "Cleric",
+    8,
+    (A.WIS, A.CHA),
+    skills=(Skill.HISTORY, Skill.INSIGHT, Skill.MEDICINE, Skill.PERSUASION, Skill.RELIGION),
+    spellcasting_ability=A.WIS,
+    caster_progression=CasterProgression.FULL,
+    prepares_spells=True,
+    subclass_level=1,
+    subclass_title="Divine Domain",
+    cantrips_known=(3,) * 20,
+    spell_slots=CASTER_SLOT_TABLE,
+    subclass_spells=MappingProxyType(
+        {"life-domain": SubclassSpells(prepared=("bless", "cure wounds"))}
+    ),
+)
+
 ROGUE = _class(
     "rogue",
     "Rogue",
@@ -134,6 +155,8 @@ TIEFLING = SpeciesMechanics(
     languages=("common", "infernal"),
     darkvision=60,
     resistances=("fire",),
+    shared_cantrips=("thaumaturgy",),
+    granted_spells=(GrantedSpell(name_en="hellish rebuke", spell_level=1, min_level=3),),
 )
 
 ELF = SpeciesMechanics(
@@ -159,6 +182,30 @@ WOOD_ELF = SpeciesMechanics(
     skill_proficiencies=frozenset({Skill.PERCEPTION}),
     languages=("common", "elvish"),
     darkvision=60,
+)
+
+HIGH_ELF = SpeciesMechanics(
+    key="high elf",
+    name_en="High Elf",
+    source_id="PHB",
+    size=Size.MEDIUM,
+    speed=30,
+    subrace_of="elf",
+    ability_bonuses=(AbilityBonus(A.DEX, 2), AbilityBonus(A.INT, 1)),
+    skill_proficiencies=frozenset({Skill.PERCEPTION}),
+    languages=("common", "elvish"),
+    darkvision=60,
+    cantrip_choice_class="wizard",
+    cantrip_choice_count=1,
+)
+
+CUSTOM_LINEAGE = SpeciesMechanics(
+    key="custom lineage",
+    name_en="Custom Lineage",
+    source_id="TCE",
+    size=Size.SMALL,
+    speed=30,
+    ability_unresolved=True,
 )
 
 HALF_ELF = SpeciesMechanics(
@@ -207,9 +254,12 @@ class FixtureRules:
     """`RulesSource` над константами вище."""
 
     def __init__(self) -> None:
-        self._classes = {item.key: item for item in (FIGHTER, WARLOCK, WIZARD, ROGUE)}
+        self._classes = {
+            item.key: item for item in (FIGHTER, WARLOCK, WIZARD, ROGUE, CLERIC)
+        }
         self._species = {
-            item.key: item for item in (HUMAN, TIEFLING, ELF, WOOD_ELF, HALF_ELF)
+            item.key: item
+            for item in (HUMAN, TIEFLING, ELF, WOOD_ELF, HIGH_ELF, HALF_ELF, CUSTOM_LINEAGE)
         }
         self._backgrounds = {
             item.key: item for item in (SOLDIER, ACOLYTE, CRIMINAL)

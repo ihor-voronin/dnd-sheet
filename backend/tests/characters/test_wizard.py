@@ -443,3 +443,37 @@ def test_origin_pick_language_limit(rules) -> None:
             language_any=1,
             label="Half-Elf",
         )
+
+
+# ---------------------------------------------------------------------------
+# заговори виду й підклас на 1 рівні
+# ---------------------------------------------------------------------------
+
+
+def test_high_elf_must_choose_one_cantrip(draft: Draft) -> None:
+    with pytest.raises(ValidationError, match="заговорів"):
+        draft.apply_species(name="Ельф", species_key="elf", subspecies_key="high elf")
+    draft.apply_species(
+        name="Ельф",
+        species_key="elf",
+        subspecies_key="high elf",
+        spell_choices=("fire bolt",),
+    )
+    assert draft.spell_choices == ("fire bolt",)
+    with pytest.raises(ValidationError, match="заговорів"):
+        draft.apply_species(
+            name="Ельф",
+            species_key="elf",
+            subspecies_key="high elf",
+            spell_choices=("fire bolt", "light"),
+        )
+
+
+def test_2022_species_are_rejected(draft: Draft) -> None:
+    with pytest.raises(ValidationError, match="2022"):
+        draft.apply_species(name="Хтось", species_key="custom lineage")
+
+
+def test_class_without_choice_rejects_spell_choices(draft: Draft) -> None:
+    with pytest.raises(ValidationError, match="не дає вибору"):
+        draft.apply_species(name="Людина", species_key="human", spell_choices=("light",))

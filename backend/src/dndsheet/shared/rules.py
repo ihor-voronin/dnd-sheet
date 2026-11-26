@@ -219,6 +219,38 @@ class SkillChoice:
 
 
 @dataclass(frozen=True, slots=True)
+class GrantedSpell:
+    """Закляття, яке дає не клас, а вид: «ви знаєте thaumaturgy».
+
+    `min_level` — рівень персонажа, з якого воно доступне (тифлінг отримує
+    `hellish rebuke` на 3-му). Для 1 рівня беремо лише `min_level == 1`.
+    """
+
+    name_en: str
+    spell_level: int
+    min_level: int = 1
+
+    def __post_init__(self) -> None:
+        if not self.name_en.strip():
+            raise ValidationError("закляття виду без назви")
+        if not 0 <= self.spell_level <= MAX_SPELL_LEVEL:
+            raise ValidationError(f"{self.name_en}: рівень закляття 0..{MAX_SPELL_LEVEL}")
+        _check_level(self.min_level, "рівень появи закляття")
+
+
+@dataclass(frozen=True, slots=True)
+class SubclassSpells:
+    """Закляття підкласу на 1 рівні.
+
+    `prepared` — завжди підготовлені (домен жреця), `expanded` — додані до
+    списку класу, з якого гравець обирає (патрон варлока).
+    """
+
+    prepared: tuple[str, ...] = ()
+    expanded: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ClassFeature:
     """Риса класу: назва й рівень, на якому вона зʼявляється."""
 
@@ -265,6 +297,10 @@ class ClassMechanics:
     multiclass_tools: tuple[str, ...] = ()
     features: tuple[ClassFeature, ...] = ()
     optional_features: Mapping[str, tuple[tuple[int, int], ...]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    #: Закляття підкласів на 1 рівні, ключ — slug id підкласу (life-domain).
+    subclass_spells: Mapping[str, SubclassSpells] = field(
         default_factory=lambda: MappingProxyType({})
     )
     variants: tuple[str, ...] = ()
@@ -339,6 +375,13 @@ class ClassMechanics:
             if step_level <= level:
                 count = step_count
         return count
+
+    def subclass_spells_for(self, subclass_key: str | None) -> SubclassSpells | None:
+        """Закляття підкласу за ключем: id корпусу або slug («life-domain»)."""
+        if not subclass_key:
+            return None
+        slug = subclass_key.strip().casefold().rsplit("/", 1)[-1]
+        return self.subclass_spells.get(slug)
 
     def satisfies_multiclass(self, scores: Mapping[Ability, int]) -> bool:
         """Чи проходить персонаж за вимогами мультикласу (PHB, p. 163).
@@ -417,6 +460,16 @@ class ClassMechanics:
                 if feature.get("name") and feature.get("level")
             ),
             optional_features=MappingProxyType(optional),
+            subclass_spells=MappingProxyType(
+                {
+                    str(key): SubclassSpells(
+                        prepared=tuple(str(name) for name in value.get("prepared") or ()),
+                        expanded=tuple(str(name) for name in value.get("expanded") or ()),
+                    )
+                    for key, value in (record.get("subclass_spells") or {}).items()
+                    if isinstance(value, dict)
+                }
+            ),
             variants=tuple(str(item) for item in record.get("variants") or ()),
         )
 
@@ -451,6 +504,13 @@ class SpeciesMechanics:
     #: Бонуси характеристик не закодовані в дзеркалі (вільний розподіл 2022):
     #: вибір робить гравець, а не таблиця.
     ability_unresolved: bool = False
+    #: Заговори, які вид дає одразу («ви знаєте thaumaturgy»).
+    shared_cantrips: tuple[str, ...] = ()
+    #: Вибір заговору зі списку класу («один заговір візарда» у високого ельфа).
+    cantrip_choice_class: str | None = None
+    cantrip_choice_count: int = 0
+    #: Інші закляття виду на 1 рівні (уроджені, раз на відпочинок).
+    granted_spells: tuple[GrantedSpell, ...] = ()
     variants: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -504,6 +564,20 @@ class SpeciesMechanics:
             resistances=tuple(str(item) for item in record.get("resistances") or ()),
             standard_variant=bool(record.get("standard_variant")),
             ability_unresolved=bool(record.get("ability_unresolved")),
+            shared_cantrips=tuple(str(item) for item in record.get("shared_cantrips") or ()),
+            cantrip_choice_class=_optional_str(
+                (record.get("cantrip_choice") or {}).get("from_class")
+            ),
+            cantrip_choice_count=int((record.get("cantrip_choice") or {}).get("count") or 0),
+            granted_spells=tuple(
+                GrantedSpell(
+                    name_en=str(item.get("name") or ""),
+                    spell_level=int(item.get("level") or 1),
+                    min_level=int(item.get("min_level") or 1),
+                )
+                for item in record.get("granted_spells") or ()
+                if isinstance(item, dict) and item.get("name")
+            ),
             variants=tuple(str(item) for item in record.get("variants") or ()),
         )
 

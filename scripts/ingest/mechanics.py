@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -111,6 +112,144 @@ _ORDINALS = {
 # ---------------------------------------------------------------------------
 # дрібні перетворення
 # ---------------------------------------------------------------------------
+
+
+_SPELL_CHOOSE_CLASS = re.compile(r"class=([A-Za-z0-9]+)")
+
+
+def _slug(value: Any) -> str:
+    """«Life Domain» → «life-domain»: так само, як id у корпусі довідника."""
+    text = plain(str(value or "")).casefold()
+    return re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+
+
+def _spell_tokens(value: Any) -> list[Any]:
+    """Будь-яка форма `additionalSpells` → рядки-посилання й `{"choose": …}`."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        if "choose" in value:
+            return [value]
+        tokens: list[Any] = []
+        for item in value.values():
+            tokens.extend(_spell_tokens(item))
+        return tokens
+    if isinstance(value, list):
+        tokens = []
+        for item in value:
+            tokens.extend(_spell_tokens(item))
+        return tokens
+    return []
+
+
+def _spell_ref(token: str) -> tuple[str, int, int]:
+    """`thaumaturgy#c` → (thaumaturgy, 0, 0); `hellish rebuke#2` → (…, 2, 2).
+
+    Другий елемент — рівень закляття (0 — заговор), третій — рівень, на якому
+    його кастують уроджено (5e.tools пише його після `#`).
+    """
+    text = token.split("|")[0].strip()
+    cast_level = 0
+    if "#" in text:
+        text, _, marker = text.partition("#")
+        if marker.isdigit():
+            cast_level = int(marker)
+        elif marker.casefold() == "c":
+            cast_level = 0
+    name = plain(text).casefold()
+    if not name:
+        return "", 0, 0
+    spell_level = 0 if token.endswith("#c") else (cast_level or 1)
+    return name, spell_level, cast_level
+
+
+def species_spell_grants(row: Mapping[str, Any]) -> tuple[list[str], dict | None, list[dict]]:
+    """Що вид дає **на 1 рівні**: заговори, вибір заговору, уроджені закляття.
+
+    Дивимось лише `known`/`innate` з ключем «1» (або «_» — «одразу»): решта
+    (3-й, 5-й рівень) — це вже підвищення рівня, етап 7.
+    """
+    cantrips: list[str] = []
+    granted: list[dict] = []
+    choice: dict | None = None
+    for block in row.get("additionalSpells") or []:
+        if not isinstance(block, dict):
+            continue
+        for section in ("known", "innate"):
+            data = block.get(section)
+            if not isinstance(data, dict):
+                continue
+            for level_key, value in data.items():
+                if str(level_key) not in ("1", "_"):
+                    continue
+                for token in _spell_tokens(value):
+                    if isinstance(token, dict):
+                        match = _SPELL_CHOOSE_CLASS.search(str(token.get("choose") or ""))
+                        if match:
+                            choice = {
+                                "from_class": match.group(1).casefold(),
+                                "count": int(token.get("count") or 1),
+                            }
+                        continue
+                    name, spell_level, _ = _spell_ref(str(token))
+                    if not name:
+                        continue
+                    if spell_level == 0:
+                        if name not in cantrips:
+                            cantrips.append(name)
+                    elif all(item["name"] != name for item in granted):
+                        granted.append({"name": name, "level": spell_level})
+    return cantrips, choice, granted
+
+
+def subclass_spell_grants(
+    subclasses: list[Any] | None, class_source: str
+) -> dict[str, dict[str, list[str]]]:
+    """Закляття підкласів на 1 рівні: домен жреця й розширений список патрона.
+
+    `prepared` — завжди підготовлені (домен), `expanded` — додані до списку
+    класу (патрон). Ключ — slug назви підкласу, як в id корпусу.
+    """
+    result: dict[str, dict[str, list[str]]] = {}
+    for sub in subclasses or []:
+        if not isinstance(sub, dict):
+            continue
+        source = str(sub.get("classSource") or sub.get("source") or "")
+        if source != class_source:
+            continue
+        slug = _slug(sub.get("name"))
+        if not slug:
+            continue
+        prepared: list[str] = []
+        expanded: list[str] = []
+        for block in sub.get("additionalSpells") or []:
+            if not isinstance(block, dict):
+                continue
+            for section, bucket, keys in (
+                ("prepared", prepared, ("1",)),
+                ("expanded", expanded, ("1", "s1")),
+            ):
+                data = block.get(section)
+                if not isinstance(data, dict):
+                    continue
+                for level_key, value in data.items():
+                    # `prepared` ключується рівнем персонажа (1, 3, 5…),
+                    # `expanded` — рівнем закляття (`s1` для 1 рівня).
+                    if str(level_key) not in keys:
+                        continue
+                    for token in _spell_tokens(value):
+                        if not isinstance(token, str):
+                            continue
+                        name, _, _ = _spell_ref(token)
+                        if name and name not in bucket:
+                            bucket.append(name)
+        if prepared or expanded:
+            entry = result.setdefault(slug, {})
+            if prepared:
+                entry["prepared"] = prepared
+            if expanded:
+                entry["expanded"] = expanded
+    return result
 
 
 def plain(value: Any) -> str:
@@ -293,7 +432,9 @@ def _feature_ref(raw: Any) -> dict[str, Any] | None:
     return {"name": name, "level": level}
 
 
-def class_mechanics(klass: dict, file_name: str) -> dict[str, Any]:
+def class_mechanics(
+    klass: dict, file_name: str, subclasses: list[Any] | None = None
+) -> dict[str, Any]:
     """Один клас 2014 → запис індексу."""
     hd = klass.get("hd") if isinstance(klass.get("hd"), dict) else {}
     hit_die = hd.get("faces")
@@ -455,6 +596,7 @@ def class_mechanics(klass: dict, file_name: str) -> dict[str, Any]:
         "optional_features": optional,
         "starting_equipment": equipment,
         "starting_gold": gold or None,
+        "subclass_spells": subclass_spell_grants(subclasses, str(klass.get("source") or "")),
     }
 
 
@@ -513,7 +655,7 @@ def build_classes() -> tuple[dict[str, dict], dict[str, str], list[str]]:
                 # Хоумбрю (WoW), 2024 і книжки, яких немає в корпусі, — не наші класи.
                 skipped.append(f"{plain(klass['name'])} ({source or '?'})")
                 continue
-            candidate = class_mechanics(klass, path.name)
+            candidate = class_mechanics(klass, path.name, payload.get("subclass"))
             if not candidate["hit_die"]:
                 skipped.append(f"{candidate['name_en']} ({source}): без хіт-дайса")
                 continue
@@ -571,6 +713,7 @@ def species_mechanics(
     """
     fixed, choose = abilities_from_value(row.get("ability"))
     own_fixed = dict(fixed)
+    cantrips, cantrip_choice, granted_spells = species_spell_grants(row)
     skills, skill_any = skills_from_value(row.get("skillProficiencies"))
     languages, languages_any = languages_from_value(row.get("languageProficiencies"))
     weapons = named_proficiencies(row.get("weaponProficiencies"))
@@ -643,6 +786,9 @@ def species_mechanics(
         "languages_any_standard": languages_any,
         "darkvision": darkvision,
         "resistances": resistances,
+        "shared_cantrips": cantrips,
+        "cantrip_choice": cantrip_choice,
+        "granted_spells": granted_spells,
     }
 
 
@@ -880,6 +1026,10 @@ def merge_standard(target: dict, extra: Mapping[str, Any]) -> None:
         target[field] = int(target.get(field) or 0) + int(extra.get(field) or 0)
     target["darkvision"] = max(int(target.get("darkvision") or 0), int(extra.get("darkvision") or 0))
     target["standard_variant"] = True
+    # «Нерозвʼязаним» вид стає лише тоді, коли після злиття бонусів так і немає.
+    target["ability_unresolved"] = (
+        not target.get("ability_fixed") and target.get("ability_choice") is None
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -66,6 +66,16 @@ class AbilityView:
 
 
 @dataclass(frozen=True, slots=True)
+class GrantedSpellView:
+    """Закляття не з класу: вид (thaumaturgy) або підклас (домен жреця)."""
+
+    name_en: str
+    spell_level: int
+    source: str  # "species" | "subclass"
+    prepared: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class ArmorClassPart:
     """Доданок КЗ: назва (ключ, не текст) і число."""
 
@@ -93,6 +103,7 @@ class ComputedSheet:
     hit_points: HitPointsView
     hit_dice: dict[int, int]
     spellcasting: Spellcasting
+    granted_spells: tuple[GrantedSpellView, ...]
     proficiencies: Proficiencies
     darkvision: int
     resistances: tuple[str, ...]
@@ -179,6 +190,7 @@ class DerivedStatsCalculator:
             hit_points=hit_points,
             hit_dice=hit_dice_pool(character.class_entries()),
             spellcasting=spellcasting,
+            granted_spells=self._granted_spells(character),
             proficiencies=proficiencies,
             darkvision=species.darkvision if species is not None else 0,
             resistances=species.resistances if species is not None else (),
@@ -267,6 +279,42 @@ class DerivedStatsCalculator:
             temporary=state.temporary,
             parts=parts,
         )
+
+    @staticmethod
+    def _granted_spells(character: Character) -> tuple[GrantedSpellView, ...]:
+        """Що персонаж отримав від виду й підкласу — без класових лімітів.
+
+        `expanded` патрона сюди не входить: це лише розширений список, з якого
+        гравець обирає, а не готові закляття.
+        """
+        views: list[GrantedSpellView] = []
+        species = character.species
+        if species is not None:
+            level = max(1, character.total_level)
+            for name in species.shared_cantrips:
+                views.append(GrantedSpellView(name_en=name, spell_level=0, source="species"))
+            for spell in species.granted_spells:
+                if spell.min_level <= level:
+                    views.append(
+                        GrantedSpellView(
+                            name_en=spell.name_en,
+                            spell_level=spell.spell_level,
+                            source="species",
+                        )
+                    )
+            for name in character.spell_choices:
+                views.append(GrantedSpellView(name_en=name, spell_level=0, source="species"))
+        for entry, definition in character.class_entries():
+            spells = definition.subclass_spells_for(entry.subclass_key)
+            if spells is None:
+                continue
+            for name in spells.prepared:
+                views.append(
+                    GrantedSpellView(
+                        name_en=name, spell_level=1, source="subclass", prepared=True
+                    )
+                )
+        return tuple(views)
 
     @staticmethod
     def _check_prepared(

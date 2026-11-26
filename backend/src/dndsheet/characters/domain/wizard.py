@@ -137,6 +137,8 @@ class Draft:
     money: Money = field(default_factory=Money)
     equipment_submitted: bool = False
     spells: tuple[KnownSpell, ...] = ()
+    #: Обрані заговори виду (високий ельф): імена, не id.
+    spell_choices: tuple[str, ...] = ()
 
     # ------------------------------------------------------------------
     # похідні
@@ -194,6 +196,7 @@ class Draft:
         species_key: str,
         subspecies_key: str | None = None,
         ability_choices: Iterable[Ability] = (),
+        spell_choices: Iterable[str] = (),
     ) -> None:
         species = self.rules.species_mechanics(species_key)
         if species is None:
@@ -218,6 +221,9 @@ class Draft:
         candidate.species_key = species.key
         candidate.subspecies_key = subspecies.key if subspecies else None
         candidate.ability_choices = choices
+        candidate.spell_choices = tuple(
+            name.strip() for name in spell_choices if str(name).strip()
+        )
         if (self.species_key, self.subspecies_key) != (
             candidate.species_key,
             candidate.subspecies_key,
@@ -413,6 +419,7 @@ class Draft:
             chosen=Proficiencies(items=self.picks),
             inventory=Inventory(items=self.items, money=self.money),
             spells=self.spells,
+            spell_choices=self.spell_choices,
             hp=HitPointState(),
         )
 
@@ -441,6 +448,24 @@ class Draft:
                     f"{subspecies.name_en!r} не належить виду {species.name_en!r}"
                 )
         effective = self.species
+        if effective is not None and effective.ability_unresolved:
+            raise ValidationError(
+                f"{effective.name_en}: вільний розподіл характеристик (правила 2022) "
+                f"поки що не підтримується — оберіть вид із фіксованими бонусами"
+            )
+        allowed = (
+            effective.cantrip_choice_count
+            if effective is not None and effective.cantrip_choice_class
+            else 0
+        )
+        if len(set(self.spell_choices)) != len(self.spell_choices):
+            raise ValidationError("заговори виду не можуть повторюватися")
+        if len(self.spell_choices) != allowed:
+            raise ValidationError(
+                f"вид дає {allowed} заговорів на вибір, обрано {len(self.spell_choices)}"
+                if allowed
+                else "вид не дає вибору заговорів"
+            )
         choice = effective.ability_choice if effective else None
         if choice is None:
             if self.ability_choices:

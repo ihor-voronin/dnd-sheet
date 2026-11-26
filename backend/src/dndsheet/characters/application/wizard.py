@@ -95,6 +95,7 @@ class WizardService:
                 species_key=_text(body, "species_key"),
                 subspecies_key=_optional_text(body, "subspecies_key"),
                 ability_choices=_abilities(body.get("ability_choices")),
+                spell_choices=_text_list(body.get("spell_choices")),
             )
         elif step is WizardStep.CLASS:
             class_key = _text(body, "class_key")
@@ -184,6 +185,14 @@ def _optional_text(body: Mapping[str, Any], key: str) -> str | None:
     if not isinstance(value, str):
         raise ValidationError(f"поле {key!r} має бути рядком")
     return value.strip() or None
+
+
+def _text_list(values: Any) -> tuple[str, ...]:
+    if values is None:
+        return ()
+    if not isinstance(values, (list, tuple)):
+        raise ValidationError("spell_choices має бути списком назв")
+    return tuple(str(value).strip() for value in values if str(value).strip())
 
 
 def _abilities(values: Any) -> tuple[Ability, ...]:

@@ -28,6 +28,7 @@ from dndsheet.compendium.api.serializers import (
     species_mechanics_full,
 )
 from dndsheet.compendium.application.service import CompendiumService
+from dndsheet.shared.errors import NotFoundError
 
 ALIGNMENTS: tuple[str, ...] = (
     "lawful good",
@@ -64,15 +65,29 @@ def build_options(
 
 def _species_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
     species: list[dict[str, Any]] = []
+    choice_classes: set[str] = set()
     for item in service.species_list():
         payload = species_mechanics_full(item)
         payload["subspecies"] = [
             species_mechanics_full(child)
             for child in service.subspecies_of(item.name_en)
         ]
+        for candidate in (payload, *payload["subspecies"]):
+            if candidate.get("cantrip_choice"):
+                choice_classes.add(candidate["cantrip_choice"]["from_class"])
         species.append(payload)
+    # Заговори для вибору («один заговір візарда» у високого ельфа) — зі
+    # списку того класу, який названий у правилі виду.
+    class_cantrips: dict[str, list[dict[str, Any]]] = {}
+    for class_key in sorted(choice_classes):
+        try:
+            spells = service.class_spells(class_key, max_level=0)
+        except NotFoundError:
+            continue
+        class_cantrips[class_key] = [entry_brief(entry) for entry in spells.spells]
     return {
         "species": species,
+        "class_cantrips": class_cantrips,
         "hint": (
             "Підраса успадковує числа батьківського виду: «Hill Dwarf» уже "
             "несе +2 CON і +1 WIS."
@@ -87,15 +102,22 @@ def _class_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
         payload["skill_options"] = [skill.value for skill in definition.skill_options()]
         payload["cantrips_at_level_1"] = definition.cantrips_at(1)
         payload["spells_known_at_level_1"] = definition.spells_known_at(1)
+        subclass_entries: list[dict[str, Any]] = []
+        if definition.subclass_level == 1:
+            for entry in service.subclasses(definition.name_en):
+                brief = entry_brief(entry)
+                grants = definition.subclass_spells_for(entry.id)
+                brief["grants"] = (
+                    {"prepared": list(grants.prepared), "expanded": list(grants.expanded)}
+                    if grants is not None
+                    else {"prepared": [], "expanded": []}
+                )
+                subclass_entries.append(brief)
         payload["subclass"] = (
             {
                 "title": definition.subclass_title,
                 "level": definition.subclass_level,
-                "options": (
-                    [entry_brief(entry) for entry in service.subclasses(definition.name_en)]
-                    if definition.subclass_level == 1
-                    else []
-                ),
+                "options": subclass_entries,
             }
             if definition.subclass_title
             else None
@@ -187,6 +209,13 @@ def _spells_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
     spells = service.class_spells(definition.key, max_level=1)
     cantrips = [entry_brief(entry) for entry in spells.spells if entry.data.get("level") == 0]
     leveled = [entry_brief(entry) for entry in spells.spells if entry.data.get("level") == 1]
+    reserved = _granted_for_draft(draft)
+    expanded = _expanded_for_draft(draft, service)
+    known_ids = {entry["id"] for entry in leveled}
+    for entry in expanded:
+        if entry["id"] not in known_ids:
+            leveled.append(entry)
+            known_ids.add(entry["id"])
     ability = draft.class_definition.spellcasting_ability
     prepared_limit = None
     if definition.prepares_spells and ability is not None:
@@ -204,8 +233,62 @@ def _spells_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
         },
         "cantrips": cantrips,
         "spells": leveled,
+        "granted": reserved,
+        "expanded": [entry["name_en"] for entry in expanded],
         "hint": (
             "Список — зі «Spell Lists» книг. Закляття належить класу, тому "
             "вони й лежать у кроці класу."
         ),
     }
+
+
+def _granted_for_draft(draft: Draft) -> list[dict[str, Any]]:
+    """Що вже дано видом і підкласом — не рахується в лімітах класу."""
+    granted: list[dict[str, Any]] = []
+    species = draft.species
+    if species is not None:
+        for name in species.shared_cantrips:
+            granted.append({"name_en": name, "level": 0, "source": "species", "prepared": True})
+        for spell in species.granted_spells:
+            if spell.min_level <= 1:
+                granted.append(
+                    {
+                        "name_en": spell.name_en,
+                        "level": spell.spell_level,
+                        "source": "species",
+                        "prepared": False,
+                    }
+                )
+        for name in draft.spell_choices:
+            granted.append({"name_en": name, "level": 0, "source": "species", "prepared": True})
+    if draft.class_key:
+        definition = draft.class_definition
+        spells = definition.subclass_spells_for(draft.subclass_key)
+        if spells is not None:
+            for name in spells.prepared:
+                granted.append(
+                    {"name_en": name, "level": 1, "source": "subclass", "prepared": True}
+                )
+    return granted
+
+
+def _expanded_for_draft(draft: Draft, service: CompendiumService) -> list[dict[str, Any]]:
+    """Розширений список патрона варлока: додаткові закляття на вибір."""
+    if not draft.class_key:
+        return []
+    definition = draft.class_definition
+    spells = definition.subclass_spells_for(draft.subclass_key)
+    if spells is None or not spells.expanded:
+        return []
+    entries: list[dict[str, Any]] = []
+    for name in spells.expanded:
+        page = service.spells(level=1, query=name)
+        if not page.items:
+            page = service.spells(query=name)
+        exact = next(
+            (item for item in page.items if item.name_en.casefold() == name.casefold()),
+            page.items[0] if page.items else None,
+        )
+        if exact is not None:
+            entries.append(entry_brief(exact))
+    return entries

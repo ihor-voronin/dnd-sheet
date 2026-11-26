@@ -238,3 +238,183 @@ def test_abilities_options_explain_point_buy(client: TestClient) -> None:
     assert options["point_buy"]["budget"] == 27
     assert options["point_buy"]["costs"]["15"] == 9
     assert options["species_bonuses"]["str"] == 1, "людина дає +1 до всього"
+
+
+# ---------------------------------------------------------------------------
+# вибір на 1 рівні: заговори виду, домен жреця, патрон варлока
+# ---------------------------------------------------------------------------
+
+
+def test_species_options_carry_cantrip_grants(client: TestClient) -> None:
+    payload = _start(client)
+    species = {item["key"]: item for item in payload["options"]["species"]}
+    assert species["tiefling"]["shared_cantrips"] == ["thaumaturgy"]
+    elf = species["elf"]
+    high = next(item for item in elf["subspecies"] if item["key"] == "high elf")
+    assert high["cantrip_choice"] == {"from_class": "wizard", "count": 1}
+    assert payload["options"]["class_cantrips"]["wizard"], "список заговорів візарда"
+
+
+def test_class_options_show_subclass_spells(client: TestClient) -> None:
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={"name": "Хтось", "species_key": "human"},
+    )
+    step = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/class").json()
+    classes = {item["key"]: item for item in step["options"]["classes"]}
+
+    life = next(
+        item for item in classes["cleric"]["subclass"]["options"] if item["id"].endswith("/life-domain")
+    )
+    assert life["grants"] == {"prepared": ["bless", "cure wounds"], "expanded": []}
+
+    fiend = next(
+        item for item in classes["warlock"]["subclass"]["options"] if item["id"].endswith("/the-fiend")
+    )
+    assert fiend["grants"] == {"prepared": [], "expanded": ["burning hands", "command"]}
+
+
+def test_high_elf_wizard_keeps_chosen_cantrip(client: TestClient) -> None:
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    steps = [
+        (
+            "species",
+            {
+                "name": "Ільвен",
+                "species_key": "elf",
+                "subspecies_key": "high elf",
+                "spell_choices": ["fire bolt"],
+            },
+        ),
+        ("class", {"class_key": "wizard"}),
+        (
+            "abilities",
+            {
+                "method": "standard_array",
+                "scores": {"str": 8, "dex": 14, "con": 13, "int": 15, "wis": 12, "cha": 10},
+            },
+        ),
+        (
+            "background",
+            {
+                "background_key": "acolyte",
+                "picks": [
+                    {"kind": "skill", "value": "arcana", "source": {"kind": "class", "key": "wizard"}},
+                    {"kind": "skill", "value": "history", "source": {"kind": "class", "key": "wizard"}},
+                ],
+            },
+        ),
+        ("equipment", {"items": [], "money": {}}),
+        (
+            "spells",
+            {
+                "spells": [
+                    {"name_en": "Light", "level": 0, "class_key": "wizard"},
+                    {"name_en": "Mage Hand", "level": 0, "class_key": "wizard"},
+                    {"name_en": "Magic Missile", "level": 1, "class_key": "wizard", "prepared": True},
+                ]
+            },
+        ),
+    ]
+    _walk(client, draft_id, steps)
+    sheet = client.post(f"/api/v1/characters/wizard/{draft_id}/finish").json()["sheet"]
+    names = {spell["name_en"].casefold(): spell for spell in sheet["spells"]}
+    assert names["fire bolt"]["source"] == "species", "вибір високого ельфа не загубився"
+    assert names["fire bolt"]["level"] == 0
+    assert names["magic missile"]["source"] == "class"
+
+
+def test_cleric_domain_spells_reach_the_sheet(client: TestClient) -> None:
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    steps = [
+        ("species", {"name": "Сестра Анна", "species_key": "human"}),
+        ("class", {"class_key": "cleric", "subclass_key": "phb-2014/subclass/life-domain"}),
+        (
+            "abilities",
+            {
+                "method": "standard_array",
+                "scores": {"str": 12, "dex": 10, "con": 14, "int": 8, "wis": 15, "cha": 13},
+            },
+        ),
+        (
+            "background",
+            {
+                "background_key": "acolyte",
+                "picks": [
+                    {"kind": "skill", "value": "history", "source": {"kind": "class", "key": "cleric"}},
+                    {"kind": "skill", "value": "persuasion", "source": {"kind": "class", "key": "cleric"}},
+                ],
+            },
+        ),
+        ("equipment", {"items": [], "money": {}}),
+        (
+            "spells",
+            {
+                "spells": [
+                    {"name_en": "Light", "level": 0, "class_key": "cleric"},
+                    {"name_en": "Sacred Flame", "level": 0, "class_key": "cleric"},
+                    {"name_en": "Guidance", "level": 0, "class_key": "cleric"},
+                ]
+            },
+        ),
+    ]
+    _walk(client, draft_id, steps)
+    sheet = client.post(f"/api/v1/characters/wizard/{draft_id}/finish").json()["sheet"]
+    granted = {
+        spell["name_en"].casefold(): spell
+        for spell in sheet["spells"]
+        if spell["source"] == "subclass"
+    }
+    assert set(granted) == {"bless", "cure wounds"}
+    assert all(item["always_prepared"] for item in granted.values())
+
+
+def test_2022_species_cannot_be_chosen(client: TestClient) -> None:
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    response = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={"name": "Хтось", "species_key": "deep gnome"},
+    )
+    assert response.status_code == 422
+    assert "2022" in response.json()["detail"]
+
+
+def test_warlock_patron_expands_spell_choices(client: TestClient) -> None:
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={"name": "Тіра", "species_key": "tiefling"},
+    )
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/class",
+        json={"class_key": "warlock", "subclass_key": "phb-2014/subclass/the-fiend"},
+    )
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/abilities",
+        json={
+            "method": "standard_array",
+            "scores": {"str": 8, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 15},
+        },
+    )
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/background",
+        json={
+            "background_key": "acolyte",
+            "picks": [
+                {"kind": "skill", "value": "arcana", "source": {"kind": "class", "key": "warlock"}},
+                {"kind": "skill", "value": "deception", "source": {"kind": "class", "key": "warlock"}},
+            ],
+        },
+    )
+    step = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/spells").json()
+    options = step["options"]
+    assert options["granted"], "тифлінг дає thaumaturgy"
+    assert {"burning hands", "command"} <= {name.casefold() for name in options["expanded"]}
+    names = {entry["name_en"].casefold() for entry in options["spells"]}
+    assert {"burning hands", "command"} <= names, "розширений список патрона у виборі"

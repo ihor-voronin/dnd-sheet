@@ -206,6 +206,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
         "chosen": proficiencies_to_record(character.chosen),
         "inventory": inventory_to_record(character.inventory),
         "spells": spells_to_record(character.spells),
+        "spell_choices": list(character.spell_choices),
         "feats": list(character.feats),
         "hp": {
             "current": character.hp.current,
@@ -247,6 +248,7 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
         chosen=Proficiencies(items=proficiencies_from_record(record.get("chosen"))),
         inventory=inventory_from_record(record.get("inventory")),
         spells=spells_from_record(record.get("spells")),
+        spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
         feats=tuple(str(item) for item in record.get("feats") or ()),
         hp=HitPointState(
             current=int(hp.get("current") or 0),
@@ -284,6 +286,7 @@ def draft_to_record(draft: Draft) -> dict[str, Any]:
         "inventory": inventory_to_record(Inventory(items=draft.items, money=draft.money)),
         "equipment_submitted": draft.equipment_submitted,
         "spells": spells_to_record(draft.spells),
+        "spell_choices": list(draft.spell_choices),
     }
 
 
@@ -319,4 +322,5 @@ def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
         money=inventory.money,
         equipment_submitted=bool(record.get("equipment_submitted")),
         spells=spells_from_record(record.get("spells")),
+        spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
     )

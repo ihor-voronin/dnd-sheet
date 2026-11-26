@@ -237,6 +237,29 @@ export function CharacterView({ sheet }: { sheet: SheetViewPayload }) {
         </section>
       ) : null}
 
+      {sheet.spells.length ? (
+        <section className="sheet-section">
+          <h2>Закляття</h2>
+          <ul className="plain-list">
+            {sheet.spells.map((spell) => (
+              <li key={`${spell.name_en}-${spell.source}`}>
+                {spell.level === 0 ? "заговір" : `${spell.level} рівня`} · {spell.name_en}
+                {spell.always_prepared
+                  ? " · завжди підготовлене"
+                  : spell.prepared
+                    ? " · підготовлене"
+                    : ""}
+                {spell.source === "species"
+                  ? " · від виду"
+                  : spell.source === "subclass"
+                    ? " · від підкласу"
+                    : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="sheet-section">
         <h2>Володіння</h2>
         {Object.keys(groupedProficiencies).length ? (

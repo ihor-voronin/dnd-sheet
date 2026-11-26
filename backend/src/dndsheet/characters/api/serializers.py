@@ -62,6 +62,7 @@ def computed_sheet(character: Character, computed: ComputedSheet) -> dict[str, A
         },
         "hit_dice": {f"d{die}": count for die, count in sorted(computed.hit_dice.items())},
         "spellcasting": spellcasting(computed.spellcasting),
+        "spells": spells(character, computed),
         "proficiencies": proficiencies(computed.proficiencies),
         "carrying": {
             "capacity": computed.carrying_capacity,
@@ -133,6 +134,41 @@ def character_brief(character: Character) -> dict[str, Any]:
         ],
         "version": character.version,
     }
+
+
+def spells(character: Character, computed: ComputedSheet) -> list[dict[str, Any]]:
+    """Усі закляття персонажа: класові (вибір гравця) + надані видом/підкласом."""
+    items: list[dict[str, Any]] = [
+        {
+            "name_en": spell.name_en,
+            "level": spell.level,
+            "class_key": spell.class_key,
+            "entry_id": spell.entry_id,
+            "prepared": spell.prepared or spell.always_prepared,
+            "always_prepared": spell.always_prepared,
+            "source": "class",
+        }
+        for spell in character.spells
+    ]
+    known = {item["name_en"].casefold() for item in items}
+    for granted in computed.granted_spells:
+        # Домен жреця може дати закляття, яке гравець і сам узяв класом —
+        # показуємо один рядок, а не два.
+        if granted.name_en.casefold() in known:
+            continue
+        known.add(granted.name_en.casefold())
+        items.append(
+            {
+                "name_en": granted.name_en,
+                "level": granted.spell_level,
+                "class_key": None,
+                "entry_id": None,
+                "prepared": granted.prepared,
+                "always_prepared": granted.prepared,
+                "source": granted.source,
+            }
+        )
+    return items
 
 
 def spellcasting(casting: Spellcasting) -> dict[str, Any]:
@@ -221,6 +257,7 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
             "species_key": draft.species_key,
             "subspecies_key": draft.subspecies_key,
             "ability_choices": [ability.value for ability in draft.ability_choices],
+            "spell_choices": list(draft.spell_choices),
         }
     if step is WizardStep.CLASS:
         return {"class_key": draft.class_key, "subclass_key": draft.subclass_key}

@@ -1,87 +1,130 @@
 {
-  "$comment": "Похідні індекси механік: числа, яких немає в корпусі довідника (хіт-дайси, володіння, таблиці слотів, бонуси видів). Їх складає scripts/ingest/mechanics.py з дзеркала 5e.tools, а читає backend/src/dndsheet/compendium/infrastructure/mechanics_index.py. Це джерело істини для тестів: якщо змінюєте склад полів тут — міняйте і складач, і читач.",
-  "schema": "mechanics-format/1",
-  "editions": ["classic", "2014"],
-  "files": {
-    "class": {
-      "path": "content/index/class-mechanics.json",
-      "schema": "class-mechanics/1",
-      "collection": "classes",
-      "key": "name_en у нижньому регістрі",
-      "required": [
-        "name_en",
-        "source_id",
-        "hit_die",
-        "saving_throws",
-        "skill_choices",
-        "skill_any",
-        "armor_training",
-        "weapon_training",
-        "tool_training",
-        "spellcasting_ability",
-        "caster_progression",
-        "prepares_spells",
-        "cantrips_known",
-        "spells_known",
-        "spell_slots",
-        "pact_slots",
-        "subclass_title",
-        "subclass_level",
-        "multiclass_requirements",
-        "multiclass_gained",
-        "features",
-        "optional_features",
-        "starting_equipment"
-      ]
-    },
-    "origin": {
-      "path": "content/index/origin-mechanics.json",
-      "schema": "origin-mechanics/1",
-      "collections": ["species", "subspecies", "backgrounds"],
-      "key": "назва у нижньому регістрі; підраса — повна назва («Hill Dwarf»)",
-      "required_species": [
-        "name_en",
-        "source_id",
-        "edition",
-        "subrace_of",
-        "size",
-        "speed",
-        "ability_fixed",
-        "ability_choice",
-        "skill_proficiencies",
-        "skill_any",
-        "weapon_proficiencies",
-        "tool_proficiencies",
-        "languages",
-        "languages_any_standard",
-        "darkvision",
-        "resistances"
-      ],
-      "required_background": [
-        "name_en",
-        "source_id",
-        "edition",
-        "skill_proficiencies",
-        "skill_any",
-        "tool_proficiencies",
-        "tools_any",
-        "languages",
-        "languages_any_standard",
-        "feature",
-        "starting_equipment"
-      ]
-    }
+ "$comment": "Похідні індекси механік: числа, яких немає в корпусі довідника (хіт-дайси, володіння, таблиці слотів, бонуси видів). Їх складає scripts/ingest/mechanics.py з дзеркала 5e.tools, а читає backend/src/dndsheet/compendium/infrastructure/mechanics_index.py. Це джерело істини для тестів: якщо змінюєте склад полів тут — міняйте і складач, і читач. Останнє оновлення: вибір на 1 рівні — заговори виду, вибір заговору, закляття підкласів (домен/патрон).",
+ "schema": "mechanics-format/1",
+ "editions": [
+  "classic",
+  "2014"
+ ],
+ "files": {
+  "class": {
+   "path": "content/index/class-mechanics.json",
+   "schema": "class-mechanics/1",
+   "collection": "classes",
+   "key": "name_en у нижньому регістрі",
+   "required": [
+    "name_en",
+    "source_id",
+    "hit_die",
+    "saving_throws",
+    "skill_choices",
+    "skill_any",
+    "armor_training",
+    "weapon_training",
+    "tool_training",
+    "spellcasting_ability",
+    "caster_progression",
+    "prepares_spells",
+    "cantrips_known",
+    "spells_known",
+    "spell_slots",
+    "pact_slots",
+    "subclass_title",
+    "subclass_level",
+    "multiclass_requirements",
+    "multiclass_gained",
+    "features",
+    "optional_features",
+    "starting_equipment",
+    "subclass_spells"
+   ]
   },
-  "rules": {
-    "$comment": "Межі, які перевіряються тестом, а не очима.",
-    "hit_die": {"min": 4, "max": 20},
-    "speed": {"min": 0, "max": 120},
-    "darkvision": {"min": 0, "max": 120},
-    "ability_score_requirement": {"min": 8, "max": 20},
-    "spell_levels": 9,
-    "levels": 20,
-    "abilities": ["str", "dex", "con", "int", "wis", "cha"],
-    "sizes": ["tiny", "small", "medium", "large", "huge", "gargantuan"],
-    "caster_progressions": ["full", "1/2", "1/3", "artificer", "pact"]
+  "origin": {
+   "path": "content/index/origin-mechanics.json",
+   "schema": "origin-mechanics/1",
+   "collections": [
+    "species",
+    "subspecies",
+    "backgrounds"
+   ],
+   "key": "назва у нижньому регістрі; підраса — повна назва («Hill Dwarf»)",
+   "required_species": [
+    "name_en",
+    "source_id",
+    "edition",
+    "subrace_of",
+    "size",
+    "speed",
+    "ability_fixed",
+    "ability_choice",
+    "skill_proficiencies",
+    "skill_any",
+    "weapon_proficiencies",
+    "tool_proficiencies",
+    "languages",
+    "languages_any_standard",
+    "darkvision",
+    "resistances",
+    "shared_cantrips",
+    "cantrip_choice",
+    "granted_spells"
+   ],
+   "required_background": [
+    "name_en",
+    "source_id",
+    "edition",
+    "skill_proficiencies",
+    "skill_any",
+    "tool_proficiencies",
+    "tools_any",
+    "languages",
+    "languages_any_standard",
+    "feature",
+    "starting_equipment"
+   ]
   }
+ },
+ "rules": {
+  "$comment": "Межі, які перевіряються тестом, а не очима.",
+  "hit_die": {
+   "min": 4,
+   "max": 20
+  },
+  "speed": {
+   "min": 0,
+   "max": 120
+  },
+  "darkvision": {
+   "min": 0,
+   "max": 120
+  },
+  "ability_score_requirement": {
+   "min": 8,
+   "max": 20
+  },
+  "spell_levels": 9,
+  "levels": 20,
+  "abilities": [
+   "str",
+   "dex",
+   "con",
+   "int",
+   "wis",
+   "cha"
+  ],
+  "sizes": [
+   "tiny",
+   "small",
+   "medium",
+   "large",
+   "huge",
+   "gargantuan"
+  ],
+  "caster_progressions": [
+   "full",
+   "1/2",
+   "1/3",
+   "artificer",
+   "pact"
+  ]
+ }
 }

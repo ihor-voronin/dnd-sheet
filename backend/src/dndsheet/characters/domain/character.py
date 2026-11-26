@@ -62,6 +62,9 @@ class Character:
     chosen: Proficiencies = field(default_factory=Proficiencies)
     inventory: Inventory = field(default_factory=Inventory)
     spells: tuple[KnownSpell, ...] = ()
+    #: Обрані заговори виду («один заговір візарда» у високого ельфа).
+    #: Самі бонуси виду (thaumaturgy тифлінга) не зберігаються — вони похідні.
+    spell_choices: tuple[str, ...] = ()
     feats: tuple[str, ...] = ()
     hp: HitPointState = field(default_factory=HitPointState)
     version: int = 1
@@ -83,6 +86,7 @@ class Character:
         self._validate_ability_choices()
         self._validate_chosen()
         self._validate_spells()
+        self._validate_spell_choices()
         self._validate_hit_points()
 
     # ------------------------------------------------------------------
@@ -453,6 +457,12 @@ class Character:
         self.spells = tuple(updated)
         self.bump_version()
 
+    def set_spell_choices(self, names: Iterable[str]) -> None:
+        """Обрати заговори, які вид дає на вибір (високий ельф)."""
+        self.spell_choices = tuple(name.strip() for name in names if name.strip())
+        self._validate_spell_choices()
+        self.bump_version()
+
     def add_feat(self, feat_key: str) -> None:
         key = feat_key.strip().casefold()
         if key in self.feats:
@@ -569,6 +579,24 @@ class Character:
     def _validate_pick(self, pick: Proficiency, *, existing: Proficiencies) -> None:
         """Ті самі правила, що й у візарді — див. `pick_rules.validate_pick`."""
         validate_pick(self.rules, pick, existing=existing)
+
+    def _validate_spell_choices(self) -> None:
+        species = self.species
+        allowed = (
+            species.cantrip_choice_count
+            if species is not None and species.cantrip_choice_class
+            else 0
+        )
+        if len(set(self.spell_choices)) != len(self.spell_choices):
+            raise ValidationError("заговори виду не можуть повторюватися")
+        if allowed == 0:
+            if self.spell_choices:
+                raise ValidationError("вид не дає вибору заговорів")
+            return
+        if len(self.spell_choices) != allowed:
+            raise ValidationError(
+                f"вид дає {allowed} заговорів на вибір, обрано {len(self.spell_choices)}"
+            )
 
     def _validate_spells(self) -> None:
         self._validate_spell_limits(self.spells)

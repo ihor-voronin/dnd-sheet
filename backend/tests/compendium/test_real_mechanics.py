@@ -169,3 +169,63 @@ def test_indexes_are_clean(service: CompendiumService) -> None:
     summary = service.summary()
     assert summary.mechanics is True
     assert service.mechanics_warnings() == ()
+
+
+# ---------------------------------------------------------------------------
+# вибір на 1 рівні: підкласи, підраси, закляття виду й підкласу
+# ---------------------------------------------------------------------------
+
+
+def test_only_three_classes_choose_subclass_at_level_one(service: CompendiumService) -> None:
+    at_one = sorted(
+        item.key for item in service.class_definitions() if item.subclass_level == 1
+    )
+    assert at_one == ["cleric", "sorcerer", "warlock"]
+
+
+def test_species_with_unresolved_ability_are_the_2022_reprints(
+    service: CompendiumService,
+) -> None:
+    human = service.species_mechanics("human")
+    assert human.ability_unresolved is False, "людина має фіксовані +1 до всього"
+    assert {bonus.amount for bonus in human.ability_bonuses} == {1}
+    # MPMM/VRGR перевидання: числа в дзеркалі не закодовані, розподіл робить гравець.
+    for key in ("deep gnome", "fairy", "duergar"):
+        assert service.species_mechanics(key).ability_unresolved is True, key
+
+
+def test_species_grant_cantrips(service: CompendiumService) -> None:
+    assert service.species_mechanics("tiefling").shared_cantrips == ("thaumaturgy",)
+    assert service.species_mechanics("drow elf").shared_cantrips == ("dancing lights",)
+    assert service.species_mechanics("forest gnome").shared_cantrips == ("minor illusion",)
+
+
+def test_high_elf_chooses_a_wizard_cantrip(service: CompendiumService) -> None:
+    high = service.species_mechanics("high elf")
+    assert high.cantrip_choice_class == "wizard"
+    assert high.cantrip_choice_count == 1
+    assert high.shared_cantrips == ()
+
+
+def test_cleric_domain_spells_are_always_prepared(service: CompendiumService) -> None:
+    cleric = service.class_mechanics("cleric")
+    life = cleric.subclass_spells_for("phb-2014/subclass/life-domain")
+    assert life is not None
+    assert set(life.prepared) == {"bless", "cure wounds"}
+    assert life.expanded == ()
+
+
+def test_warlock_patron_expands_the_spell_list(service: CompendiumService) -> None:
+    warlock = service.class_mechanics("warlock")
+    fiend = warlock.subclass_spells_for("the-fiend")
+    assert fiend is not None
+    assert set(fiend.expanded) == {"burning hands", "command"}
+    assert fiend.prepared == ()
+    assert warlock.subclass_spells_for(None) is None
+    assert warlock.subclass_spells_for("phb-2014/subclass/unknown") is None
+
+
+def test_species_innate_spells_at_level_one(service: CompendiumService) -> None:
+    yuan_ti = service.species_mechanics("yuan-ti pureblood")
+    names = {(spell.name_en, spell.spell_level) for spell in yuan_ti.granted_spells}
+    assert ("animal friendship", 1) in names
