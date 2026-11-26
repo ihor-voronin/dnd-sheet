@@ -826,6 +826,9 @@ export function AbilitiesStep({ answers, options, busy, onSubmit }: StepProps<Ab
             const base = scores[ability] ?? 10;
             const bonus = bonuses[ability] ?? 0;
             const total = base + bonus;
+            // Порожня клітинка стандартного набору — це не «1 з бонусом виду»,
+            // тому «Разом» і модифікатор теж порожні.
+            const empty = method === "standard_array" && !base;
             return (
               <tr key={ability}>
                 <th scope="row">{abilityLabel(ability)}</th>
@@ -856,9 +859,9 @@ export function AbilitiesStep({ answers, options, busy, onSubmit }: StepProps<Ab
                 </td>
                 <td>{bonus ? modifierLabel(bonus) : "—"}</td>
                 <td>
-                  <strong>{total}</strong>
+                  <strong>{empty ? "—" : total}</strong>
                 </td>
-                <td>{modifierLabel(abilityModifier(total))}</td>
+                <td>{empty ? "—" : modifierLabel(abilityModifier(total))}</td>
               </tr>
             );
           })}
