@@ -5,6 +5,7 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+pytest-of-*/
 .coverage
 htmlcov/
 .mypy_cache/
@@ -58,3 +59,4 @@ backend/tests/**/_tmp_*/
 
 # --- Дані застосунку: чернетки візарда й збережені персонажі ---
 var/
+

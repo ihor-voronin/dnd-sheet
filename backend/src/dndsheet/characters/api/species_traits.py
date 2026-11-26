@@ -31,6 +31,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from dndsheet.characters.api.trait_uk import enrich
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import MAX_LIMIT, EntryQuery
@@ -108,6 +109,8 @@ def species_details(
         parsed = _rule_traits(service, store, name_en, parent_name_en, found)
         if parsed is not None and (found is None or len(parsed["traits"]) > len(found["traits"])):
             found = parsed
+    if found is not None:
+        found = enrich(found)
     store[cache_key] = found
     return found
 
@@ -516,3 +519,4 @@ def _entries(service: CompendiumService, store: dict[str, Any]) -> dict[str, lis
 
 
 __all__ = ["parse_species_text", "species_details"]
+

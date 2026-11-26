@@ -53,6 +53,9 @@ COPY content/sources.yml /app/content/sources.yml
 COPY content/compendium/ /app/content/compendium/
 COPY content/bestiary/ /app/content/bestiary/
 COPY content/index/ /app/content/index/
+# Переклади (українські назви й тексти). Без них сервіс працює, але показує
+# оригінал книги — тобто мовчки англійською, чого ніхто не помітить.
+COPY content/translations/ /app/content/translations/
 
 RUN pip install "/app/backend[pdf]"
 

@@ -127,6 +127,7 @@ def _species_entry(
     details = species_details(service, item.name_en, parent_name_en=parent, cache=cache)
     payload["traits"] = (details or {}).get("traits") or []
     payload["description"] = (details or {}).get("description") or ""
+    payload["description_uk"] = (details or {}).get("description_uk") or ""
     payload["text_lang"] = (details or {}).get("lang")
     payload["text_from"] = (
         (details or {}).get("from_parent") or (details or {}).get("from_rule")
@@ -395,3 +396,4 @@ def _expanded_for_draft(draft: Draft, service: CompendiumService) -> list[dict[s
         if exact is not None:
             entries.append(entry_brief(exact))
     return entries
+

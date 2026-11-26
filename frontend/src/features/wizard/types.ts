@@ -21,6 +21,14 @@ export interface AbilityChoice {
   from: string[];
 }
 
+/** Уміння виду: оригінал книги й переклад, якщо він уже є. */
+export interface TraitView {
+  name_en: string;
+  text: string;
+  name_uk?: string;
+  text_uk?: string;
+}
+
 export interface SpeciesView {
   key: string;
   name_en: string;
@@ -44,8 +52,10 @@ export interface SpeciesView {
   cantrip_choice?: { from_class: string; count: number } | null;
   granted_spells?: { name: string; level: number; min_level: number }[];
   /** Особливості з книги: назва й текст (мова — `text_lang`). */
-  traits?: { name_en: string; text: string }[];
+  traits?: TraitView[];
   description?: string;
+  /** Український переклад опису (порожньо, якщо перекладу ще немає). */
+  description_uk?: string;
   /** Мова тексту книги: uk / en / ru. */
   text_lang?: string | null;
   /** Звідки взято текст, якщо власного запису немає (підраса в тексті батька). */

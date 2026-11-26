@@ -39,6 +39,7 @@ import type {
   SpellsOptions,
   SpellsAnswers,
   SpellPayload,
+  TraitView,
 } from "./types";
 import { searchItems } from "../../api";
 import type { ItemSearchResult } from "../../api";
@@ -358,10 +359,10 @@ export function SpeciesStep({
       {grantedCantrips.length || grantedSpells.length ? (
         <p className="hint">
           {grantedCantrips.length
-            ? `Вид дає заговори: ${grantedCantrips.join(", ")}.`
+            ? `Вид дає заговори: ${grantedCantrips.map(spellLabel).join(", ")}.`
             : ""}
           {grantedSpells.length
-            ? ` Уроджені закляття з 1 рівня: ${grantedSpells.map((spell) => spell.name).join(", ")}.`
+            ? ` Уроджені закляття з 1 рівня: ${grantedSpells.map((spell) => spellLabel(spell.name)).join(", ")}.`
             : ""}
         </p>
       ) : null}
@@ -451,15 +452,15 @@ function SpeciesSummary({ base, effective }: { base: SpeciesView; effective: Spe
 
       {base.description ? (
         <details className="reckoning species-description">
-          <summary>Як виглядає (з книги)</summary>
-          <RuleText text={base.description} />
+          <summary>Як виглядає</summary>
+          <RuleText text={base.description_uk || base.description} />
         </details>
       ) : null}
 
       {isSub && effective.description ? (
         <details className="reckoning species-description" open>
           <summary>Опис підраси</summary>
-          <RuleText text={effective.description} />
+          <RuleText text={effective.description_uk || effective.description} />
         </details>
       ) : null}
 
@@ -474,10 +475,10 @@ function SpeciesSummary({ base, effective }: { base: SpeciesView; effective: Spe
         <TraitList title="Додає підраса" traits={effective.traits} />
       ) : null}
 
-      {hasText && base.text_lang && base.text_lang !== "uk" ? (
+      {hasText && !base.description_uk ? (
         <p className="hint">
-          Текст книги {base.text_lang === "ru" ? "російською" : "англійською"} — українського
-          перекладу описів видів у корпусі немає.
+          Частини тексту без перекладу — мовою книги (англійською). Перекладаються поступово,
+          він не вигаданий.
         </p>
       ) : null}
     </div>
@@ -489,7 +490,7 @@ function TraitList({
   traits,
 }: {
   title: string;
-  traits: { name_en: string; text: string }[];
+  traits: TraitView[];
 }) {
   return (
     <>
@@ -498,8 +499,12 @@ function TraitList({
         {traits.map((trait) => (
           <li key={trait.name_en}>
             <details className="reckoning">
-              <summary>{trait.name_en}</summary>
-              <RuleText text={trait.text} />
+              <summary>
+                {trait.name_uk
+                  ? withEnglish(trait.name_en, trait.name_uk)
+                  : trait.name_en}
+              </summary>
+              <RuleText text={trait.text_uk || trait.text} />
             </details>
           </li>
         ))}
@@ -1754,6 +1759,8 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
     </div>
   );
 }
+
+
 
 
 
