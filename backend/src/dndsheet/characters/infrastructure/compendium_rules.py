@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from dndsheet.characters.domain.ports import RulesSource, SubclassCatalog
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
 from dndsheet.shared.rules import (
@@ -49,3 +50,23 @@ class CompendiumRulesSource:
             found = None
         self._cache[cache_key] = found
         return found
+
+
+@dataclass(slots=True)
+class CompendiumSubclassCatalog:
+    """Підкласи з довідника: id записів, за назвою класу.
+
+    Ключ підкласу в персонажі — це `id` запису довідника
+    (`phb-2014/subclass/champion`), а не назва: назви змінюються від
+    перекладу, id — ні.
+    """
+
+    service: CompendiumService
+
+    def subclass_keys(self, class_key: str) -> tuple[str, ...] | None:
+        try:
+            definition = self.service.class_mechanics(class_key)
+        except NotFoundError:
+            return None
+        entries = self.service.subclasses(definition.name_en)
+        return tuple(entry.id for entry in entries)

@@ -4,8 +4,10 @@
 
 * рівень заклинателя = повні класи цілком + половина напівзаклинателів
   (з округленням вниз) + третина третинних; Pact Magic warlock-а окремо;
-* слоти беруться з однієї таблиці за рівнем заклинателя — для одного класу
-  вона дає те саме, що й рядок класу, тому окремого шляху не треба;
+* **один заклинательський клас** читає власну таблицю класу, **два й більше** —
+  таблицю мультикласу за рівнем заклинателя. Це не дрібниця: для paladin-а 5
+  таблиця мультикласу дає 3 слоти 1 рівня, а власна — 4 + 2 другого, бо
+  напівзаклинатель отримує новий рівень слотів на непарних рівнях;
 * опір закляттям = 8 + бонус майстерності + модифікатор характеристики
   заклинань; бонус атаки = бонус майстерності + модифікатор;
 * «підготовлених» у підготовлюючого класу не більше ніж модифікатор + рівень
@@ -54,6 +56,9 @@ class Spellcasting:
     caster_level: int
     slots: SpellSlots
     classes: tuple[ClassCasting, ...]
+    #: Звідки взялися звичайні слоти: `class` — таблиця єдиного класу,
+    #: `multiclass` — таблиця за рівнем заклинателя, `none` — закляттів немає.
+    slots_from: str = "none"
 
     @property
     def casts_spells(self) -> bool:
@@ -92,7 +97,13 @@ class SpellSlotService:
         combined = caster_level(
             (definition.caster_progression, entry.level) for entry, definition in casters
         )
-        standard = spell_slots(combined) if combined else ()
+        if len(casters) > 1:
+            standard = spell_slots(combined) if combined else ()
+            slots_from = "multiclass"
+        else:
+            entry, definition = casters[0]
+            standard = () if definition.is_pact_magic else definition.slots_at(entry.level)
+            slots_from = "class"
         pact: PactMagic | None = None
         for entry, definition in casters:
             if not definition.is_pact_magic:
@@ -135,6 +146,7 @@ class SpellSlotService:
             caster_level=combined,
             slots=SpellSlots.from_table(standard, pact=pact),
             classes=tuple(details),
+            slots_from=slots_from,
         )
 
 

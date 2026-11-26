@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import shutil
+from pathlib import Path
+
 import pytest
 
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
@@ -9,6 +12,21 @@ from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepo
 
 from helpers import make_character  # noqa: F401 — реекспорт для тестів
 from rules_fixture import FixtureRules
+
+#: Тека для тимчасових файлів — у репозиторії, а не в системному temp:
+#: пісочниця Windows-середовища не завжди дає писати в `%TEMP%`.
+TMP_DATA = Path(__file__).resolve().parent / "_tmp_data"
+
+
+@pytest.fixture()
+def tmp_data() -> Path:
+    """Порожній каталог під файли сховища (замість `tmp_path`)."""
+    shutil.rmtree(TMP_DATA, ignore_errors=True)
+    TMP_DATA.mkdir(parents=True)
+    try:
+        yield TMP_DATA
+    finally:
+        shutil.rmtree(TMP_DATA, ignore_errors=True)
 
 
 @pytest.fixture()

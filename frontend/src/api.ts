@@ -1,13 +1,93 @@
 import type { SheetDocument } from "./contract/sheetDocument";
+import type {
+  DraftView,
+  FinishedCharacter,
+  SheetViewPayload,
+  StepView,
+} from "./features/wizard/types";
 
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { headers: { Accept: "application/json" } });
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    ...init,
+    headers: { Accept: "application/json", "Content-Type": "application/json", ...init?.headers },
+  });
   if (!response.ok) {
-    throw new Error(`Запит ${url} завершився зі статусом ${response.status}`);
+    let detail = `Запит ${url} завершився зі статусом ${response.status}`;
+    try {
+      const payload = await response.json();
+      if (payload?.detail) detail = String(payload.detail);
+    } catch {
+      /* тіло не JSON — лишаємо статус */
+    }
+    throw new Error(detail);
   }
   return (await response.json()) as T;
 }
 
+function getJson<T>(url: string): Promise<T> {
+  return request<T>(url, { method: "GET" });
+}
+
+// --- демо-документ (PDF-контракт) ----------------------------------------
+
 export function fetchDemoSheet(): Promise<SheetDocument> {
   return getJson<SheetDocument>("/api/v1/demo/sheet");
+}
+
+// --- візард ---------------------------------------------------------------
+
+export function startWizard(): Promise<StepView> {
+  return request<StepView>("/api/v1/characters/wizard", { method: "POST", body: "{}" });
+}
+
+export function readDraft(draftId: string): Promise<{ draft: DraftView }> {
+  return getJson<{ draft: DraftView }>(`/api/v1/characters/wizard/${draftId}`);
+}
+
+export function readStep<T>(draftId: string, step: string): Promise<StepView<T>> {
+  return getJson<StepView<T>>(`/api/v1/characters/wizard/${draftId}/steps/${step}`);
+}
+
+export function writeStep<T>(
+  draftId: string,
+  step: string,
+  payload: Record<string, unknown>,
+): Promise<StepView<T>> {
+  return request<StepView<T>>(
+    `/api/v1/characters/wizard/${draftId}/steps/${step}`,
+    { method: "PUT", body: JSON.stringify(payload) },
+  );
+}
+
+export function finishDraft(draftId: string): Promise<FinishedCharacter> {
+  return request<FinishedCharacter>(`/api/v1/characters/wizard/${draftId}/finish`, {
+    method: "POST",
+    body: "{}",
+  });
+}
+
+// --- збережені персонажі --------------------------------------------------
+
+export function fetchCharacter(id: string): Promise<{ sheet: SheetViewPayload }> {
+  return getJson<{ sheet: SheetViewPayload }>(`/api/v1/characters/${id}`);
+}
+
+export function fetchCharacters(): Promise<{
+  items: { id: string; name: string; total_level: number }[];
+  total: number;
+}> {
+  return getJson("/api/v1/characters");
+}
+
+// --- довідник (пошук предметів у кроці спорядження) ----------------------
+
+export interface ItemSearchResult {
+  id: string;
+  name_en: string;
+  data: Record<string, unknown>;
+}
+
+export function searchItems(query: string): Promise<{ items: ItemSearchResult[]; total: number }> {
+  const params = new URLSearchParams({ q: query, limit: "8" });
+  return getJson(`/api/v1/compendium/items?${params.toString()}`);
 }

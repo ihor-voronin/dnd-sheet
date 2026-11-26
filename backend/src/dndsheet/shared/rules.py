@@ -550,6 +550,27 @@ class BackgroundMechanics:
 # ---------------------------------------------------------------------------
 
 
+def ability_bonus_totals(
+    species: SpeciesMechanics | None,
+    choices: Iterable[Ability] = (),
+) -> dict[Ability, int]:
+    """Бонуси характеристик від виду: фіксовані плюс зроблений вибір.
+
+    Той самий розрахунок потрібен і `ModifierResolver` (де він ще й несе
+    джерело), і візарду, який перевіряє, що після бонусів жодна
+    характеристика не перевищила 20 (PHB, p. 173).
+    """
+    totals = dict.fromkeys(Ability, 0)
+    if species is None:
+        return totals
+    for bonus in species.ability_bonuses:
+        totals[bonus.ability] += bonus.amount
+    if species.ability_choice is not None:
+        for ability in choices:
+            totals[ability] += species.ability_choice.amount
+    return totals
+
+
 def _ability(value: Any) -> Ability:
     try:
         return Ability(str(value).strip().casefold())

@@ -13,6 +13,7 @@ from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.proficiencies import Proficiencies
 from dndsheet.characters.domain.services.derived_stats import ComputedSheet
 from dndsheet.characters.domain.services.spell_slots import Spellcasting
+from dndsheet.characters.domain.wizard import STEP_ORDER, Draft, WizardStep
 from dndsheet.shared.kernel import Ability
 
 
@@ -65,6 +66,22 @@ def computed_sheet(character: Character, computed: ComputedSheet) -> dict[str, A
         "carrying": {
             "capacity": computed.carrying_capacity,
             "weight": computed.carried_weight,
+        },
+        "inventory": {
+            "money": character.inventory.money.to_dict(),
+            "items": [
+                {
+                    "name_en": item.name_en,
+                    "kind": item.kind.value,
+                    "quantity": item.quantity,
+                    "weight_lb": item.weight_lb,
+                    "equipped": item.equipped,
+                    "attuned": item.attuned,
+                    "armor_base": item.armor_base,
+                    "dex_cap": item.dex_cap,
+                }
+                for item in character.inventory.items
+            ],
         },
         "modifiers": [
             {
@@ -158,3 +175,103 @@ def proficiencies(collected: Proficiencies) -> list[dict[str, Any]]:
         }
         for item in collected.items
     ]
+
+
+# ---------------------------------------------------------------------------
+# чернетка візарда
+# ---------------------------------------------------------------------------
+
+
+def draft_payload(draft: Draft) -> dict[str, Any]:
+    """Стан чернетки: відповіді кроків, їхній статус і що буде далі."""
+    statuses = draft.statuses()
+    next_step = draft.next_step()
+    return {
+        "id": draft.id,
+        "revision": draft.revision,
+        "name": draft.name,
+        "answers": {step.value: step_answers(draft, step) for step in STEP_ORDER},
+        "steps": [
+            {
+                "step": status.step.value,
+                "complete": status.complete,
+                "unlocked": status.unlocked,
+                "optional": status.optional,
+            }
+            for status in statuses
+        ],
+        "next_step": next_step.value if next_step else None,
+        "ready_to_finish": ready_to_finish(draft),
+    }
+
+
+def ready_to_finish(draft: Draft) -> bool:
+    try:
+        draft.validate_for_finish()
+    except Exception:  # noqa: BLE001 — будь-яка причина означає «ще не готово»
+        return False
+    return True
+
+
+def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
+    """Відповідь кроку в тій самій формі, яку приймає `PUT` цього кроку."""
+    if step is WizardStep.SPECIES:
+        return {
+            "name": draft.name,
+            "species_key": draft.species_key,
+            "subspecies_key": draft.subspecies_key,
+            "ability_choices": [ability.value for ability in draft.ability_choices],
+        }
+    if step is WizardStep.CLASS:
+        return {"class_key": draft.class_key, "subclass_key": draft.subclass_key}
+    if step is WizardStep.ABILITIES:
+        return {
+            "method": draft.ability_method.value if draft.ability_method else None,
+            "scores": {ability.value: score for ability, score in draft.ability_scores.items()},
+            "rolls": list(draft.roll_set),
+        }
+    if step is WizardStep.BACKGROUND:
+        return {
+            "background_key": draft.background_key,
+            "alignment": draft.alignment,
+            "picks": [
+                {
+                    "kind": item.kind.value,
+                    "value": item.value,
+                    "source": {"kind": item.source.kind.value, "key": item.source.key},
+                }
+                for item in draft.picks
+            ],
+        }
+    if step is WizardStep.EQUIPMENT:
+        return {
+            "items": [
+                {
+                    "name_en": item.name_en,
+                    "kind": item.kind.value,
+                    "quantity": item.quantity,
+                    "weight_lb": item.weight_lb,
+                    "equipped": item.equipped,
+                    "attuned": item.attuned,
+                    "entry_id": item.entry_id,
+                    "armor_base": item.armor_base,
+                    "dex_cap": item.dex_cap,
+                }
+                for item in draft.items
+            ],
+            "money": draft.money.to_dict(),
+            "submitted": draft.equipment_submitted,
+        }
+    return {
+        "spells": [
+            {
+                "name_en": spell.name_en,
+                "level": spell.level,
+                "class_key": spell.class_key,
+                "entry_id": spell.entry_id,
+                "prepared": spell.prepared,
+                "always_prepared": spell.always_prepared,
+            }
+            for spell in draft.spells
+        ]
+    }

@@ -21,6 +21,7 @@ from typing import Iterable
 
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem
+from dndsheet.characters.domain.pick_rules import is_choice_label, validate_pick
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
@@ -38,17 +39,8 @@ from dndsheet.shared.events import (
     DomainEvent,
     LevelGained,
 )
-from dndsheet.shared.kernel import MAX_LEVEL, Ability, AbilityScore, Money, Skill
+from dndsheet.shared.kernel import MAX_LEVEL, Ability, AbilityScore, Money
 from dndsheet.shared.rules import BackgroundMechanics, ClassMechanics, SpeciesMechanics
-
-#: Підписи, які не є володінням, а описують вибір («three musical instruments
-#: of your choice»). Такий вибір робить гравець, і він приходить як `pick`.
-_CHOICE_MARKERS = ("of your choice", "choose", "any ")
-
-
-def _is_choice_label(value: str) -> bool:
-    text = value.casefold()
-    return any(marker in text for marker in _CHOICE_MARKERS)
 
 
 @dataclass(slots=True)
@@ -363,7 +355,7 @@ class Character:
             items.extend(
                 Proficiency(kind=ProficiencyKind.TOOL, value=name, source=source)
                 for name in definition.tool_training
-                if not _is_choice_label(name)
+                if not is_choice_label(name)
             )
         species = self.species
         if species is not None:
@@ -394,7 +386,7 @@ class Character:
             items.extend(
                 Proficiency(kind=ProficiencyKind.TOOL, value=name, source=source)
                 for name in background.tool_proficiencies
-                if not _is_choice_label(name)
+                if not is_choice_label(name)
             )
         collected = Proficiencies(items=tuple(items)).merge(self.chosen)
         return collected
@@ -571,109 +563,12 @@ class Character:
     def _validate_chosen(self) -> None:
         accepted = Proficiencies()
         for item in self.chosen.items:
-            self._validate_pick(item, existing=accepted)
+            validate_pick(self.rules, item, existing=accepted)
             accepted = accepted.add(item)
 
     def _validate_pick(self, pick: Proficiency, *, existing: Proficiencies) -> None:
-        source = pick.source
-        if source.kind is SourceKind.CLASS:
-            definition = self.rules.class_mechanics(source.key)
-            if definition is None:
-                raise NotFoundError(f"немає правил класу {source.key!r}")
-            if pick.kind is not ProficiencyKind.SKILL:
-                raise ValidationError(
-                    f"клас {definition.name_en!r} дає володіння навичками — оберіть навичку"
-                )
-            try:
-                skill = Skill(pick.value.strip().casefold().replace(" ", "_"))
-            except ValueError as exc:
-                raise ValidationError(f"невідома навичка {pick.value!r}") from exc
-            if definition.skill_any == 0 and skill not in definition.skill_options():
-                raise ValidationError(
-                    f"клас {definition.name_en!r} не дає навички {skill.value!r}"
-                )
-            used = sum(
-                1
-                for item in existing.items
-                if item.kind is ProficiencyKind.SKILL and item.source == source
-            )
-            if used + 1 > definition.skill_limit:
-                raise ValidationError(
-                    f"клас {definition.name_en!r} дає не більше {definition.skill_limit} навичок"
-                )
-            return
-        if source.kind is SourceKind.SPECIES:
-            species = self.rules.species_mechanics(source.key)
-            if species is None:
-                raise NotFoundError(f"немає правил виду {source.key!r}")
-            self._validate_origin_pick(
-                pick,
-                existing,
-                skills={skill.value for skill in species.skill_proficiencies},
-                skill_any=species.skill_any,
-                tool_any=species.tools_any,
-                language_any=species.languages_any_standard,
-                label=species.name_en,
-            )
-            return
-        if source.kind is SourceKind.BACKGROUND:
-            background = self.rules.background_mechanics(source.key)
-            if background is None:
-                raise NotFoundError(f"немає правил передісторії {source.key!r}")
-            self._validate_origin_pick(
-                pick,
-                existing,
-                skills={skill.value for skill in background.skill_proficiencies},
-                skill_any=background.skill_any,
-                tool_any=background.tools_any,
-                language_any=background.languages_any_standard,
-                label=background.name_en,
-            )
-            return
-        # FEAT, ITEM, MANUAL — без обмежень: їх дає не таблиця, а гра.
-
-    @staticmethod
-    def _validate_origin_pick(
-        pick: Proficiency,
-        existing: Proficiencies,
-        *,
-        skills: set[str],
-        skill_any: int,
-        tool_any: int,
-        language_any: int,
-        label: str,
-    ) -> None:
-        value = pick.value.strip().casefold()
-        if pick.kind is ProficiencyKind.SKILL:
-            if skill_any == 0 and value not in skills:
-                raise ValidationError(f"{label!r} не дає навички {value!r}")
-            used = sum(
-                1
-                for item in existing.items
-                if item.kind is ProficiencyKind.SKILL and item.source == pick.source
-            )
-            if used + 1 > len(skills) + skill_any:
-                raise ValidationError(f"{label!r}: вичерпано вибір навичок")
-            return
-        if pick.kind is ProficiencyKind.TOOL:
-            used = sum(
-                1
-                for item in existing.items
-                if item.kind is ProficiencyKind.TOOL and item.source == pick.source
-            )
-            if tool_any == 0 or used + 1 > tool_any:
-                raise ValidationError(f"{label!r}: вичерпано вибір інструментів")
-            return
-        if pick.kind is ProficiencyKind.LANGUAGE:
-            used = sum(
-                1
-                for item in existing.items
-                if item.kind is ProficiencyKind.LANGUAGE and item.source == pick.source
-            )
-            if language_any == 0 or used + 1 > language_any:
-                raise ValidationError(f"{label!r}: вичерпано вибір мов")
-            return
-        raise ValidationError(f"{label!r}: такий вид володіння не передбачений")
+        """Ті самі правила, що й у візарді — див. `pick_rules.validate_pick`."""
+        validate_pick(self.rules, pick, existing=existing)
 
     def _validate_spells(self) -> None:
         self._validate_spell_limits(self.spells)

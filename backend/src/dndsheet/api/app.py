@@ -9,7 +9,16 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
 
 from dndsheet.characters.api.router import build_cases, router as characters_router
-from dndsheet.characters.infrastructure.compendium_rules import CompendiumRulesSource
+from dndsheet.characters.application.wizard import WizardService
+from dndsheet.characters.infrastructure.compendium_rules import (
+    CompendiumRulesSource,
+    CompendiumSubclassCatalog,
+)
+from dndsheet.characters.infrastructure.json_store import (
+    JsonCharacterRepository,
+    JsonDraftRepository,
+    default_data_dir,
+)
 from dndsheet.compendium.api.router import router as compendium_router
 from dndsheet.compendium.infrastructure.factory import build_service
 from dndsheet.export.application.registry import RendererRegistry
@@ -45,7 +54,17 @@ def create_app() -> FastAPI:
     # `/summary` чесно про це скаже.
     compendium = build_service()
     app.state.compendium = compendium
-    app.state.rules = CompendiumRulesSource(compendium)
+    rules = CompendiumRulesSource(compendium)
+    app.state.rules = rules
+    # Чернетки й персонажі — файли в `var/` (етап 6 замінить на БД). Каталог
+    # можна перевизначити `DNDSHEET_DATA_DIR`, це ж роблять тести.
+    data_dir = default_data_dir()
+    app.state.wizard = WizardService(
+        drafts=JsonDraftRepository(data_dir / "drafts", rules),
+        characters=JsonCharacterRepository(data_dir / "characters", rules),
+        rules=rules,
+        subclasses=CompendiumSubclassCatalog(compendium),
+    )
     # Еталонні персонажі рахуються на старті: якщо корпусу немає, список
     # порожній, і `/golden` віддає `items: []`, а не 500.
     app.state.golden_cases = build_cases(compendium)
