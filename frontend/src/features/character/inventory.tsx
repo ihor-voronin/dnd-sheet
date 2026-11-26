@@ -203,7 +203,7 @@ function draftFromEntry(entry: ItemSearchResult): Draft {
   // Власний урон лишаємо порожнім: інакше рядок із довідника став би
   // «виправленням» і з'їв би модифікатор здібності. Порожнє поле — це
   // «порахуй сам», а підказка показує, що саме буде.
-  const notes = itemType === "weapon" ? String(data.properties ?? "") : "";
+  const notes = itemType === "weapon" ? weaponNotes(String(data.properties ?? "")) : "";
   return {
     ...EMPTY,
     name_en: entry.name_en,
