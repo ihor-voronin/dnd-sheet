@@ -245,6 +245,36 @@ def test_abilities_options_explain_point_buy(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
+def test_class_options_carry_description_and_feature_texts(client: TestClient) -> None:
+    """Клас показує не лише числа: «що це за клас» і що робить кожне вміння."""
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={"name": "Дарія", "species_key": "human"},
+    )
+    step = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/class").json()
+    classes = {item["key"]: item for item in step["options"]["classes"]}
+
+    fighter = classes["fighter"]
+    assert fighter["description"].startswith("A human in clanging plate armor")
+    texts = {item["name_en"]: item["text"] for item in fighter["feature_texts"]}
+    assert "Second Wind" in texts
+    assert "well of stamina" in texts["Second Wind"]
+    # Базові розділи книги теж потрібні: хіти, володіння, спорядження.
+    assert "Hit Points" in texts
+    # «Quick Build» і підкласи — не вміння 1 рівня, тому їх тут немає.
+    assert "Quick Build" not in texts
+    assert "Champion" not in texts
+    # Навички: скільки з якого списку — для екрана «2 зі списку (8)».
+    assert fighter["skill_limit"] == 2
+    assert len(fighter["skill_options"]) == 8
+
+    # У артифіцера тексту в корпусі немає — це чесна порожнеча, не помилка.
+    assert classes["artificer"]["description"] == ""
+    assert classes["artificer"]["feature_texts"] == []
+
+
 def test_species_options_carry_traits_from_the_book(client: TestClient) -> None:
     """Harengon раніше показувався як «без бонусів» — без жодного вміння."""
     payload = _start(client)

@@ -76,6 +76,8 @@ export interface SubclassGrants {
 export interface SubclassView {
   id: string;
   name_en: string;
+  /** Книга, з якої підклас: потрібна, коли назви повторюються (PHB/PSA). */
+  source_id?: string;
   grants?: SubclassGrants;
 }
 
@@ -96,6 +98,10 @@ export interface ClassView {
   spells_known_at_level_1: number | null;
   subclass: { title: string; level: number; options: SubclassView[] } | null;
   features: { name_en: string; level: number }[];
+  /** Опис класу з книги. */
+  description?: string;
+  /** Текст умінь, які клас дає на 1 рівні (і базових розділів книги). */
+  feature_texts?: { name_en: string; level: number; text: string }[];
 }
 
 export interface BackgroundView {

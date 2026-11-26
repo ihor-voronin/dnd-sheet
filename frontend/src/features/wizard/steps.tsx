@@ -18,7 +18,9 @@ import {
   abilityLabel,
   abilityModifier,
   modifierLabel,
+  proficiencyValue,
   skillLabel,
+  subclassLabel,
 } from "../../labels";
 import type {
   AbilitiesOptions,
@@ -40,7 +42,15 @@ import type {
 } from "./types";
 import { searchItems } from "../../api";
 import { RuleText } from "../character/panels";
-import { speciesLabel, termLabel } from "../character/uk";
+import {
+  featureLabel,
+  featureText,
+  speciesLabel,
+  spellLabel,
+  termLabel,
+  ukSubclass,
+  withEnglish,
+} from "../character/uk";
 
 export interface StepProps<TOptions> {
   answers: Record<string, unknown>;
@@ -429,8 +439,21 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
   const initial = answers as unknown as ClassAnswers;
   const [classKey, setClassKey] = useState(initial.class_key ?? "");
   const [subclassKey, setSubclassKey] = useState(initial.subclass_key ?? "");
+  // Список класів згортається після вибору — картка класу стає згори.
+  const [gridOpen, setGridOpen] = useState(!initial.class_key);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
   const selected = options.classes.find((item) => item.key === classKey);
-  const needsSubclass = Boolean(selected?.subclass && selected.subclass.level === 1 && selected.subclass.options.length);
+  const needsSubclass = Boolean(
+    selected?.subclass && selected.subclass.level === 1 && selected.subclass.options.length,
+  );
+  // «Knowledge Domain» є і в PHB, і в Plane Shift — однакова назва, різні
+  // книги. Показуємо джерело лише тоді, коли назви справді повторюються.
+  const repeatedSubclasses = new Set(
+    (selected?.subclass?.options ?? [])
+      .map((option) => option.name_en)
+      .filter((name, index, all) => all.indexOf(name) !== index),
+  );
 
   const previousClass = useRef(classKey);
   useEffect(() => {
@@ -439,87 +462,177 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
     setSubclassKey("");
   }, [classKey]);
 
+  function pickClass(key: string) {
+    setClassKey(key);
+    setGridOpen(false);
+    requestAnimationFrame(() =>
+      cardRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+    );
+  }
+
+  const grants = (() => {
+    if (!selected?.subclass || !subclassKey) return null;
+    const option = selected.subclass.options.find((item) => item.id === subclassKey);
+    if (!option?.grants) return null;
+    return option.grants.prepared.length || option.grants.expanded.length ? option.grants : null;
+  })();
+
   return (
     <div className="wizard-step">
-      <div className="choice-grid">
-        {options.classes.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className={`choice ${item.key === classKey ? "choice--active" : ""}`}
-            aria-label={item.name_en}
-            onClick={() => setClassKey(item.key)}
-          >
-            <strong>{item.name_en}</strong>
-            <span className="choice-meta">хіт-дайс d{item.hit_die} · майстерність: {item.skill_limit} навичок</span>
-            <span className="choice-meta">порятунки: {item.saving_throws.map(abilityLabel).join(", ")}</span>
-            {item.spellcasting ? (
-              <span className="choice-meta">
-                чарує від {abilityLabel(item.spellcasting.ability)}
-                {item.spellcasting.prepares ? " · готує" : " · знає"}
-              </span>
-            ) : (
-              <span className="choice-meta">без заклять на 1 рівні</span>
-            )}
-            {item.subclass ? (
-              <span className="choice-meta">
-                {item.subclass.title} — з {item.subclass.level} рівня
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </div>
-
       {selected ? (
-        <section className="wizard-block">
-          <h3>{selected.name_en}: що дає на 1 рівні</h3>
-          <ul className="plain-list">
-            <li>Хіт-дайс: d{selected.hit_die}</li>
-            <li>Порятунки: {selected.saving_throws.map(abilityLabel).join(", ")}</li>
-            <li>
-              Навички: {selected.skill_limit}
-              {selected.skill_options.length ? ` зі списку (${selected.skill_options.length})` : " (будь-які)"}
-            </li>
-            <li>
-              Броня: {selected.armor_training.length ? selected.armor_training.join(", ") : "—"}; зброя:{" "}
-              {selected.weapon_training.length ? selected.weapon_training.join(", ") : "—"}
-            </li>
-            {selected.features.length ? (
-              <li>Уміння 1 рівня: {selected.features.map((feature) => feature.name_en).join(", ")}</li>
+        <div ref={cardRef}>
+          <section className="wizard-block species-card class-card">
+            <header className="species-card__head">
+              <h3>{termLabel(selected.name_en)}</h3>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setGridOpen((open) => !open)}
+              >
+                {gridOpen ? "Згорнути список класів" : "Змінити клас"}
+              </button>
+            </header>
+
+            {needsSubclass && selected.subclass ? (
+              <div className="species-card__subs">
+                <h4>
+                  {withEnglish(
+                    subclassLabel(selected.subclass.title),
+                    ukSubclass(selected.subclass.title),
+                  )}{" "}
+                  — обовʼязково на 1 рівні
+                </h4>
+                <div className="chip-row">
+                  {selected.subclass.options.map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      className={`chip ${subclassKey === entry.id ? "chip--active" : ""}`}
+                      onClick={() => setSubclassKey(entry.id)}
+                    >
+                      {withEnglish(subclassLabel(entry.name_en), ukSubclass(entry.id))}
+                      {repeatedSubclasses.has(entry.name_en) ? (
+                        <span className="meta"> · {entry.source_id}</span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+                {!subclassKey ? (
+                  <p className="hint hint--warn">
+                    {termLabel(selected.name_en)} обирає{" "}
+                    {withEnglish(
+                      subclassLabel(selected.subclass.title),
+                      ukSubclass(selected.subclass.title),
+                    )}{" "}
+                    уже на 1 рівні — без нього «Далі» не пустить.
+                  </p>
+                ) : null}
+              </div>
             ) : null}
-          </ul>
-        </section>
-      ) : null}
 
-      {selected?.subclass && subclassKey ? (
-        (() => {
-          const option = selected.subclass.options.find((item) => item.id === subclassKey);
-          if (!option?.grants) return null;
-          const { prepared, expanded } = option.grants;
-          if (!prepared.length && !expanded.length) return null;
-          return (
-            <p className="hint">
-              {prepared.length
-                ? `Завжди підготовлені: ${prepared.join(", ")}.`
-                : ""}
-              {expanded.length ? ` Розширений список: ${expanded.join(", ")}.` : ""}
-            </p>
-          );
-        })()
-      ) : null}
+            <p className="species-card__facts">{classFacts(selected)}</p>
 
-      {needsSubclass && selected?.subclass ? (
-        <label className="field">
-          <span>{selected.subclass.title} (обовʼязково на 1 рівні)</span>
-          <select value={subclassKey} onChange={(event) => setSubclassKey(event.target.value)}>
-            <option value="">— оберіть —</option>
-            {selected.subclass.options.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.name_en}
-              </option>
-            ))}
-          </select>
-        </label>
+            {selected.description ? (
+              <details className="reckoning species-description" open>
+                <summary>Опис класу (з книги)</summary>
+                <RuleText text={selected.description} />
+              </details>
+            ) : (
+              <p className="hint hint--warn">
+                У корпусі немає тексту цього класу — показано лише числа з правил.
+              </p>
+            )}
+
+            {selected.feature_texts?.length ? (
+              <>
+                <h4 className="species-card__h4">Уміння 1 рівня</h4>
+                <ul className="species-traits">
+                  {selected.feature_texts.map((feature) => (
+                    <li key={feature.name_en}>
+                      <details className="reckoning" open={feature.name_en === "Hit Points"}>
+                        <summary>{featureLabel(feature.name_en)}</summary>
+                        <RuleText text={featureText(feature.name_en, feature.text)} />
+                      </details>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+
+            {selected.features.length ? (
+              <details className="reckoning">
+                <summary>Усі вміння класу за рівнями</summary>
+                <ul className="plain-list">
+                  {selected.features.map((feature) => (
+                    <li key={`${feature.level}-${feature.name_en}`}>
+                      {feature.level} рівень · {featureLabel(feature.name_en)}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+
+            {selected.description || selected.feature_texts?.length ? (
+              <p className="hint">
+                Опис класу — мовою книги (англійською); назви й описи вмінь, які є в
+                глосарії, показані українською з англійською в дужках.
+              </p>
+            ) : null}
+
+            {grants ? (
+              <p className="hint">
+                {grants.prepared.length
+                  ? `Завжди підготовлені: ${grants.prepared.map((name) => spellLabel(name)).join(", ")}.`
+                  : ""}
+                {grants.expanded.length
+                  ? ` Розширений список: ${grants.expanded.map((name) => spellLabel(name)).join(", ")}.`
+                  : ""}
+              </p>
+            ) : null}
+          </section>
+        </div>
+      ) : (
+        <p className="hint">Оберіть клас — і тут зʼявиться все, що він дає.</p>
+      )}
+
+      {gridOpen ? (
+        <div className="choice-grid species-grid">
+          {options.classes.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`choice ${item.key === classKey ? "choice--active" : ""}`}
+              aria-label={item.name_en}
+              onClick={() => pickClass(item.key)}
+            >
+              <strong>{termLabel(item.name_en)}</strong>
+              <span className="choice-meta">
+                хіт-дайс d{item.hit_die} · навички: {item.skill_limit} з{" "}
+                {item.skill_options.length}
+              </span>
+              <span className="choice-meta">
+                порятунки: {item.saving_throws.map(abilityLabel).join(", ")}
+              </span>
+              {item.spellcasting ? (
+                <span className="choice-meta">
+                  чарує від {abilityLabel(item.spellcasting.ability)}
+                  {item.spellcasting.prepares ? " · готує" : " · знає"}
+                </span>
+              ) : (
+                <span className="choice-meta">без заклять на 1 рівні</span>
+              )}
+              {item.subclass ? (
+                <span className="choice-meta">
+                  {withEnglish(
+                    subclassLabel(item.subclass.title),
+                    ukSubclass(item.subclass.title),
+                  )}{" "}
+                  — з {item.subclass.level} рівня
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
       ) : null}
 
       <button
@@ -532,6 +645,48 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
       </button>
     </div>
   );
+}
+
+/** Що клас дає на 1 рівні — числами, українськими словами. */
+function classFacts(item: ClassView): string {
+  const parts: string[] = [`хіт-дайс d${item.hit_die}`];
+  parts.push(`порятунки: ${item.saving_throws.map(abilityLabel).join(", ")}`);
+
+  const skills = item.skill_options.map(skillLabel);
+  if (skills.length || item.skill_limit) {
+    const from = skills.length ? ` — ${skills.join(", ")}` : " — будь-які";
+    parts.push(`навички: ${item.skill_limit} зі списку (${skills.length})${from}`);
+  }
+  if (item.skill_any) parts.push(`+ ${item.skill_any} з будь-яких`);
+  if (item.armor_training.length) {
+    parts.push(
+      `броня: ${item.armor_training.map((value) => proficiencyValue("armor", value)).join(", ")}`,
+    );
+  }
+  if (item.weapon_training.length) {
+    parts.push(
+      `зброя: ${item.weapon_training.map((value) => proficiencyValue("weapon", value)).join(", ")}`,
+    );
+  }
+  if (item.tool_training.length) {
+    parts.push(
+      `інструменти: ${item.tool_training.map((value) => proficiencyValue("tool", value)).join(", ")}`,
+    );
+  }
+  if (item.spellcasting) {
+    parts.push(
+      `чарує від ${abilityLabel(item.spellcasting.ability)} · ${
+        item.spellcasting.prepares ? "готує закляття" : "знає закляття"
+      }`,
+    );
+    if (item.cantrips_at_level_1) parts.push(`заговорів на 1 рівні: ${item.cantrips_at_level_1}`);
+    if (item.spells_known_at_level_1) {
+      parts.push(`заклять на 1 рівні: ${item.spells_known_at_level_1}`);
+    }
+  } else {
+    parts.push("на 1 рівні не чарує");
+  }
+  return parts.join(" · ");
 }
 
 // ---------------------------------------------------------------------------
@@ -1193,3 +1348,4 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
     </div>
   );
 }
+

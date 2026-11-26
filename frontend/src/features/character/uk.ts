@@ -24,6 +24,20 @@ export interface UkText {
 
 /** Уміння класів і підкласів. */
 const FEATURES: Record<string, UkText> = {
+  // Базові розділи класу: лише назви, текст лишається книжковим (він різний
+  // для кожного класу — «1d10 за рівень воїна» тощо).
+  "hit points": {
+    name: "Хіти",
+    text: "Хіти класу: кістка хитів (хіт-дайс) і додаток Статури на кожному рівні. Точна формула — у тексті книги нижче.",
+  },
+  proficiencies: {
+    name: "Володіння",
+    text: "Броня, зброя, інструменти, порятунки й навички, які клас дає на 1 рівні. Точний перелік — у тексті книги нижче.",
+  },
+  equipment: {
+    name: "Спорядження",
+    text: "Стартове спорядження класу: або набір, або золото на вибір. Варіанти — у тексті книги нижче.",
+  },
   "fighting style": {
     name: "Бойовий стиль",
     text: `Ви обираєте особливий стиль бою як свою спеціальність. Виберіть один із наведених варіантів. Не можна брати той самий стиль більше ніж раз, навіть якщо пізніше вам знову випаде вибір.
@@ -327,6 +341,54 @@ const TERMS: Record<string, string> = {
   "war-domain": "Війна",
   "the archfey": "Архіфея",
   "the great old one": "Великий Стародавній",
+  // Назви підкласів-розділів класу (клас обирає їх на своєму рівні).
+  "martial archetype": "Військовий архетип",  "arcane tradition": "Арканна традиція",
+  "divine domain": "Божественний домен",
+  "druid circle": "Коло друїдів",
+  "bard college": "Коледж бардів",
+  "otherworldly patron": "Потойбічний патрон",
+  "roguish archetype": "Злодійський архетип",
+  "ranger archetype": "Архетип слідопита",
+  "primal path": "Прадавній шлях",
+  "sorcerous origin": "Чарівниче походження",
+  "sacred oath": "Священна клятва",
+  "monastic tradition": "Монастирська традиція",
+  "artificer specialist": "Фах артифіцера",
+  // Підкласи, які обираються ОДРАЗУ на 1 рівні (ключ — кінець id у корпусі).
+  "life-domain": "Життя",
+  "light-domain": "Світло",
+  "trickery-domain": "Обман",
+  "death-domain": "Смерть",
+  "knowledge-domain": "Знання",
+  "nature-domain": "Природа",
+  "tempest-domain": "Буря",
+  "forge-domain": "Кузня",
+  "grave-domain": "Могила",
+  "arcana-domain": "Аркана",
+  "order-domain": "Порядок",
+  "peace-domain": "Мир",
+  "twilight-domain": "Сутінки",
+  "ambition-domain": "Амбіції",
+  "solidarity-domain": "Солідарність",
+  "strength-domain": "Сила",
+  "zeal-domain": "Завзяття",
+  "the-undying": "Невмирущий",
+  "the-celestial": "Небесний",
+  "the-hexblade": "Хексблейд",
+  "the-fathomless": "Бездонний",
+  "the-genie": "Джин",
+  "the-undead": "Нежить",
+  "draconic-bloodline": "Драконяча кров",
+  "wild-magic": "Дика магія",
+  "divine-soul": "Божественна душа",
+  "shadow-magic": "Тіньова магія",
+  "storm-sorcery": "Штормове чаклунство",
+  "aberrant-mind": "Аберантний розум",
+  "clockwork-soul": "Механічна душа",
+  alchemist: "Алхімік",
+  armorer: "Бронник",
+  artillerist: "Артилерист",
+  "battle-smith": "Бойовий коваль",
 };
 
 /** Назви видів і підрас (ключ — назва з корпусу, нижній регістр).

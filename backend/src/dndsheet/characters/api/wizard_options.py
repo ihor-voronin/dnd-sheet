@@ -22,6 +22,7 @@ from dndsheet.characters.domain.wizard import (
     WizardStep,
 )
 from dndsheet.characters.api.species_traits import species_details
+from dndsheet.characters.api.features import class_details
 from dndsheet.compendium.api.serializers import (
     background_mechanics_full,
     class_mechanics_full,
@@ -31,6 +32,10 @@ from dndsheet.compendium.api.serializers import (
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
 from dndsheet.shared.rules import requires_subspecies
+
+#: Розділи книги, які є в тексті класу, але не є «вміннями»: без них крок
+#: «Клас» не показав би, що клас дає на 1 рівні з поясненням.
+BASE_SECTIONS = frozenset({"Hit Points", "Proficiencies", "Equipment"})
 
 ALIGNMENTS: tuple[str, ...] = (
     "lawful good",
@@ -53,7 +58,7 @@ def build_options(
     if step is WizardStep.SPECIES:
         return _species_options(draft, service, cache)
     if step is WizardStep.CLASS:
-        return _class_options(draft, service)
+        return _class_options(draft, service, cache)
     if step is WizardStep.ABILITIES:
         return _abilities_options(draft)
     if step is WizardStep.BACKGROUND:
@@ -133,13 +138,36 @@ def _species_entry(
     return payload
 
 
-def _class_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
+def _class_options(
+    draft: Draft,
+    service: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    store = cache if cache is not None else {}
     classes: list[dict[str, Any]] = []
     for definition in service.class_definitions():
         payload = class_mechanics_full(definition)
         payload["skill_options"] = [skill.value for skill in definition.skill_options()]
         payload["cantrips_at_level_1"] = definition.cantrips_at(1)
         payload["spells_known_at_level_1"] = definition.spells_known_at(1)
+        # Опис класу й тексти вмінь — з книги: числа є в індексі, а «що це за
+        # клас» і що робить уміння, там не сказано.
+        details = class_details(service, definition.key, store)
+        payload["description"] = details["description"]
+        levels = {feature.name_en: feature.level for feature in definition.features}
+        # Тільки те, що клас справді дає на 1 рівні, і базові розділи
+        # (хіти, володіння, спорядження). «Quick Build» і підкласи в тексті
+        # класу теж є заголовками, але до вмінь 1 рівня не належать.
+        first_level = {name for name, level in levels.items() if level <= 1}
+        payload["feature_texts"] = [
+            {
+                "name_en": item["name_en"],
+                "level": levels.get(item["name_en"], 1),
+                "text": item["text"],
+            }
+            for item in details["features"]
+            if item["name_en"] in first_level or item["name_en"] in BASE_SECTIONS
+        ]
         subclass_entries: list[dict[str, Any]] = []
         if definition.subclass_level == 1:
             for entry in service.subclasses(definition.name_en):

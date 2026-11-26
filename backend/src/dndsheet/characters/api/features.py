@@ -209,4 +209,49 @@ def _sections(
     return sections
 
 
-__all__ = ["enrich_features", "subclass_features"]
+def class_details(
+    service: CompendiumService,
+    class_key: str,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Опис класу й текст кожного вміння — для кроку «Клас» у візарді.
+
+    Числа класу живуть в індексі механік, а «що це за клас» — лише в книзі,
+    тому екран бере опис звідси (так само, як лист бере тексти вмінь).
+    """
+    store = cache if cache is not None else {}
+    entry = _class_entry(store, service, class_key)
+    if entry is None:
+        return {"description": "", "features": []}
+    texts = _class_texts(store, service, class_key)
+    return {
+        "description": _intro(entry.text_en or ""),
+        "features": [
+            {"name_en": name, "text": text} for name, text in texts.items()
+        ],
+    }
+
+
+def _intro(text: str) -> str:
+    """Проза на початку глави класу — до першого розділу `##`."""
+    lines = text.replace("\r\n", "\n").splitlines()
+    collected: list[str] = []
+    started = False
+    for line in lines:
+        heading = re.match(r"^(#{1,6})\s+", line)
+        if heading:
+            level = len(heading.group(1))
+            if started and level <= 2:
+                break
+            continue
+        if line.strip():
+            started = True
+            collected.append(line)
+        elif collected:
+            collected.append(line)
+    return "\n".join(collected).strip()
+
+
+__all__ = ["class_details", "enrich_features", "subclass_features"]
+
+

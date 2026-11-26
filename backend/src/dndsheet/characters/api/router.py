@@ -136,6 +136,13 @@ def _sheet_service(request: Request) -> SheetService:
     return service
 
 
+def _step_cache(request: Request, step: WizardStep) -> dict[str, Any]:
+    """Кеш текстів для кроку: у класу — той самий, що й у листа."""
+    if step is WizardStep.CLASS:
+        return getattr(request.app.state, "feature_cache", {})
+    return getattr(request.app.state, "species_cache", {})
+
+
 def _level_up_service(request: Request) -> LevelUpService:
     service = getattr(request.app.state, "level_up", None)
     if service is None:  # pragma: no cover — так не буває, якщо app зібрано create_app
@@ -225,7 +232,7 @@ def _step_payload(request: Request, draft: Draft, step: WizardStep) -> dict[str,
             step,
             draft,
             _compendium(request),
-            getattr(request.app.state, "species_cache", {}),
+            _step_cache(request, step),
         ),
         "errors": [],
     }
