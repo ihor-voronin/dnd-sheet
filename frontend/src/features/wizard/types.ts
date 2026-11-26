@@ -114,6 +114,12 @@ export interface BackgroundView {
   tools_any: number;
   languages_any_standard: number;
   feature_en: string | null;
+  /** Опис і текст риси з книги. */
+  description?: string;
+  feature_text?: string;
+  /** Спорядження з рядка `Equipment:`; choices — варіанти вибору книги. */
+  equipment?: { text: string; choices: string[] }[];
+  money?: { gp?: number };
 }
 
 export interface AbilitiesOptions {
@@ -202,6 +208,8 @@ export interface ItemPayload {
   entry_id?: string | null;
   armor_base?: number | null;
   dex_cap?: number | null;
+  notes?: string | null;
+  damage?: string | null;
 }
 
 export interface MoneyPayload {

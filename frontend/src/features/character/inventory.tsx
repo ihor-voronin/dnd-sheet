@@ -222,7 +222,7 @@ function draftFromEntry(entry: ItemSearchResult): Draft {
 }
 
 /** Предмет із каталогу — одразу в інвентар, без форми. */
-function bodyFromEntry(entry: ItemSearchResult): ItemBody {
+export function bodyFromEntry(entry: ItemSearchResult): ItemBody {
   const draft = draftFromEntry(entry);
   return {
     name_en: draft.name_en.trim(),

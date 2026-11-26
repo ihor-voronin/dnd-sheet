@@ -140,6 +140,8 @@ def _step_cache(request: Request, step: WizardStep) -> dict[str, Any]:
     """Кеш текстів для кроку: у класу — той самий, що й у листа."""
     if step is WizardStep.CLASS:
         return getattr(request.app.state, "feature_cache", {})
+    if step in (WizardStep.BACKGROUND, WizardStep.EQUIPMENT):
+        return getattr(request.app.state, "background_cache", {})
     return getattr(request.app.state, "species_cache", {})
 
 

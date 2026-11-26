@@ -23,6 +23,7 @@ from dndsheet.characters.domain.wizard import (
 )
 from dndsheet.characters.api.species_traits import species_details
 from dndsheet.characters.api.features import class_details
+from dndsheet.characters.api.background_info import background_details
 from dndsheet.compendium.api.serializers import (
     background_mechanics_full,
     class_mechanics_full,
@@ -62,9 +63,9 @@ def build_options(
     if step is WizardStep.ABILITIES:
         return _abilities_options(draft)
     if step is WizardStep.BACKGROUND:
-        return _background_options(draft, service)
+        return _background_options(draft, service, cache)
     if step is WizardStep.EQUIPMENT:
-        return _equipment_options(draft, service)
+        return _equipment_options(draft, service, cache)
     return _spells_options(draft, service)
 
 
@@ -216,11 +217,28 @@ def _abilities_options(draft: Draft) -> dict[str, Any]:
     }
 
 
-def _background_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
+def _background_options(
+    draft: Draft,
+    service: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Передісторії з описом, рисою й спорядженням — для вибору й екрана.
+
+    Спорядження передісторії потрібне вже тут: крок «Спорядження» бере його
+    з відповіді цього кроку, а не вгадує за назвою.
+    """
+    store = cache if cache is not None else {}
+    backgrounds: list[dict[str, Any]] = []
+    for item in service.backgrounds():
+        payload = background_mechanics_full(item)
+        details = background_details(service, item.name_en, item.feature_en, store)
+        payload["description"] = details["description"]
+        payload["feature_text"] = details["feature_text"]
+        payload["equipment"] = details["equipment"]
+        payload["money"] = details["money"]
+        backgrounds.append(payload)
     options: dict[str, Any] = {
-        "backgrounds": [
-            background_mechanics_full(item) for item in service.backgrounds()
-        ],
+        "backgrounds": backgrounds,
         "alignments": list(ALIGNMENTS),
         "class_skills": None,
         "species_skills": None,
@@ -245,14 +263,33 @@ def _background_options(draft: Draft, service: CompendiumService) -> dict[str, A
     return options
 
 
-def _equipment_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
+def _equipment_options(
+    draft: Draft,
+    service: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    store = cache if cache is not None else {}
     options: dict[str, Any] = {
         "items_url": "/api/v1/compendium/items",
         "hint": (
             "Спорядження не обовʼязкове: можна пропустити й додати предмети вже "
             "на листі. Пошук предметів — у довіднику."
         ),
+        "background": None,
     }
+    background = draft.background
+    if background is not None:
+        # Спорядження передісторії додається одразу; де книга дає вибір
+        # («bone dice or deck of cards») — вибір показує екран.
+        details = background_details(
+            service, background.name_en, background.feature_en, store
+        )
+        options["background"] = {
+            "key": background.key,
+            "name_en": background.name_en,
+            "equipment": details["equipment"],
+            "money": details["money"],
+        }
     if draft.class_key:
         definition = draft.class_definition
         options["class"] = {

@@ -142,4 +142,118 @@ def _feature_text(text: str, feature: str | None) -> str:
     return "\n".join(body).strip()
 
 
-__all__ = ["enrich_background"]
+def background_details(
+    service: CompendiumService,
+    name_en: str,
+    feature_en: str | None = None,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Опис, риса й спорядження передісторії — для кроку візарда.
+
+    Спорядження розбирається з рядка `Equipment:` книги на предмети; там, де
+    книга пропонує вибір («prayer book or prayer wheel»), варіанти лишаються
+    окремими, щоб екран дав вибрати.
+    """
+    store = cache if cache is not None else {}
+    key = f"background-details:{(name_en or '').strip().casefold()}"
+    if key in store:
+        return store[key]
+    entry = _entry(service, name_en or "")
+    text = entry.text_en or "" if entry is not None else ""
+    description, equipment_line = _split_description(text)
+    rows, money = parse_equipment(equipment_line)
+    found = {
+        "description": description,
+        "feature_en": feature_en,
+        "feature_text": _feature_text(text, feature_en),
+        "equipment": rows,
+        "money": money,
+        "source_id": entry.source_id if entry is not None else None,
+    }
+    store[key] = found
+    return found
+
+
+#: «a pouch containing 10 gp» — гроші з набору передісторії.
+GOLD = re.compile(r"(\d+)\s*gp\b", re.IGNORECASE)
+
+
+def parse_equipment(line: str) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """Рядок Equipment → предмети з варіантами й гроші."""
+    if not line:
+        return [], {}
+    rows: list[dict[str, Any]] = []
+    money: dict[str, int] = {}
+    for chunk in _split_top_level(line):
+        chunk = _strip_lead(chunk)
+        if not chunk:
+            continue
+        gold = GOLD.search(chunk)
+        if gold:
+            money["gp"] = money.get("gp", 0) + int(gold.group(1))
+        choices = [_strip_lead(part) for part in _split_or(chunk)]
+        choices = [part for part in choices if part]
+        if not choices:
+            continue
+        rows.append(
+            {
+                "text": choices[0],
+                "choices": choices if len(choices) > 1 else [],
+            }
+        )
+    return rows, money
+
+
+def _split_top_level(text: str) -> list[str]:
+    """Поділити за комами, не чіпаючи коми в дужках."""
+    parts: list[str] = []
+    buffer = ""
+    depth = 0
+    for char in text:
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        if char == "," and depth == 0:
+            parts.append(buffer)
+            buffer = ""
+        else:
+            buffer += char
+    parts.append(buffer)
+    return parts
+
+
+def _split_or(text: str) -> list[str]:
+    """Поділити «a or b or c» поза дужками."""
+    parts: list[str] = []
+    buffer = ""
+    depth = 0
+    index = 0
+    lowered = text.lower()
+    while index < len(text):
+        char = text[index]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        if depth == 0 and lowered.startswith(" or ", index):
+            parts.append(buffer)
+            buffer = ""
+            index += 4
+            continue
+        buffer += char
+        index += 1
+    parts.append(buffer)
+    return parts
+
+
+def _strip_lead(text: str) -> str:
+    value = text.strip().strip(".")
+    for prefix in ("and ", "a set of ", "an ", "a ", "the "):
+        if value.lower().startswith(prefix):
+            value = value[len(prefix) :]
+            break
+    return value.strip()
+
+
+__all__ = ["background_details", "enrich_background", "parse_equipment"]

@@ -275,6 +275,56 @@ def test_class_options_carry_description_and_feature_texts(client: TestClient) -
     assert classes["artificer"]["feature_texts"] == []
 
 
+def test_background_options_show_description_and_equipment(client: TestClient) -> None:
+    """Передісторія показує опис, рису й спорядження — а не лише назви навичок."""
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={"name": "Дарія", "species_key": "human"},
+    )
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/class",
+        json={"class_key": "fighter"},
+    )
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/abilities",
+        json={
+            "method": "standard_array",
+            "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8},
+        },
+    )
+    step = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/background").json()
+    soldier = next(
+        item for item in step["options"]["backgrounds"] if item["key"] == "soldier"
+    )
+
+    assert soldier["description"].startswith("War has been your life")
+    assert "military rank" in (soldier["feature_en"] or "").casefold()
+    assert soldier["feature_text"].startswith("You have a military rank")
+
+    equipment = soldier["equipment"]
+    texts = [row["text"] for row in equipment]
+    assert "insignia of rank" in texts
+    # «bone dice or deck of cards» — вибір книги лишається вибором.
+    dice = next(row for row in equipment if row["text"] == "bone dice")
+    assert dice["choices"] == ["bone dice", "deck of cards"]
+    assert soldier["money"] == {"gp": 10}
+
+
+def test_equipment_options_carry_background_items(client: TestClient) -> None:
+    """Крок «Спорядження» отримує предмети передісторії, щоб додати їх сам."""
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    _walk(client, draft_id, FIGHTER_STEPS[:4])
+    step = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/equipment").json()
+    background = step["options"]["background"]
+
+    assert background["key"] == "soldier"
+    assert any(row["text"] == "common clothes" for row in background["equipment"])
+    assert background["money"] == {"gp": 10}
+
+
 def test_species_options_carry_traits_from_the_book(client: TestClient) -> None:
     """Harengon раніше показувався як «без бонусів» — без жодного вміння."""
     payload = _start(client)

@@ -5,7 +5,7 @@
  * сервер повернув. Тому кнопка «Далі» ніколи не «вгадує» валідність.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   ABILITY_SHORT,
@@ -41,10 +41,13 @@ import type {
   SpellPayload,
 } from "./types";
 import { searchItems } from "../../api";
+import type { ItemSearchResult } from "../../api";
 import { RuleText } from "../character/panels";
+import { bodyFromEntry } from "../character/inventory";
 import {
   featureLabel,
   featureText,
+  itemLabel,
   speciesLabel,
   spellLabel,
   termLabel,
@@ -647,6 +650,30 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
   );
 }
 
+/** Що дає передісторія — числами й українськими словами. */
+function backgroundFacts(item: BackgroundView): string {
+  const parts: string[] = [];
+  if (item.skill_proficiencies.length) {
+    parts.push(`навички: ${item.skill_proficiencies.map(skillLabel).join(", ")}`);
+  }
+  if (item.skill_any) parts.push(`навичок на вибір: ${item.skill_any}`);
+  if (item.tool_proficiencies.length) {
+    parts.push(
+      `інструменти: ${item.tool_proficiencies.map((tool) => proficiencyValue("tool", tool)).join(", ")}`,
+    );
+  }
+  if (item.tools_any) parts.push(`інструментів на вибір: ${item.tools_any}`);
+  if (item.languages_any_standard) parts.push(`мов на вибір: ${item.languages_any_standard}`);
+  if (item.feature_en) parts.push(`риса: ${featureLabel(item.feature_en)}`);
+  if (part_money(item)) parts.push(`гроші: ${part_money(item)}`);
+  return parts.length ? parts.join(" · ") : "без чисел — лише опис";
+}
+
+function part_money(item: BackgroundView): string {
+  const gp = item.money?.gp ?? 0;
+  return gp ? `${gp} зм` : "";
+}
+
 /** Що клас дає на 1 рівні — числами, українськими словами. */
 function classFacts(item: ClassView): string {
   const parts: string[] = [`хіт-дайс d${item.hit_die}`];
@@ -698,10 +725,14 @@ export function AbilitiesStep({ answers, options, busy, onSubmit }: StepProps<Ab
   const [method, setMethod] = useState(initial.method ?? "standard_array");
   const [scores, setScores] = useState<Record<string, number>>(() => {
     if (initial.scores && Object.keys(initial.scores).length) return { ...initial.scores };
+    // Стандартний набір не має «значень за замовчуванням»: спершу всі шість
+    // не призначені, і гравець розкладає числа сам.
+    if ((initial.method ?? "standard_array") === "standard_array") {
+      return Object.fromEntries(ABILITIES.map((ability) => [ability, 0]));
+    }
     return Object.fromEntries(ABILITIES.map((ability) => [ability, 10]));
   });
 
-  const used = useMemo(() => new Set(Object.values(scores)), [scores]);
   const spent = Object.values(scores).reduce(
     (total, score) => total + (options.point_buy.costs[String(score)] ?? 0),
     0,
@@ -713,9 +744,38 @@ export function AbilitiesStep({ answers, options, busy, onSubmit }: StepProps<Ab
     setScores((current) => ({ ...current, [ability]: value }));
   }
 
+  /** Число з набору вже стоїть в іншій характеристиці — його не показуємо. */
+  function usedElsewhere(value: number, ability: string): boolean {
+    return ABILITIES.some((other) => other !== ability && scores[other] === value);
+  }
+
+  function pickMethod(next: string) {
+    setMethod(next);
+    if (next === "standard_array") {
+      const values = Object.values(scores);
+      const same =
+        values.length === ABILITIES.length &&
+        JSON.stringify([...values].sort((left, right) => left - right)) ===
+          JSON.stringify([...options.standard_array].sort((left, right) => left - right));
+      if (!same) setScores(Object.fromEntries(ABILITIES.map((ability) => [ability, 0])));
+    } else {
+      // Назад у point buy/ручний: порожні клітинки заповнюємо числом за
+      // замовчуванням, інакше в запиті буде нуль і сервер відмовить.
+      setScores((current) => {
+        const filled: Record<string, number> = {};
+        for (const ability of ABILITIES) {
+          filled[ability] = current[ability] || (next === "point_buy" ? 8 : 10);
+        }
+        return filled;
+      });
+    }
+  }
+
+  const unassigned = method === "standard_array" && ABILITIES.filter((a) => !scores[a]).length;
   const invalidStandard =
     method === "standard_array" &&
-    JSON.stringify([...Object.values(scores)].sort()) !== JSON.stringify([...options.standard_array].sort());
+    JSON.stringify([...Object.values(scores)].sort((left, right) => left - right)) !==
+      JSON.stringify([...options.standard_array].sort((left, right) => left - right));
   const invalidPointBuy = method === "point_buy" && remaining < 0;
 
   return (
@@ -726,7 +786,7 @@ export function AbilitiesStep({ answers, options, busy, onSubmit }: StepProps<Ab
             key={item}
             type="button"
             className={`chip ${method === item ? "chip--active" : ""}`}
-            onClick={() => setMethod(item)}
+            onClick={() => pickMethod(item)}
           >
             {METHOD_LABELS[item] ?? item}
           </button>
@@ -734,7 +794,11 @@ export function AbilitiesStep({ answers, options, busy, onSubmit }: StepProps<Ab
       </div>
 
       {method === "standard_array" ? (
-        <p className="hint">Набір {options.standard_array.join(", ")} — кожне число рівно один раз.</p>
+        <p className="hint">
+          Набір {options.standard_array.join(", ")} — кожне число рівно один раз: обрані
+          значення зникають зі списків інших характеристик.
+          {unassigned ? ` Залишилось розставити: ${unassigned}.` : ""}
+        </p>
       ) : null}
       {method === "point_buy" ? (
         <p className="hint">
@@ -767,12 +831,18 @@ export function AbilitiesStep({ answers, options, busy, onSubmit }: StepProps<Ab
                 <th scope="row">{abilityLabel(ability)}</th>
                 <td>
                   {method === "standard_array" ? (
-                    <select value={base} onChange={(event) => setScore(ability, Number(event.target.value))}>
-                      {options.standard_array.map((value) => (
-                        <option key={value} value={value} disabled={used.has(value) && value !== base}>
-                          {value}
-                        </option>
-                      ))}
+                    <select
+                      value={base || ""}
+                      onChange={(event) => setScore(ability, Number(event.target.value) || 0)}
+                    >
+                      <option value="">—</option>
+                      {options.standard_array
+                        .filter((value) => value === base || !usedElsewhere(value, ability))
+                        .map((value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ))}
                     </select>
                   ) : (
                     <input
@@ -880,19 +950,62 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
           <option value="">— оберіть —</option>
           {options.backgrounds.map((item) => (
             <option key={item.key} value={item.key}>
-              {item.name_en}
+              {termLabel(item.name_en)}
             </option>
           ))}
         </select>
       </label>
 
       {background ? (
-        <p className="hint">
-          Дає: {background.skill_proficiencies.map(skillLabel).join(", ") || "—"}
-          {background.tool_proficiencies.length ? ` · інструменти: ${background.tool_proficiencies.join(", ")}` : ""}
-          {background.feature_en ? ` · риса: ${background.feature_en}` : ""}
-        </p>
-      ) : null}
+        <section className="wizard-block species-card">
+          <header className="species-card__head">
+            <h3>{termLabel(background.name_en)}</h3>
+          </header>
+
+          <p className="species-card__facts">{backgroundFacts(background)}</p>
+
+          {background.description ? (
+            <details className="reckoning species-description" open>
+              <summary>Опис передісторії (з книги)</summary>
+              <RuleText text={background.description} />
+            </details>
+          ) : null}
+
+          {background.feature_en ? (
+            <details className="reckoning">
+              <summary>
+                Риса: {featureLabel(background.feature_en)}
+                {background.feature_text ? "" : " (тексту в корпусі немає)"}
+              </summary>
+              {background.feature_text ? (
+                <RuleText text={featureText(background.feature_en, background.feature_text)} />
+              ) : null}
+            </details>
+          ) : null}
+
+          {background.equipment?.length ? (
+            <>
+              <h4 className="species-card__h4">Спорядження передісторії</h4>
+              <ul className="plain-list">
+                {background.equipment.map((row) => (
+                  <li key={row.text}>
+                    {itemLabel(row.text)}
+                    {row.choices.length > 1 ? (
+                      <span className="meta"> (вибір: {row.choices.map((c) => itemLabel(c)).join(" / ")})</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              <p className="hint">
+                Ці предмети додадуться на кроці «Спорядження» — з вибором там, де книга його
+                пропонує.
+              </p>
+            </>
+          ) : null}
+        </section>
+      ) : (
+        <p className="hint">Оберіть передісторію — і тут зʼявиться її опис, риса й спорядження.</p>
+      )}
 
       <label className="field">
         <span>Світогляд (необовʼязково)</span>
@@ -1053,27 +1166,149 @@ function LanguagePicker({
 
 const EMPTY_MONEY: MoneyPayload = { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 };
 
-export function EquipmentStep({ answers, options, busy, onSubmit }: StepProps<{ items_url: string; hint?: string; class?: { key: string } }>) {
+/** Позначка в нотатках: предмет прийшов із передісторії (а не з довідника). */
+const BACKGROUND_MARK = "від передісторії";
+
+const COIN_LABELS: Record<string, string> = {
+  pp: "пл (платина)",
+  gp: "зм (золото)",
+  ep: "ел (електрум)",
+  sp: "см (срібло)",
+  cp: "мд (мідь)",
+};
+
+export function EquipmentStep({
+  answers,
+  options,
+  busy,
+  onSubmit,
+}: StepProps<{
+  items_url: string;
+  hint?: string;
+  class?: { key: string };
+  background?: {
+    key: string;
+    name_en: string;
+    equipment: { text: string; choices: string[] }[];
+    money: { gp?: number };
+  } | null;
+}>) {
   const initial = answers as unknown as EquipmentAnswers;
   const [items, setItems] = useState<ItemPayload[]>(initial.items ?? []);
   const [money, setMoney] = useState<MoneyPayload>({ ...EMPTY_MONEY, ...(initial.money ?? {}) });
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ id: string; name_en: string }[]>([]);
+  const [results, setResults] = useState<ItemSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const [name, setName] = useState("");
   const [kind, setKind] = useState("gear");
   const [weight, setWeight] = useState(0);
   const [armorBase, setArmorBase] = useState(12);
   const [dexCap, setDexCap] = useState<number | "">("");
   const [equipped, setEquipped] = useState(false);
+  const [chosen, setChosen] = useState<Record<string, string>>({});
+  const [bgApplied, setBgApplied] = useState(false);
+  const appliedOnce = useRef(false);
+
+  const background = options.background ?? null;
+
+  // Спорядження передісторії додається саме: раніше його треба було вписувати
+  // руками, хоч у книзі воно вже є. Позначка в нотатках показує, що предмет
+  // прийшов із передісторії, і не дає додати його вдруге.
+  useEffect(() => {
+    if (!background || appliedOnce.current) return;
+    appliedOnce.current = true;
+    if (items.some((item) => (item.notes ?? "").startsWith(BACKGROUND_MARK))) {
+      setBgApplied(true);
+      return;
+    }
+    void addFromBackground();
+  }, []);
+
+  async function resolveItem(text: string, marker: string): Promise<ItemPayload> {
+    const found = await searchItems(text, 12)
+      .then((payload) => {
+        // Пошук підрядковий: на «bone dice» першим іде «Pair of engraved bone
+        // dice (Brazen Coalition)». Беремо найкоротшу назву, що містить
+        // запит, — це найближче до того, що написано в книзі.
+        const wanted = text.toLocaleLowerCase();
+        const matches = payload.items.filter((item) =>
+          item.name_en.toLocaleLowerCase().includes(wanted),
+        );
+        const pool = matches.length ? matches : payload.items;
+        return [...pool].sort((left, right) => left.name_en.length - right.name_en.length)[0];
+      })
+      .catch(() => undefined);
+    if (!found) {
+      return {
+        name_en: text,
+        kind: "gear",
+        quantity: 1,
+        weight_lb: 0,
+        equipped: false,
+        notes: marker,
+      };
+    }
+    const body = bodyFromEntry(found);
+    // Якщо в довіднику лише «Pair of engraved bone dice (Brazen Coalition)»,
+    // у листі лишаємо назву з книги — вагу й тип беремо з довідника, а
+    // посилання на чужий запис прибираємо (назва й запис мають збігатися).
+    const tooVerbose = found.name_en.length > text.length + 12;
+    return {
+      ...body,
+      name_en: tooVerbose ? text : body.name_en,
+      entry_id: tooVerbose ? null : body.entry_id,
+      quantity: 1,
+      equipped: false,
+      notes: marker,
+    };
+  }
+
+  async function addFromBackground() {
+    if (!background) return;
+    const bodies: ItemPayload[] = [];
+    for (const [index, row] of background.equipment.entries()) {
+      const pick = chosen[row.text] ?? row.text;
+      bodies.push(await resolveItem(pick, `${BACKGROUND_MARK}:${index}`));
+    }
+    setItems((current) => [...current, ...bodies]);
+    const gold = background.money?.gp ?? 0;
+    if (gold) setMoney((current) => ({ ...current, gp: current.gp + gold }));
+    setBgApplied(true);
+  }
+
+  /** Зміна варіанта («bone dice» → «deck of cards») замінює вже доданий предмет. */
+  async function pickChoice(index: number, value: string) {
+    if (!background) return;
+    const row = background.equipment[index];
+    setChosen((current) => ({ ...current, [row.text]: value }));
+    const marker = `${BACKGROUND_MARK}:${index}`;
+    const present = items.some((item) => item.notes === marker);
+    if (!present) return;
+    const body = await resolveItem(value, marker);
+    setItems((current) =>
+      current.map((item) =>
+        item.notes === marker
+          ? { ...body, quantity: item.quantity ?? 1, equipped: item.equipped ?? false }
+          : item,
+      ),
+    );
+  }
 
   async function search() {
     if (!query.trim()) return;
+    setSearching(true);
     try {
       const payload = await searchItems(query.trim());
-      setResults(payload.items.map((item) => ({ id: item.id, name_en: item.name_en })));
+      setResults(payload.items);
     } catch {
       setResults([]);
+    } finally {
+      setSearching(false);
     }
+  }
+
+  function addFromCatalog(entry: ItemSearchResult) {
+    setItems((current) => [...current, { ...bodyFromEntry(entry), quantity: 1 }]);
   }
 
   function addItem() {
@@ -1095,12 +1330,60 @@ export function EquipmentStep({ answers, options, busy, onSubmit }: StepProps<{ 
     setEquipped(false);
   }
 
+  function submit() {
+    // Позначка «від передісторії:N» потрібна лише в цьому кроці (щоб замінити
+    // предмет при зміні варіанта); на листі вона читається як нотатка.
+    const cleaned = items.map((item) =>
+      (item.notes ?? "").startsWith(BACKGROUND_MARK)
+        ? { ...item, notes: BACKGROUND_MARK }
+        : item,
+    );
+    onSubmit({ items: cleaned, money });
+  }
+
   return (
     <div className="wizard-step">
-      <p className="hint">{options.hint}</p>
+      {background ? (
+        <section className="wizard-block species-card">
+          <header className="species-card__head">
+            <h3>Спорядження передісторії: {termLabel(background.name_en)}</h3>
+            {bgApplied ? <span className="meta">додано до інвентаря</span> : null}
+          </header>
+          <ul className="plain-list">
+            {background.equipment.map((row, index) => (
+              <li key={row.text}>
+                {row.choices.length > 1 ? (
+                  <select
+                    className="select"
+                    value={chosen[row.text] ?? row.text}
+                    onChange={(event) => void pickChoice(index, event.target.value)}
+                  >
+                    {row.choices.map((choice) => (
+                      <option key={choice} value={choice}>
+                        {itemLabel(choice)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>{itemLabel(row.text)}</span>
+                )}
+                <span className="meta"> · з книги</span>
+              </li>
+            ))}
+          </ul>
+          {(background.money?.gp ?? 0) > 0 ? (
+            <p className="hint">Гроші з передісторії: {background.money?.gp} зм — уже в гаманці.</p>
+          ) : null}
+          {!bgApplied ? (
+            <button type="button" className="button" onClick={() => void addFromBackground()}>
+              Додати спорядження передісторії
+            </button>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="wizard-block">
-        <h3>Пошук у довіднику</h3>
+        <h3>Додати предмет із довідника</h3>
         <div className="inline-row">
           <input
             value={query}
@@ -1113,24 +1396,32 @@ export function EquipmentStep({ answers, options, busy, onSubmit }: StepProps<{ 
               }
             }}
           />
-          <button type="button" className="button" onClick={() => void search()}>
-            Знайти
+          <button type="button" className="button" onClick={() => void search()} disabled={searching}>
+            {searching ? "Шукаємо…" : "Знайти"}
           </button>
         </div>
         {results.length ? (
           <div className="chip-row">
-            {results.map((item) => (
-              <button key={item.id} type="button" className="chip" onClick={() => setName(item.name_en)}>
-                {item.name_en}
+            {results.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                className="chip"
+                onClick={() => addFromCatalog(entry)}
+                title="Додати в інвентар"
+              >
+                + {itemLabel(entry.name_en)}
               </button>
             ))}
           </div>
         ) : null}
-        <p className="hint">Назва з довідника лише підставляється: числа броні ви вводите самі.</p>
+        <p className="hint">
+          Клік додає предмет у інвентар; вагу, броню й тип взято з довідника.
+        </p>
       </section>
 
-      <section className="wizard-block">
-        <h3>Додати предмет</h3>
+      <details className="wizard-block reckoning">
+        <summary>Свій предмет (немає в довіднику)</summary>
         <div className="field-row">
           <label className="field">
             <span>Назва</span>
@@ -1176,15 +1467,15 @@ export function EquipmentStep({ answers, options, busy, onSubmit }: StepProps<{ 
         <button type="button" className="button" onClick={addItem}>
           Додати предмет
         </button>
-      </section>
+      </details>
 
       {items.length ? (
         <section className="wizard-block">
-          <h3>Інвентар</h3>
+          <h3>Інвентар — {items.length}</h3>
           <ul className="plain-list">
             {items.map((item, index) => (
               <li key={`${item.name_en}-${index}`}>
-                {item.name_en} · {ITEM_KIND_LABELS[item.kind] ?? item.kind}
+                {itemLabel(item.name_en)} · {ITEM_KIND_LABELS[item.kind] ?? item.kind}
                 {item.armor_base ? ` · КЗ ${item.armor_base}${item.dex_cap !== null && item.dex_cap !== undefined ? ` (СПР ≤ ${item.dex_cap})` : ""}` : ""}
                 {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}
                 {item.equipped ? " · споряджено" : ""}{" "}
@@ -1202,7 +1493,7 @@ export function EquipmentStep({ answers, options, busy, onSubmit }: StepProps<{ 
         <div className="field-row">
           {(["pp", "gp", "ep", "sp", "cp"] as const).map((coin) => (
             <label key={coin} className="field field--small">
-              <span>{coin}</span>
+              <span>{COIN_LABELS[coin]}</span>
               <input
                 type="number"
                 min={0}
@@ -1214,11 +1505,13 @@ export function EquipmentStep({ answers, options, busy, onSubmit }: StepProps<{ 
         </div>
       </section>
 
+      {options.hint ? <p className="hint">{options.hint}</p> : null}
+
       <div className="button-row">
-        <button type="button" className="button" disabled={busy} onClick={() => onSubmit({ items, money })}>
+        <button type="button" className="button" disabled={busy} onClick={submit}>
           Пропустити
         </button>
-        <button type="button" className="button button--primary" disabled={busy} onClick={() => onSubmit({ items, money })}>
+        <button type="button" className="button button--primary" disabled={busy} onClick={submit}>
           Далі: закляття
         </button>
       </div>
@@ -1348,4 +1641,5 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
     </div>
   );
 }
+
 
