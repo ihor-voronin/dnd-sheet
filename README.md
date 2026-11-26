@@ -39,7 +39,8 @@ Character (агрегат) ──> DerivedStatsCalculator ──> ComputedSheet 
 | `vite build` | 104 модулі, ~242 kB JS (~78 kB gzip) |
 | SPA end-to-end | FastAPI віддає `/`, рендериться `SheetDocument`, тултіп на фокусі показує оригінал («Strength») |
 
-Далі: етап 1 — PHB-підмножина, акаунти, візард, перший справжній листок.
+Далі — етап 1: довідник як API (корпус уже повний: 3818 записів довідника), потім `Character` v2,
+візард створення й лист з вкладками. Порядок етапів і еталон екранів — у [`docs/plan.md`](docs/plan.md) (§9, §13).
 
 ## Швидкий старт (Windows / PowerShell)
 
