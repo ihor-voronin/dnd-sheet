@@ -111,6 +111,7 @@ def inventory_to_record(inventory: Inventory) -> dict[str, Any]:
                 "armor_base": item.armor_base,
                 "dex_cap": item.dex_cap,
                 "notes": item.notes,
+                "damage": item.damage,
             }
             for item in inventory.items
         ],
@@ -134,6 +135,7 @@ def inventory_from_record(record: Mapping[str, Any] | None) -> Inventory:
                     armor_base=raw.get("armor_base"),
                     dex_cap=raw.get("dex_cap"),
                     notes=raw.get("notes") or None,
+                    damage=raw.get("damage") or None,
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:

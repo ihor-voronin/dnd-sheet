@@ -8,10 +8,15 @@
 
 import { Counter } from "./editing";
 import {
+  ABILITY_SHORT,
   PROFICIENCY_LABELS,
   abilityLabel,
+  castingTimeLabel,
+  damageTypeLabel,
+  durationLabel,
   modifierLabel,
   proficiencyValue,
+  rangeLabel,
 } from "../../labels";
 import type { SheetViewPayload } from "../wizard/types";
 
@@ -46,6 +51,97 @@ export function AttacksTable({ attacks }: { attacks: SheetViewPayload["attacks"]
         ))}
       </tbody>
     </table>
+  );
+}
+
+/** Закляття, доступні просто зараз: заговори й підготовлені (або всі знані,
+ * якщо клас не готує). Саме цього бракувало вкладці «Дії»: атаки були, а
+ * чарування — ні. */
+export function ActionSpells({
+  spells,
+  casting,
+}: {
+  spells: SheetViewPayload["spells"];
+  casting: SheetViewPayload["spellcasting"];
+}) {
+  if (!casting.classes.length) return <p className="hint">Персонаж не чарує.</p>;
+
+  const prepares = new Map(casting.classes.map((item) => [item.key, item.prepares]));
+  const available = spells
+    .filter(
+      (spell) =>
+        spell.level === 0 ||
+        spell.prepared ||
+        spell.always_prepared ||
+        (spell.class_key ? prepares.get(spell.class_key) === false : false),
+    )
+    .sort((left, right) => left.level - right.level || left.name_en.localeCompare(right.name_en));
+
+  if (!available.length) {
+    return (
+      <p className="hint">
+        Немає доступних закляттів: оберіть їх у візарді або підготуйте після відпочинку.
+      </p>
+    );
+  }
+
+  const groups = new Map<number, typeof available>();
+  for (const spell of available) {
+    const bucket = groups.get(spell.level);
+    if (bucket) bucket.push(spell);
+    else groups.set(spell.level, [spell]);
+  }
+
+  return (
+    <div className="action-spells">
+      {Array.from(groups.entries()).map(([level, list]) => (
+        <div key={level} className="action-spells__group">
+          <h4 className="action-spells__head">
+            {level === 0 ? "Заговори" : `${level} рівень`}
+            <span>{list.length}</span>
+          </h4>
+          <ul className="action-spells__list">
+            {list.map((spell) => {
+              const meta = [
+                castingTimeLabel(spell.casting_time),
+                rangeLabel(spell.range),
+                durationLabel(spell.duration),
+              ].filter(Boolean);
+              return (
+                <li key={`${spell.name_en}-${spell.source}`} className="action-spell">
+                  <span className="action-spell__name">{spell.name_en}</span>
+                  {spell.always_prepared ? (
+                    <span className="action-spell__tag">завжди</span>
+                  ) : null}
+                  {meta.length ? (
+                    <span className="action-spell__meta">{meta.join(" · ")}</span>
+                  ) : null}
+                  <span className="action-spell__effects">
+                    {spell.damage ? (
+                      <span className="action-chip action-chip--damage">
+                        {spell.damage.dice} {damageTypeLabel(spell.damage.type)}
+                      </span>
+                    ) : null}
+                    {spell.save ? (
+                      <span className="action-chip">
+                        рятунок {ABILITY_SHORT[spell.save] ?? spell.save}
+                      </span>
+                    ) : null}
+                    {spell.attack_roll ? <span className="action-chip">атака закляттям</span> : null}
+                    {spell.concentration ? (
+                      <span className="action-chip action-chip--quiet">концентрація</span>
+                    ) : null}
+                    {spell.ritual ? (
+                      <span className="action-chip action-chip--quiet">ритуал</span>
+                    ) : null}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }
 

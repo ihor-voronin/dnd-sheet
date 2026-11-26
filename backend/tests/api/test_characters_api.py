@@ -67,6 +67,28 @@ def test_golden_multiclass_slots(client: TestClient) -> None:
     assert sheet["hit_dice"] == {"d10": 2, "d6": 3}
 
 
+def test_golden_warlock_spells_carry_action_meta(client: TestClient) -> None:
+    """Вкладка «Дії» показує час, дистанцію й урон закляттів."""
+    sheet = client.get("/api/v1/characters/golden/warlock-1").json()["sheet"]
+    spells = {item["name_en"]: item for item in sheet["spells"]}
+
+    blast = spells["Eldritch Blast"]
+    assert blast["casting_time"] == "1 action"
+    assert blast["range"] == "120 feet"
+    assert blast["damage"] == {"dice": "1d10", "type": "force"}
+    assert blast["attack_roll"] is True
+    assert blast["save"] is None
+
+    hex_spell = spells["Hex"]
+    assert hex_spell["casting_time"] == "1 bonus action"
+    assert hex_spell["concentration"] is True
+    assert hex_spell["damage"] == {"dice": "1d6", "type": "necrotic"}
+
+    charm = spells["Charm Person"]
+    assert charm["save"] == "wis"
+    assert charm["damage"] is None
+
+
 def test_unknown_golden_case_returns_404(client: TestClient) -> None:
     response = client.get("/api/v1/characters/golden/nobody")
     assert response.status_code == 404

@@ -227,3 +227,150 @@ def test_equipping_armor_changes_ac(client: TestClient) -> None:
     _patch(client, character_id, {"equip": {"name": "chain mail", "equipped": True}})
     sheet = client.get(f"/api/v1/characters/{character_id}").json()["sheet"]
     assert sheet["armor_class"]["value"] == 16
+
+
+# --- бій: шкода й лікування -------------------------------------------------
+
+
+def test_damage_eats_temporary_hp_first(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    _patch(client, character_id, {"hp": {"current": 10, "temporary": 4}})
+    sheet = _patch(client, character_id, {"hp": {"damage": 6}})["sheet"]
+    assert sheet["hit_points"]["temporary"] == 0
+    assert sheet["hit_points"]["current"] == 8
+    assert sheet["hit_points"]["bloodied"] is False, "8 із 12 — ще не половина"
+
+
+def test_damage_without_known_current_starts_from_maximum(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    sheet = _patch(client, character_id, {"hp": {"damage": 5}})["sheet"]
+    assert sheet["hit_points"]["current"] == 7, "12 максимум − 5"
+
+
+def test_damage_stops_at_zero(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    sheet = _patch(client, character_id, {"hp": {"damage": 50}})["sheet"]
+    assert sheet["hit_points"]["current"] == 0
+
+
+def test_healing_caps_at_maximum(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    _patch(client, character_id, {"hp": {"current": 2}})
+    sheet = _patch(client, character_id, {"hp": {"heal": 100}})["sheet"]
+    assert sheet["hit_points"]["current"] == sheet["hit_points"]["maximum"] == 12
+
+
+def test_damage_and_heal_are_separate(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    response = client.patch(
+        f"/api/v1/characters/{character_id}",
+        json={"hp": {"damage": 3, "heal": 3}},
+    )
+    assert response.status_code == 422
+
+
+# --- інвентар ----------------------------------------------------------------
+
+
+def test_item_can_be_added_edited_and_removed(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    response = client.post(
+        f"/api/v1/characters/{character_id}/items",
+        json={
+            "item": {
+                "name_en": "Flaming Sword",
+                "kind": "weapon",
+                "damage": "1d8+3 fire",
+                "weight_lb": 3,
+                "equipped": True,
+            }
+        },
+    )
+    assert response.status_code == 200, response.text
+    sheet = response.json()["sheet"]
+    items = sheet["inventory"]["items"]
+    index = next(i for i, item in enumerate(items) if item["name_en"] == "Flaming Sword")
+    assert items[index]["damage"] == "1d8+3 fire"
+    assert items[index]["kind"] == "weapon"
+
+    attacks = {item["name_en"]: item for item in sheet["attacks"]}
+    assert attacks["Flaming Sword"]["damage"] == "1d8+3 fire", "власний урон важливіший"
+
+    edited = client.patch(
+        f"/api/v1/characters/{character_id}/items/{index}",
+        json={"fields": {"name_en": "Flaming Longsword", "damage": "2d6+3 fire"}},
+    )
+    assert edited.status_code == 200, edited.text
+    sheet = edited.json()["sheet"]
+    assert sheet["inventory"]["items"][index]["name_en"] == "Flaming Longsword"
+    attacks = {item["name_en"]: item for item in sheet["attacks"]}
+    assert attacks["Flaming Longsword"]["damage"] == "2d6+3 fire"
+
+    removed = client.request(
+        "DELETE",
+        f"/api/v1/characters/{character_id}/items/{index}",
+        json={},
+    )
+    assert removed.status_code == 200, removed.text
+    names = [item["name_en"] for item in removed.json()["sheet"]["inventory"]["items"]]
+    assert "Flaming Longsword" not in names
+
+
+def test_item_index_must_exist(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    response = client.patch(
+        f"/api/v1/characters/{character_id}/items/99",
+        json={"fields": {"quantity": 2}},
+    )
+    assert response.status_code == 422
+
+
+def test_custom_damage_only_for_weapons(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    response = client.post(
+        f"/api/v1/characters/{character_id}/items",
+        json={"item": {"name_en": "Rope", "kind": "gear", "damage": "1d4 fire"}},
+    )
+    assert response.status_code == 422
+    assert "лише у зброї" in response.json()["detail"]
+
+
+def test_equipped_armor_can_be_added_directly(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    response = client.post(
+        f"/api/v1/characters/{character_id}/items",
+        json={"item": {"name_en": "plate", "kind": "armor", "armor_base": 18, "dex_cap": 0, "equipped": True}},
+    )
+    assert response.status_code == 200, response.text
+    sheet = response.json()["sheet"]
+    assert sheet["armor_class"]["value"] == 18
+    equipped = [
+        item["name_en"]
+        for item in sheet["inventory"]["items"]
+        if item["equipped"] and item["kind"] in {"armor", "shield"}
+    ]
+    assert equipped == ["plate"], "нова броня знімає стару"
+
+
+def test_armor_can_be_equipped_through_item_edit(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    added = client.post(
+        f"/api/v1/characters/{character_id}/items",
+        json={"item": {"name_en": "leather", "kind": "armor", "armor_base": 11}},
+    )
+    assert added.status_code == 200, added.text
+    sheet = added.json()["sheet"]
+    index = next(
+        i for i, item in enumerate(sheet["inventory"]["items"]) if item["name_en"] == "leather"
+    )
+    equipped = client.patch(
+        f"/api/v1/characters/{character_id}/items/{index}",
+        json={"fields": {"equipped": True}},
+    )
+    assert equipped.status_code == 200, equipped.text
+    sheet = equipped.json()["sheet"]
+    assert sheet["armor_class"]["value"] == 13, "легка броня: 11 + DEX 2"
+    names = [
+        item["name_en"] for item in sheet["inventory"]["items"] if item["equipped"]
+    ]
+    assert "chain mail" not in names, "нова броня знімає стару"

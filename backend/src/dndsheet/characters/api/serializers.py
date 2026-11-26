@@ -103,6 +103,8 @@ def computed_sheet(
                     "attuned": item.attuned,
                     "armor_base": item.armor_base,
                     "dex_cap": item.dex_cap,
+                    "notes": item.notes,
+                    "damage": item.damage,
                 }
                 for item in character.inventory.items
             ],

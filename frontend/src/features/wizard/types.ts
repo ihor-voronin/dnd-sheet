@@ -214,6 +214,29 @@ export interface SheetSpell {
   prepared: boolean;
   always_prepared: boolean;
   source: string;
+  /** Короткі дані з довідника — для вкладки «Дії». */
+  casting_time?: string;
+  range?: string;
+  duration?: string;
+  concentration?: boolean;
+  ritual?: boolean;
+  school?: string;
+  damage?: { dice: string; type: string } | null;
+  save?: string | null;
+  attack_roll?: boolean;
+}
+
+export interface SheetItem {
+  name_en: string;
+  kind: string;
+  quantity: number;
+  weight_lb: number;
+  equipped: boolean;
+  attuned: boolean;
+  armor_base: number | null;
+  dex_cap: number | null;
+  notes: string | null;
+  damage: string | null;
 }
 
 export interface SpeciesAnswers {
@@ -369,16 +392,7 @@ export interface SheetViewPayload {
   carrying: { capacity: number; weight: number };
   inventory: {
     money: Record<string, number>;
-    items: {
-      name_en: string;
-      kind: string;
-      quantity: number;
-      weight_lb: number;
-      equipped: boolean;
-      attuned: boolean;
-      armor_base: number | null;
-      dex_cap: number | null;
-    }[];
+    items: SheetItem[];
   };
   modifiers: {
     kind: string;

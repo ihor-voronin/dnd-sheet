@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from dndsheet.characters.domain.character import Character
+from dndsheet.characters.domain.inventory import InventoryItem, ItemKind
 from dndsheet.characters.domain.ports import CharacterRepository
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.domain.services.rest import RestService
@@ -67,6 +68,8 @@ class SheetService:
         current = patch.get("hp")
         temporary = None
         new_current = None
+        damage = None
+        heal = None
         if current is not None:
             if not isinstance(current, Mapping):
                 raise ValidationError("hp має бути обʼєктом")
@@ -74,6 +77,16 @@ class SheetService:
                 new_current = _int(current["current"], "поточні хіти")
             if "temporary" in current:
                 temporary = _int(current["temporary"], "тимчасові хіти")
+            if "damage" in current:
+                damage = _int(current["damage"], "шкода")
+                if damage < 0:
+                    raise ValidationError("шкода не може бути відʼємною")
+            if "heal" in current:
+                heal = _int(current["heal"], "лікування")
+                if heal < 0:
+                    raise ValidationError("лікування не може бути відʼємним")
+            if damage is not None and heal is not None:
+                raise ValidationError("шкода й лікування — це окремі запити")
 
         if "death_saves" in patch:
             saves = patch["death_saves"] or {}
@@ -136,8 +149,130 @@ class SheetService:
         character.set_state(state)
         if new_current is not None or temporary is not None:
             character.set_hp(current=new_current, temporary=temporary)
+        if damage is not None or heal is not None:
+            # Хіти могли ще не задавати — тоді це максимум (так само, як на
+            # листі). Максимум рахуємо після зміни стану: у тому ж запиті
+            # гравець міг змінити й виправлення максимуму.
+            fresh = self.calculator.compute(character)
+            if character.hp.current is None:
+                character.set_hp(current=fresh.hit_points.current)
+            if damage is not None:
+                character.apply_damage(damage)
+            if heal is not None:
+                character.heal(heal)
+                if (character.hp.current or 0) > fresh.hit_points.maximum:
+                    character.set_hp(current=fresh.hit_points.maximum)
         self.characters.save(character)
         return character
+
+    # ------------------------------------------------------------------
+    # інвентар
+    # ------------------------------------------------------------------
+
+    def add_item(
+        self,
+        character_id: str,
+        payload: Mapping[str, Any],
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        character = self._load_versioned(character_id, expected_version)
+        character.add_item(self._item(payload))
+        self.characters.save(character)
+        return character
+
+    def update_item(
+        self,
+        character_id: str,
+        index: int,
+        payload: Mapping[str, Any],
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        character = self._load_versioned(character_id, expected_version)
+        item = character.inventory.item_at(index)
+        character.update_item(index, self._item_fields(payload, item))
+        self.characters.save(character)
+        return character
+
+    def remove_item(
+        self,
+        character_id: str,
+        index: int,
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        character = self._load_versioned(character_id, expected_version)
+        character.remove_item(index)
+        self.characters.save(character)
+        return character
+
+    def _load_versioned(self, character_id: str, expected_version: int | None) -> Character:
+        character = self.load(character_id)
+        if expected_version is not None and expected_version != character.version:
+            raise ConflictError(
+                f"лист змінено (версія {character.version}, надіслано {expected_version})"
+            )
+        return character
+
+    @staticmethod
+    def _item(payload: Mapping[str, Any]) -> InventoryItem:
+        if not isinstance(payload, Mapping):
+            raise ValidationError("предмет має бути обʼєктом")
+        name = str(payload.get("name_en") or "").strip()
+        if not name:
+            raise ValidationError("предмет без назви")
+        kind = _kind(payload.get("kind"))
+        return InventoryItem(
+            name_en=name,
+            kind=kind,
+            quantity=_int(payload.get("quantity", 1), "кількість"),
+            weight_lb=_number(payload.get("weight_lb", 0), "вага"),
+            equipped=bool(payload.get("equipped", False)),
+            attuned=bool(payload.get("attuned", False)),
+            entry_id=_optional_str(payload.get("entry_id")),
+            armor_base=_optional_int(payload.get("armor_base"), "базовий КЗ"),
+            dex_cap=_optional_int(payload.get("dex_cap"), "межа Спритності"),
+            notes=_optional_str(payload.get("notes")),
+            damage=_optional_str(payload.get("damage")),
+        )
+
+    @staticmethod
+    def _item_fields(payload: Mapping[str, Any], base: InventoryItem) -> dict[str, Any]:
+        """Часткова правка предмета: змінюємо лише надіслані поля."""
+        if not isinstance(payload, Mapping):
+            raise ValidationError("предмет має бути обʼєктом")
+        fields: dict[str, Any] = {}
+        if "name_en" in payload:
+            name = str(payload.get("name_en") or "").strip()
+            if not name:
+                raise ValidationError("предмет без назви")
+            fields["name_en"] = name
+        if "kind" in payload:
+            fields["kind"] = _kind(payload.get("kind"))
+        if "quantity" in payload:
+            fields["quantity"] = _int(payload.get("quantity"), "кількість")
+        if "weight_lb" in payload:
+            fields["weight_lb"] = _number(payload.get("weight_lb"), "вага")
+        if "equipped" in payload:
+            fields["equipped"] = bool(payload.get("equipped"))
+        if "attuned" in payload:
+            fields["attuned"] = bool(payload.get("attuned"))
+        if "entry_id" in payload:
+            fields["entry_id"] = _optional_str(payload.get("entry_id"))
+        if "armor_base" in payload:
+            fields["armor_base"] = _optional_int(payload.get("armor_base"), "базовий КЗ")
+        if "dex_cap" in payload:
+            fields["dex_cap"] = _optional_int(payload.get("dex_cap"), "межа Спритності")
+        if "notes" in payload:
+            fields["notes"] = _optional_str(payload.get("notes"))
+        if "damage" in payload:
+            damage = _optional_str(payload.get("damage"))
+            target_kind = fields.get("kind", base.kind)
+            if damage and target_kind is not ItemKind.WEAPON:
+                raise ValidationError("власний урон буває лише у зброї")
+            fields["damage"] = damage
+        return fields
 
     # ------------------------------------------------------------------
     # відпочинок
@@ -212,3 +347,34 @@ def _int(value: Any, what: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise ValidationError(f"{what}: очікується ціле число")
     return value
+
+
+def _number(value: Any, what: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValidationError(f"{what}: очікується число")
+    if value < 0:
+        raise ValidationError(f"{what} не може бути відʼємною")
+    return float(value)
+
+
+def _optional_int(value: Any, what: str) -> int | None:
+    if value is None:
+        return None
+    return _int(value, what)
+
+
+def _optional_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _kind(value: Any) -> ItemKind:
+    if value is None:
+        return ItemKind.GEAR
+    try:
+        return ItemKind(str(value))
+    except ValueError as exc:
+        kinds = ", ".join(kind.value for kind in ItemKind)
+        raise ValidationError(f"невідомий тип предмета {value!r} ({kinds})") from exc

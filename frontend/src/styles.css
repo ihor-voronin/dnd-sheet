@@ -1034,6 +1034,89 @@ body {
   gap: 4px;
 }
 
+.editable--lg .editable-value {
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Числове поле зі степперами: завжди видиме, без браузерних стрілочок. */
+.numfield {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  vertical-align: middle;
+}
+
+.numfield__btn {
+  width: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.numfield__btn:hover:not(:disabled) {
+  background: #f2eee8;
+  color: var(--accent);
+}
+
+.numfield__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.numfield__box {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px;
+}
+
+.numfield__input {
+  width: 46px;
+  padding: 5px 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.numfield__input:focus {
+  outline: none;
+}
+
+.numfield__suffix {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.numfield--sm .numfield__btn {
+  width: 22px;
+}
+
+.numfield--sm .numfield__input {
+  width: 36px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+.numfield.is-disabled {
+  opacity: 0.5;
+}
+
 .editable-value {
   padding: 0;
   border: none;

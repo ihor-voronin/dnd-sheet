@@ -16,8 +16,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Iterable
+from dataclasses import dataclass, field, replace
+from typing import Any, Iterable, Mapping
 
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem
@@ -404,6 +404,16 @@ class Character:
 
     def add_item(self, item: InventoryItem) -> None:
         self.inventory = self.inventory.add(item)
+        self.bump_version()
+
+    def update_item(self, index: int, fields: Mapping[str, Any]) -> None:
+        """Змінити предмет інвентаря за порядком: назва, тип, урон, вага тощо."""
+        item = self.inventory.item_at(index)
+        self.inventory = self.inventory.replace_at(index, replace(item, **fields))
+        self.bump_version()
+
+    def remove_item(self, index: int) -> None:
+        self.inventory = self.inventory.remove_at(index)
         self.bump_version()
 
     def equip_item(self, name: str, equipped: bool = True) -> None:

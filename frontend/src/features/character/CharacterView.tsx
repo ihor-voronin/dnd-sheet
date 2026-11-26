@@ -12,13 +12,22 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
-import { exportUrl, fetchRenderers, patchCharacter, restCharacter, spendHitDie } from "../../api";
+import {
+  addCharacterItem,
+  exportUrl,
+  fetchRenderers,
+  patchCharacter,
+  removeCharacterItem,
+  restCharacter,
+  spendHitDie,
+  updateCharacterItem,
+} from "../../api";
+import type { ItemBody } from "../../api";
 import {
   ABILITY_LABELS,
   ALIGNMENT_LABELS,
-  ITEM_KIND_LABELS,
   abilityLabel,
   damageTypeLabel,
   modifierLabel,
@@ -34,8 +43,17 @@ import {
   SkillTable,
   initials,
 } from "./ddb";
-import { EditableNumber, Pips } from "./editing";
-import { AttacksTable, CastingBlock, FeaturesList, ProficienciesList, SpellsKnownList } from "./panels";
+import { EditableNumber, NumberField, Pips } from "./editing";
+import { HitDiceBlock, HitPointsBlock } from "./hp";
+import { InventoryPanel } from "./inventory";
+import {
+  ActionSpells,
+  AttacksTable,
+  CastingBlock,
+  FeaturesList,
+  ProficienciesList,
+  SpellsKnownList,
+} from "./panels";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
 
@@ -107,35 +125,50 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
   const [tab, setTab] = useState("actions");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [rollDraft, setRollDraft] = useState<Record<string, string>>({});
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({
     ...initial.state.notes,
   });
 
   const id = sheet.character.id;
-  const version = sheet.character.version;
+  // Версія для оптимістичного контролю: беремо з ref, а не з рендера, бо
+  // клік може статися до того, як React перемалює після попередньої відповіді.
+  const versionRef = useRef(initial.character.version);
 
   // PDF збирається на сервері через WeasyPrint: без GTK його немає, і тоді
   // посилання не показуємо, замість того щоб віддати 503 у новій вкладці.
   const renderers = useQuery({ queryKey: ["renderers"], queryFn: fetchRenderers });
   const pdfReady = renderers.data?.available.includes("pdf") ?? false;
 
-  async function run(action: Promise<{ sheet: SheetViewPayload }>) {
+  async function run(action: Promise<{ sheet: SheetViewPayload }>): Promise<boolean> {
     setBusy(true);
     setError(null);
     try {
       const result = await action;
+      versionRef.current = result.sheet.character.version;
       setSheet(result.sheet);
       setNotesDraft({ ...result.sheet.state.notes });
+      return true;
     } catch (failure) {
       setError(messageOf(failure));
+      return false;
     } finally {
       setBusy(false);
     }
   }
 
   const patch = (body: Record<string, unknown>) =>
-    run(patchCharacter(id, { ...body, version }));
+    run(patchCharacter(id, { ...body, version: versionRef.current }));
+
+  const damage = (amount: number) => patch({ hp: { damage: amount } });
+  const heal = (amount: number) => patch({ hp: { heal: amount } });
+  const setHitPoints = (fields: { current?: number; temporary?: number }) =>
+    patch({ hp: fields });
+  const addItem = (item: ItemBody) =>
+    run(addCharacterItem(id, item, versionRef.current));
+  const updateItem = (index: number, fields: Partial<ItemBody>) =>
+    run(updateCharacterItem(id, index, fields, versionRef.current));
+  const removeItem = (index: number) =>
+    run(removeCharacterItem(id, index, versionRef.current));
 
   const overridden = new Set(sheet.overridden);
   const { character } = sheet;
@@ -190,11 +223,6 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
     },
   ];
 
-  const hitDice = Object.entries(sheet.resources.hit_dice);
-  const freeHitDice = hitDice.reduce((sum, [, item]) => sum + (item.total - item.used), 0);
-  const totalHitDice = hitDice.reduce((sum, [, item]) => sum + item.total, 0);
-  const hitDieFaces = hitDice.map(([die]) => die).join(" / ");
-
   const workTab = (() => {
     if (tab === "actions") {
       return (
@@ -204,6 +232,15 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             <span className="short">дій за хід: 1</span>
           </h3>
           <AttacksTable attacks={sheet.attacks} />
+          {casting.classes.length ? (
+            <>
+              <h3 className="ddb-work__title">
+                <span>Закляття</span>
+                <span className="short">доступні зараз</span>
+              </h3>
+              <ActionSpells spells={sheet.spells} casting={casting} />
+            </>
+          ) : null}
           <h3 className="ddb-work__title">
             <span>Дії в бою</span>
             <span className="short">стандартні</span>
@@ -244,49 +281,15 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
     }
     if (tab === "inventory") {
       return (
-        <>
-          <h3 className="ddb-work__title">
-            <span>Інвентар</span>
-            <span className="short">
-              вага {sheet.carrying.weight} з {sheet.carrying.capacity} фнт
-            </span>
-          </h3>
-          <div className="money-row">
-            {Object.entries({ gp: "золото", sp: "срібло", cp: "мідь" }).map(([coin, label]) => (
-              <span key={coin} className="resource">
-                {label}: {sheet.inventory.money[coin] ?? 0}
-              </span>
-            ))}
-          </div>
-          {sheet.inventory.items.length ? (
-            <ul className="item-list">
-              {sheet.inventory.items.map((item) => (
-                <li key={item.name_en} className="item-row">
-                  <span className="item-main">
-                    <span className="item-name">
-                      {item.name_en}
-                      {item.quantity > 1 ? ` × ${item.quantity}` : ""}
-                    </span>
-                    <span className="item-meta">
-                      {ITEM_KIND_LABELS[item.kind] ?? item.kind}
-                      {item.armor_base ? ` · КЗ ${item.armor_base}` : ""}
-                      {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    className={`chip ${item.equipped ? "chip--active" : ""}`}
-                    onClick={() => patch({ equip: { name: item.name_en, equipped: !item.equipped } })}
-                  >
-                    {item.equipped ? "споряджено" : "не споряджено"}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hint">Порожньо.</p>
-          )}
-        </>
+        <InventoryPanel
+          items={sheet.inventory.items}
+          money={sheet.inventory.money}
+          carrying={sheet.carrying}
+          disabled={busy}
+          onAdd={addItem}
+          onUpdate={updateItem}
+          onRemove={removeItem}
+        />
       );
     }
     if (tab === "features") {
@@ -410,60 +413,14 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
           value={overrideNumber("speed", sheet.speed, "Швидкість", " фт")}
         />
 
-        <div className="ddb-hitdice">
-          <span className="ddb-hitdice__label">Кістки хитів</span>
-          <div className="ddb-hitdice__face" title="Тип і кількість кісток хитів">
-            {hitDieFaces || "—"}
-          </div>
-          <span className="ddb-hexstat__note">
-            {freeHitDice} / {totalHitDice}
-          </span>
-        </div>
-
-        <section className="ddb-hp" aria-label="Хіти">
-          <div className="ddb-hp__marks">
-            <span className="ddb-hp__mark ddb-hp__mark--heal" title="Поточні хіти змінюються кліком по числу">
-              Лікування
-            </span>
-            <span className="ddb-hp__mark ddb-hp__mark--damage" title="Поточні хіти змінюються кліком по числу">
-              Шкода
-            </span>
-          </div>
-          <div className="ddb-hp__fields">
-            <div className="ddb-hp__field">
-              <span>Поточні</span>
-              <strong>
-                <EditableNumber
-                  value={sheet.hit_points.current}
-                  title="Поточні хіти"
-                  onSave={(value) => patch({ hp: { current: value } })}
-                  min={0}
-                  max={999}
-                />
-              </strong>
-            </div>
-            <div className="ddb-hp__field">
-              <span>Макс.</span>
-              <strong>
-                {overrideNumber("hit_points_max", sheet.hit_points.maximum, "Максимум хітів")}
-              </strong>
-            </div>
-            <div className="ddb-hp__field ddb-hp__field--temp">
-              <span>Тимч.</span>
-              <strong>
-                <EditableNumber
-                  value={sheet.hit_points.temporary}
-                  title="Тимчасові хіти"
-                  onSave={(value) => patch({ hp: { temporary: value } })}
-                  min={0}
-                />
-              </strong>
-            </div>
-          </div>
-          <p className="ddb-hp__caption">
-            Хіти{sheet.hit_points.bloodied ? " · поранений" : ""}
-          </p>
-        </section>
+        <HitPointsBlock
+          hitPoints={sheet.hit_points}
+          maxField={overrideNumber("hit_points_max", sheet.hit_points.maximum, "Максимум хітів")}
+          disabled={busy}
+          onSet={setHitPoints}
+          onDamage={damage}
+          onHeal={heal}
+        />
       </div>
 
       {error ? <p className="status status--error ddb-status">{error}</p> : null}
@@ -593,12 +550,14 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
               </span>
               <span>
                 Втома:{" "}
-                <EditableNumber
+                <NumberField
                   value={sheet.state.exhaustion}
-                  title="Рівень втоми"
                   min={0}
                   max={6}
-                  onSave={(value) => patch({ exhaustion: value })}
+                  size="sm"
+                  disabled={busy}
+                  title="Рівень втоми"
+                  onChange={(value) => patch({ exhaustion: value })}
                 />
               </span>
               <span className="state-row__wide">
@@ -638,44 +597,12 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             <h2 className="ddb-card__title">
               <span>Кістки хитів</span>
             </h2>
-            {hitDice.length ? (
-              <ul className="hitdice-list">
-                {hitDice.map(([die, resource]) => {
-                  const size = Number(die.replace("d", ""));
-                  return (
-                    <li key={die}>
-                      {die}: {resource.total - resource.used} з {resource.total} вільних{" "}
-                      <input
-                        className="inline-number"
-                        type="number"
-                        min={1}
-                        max={size}
-                        placeholder="кидок"
-                        value={rollDraft[die] ?? ""}
-                        onChange={(event) =>
-                          setRollDraft({ ...rollDraft, [die]: event.target.value })
-                        }
-                        aria-label={`Кидок ${die}`}
-                      />
-                      <button
-                        type="button"
-                        className="button"
-                        disabled={resource.used >= resource.total || !rollDraft[die]}
-                        onClick={() =>
-                          run(spendHitDie(id, size, Number(rollDraft[die]))).then(() =>
-                            setRollDraft({ ...rollDraft, [die]: "" }),
-                          )
-                        }
-                      >
-                        витратити
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="hint">—</p>
-            )}
+            <HitDiceBlock
+              resources={sheet.resources}
+              conModifier={sheet.abilities.con?.modifier ?? 0}
+              disabled={busy}
+              onSpend={(die, roll) => run(spendHitDie(id, die, roll))}
+            />
           </section>
 
           <div className="ddb-work">

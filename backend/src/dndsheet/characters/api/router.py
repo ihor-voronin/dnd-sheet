@@ -26,6 +26,7 @@ from dndsheet.characters.api.serializers import (
     step_answers,
 )
 from dndsheet.characters.api.attacks import attacks_for
+from dndsheet.characters.api.spell_meta import enrich_spells
 from dndsheet.characters.api.wizard_options import build_options
 from dndsheet.characters.application.golden import GoldenCase, build_golden_cases
 from dndsheet.characters.application.sheet import SheetService
@@ -82,9 +83,14 @@ def _attacks(request: Request, character, computed) -> list[dict[str, Any]]:  # 
 
 
 def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Character
-    """Повний лист: числа, лічильники й атаки з довідника."""
+    """Повний лист: числа, лічильники, атаки й короткі дані заклять."""
     computed = DerivedStatsCalculator().compute(character)
-    return computed_sheet(character, computed, _attacks(request, character, computed))
+    payload = computed_sheet(
+        character, computed, _attacks(request, character, computed)
+    )
+    cache = getattr(request.app.state, "spell_cache", {})
+    enrich_spells(payload["spells"], _compendium(request), cache)
+    return payload
 
 
 def _render(request: Request, document, render_format: str, options: RenderOptions) -> Response:  # noqa: ANN001
@@ -309,6 +315,75 @@ def update_character(
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.post("/{character_id}/items")
+def add_inventory_item(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Додати предмет в інвентар (з довідника або власний)."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    item = body.pop("item", None)
+    if not isinstance(item, dict):
+        raise HTTPException(status_code=422, detail="item має бути обʼєктом")
+    try:
+        character = _sheet_service(request).add_item(
+            character_id, item, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.patch("/{character_id}/items/{index}")
+def update_inventory_item(
+    character_id: str,
+    index: int,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Змінити предмет за порядком: назва, тип, кількість, урон, броня."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    fields = body.pop("fields", None)
+    if not isinstance(fields, dict):
+        raise HTTPException(status_code=422, detail="fields має бути обʼєктом")
+    try:
+        character = _sheet_service(request).update_item(
+            character_id, index, fields, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.delete("/{character_id}/items/{index}")
+def remove_inventory_item(
+    character_id: str,
+    index: int,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Прибрати предмет з інвентаря."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    try:
+        character = _sheet_service(request).remove_item(
+            character_id, index, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+def _pop_version(body: dict[str, Any]) -> int | None:
+    version = body.pop("version", None)
+    if version is not None and (isinstance(version, bool) or not isinstance(version, int)):
+        raise HTTPException(status_code=422, detail="version має бути цілим числом")
+    return version
 
 
 @router.post("/{character_id}/rest")

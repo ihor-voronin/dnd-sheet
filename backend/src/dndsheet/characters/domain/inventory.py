@@ -44,6 +44,9 @@ class InventoryItem:
     armor_base: int | None = None
     dex_cap: int | None = None
     notes: str | None = None
+    #: Для зброї: власний урон гравця (повний рядок, як «1d8+3 slashing»).
+    #: Порожньо — урон рахується з довідника й модифікатора здібності.
+    damage: str | None = None
 
     def __post_init__(self) -> None:
         if not self.name_en.strip():
@@ -65,6 +68,13 @@ class InventoryItem:
             )
         if self.dex_cap is not None and self.dex_cap < 0:
             raise ValidationError(f"{self.name_en}: межа Спритності не може бути відʼємною")
+        if self.damage is not None:
+            if not str(self.damage).strip():
+                raise ValidationError(f"{self.name_en}: порожній урон зброї")
+            if self.kind is not ItemKind.WEAPON:
+                raise ValidationError(
+                    f"{self.name_en}: власний урон буває лише у зброї"
+                )
 
     @property
     def total_weight(self) -> float:
@@ -99,7 +109,62 @@ class Inventory:
         return len(self.items)
 
     def add(self, *items: InventoryItem) -> "Inventory":
-        return Inventory(items=self.items + tuple(items), money=self.money)
+        """Додати предмети; споряджена броня (чи щит) знімає попередню.
+
+        Так само, як `equip`: інакше «додати одягнуту броню» впиралося б у
+        правило «одна броня одночасно», хоча гравець просто перевдягається.
+        """
+        current = list(self.items)
+        for item in items:
+            if item.equipped and (item.is_armor or item.is_shield):
+                current = [
+                    other.equipped_copy(False)
+                    if other.equipped
+                    and (
+                        (item.is_armor and other.is_armor)
+                        or (item.is_shield and other.is_shield)
+                    )
+                    else other
+                    for other in current
+                ]
+            current.append(item)
+        return Inventory(items=tuple(current), money=self.money)
+
+    def replace_at(self, index: int, item: InventoryItem) -> "Inventory":
+        """Замінити предмет за порядком у списку (порядок — стабільний).
+
+        Якщо предмет стає спорядженим, інша броня (чи щит) знімається: так
+        само, як `equip`. Інакше редагування предмета вперлося б у правило
+        «одна броня одночасно», яке стосується стану, а не самої правки.
+        """
+        self._check_index(index)
+        items = list(self.items)
+        if item.equipped and (item.is_armor or item.is_shield):
+            for position, other in enumerate(items):
+                if position == index or not other.equipped:
+                    continue
+                if (item.is_armor and other.is_armor) or (
+                    item.is_shield and other.is_shield
+                ):
+                    items[position] = other.equipped_copy(False)
+        items[index] = item
+        return Inventory(items=tuple(items), money=self.money)
+
+    def remove_at(self, index: int) -> "Inventory":
+        self._check_index(index)
+        items = list(self.items)
+        del items[index]
+        return Inventory(items=tuple(items), money=self.money)
+
+    def item_at(self, index: int) -> InventoryItem:
+        self._check_index(index)
+        return self.items[index]
+
+    def _check_index(self, index: int) -> None:
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise ValidationError("номер предмета має бути цілим числом")
+        if not 0 <= index < len(self.items):
+            raise ValidationError(f"у інвентарі немає предмета №{index + 1}")
 
     def with_money(self, money: Money) -> "Inventory":
         return Inventory(items=self.items, money=money)

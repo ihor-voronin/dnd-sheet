@@ -212,6 +212,49 @@ export function damageTypeLabel(code: string): string {
   return DAMAGE_TYPE_LABELS[code] ?? code;
 }
 
+/** Час, дистанція й тривалість закляття приходять з довідника англійською. */
+function unitsLabel(text: string): string {
+  return text
+    .replace(/\bbonus action\b/gi, "бонусна дія")
+    .replace(/\bactions\b/gi, "дії")
+    .replace(/\baction\b/gi, "дія")
+    .replace(/\breaction\b/gi, "реакція")
+    .replace(/\bminutes?\b/gi, "хв.")
+    .replace(/\bhours?\b/gi, "год.")
+    .replace(/\bseconds?\b/gi, "с")
+    .replace(/\brounds?\b/gi, "раунд")
+    .replace(/\bfeet\b/gi, "фт")
+    .replace(/\bfoot\b/gi, "фт")
+    .replace(/\bmiles?\b/gi, "миля")
+    .replace(/\bSelf\b/g, "на себе")
+    .replace(/\bTouch\b/g, "дотик")
+    .replace(/\bSight\b/g, "видиме")
+    .replace(/\bUnlimited\b/g, "без обмежень")
+    .replace(/\bInstantaneous\b/g, "миттєво")
+    .replace(/\bConcentration\b/g, "концентрація")
+    .replace(/\bup to\b/gi, "до")
+    .replace(/\bcone\b/gi, "конус")
+    .replace(/\bsphere\b/gi, "сфера")
+    .replace(/\bcube\b/gi, "куб")
+    .replace(/\bcylinder\b/gi, "циліндр")
+    .replace(/\bline\b/gi, "лінія")
+    .replace(/\bSpecial\b/g, "особлива");
+}
+
+/** «1 reaction, which you take…» — на аркуші потрібна лише перша частина. */
+export function castingTimeLabel(raw?: string | null): string {
+  if (!raw) return "";
+  return unitsLabel(raw.split(",")[0].trim());
+}
+
+export function rangeLabel(raw?: string | null): string {
+  return raw ? unitsLabel(raw.trim()) : "";
+}
+
+export function durationLabel(raw?: string | null): string {
+  return raw ? unitsLabel(raw.trim()) : "";
+}
+
 /** Ключ підкласу з домену («phb-2014/subclass/the-fiend») → людська назва. */
 export function subclassLabel(key: string): string {
   const tail = key.split("/").pop() ?? key;

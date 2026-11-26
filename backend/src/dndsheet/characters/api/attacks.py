@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 from dndsheet.characters.domain.attacks import WeaponProfile, attack_profile
@@ -26,7 +27,11 @@ def attacks_for(
     service: CompendiumService,
     cache: dict[str, WeaponProfile | None] | None = None,
 ) -> list[dict[str, Any]]:
-    """Атаки для всіх зброї в інвентарі, з даними довідника."""
+    """Атаки для всіх зброї в інвентарі, з даними довідника.
+
+    Власний урон предмета (`item.damage`) важливіший за довідник: гравець міг
+    узяти магічний меч, якого немає в корпусі, і вписати урон сам.
+    """
     store = cache if cache is not None else {}
     strength = computed.ability_modifiers[Ability.STR]
     dexterity = computed.ability_modifiers[Ability.DEX]
@@ -36,7 +41,13 @@ def attacks_for(
             continue
         profile = _profile(item, service, store)
         if profile is None:
-            continue
+            if not item.damage:
+                continue
+            profile = WeaponProfile(
+                name_en=item.name_en,
+                damage=item.damage,
+                properties=item.notes or "",
+            )
         view = attack_profile(
             profile,
             strength_modifier=strength,
@@ -45,6 +56,10 @@ def attacks_for(
         )
         if view is None:
             continue
+        if item.damage:
+            view = replace(view, damage=item.damage.strip())
+        if item.notes:
+            view = replace(view, notes=item.notes.strip())
         attacks.append(
             {
                 "name_en": view.name_en,

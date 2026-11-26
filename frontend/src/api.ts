@@ -101,6 +101,56 @@ export function spendHitDie(id: string, die: number, roll: number): Promise<Shee
   });
 }
 
+// --- інвентар -------------------------------------------------------------
+
+export interface ItemBody {
+  name_en: string;
+  kind: string;
+  quantity?: number;
+  weight_lb?: number;
+  equipped?: boolean;
+  attuned?: boolean;
+  entry_id?: string | null;
+  armor_base?: number | null;
+  dex_cap?: number | null;
+  notes?: string | null;
+  damage?: string | null;
+}
+
+export function addCharacterItem(
+  id: string,
+  item: ItemBody,
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/items`, {
+    method: "POST",
+    body: JSON.stringify({ item, version }),
+  });
+}
+
+export function updateCharacterItem(
+  id: string,
+  index: number,
+  fields: Partial<ItemBody>,
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/items/${index}`, {
+    method: "PATCH",
+    body: JSON.stringify({ fields, version }),
+  });
+}
+
+export function removeCharacterItem(
+  id: string,
+  index: number,
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/items/${index}`, {
+    method: "DELETE",
+    body: JSON.stringify({ version }),
+  });
+}
+
 export function fetchCharacters(): Promise<{
   items: { id: string; name: string; total_level: number }[];
   total: number;
@@ -133,7 +183,10 @@ export interface ItemSearchResult {
   data: Record<string, unknown>;
 }
 
-export function searchItems(query: string): Promise<{ items: ItemSearchResult[]; total: number }> {
-  const params = new URLSearchParams({ q: query, limit: "8" });
+export function searchItems(
+  query: string,
+  limit = 8,
+): Promise<{ items: ItemSearchResult[]; total: number }> {
+  const params = new URLSearchParams({ q: query, limit: String(limit) });
   return getJson(`/api/v1/compendium/items?${params.toString()}`);
 }
