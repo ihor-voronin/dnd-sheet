@@ -113,6 +113,53 @@ $env:DNDSHEET_DATA_DIR = "C:\dndsheet-data"
 
 ---
 
+## 3.1 Docker: усе в контейнері (рекомендований запуск)
+
+Локальний Python і Node для цього не потрібні — потрібен лише Docker Desktop.
+
+```powershell
+cd C:\Users\User\Desktop\work_docs\dnd-sheet
+
+docker compose up -d --build        # зібрати образ і підняти
+docker compose ps                   # стан і порт
+docker compose logs -f app          # журнали
+docker compose down                 # зупинити
+```
+
+Відкрити: **http://127.0.0.1:8000** (порт прокинутий `8000:8000`).
+
+Що всередині образу:
+
+- етап `web` (node:22-alpine) збирає SPA — `tsc --noEmit && vite build`, у фінальний образ Node не потрапляє;
+- етап `runtime` (python:3.12-slim) ставить backend із extra `pdf`, кладе `content/sources.yml`,
+  `content/compendium`, `content/bestiary`, `content/index` (без `content/raw` — він потрібен лише ingest);
+- `content/raw`, `var/`, `logs/`, `.venv`, `node_modules` відсікає `.dockerignore`.
+
+Дані живуть на хості: `./var` прокинутий у `/app/var`, тому збережені персонажі, чернетки
+візарда й відпочинок переживають `docker compose down` і перезбірку.
+
+```powershell
+Get-ChildItem var\characters        # персонажі на хості
+docker compose exec app ls /app/var # те саме зсередини
+```
+
+Змінні, якими керується образ: `DNDSHEET_DATA_DIR=/app/var`, `DNDSHEET_CONTENT_DIR=/app/content`,
+`DNDSHEET_SPA_DIST=/app/frontend/dist` (усі вже виставлені в `docker-compose.yml`).
+
+**PDF у Docker працює.** `GET /api/v1/demo/export/pdf` і `/api/v1/characters/<id>/export/pdf`
+віддають 4–5 сторінок A4 із кирилицею — на відміну від Windows, де без GTK було 503.
+
+Після змін у коді:
+
+```powershell
+docker compose up -d --build     # перезібрати й перезапустити
+```
+
+PostgreSQL у compose є, але застосунок його поки не використовує (стан — файли в `var/`).
+Підняти за потреби: `docker compose --profile db up -d` (порт 5433).
+
+---
+
 ## 4. Що можна подивитись одразу
 
 | Адреса | Що це |
@@ -169,7 +216,10 @@ npm run build                                                     # tsc + vite b
 `GET /api/v1/demo/export/pdf` повертає 503, поки немає робочого WeasyPrint.
 На Windows сам pip-пакет не працює без GTK (Pango/cairo).
 
-Три варіанти:
+> **У Docker PDF уже працює** (розділ 3.1): образ ставить WeasyPrint і системні бібліотеки,
+> тому `/export/pdf` віддає справжній файл. 503 лишається тільки для запуску без контейнера.
+
+Варіанти для запуску без контейнера:
 
 1. **GTK-рантайм локально** — поставити GTK3 і додати його `bin` у `PATH`.
 2. **Docker / WSL для PDF** — так само буде на хостингу, Windows лишається чистим. *(рекомендовано)*

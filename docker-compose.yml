@@ -1,6 +1,32 @@
-# PostgreSQL для етапу 1+. Зараз застосунок працює без БД (демо-документ у памʼяті).
+# Застосунок цілком у Docker: API + зібрана SPA на одному порту.
+#
+#   docker compose up -d --build     → http://127.0.0.1:8000
+#   docker compose logs -f app
+#   docker compose down
+#
+# Дані (персонажі, чернетки візарда) живуть у ./var на хості — каталог
+# прокинутий у контейнер, тому персонажі не гинуть разом з образом.
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dndsheet:local
+    container_name: dndsheet-app
+    environment:
+      DNDSHEET_DATA_DIR: /app/var
+      DNDSHEET_CONTENT_DIR: /app/content
+      DNDSHEET_SPA_DIST: /app/frontend/dist
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./var:/app/var
+    restart: unless-stopped
+
+  # PostgreSQL поки не використовується застосунком (стан — файли в var/).
+  # Підняти за потреби: docker compose --profile db up -d
   db:
+    profiles: ["db"]
     image: postgres:16-alpine
     container_name: dndsheet-db
     environment:

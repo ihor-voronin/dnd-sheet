@@ -28,6 +28,11 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# Шаблон PDF лежить поруч із рендерером: без цього рядка колесо його не везе,
+# і `pip install backend` дає рендерер, який не знаходить 'sheet' (500 на /export/pdf).
+[tool.setuptools.package-data]
+"dndsheet.export.infrastructure" = ["templates/*"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests/characters"]
 testpaths = ["tests"]

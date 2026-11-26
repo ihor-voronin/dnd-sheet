@@ -5,7 +5,7 @@ VENV ?= .venv
 BIN := $(VENV)/bin
 export PATH := $(BIN):$(PATH)
 
-.PHONY: help install test arch contract dev web-dev web-build format format-check clean
+.PHONY: help install test arch contract dev web-dev web-build docker-build docker-up docker-down clean
 
 help:
 	@echo "install    - створити venv і встановити backend[dev]"
@@ -17,6 +17,9 @@ help:
 	@echo "dev        - uvicorn --reload"
 	@echo "web-dev    - vite dev"
 	@echo "web-build  - tsc + vite build"
+	@echo "docker-build - зібрати образ (API + SPA + довідник)"
+	@echo "docker-up  - підняти контейнер на http://127.0.0.1:8000"
+	@echo "docker-down - зупинити контейнер"
 	@echo "clean      - прибрати кеші"
 
 install:
@@ -47,6 +50,15 @@ web-dev:
 
 web-build:
 	cd frontend && npm run build
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up -d --build
+
+docker-down:
+	docker compose down
 
 clean:
 	rm -rf .pytest_cache backend/.pytest_cache frontend/dist

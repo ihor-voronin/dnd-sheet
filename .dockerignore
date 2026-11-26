@@ -1,0 +1,38 @@
+# Усе, що не потрібне всередині образу
+
+# --- git і сесія ---
+.git
+.gitignore
+.github
+
+# --- python ---
+.venv
+venv
+**/__pycache__
+**/*.py[cod]
+*.egg-info
+.pytest_cache
+.import_linter_cache
+.coverage
+htmlcov
+
+# --- node ---
+frontend/node_modules
+frontend/dist
+*.tsbuildinfo
+
+# --- дані й журнали (корпус потрапляє вибірково, див. Dockerfile) ---
+content/raw
+content/.session
+var
+logs
+artifacts
+*.log
+sink-*.log
+ingest-status*.txt
+
+# --- зайве для образу ---
+docs
+.idea
+.vscode
+**/*.bak
