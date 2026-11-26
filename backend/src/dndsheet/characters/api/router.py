@@ -25,8 +25,10 @@ from dndsheet.characters.api.serializers import (
     draft_payload,
     step_answers,
 )
+from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.wizard_options import build_options
 from dndsheet.characters.application.golden import GoldenCase, build_golden_cases
+from dndsheet.characters.application.sheet import SheetService
 from dndsheet.characters.application.wizard import WizardService
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.domain.wizard import Draft, WizardStep
@@ -73,26 +75,48 @@ def _find(cases: tuple[GoldenCase, ...], key: str) -> GoldenCase:
     raise HTTPException(status_code=404, detail=f"немає еталонного персонажа {key!r}")
 
 
-def _payload(case: GoldenCase) -> dict:
-    computed = DerivedStatsCalculator().compute(case.character)
+def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Character
+    """Повний лист: числа, лічильники й атаки з довідника."""
+    computed = DerivedStatsCalculator().compute(character)
+    cache = getattr(request.app.state, "attack_cache", {})
+    return computed_sheet(
+        character,
+        computed,
+        attacks_for(character, computed, _compendium(request), cache),
+    )
+
+
+def _sheet_service(request: Request) -> SheetService:
+    service = getattr(request.app.state, "sheet", None)
+    if service is None:  # pragma: no cover — так не буває, якщо app зібрано create_app
+        raise HTTPException(status_code=503, detail="сервіс листа не підключений")
+    return service
+
+
+def _payload(case: GoldenCase, request: Request | None = None) -> dict:
+    if request is None:  # pragma: no cover — сумісність для тестів
+        computed = DerivedStatsCalculator().compute(case.character)
+        sheet = computed_sheet(case.character, computed)
+    else:
+        sheet = _sheet_payload(request, case.character)
     return {
         "key": case.key,
         "title_uk": case.title_uk,
         "summary_uk": case.summary_uk,
-        "sheet": computed_sheet(case.character, computed),
+        "sheet": sheet,
     }
 
 
 @router.get("/golden")
 def golden(request: Request) -> dict:
     """Еталонні персонажі з повністю обчисленим листом."""
-    items = [_payload(case) for case in _cases(request)]
+    items = [_payload(case, request) for case in _cases(request)]
     return {"items": items, "total": len(items)}
 
 
 @router.get("/golden/{key}")
 def golden_case(key: str, request: Request) -> dict:
-    return _payload(_find(_cases(request), key))
+    return _payload(_find(_cases(request), key), request)
 
 
 @router.get("/golden/{key}/export/{render_format}")
@@ -232,8 +256,7 @@ def finish_draft(draft_id: str, request: Request) -> dict:
         character = _wizard(request).finish(draft_id)
     except DomainError as exc:
         raise _http_error(exc) from exc
-    computed = DerivedStatsCalculator().compute(character)
-    return {"character_id": character.id, "sheet": computed_sheet(character, computed)}
+    return {"character_id": character.id, "sheet": _sheet_payload(request, character)}
 
 
 # ---------------------------------------------------------------------------
@@ -254,5 +277,61 @@ def saved_character(character_id: str, request: Request) -> dict:
         character = _wizard(request).character(character_id)
     except DomainError as exc:
         raise _http_error(exc) from exc
-    computed = DerivedStatsCalculator().compute(character)
-    return {"sheet": computed_sheet(character, computed)}
+    return {"sheet": _sheet_payload(request, character)}
+
+
+# ---------------------------------------------------------------------------
+# лист під час гри: лічильники, виправлення, відпочинок
+# ---------------------------------------------------------------------------
+
+
+@router.patch("/{character_id}")
+def update_character(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Часткова зміна стану листа: хіти, слоти, кидки, виправлення, нотатки."""
+    body = dict(payload or {})
+    version = body.pop("version", None)
+    if version is not None and (isinstance(version, bool) or not isinstance(version, int)):
+        raise HTTPException(status_code=422, detail="version має бути цілим числом")
+    try:
+        character = _sheet_service(request).update(
+            character_id, body, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.post("/{character_id}/rest")
+def rest_character(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    kind = str((payload or {}).get("kind") or "")
+    try:
+        character = _sheet_service(request).rest(character_id, kind)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.post("/{character_id}/hit-dice")
+def spend_hit_die(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    die = (payload or {}).get("die")
+    roll = (payload or {}).get("roll")
+    for name, value in (("die", die), ("roll", roll)):
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise HTTPException(status_code=422, detail=f"{name} має бути цілим числом")
+    try:
+        character = _sheet_service(request).spend_hit_die(character_id, die, roll)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}

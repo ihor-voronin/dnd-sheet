@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
 
 from dndsheet.characters.api.router import build_cases, router as characters_router
+from dndsheet.characters.application.sheet import SheetService
 from dndsheet.characters.application.wizard import WizardService
 from dndsheet.characters.infrastructure.compendium_rules import (
     CompendiumRulesSource,
@@ -59,12 +60,17 @@ def create_app() -> FastAPI:
     # Чернетки й персонажі — файли в `var/` (етап 6 замінить на БД). Каталог
     # можна перевизначити `DNDSHEET_DATA_DIR`, це ж роблять тести.
     data_dir = default_data_dir()
+    characters = JsonCharacterRepository(data_dir / "characters", rules)
+    app.state.characters = characters
     app.state.wizard = WizardService(
         drafts=JsonDraftRepository(data_dir / "drafts", rules),
-        characters=JsonCharacterRepository(data_dir / "characters", rules),
+        characters=characters,
         rules=rules,
         subclasses=CompendiumSubclassCatalog(compendium),
     )
+    app.state.sheet = SheetService(characters=characters)
+    # Кеш профілів зброї: імена не змінюються, тому читаємо довідник раз.
+    app.state.attack_cache = {}
     # Еталонні персонажі рахуються на старті: якщо корпусу немає, список
     # порожній, і `/golden` віддає `items: []`, а не 500.
     app.state.golden_cases = build_cases(compendium)

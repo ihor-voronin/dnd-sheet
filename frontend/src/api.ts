@@ -72,6 +72,35 @@ export function fetchCharacter(id: string): Promise<{ sheet: SheetViewPayload }>
   return getJson<{ sheet: SheetViewPayload }>(`/api/v1/characters/${id}`);
 }
 
+export interface SheetMutation {
+  sheet: SheetViewPayload;
+  version: number;
+}
+
+export function patchCharacter(
+  id: string,
+  body: Record<string, unknown>,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export function restCharacter(id: string, kind: "short" | "long"): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/rest`, {
+    method: "POST",
+    body: JSON.stringify({ kind }),
+  });
+}
+
+export function spendHitDie(id: string, die: number, roll: number): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/hit-dice`, {
+    method: "POST",
+    body: JSON.stringify({ die, roll }),
+  });
+}
+
 export function fetchCharacters(): Promise<{
   items: { id: string; name: string; total_level: number }[];
   total: number;

@@ -343,6 +343,28 @@ export interface SheetViewPayload {
   hit_dice: Record<string, number>;
   spellcasting: SheetSpellcasting;
   spells: SheetSpell[];
+  resources: {
+    slots: Record<string, { total: number; used: number }>;
+    pact: { total: number; used: number } | null;
+    hit_dice: Record<string, { total: number; used: number }>;
+  };
+  state: {
+    death_saves: { successes: number; failures: number };
+    inspiration: boolean;
+    exhaustion: number;
+    overrides: Record<string, number>;
+    notes: Record<string, string>;
+  };
+  overridden: string[];
+  features: { name_en: string; level: number; class_key: string; class_name: string }[];
+  attacks: {
+    name_en: string;
+    attack_bonus: number;
+    damage: string;
+    ability: string;
+    notes: string;
+    equipped: boolean;
+  }[];
   proficiencies: { kind: string; value: string; source: { kind: string; key: string } }[];
   carrying: { capacity: number; weight: number };
   inventory: {

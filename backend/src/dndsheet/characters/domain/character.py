@@ -23,6 +23,7 @@ from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem
 from dndsheet.characters.domain.pick_rules import is_choice_label, validate_pick
 from dndsheet.characters.domain.ports import RulesSource
+from dndsheet.characters.domain.state import SheetState
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
     Proficiency,
@@ -67,6 +68,8 @@ class Character:
     spell_choices: tuple[str, ...] = ()
     feats: tuple[str, ...] = ()
     hp: HitPointState = field(default_factory=HitPointState)
+    #: Лічильники й виправлення листа (слоти, хіт-дайси, кидки смерті, нотатки).
+    state: SheetState = field(default_factory=SheetState)
     version: int = 1
     events: list[DomainEvent] = field(default_factory=list, repr=False, compare=False)
 
@@ -418,6 +421,49 @@ class Character:
             )
         self.hp = hp
         self.bump_version()
+
+    def set_hp(self, *, current: int | None = None, temporary: int | None = None) -> None:
+        """Змінити поточні або тимчасові хіти (не максимум — він похідний)."""
+        updated = self.hp
+        if temporary is not None:
+            updated = updated.with_temporary(temporary)
+        if current is not None:
+            updated = updated.with_current(current)
+        if updated == self.hp:
+            return
+        self.hp = updated
+        self.bump_version()
+
+    def apply_damage(self, amount: int) -> None:
+        """Урон спершу знімає тимчасові хіти (PHB, p. 197)."""
+        self.hp = self.hp.apply_damage(amount)
+        self.bump_version()
+
+    def heal(self, amount: int) -> None:
+        self.hp = self.hp.apply_healing(amount)
+        self.bump_version()
+
+    def set_state(self, state: SheetState) -> None:
+        """Замінити стан листа. Хіт-дайсів не може бути більше, ніж є."""
+        pool = self.hit_dice_pool
+        for die, used in state.hit_dice_used.items():
+            if used > pool.get(die, 0):
+                raise ValidationError(
+                    f"витрачених d{die} ({used}) більше, ніж є ({pool.get(die, 0)})"
+                )
+        if state == self.state:
+            return
+        self.state = state
+        self.bump_version()
+
+    def set_override(self, field: str, value: int) -> None:
+        self.set_state(self.state.with_override(field, value))
+
+    def clear_override(self, field: str) -> None:
+        self.set_state(self.state.without_override(field))
+
+    def set_notes(self, notes: dict[str, str]) -> None:
+        self.set_state(self.state.with_notes(notes))
 
     def learn_spell(self, spell: KnownSpell) -> None:
         self._validate_spell_limits(self.spells + (spell,))

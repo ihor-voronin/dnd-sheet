@@ -31,6 +31,7 @@ from dndsheet.characters.domain.proficiencies import (
     SourceKind,
 )
 from dndsheet.characters.domain.spells import KnownSpell
+from dndsheet.characters.domain.state import DeathSaves, SheetState
 from dndsheet.characters.domain.vitals import HitPointState
 from dndsheet.characters.domain.wizard import AbilityMethod, Draft
 from dndsheet.shared.errors import ValidationError
@@ -145,6 +146,55 @@ def inventory_from_record(record: Mapping[str, Any] | None) -> Inventory:
     return Inventory(items=tuple(items), money=money)
 
 
+def state_to_record(state: SheetState) -> dict[str, Any]:
+    return {
+        "slots_used": {str(level): count for level, count in state.slots_used.items()},
+        "pact_used": state.pact_used,
+        "hit_dice_used": {f"d{die}": count for die, count in state.hit_dice_used.items()},
+        "death_saves": {
+            "successes": state.death_saves.successes,
+            "failures": state.death_saves.failures,
+        },
+        "inspiration": state.inspiration,
+        "exhaustion": state.exhaustion,
+        "overrides": dict(state.overrides),
+        "notes": dict(state.notes),
+    }
+
+
+def state_from_record(record: Mapping[str, Any] | None) -> SheetState:
+    payload = record or {}
+    saves = payload.get("death_saves") or {}
+    slots: dict[int, int] = {}
+    for key, value in (payload.get("slots_used") or {}).items():
+        try:
+            slots[int(key)] = int(value)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(f"невірні витрачені слоти: {key!r}") from exc
+    dice: dict[int, int] = {}
+    for key, value in (payload.get("hit_dice_used") or {}).items():
+        text = str(key).lstrip("dD")
+        try:
+            dice[int(text)] = int(value)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(f"невірні витрачені хіт-дайси: {key!r}") from exc
+    return SheetState(
+        slots_used=slots,
+        pact_used=int(payload.get("pact_used") or 0),
+        hit_dice_used=dice,
+        death_saves=DeathSaves(
+            successes=int(saves.get("successes") or 0),
+            failures=int(saves.get("failures") or 0),
+        ),
+        inspiration=bool(payload.get("inspiration")),
+        exhaustion=int(payload.get("exhaustion") or 0),
+        overrides={
+            str(key): int(value) for key, value in (payload.get("overrides") or {}).items()
+        },
+        notes={str(key): str(value) for key, value in (payload.get("notes") or {}).items()},
+    )
+
+
 def spells_to_record(spells: tuple[KnownSpell, ...]) -> list[dict[str, Any]]:
     return [
         {
@@ -215,6 +265,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
             "bonus": character.hp.bonus,
             "override_max": character.hp.override_max,
         },
+        "state": state_to_record(character.state),
     }
 
 
@@ -257,6 +308,7 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
             bonus=int(hp.get("bonus") or 0),
             override_max=hp.get("override_max"),
         ),
+        state=state_from_record(record.get("state")),
         version=int(record.get("version") or 1),
     )
 

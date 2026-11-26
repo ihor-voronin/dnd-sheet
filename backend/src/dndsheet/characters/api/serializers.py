@@ -17,7 +17,11 @@ from dndsheet.characters.domain.wizard import STEP_ORDER, Draft, WizardStep
 from dndsheet.shared.kernel import Ability
 
 
-def computed_sheet(character: Character, computed: ComputedSheet) -> dict[str, Any]:
+def computed_sheet(
+    character: Character,
+    computed: ComputedSheet,
+    attacks: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Повний обчислений лист: усе, що показує екран персонажа."""
     return {
         "character": character_brief(character),
@@ -61,6 +65,20 @@ def computed_sheet(character: Character, computed: ComputedSheet) -> dict[str, A
             ],
         },
         "hit_dice": {f"d{die}": count for die, count in sorted(computed.hit_dice.items())},
+        "resources": resources(character, computed),
+        "state": {
+            "death_saves": {
+                "successes": character.state.death_saves.successes,
+                "failures": character.state.death_saves.failures,
+            },
+            "inspiration": character.state.inspiration,
+            "exhaustion": character.state.exhaustion,
+            "overrides": dict(character.state.overrides),
+            "notes": dict(character.state.notes),
+        },
+        "overridden": sorted(computed.overridden),
+        "features": features(character),
+        "attacks": attacks or [],
         "spellcasting": spellcasting(computed.spellcasting),
         "spells": spells(character, computed),
         "proficiencies": proficiencies(computed.proficiencies),
@@ -134,6 +152,42 @@ def character_brief(character: Character) -> dict[str, Any]:
         ],
         "version": character.version,
     }
+
+
+def resources(character: Character, computed: ComputedSheet) -> dict[str, Any]:
+    """Лічильники: скільки всього й скільки витрачено — для кнопок листа."""
+    slots = {
+        str(level): {"total": total, "used": character.state.slot_used(level)}
+        for level, total in computed.spellcasting.slots.by_level
+    }
+    pact = computed.spellcasting.slots.pact
+    return {
+        "slots": slots,
+        "pact": (
+            {"total": pact.slots, "used": character.state.pact_used} if pact is not None else None
+        ),
+        "hit_dice": {
+            f"d{die}": {"total": total, "used": character.state.hit_die_used(die)}
+            for die, total in sorted(computed.hit_dice.items())
+        },
+    }
+
+
+def features(character: Character) -> list[dict[str, Any]]:
+    """Уміння класів на поточному рівні — назви й рівень, без тексту."""
+    items: list[dict[str, Any]] = []
+    for entry, definition in character.class_entries():
+        for feature in definition.features_at(entry.level):
+            items.append(
+                {
+                    "name_en": feature.name_en,
+                    "level": feature.level,
+                    "class_key": entry.class_key,
+                    "class_name": definition.name_en,
+                }
+            )
+    items.sort(key=lambda item: (item["level"], item["name_en"]))
+    return items
 
 
 def spells(character: Character, computed: ComputedSheet) -> list[dict[str, Any]]:

@@ -21,6 +21,7 @@ from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.inventory import CARRY_PER_STRENGTH
 from dndsheet.characters.domain.proficiencies import ProficiencyKind, Proficiencies
 from dndsheet.characters.domain.services.hit_points import (
+    HitPointPart,
     HitPointsView,
     hit_dice_pool,
     hit_point_maximum,
@@ -111,6 +112,8 @@ class ComputedSheet:
     carried_weight: float
     modifiers: ModifierSet
     feats: tuple[str, ...]
+    #: Які поля гравець виправив вручну (ключі зі `SheetState.overrides`).
+    overridden: frozenset[str] = frozenset()
     warnings: tuple[str, ...] = ()
 
     # --- зручні похідні для рендерів --------------------------------------
@@ -133,6 +136,8 @@ class DerivedStatsCalculator:
         self._resolver = resolver or ModifierResolver()
 
     def compute(self, character: Character) -> ComputedSheet:
+        overrides = dict(character.state.overrides)
+        applied: set[str] = set()
         modifiers = self._resolver.resolve(character)
         abilities = self._abilities(character, modifiers)
         modifiers_map = {ability: view.modifier for ability, view in abilities.items()}
@@ -149,6 +154,11 @@ class DerivedStatsCalculator:
             ability: modifiers_map[ability] + (proficiency if saving_proficiency[ability] else 0)
             for ability in Ability
         }
+        for ability in Ability:
+            key = f"save:{ability.value}"
+            if key in overrides:
+                saving_throws[ability] = overrides[key]
+                applied.add(key)
 
         skill_proficiency = {
             skill: proficiencies.has(ProficiencyKind.SKILL, skill.value) for skill in Skill
@@ -158,9 +168,27 @@ class DerivedStatsCalculator:
             + (proficiency if skill_proficiency[skill] else 0)
             for skill in Skill
         }
+        for skill in Skill:
+            key = f"skill:{skill.value}"
+            if key in overrides:
+                skills[skill] = overrides[key]
+                applied.add(key)
 
         armor_class, ac_parts = self._armor_class(character, modifiers_map, modifiers)
+        if "armor_class" in overrides:
+            armor_class = overrides["armor_class"]
+            ac_parts = (ArmorClassPart(label="override", value=armor_class),)
+            applied.add("armor_class")
         hit_points = self._hit_points(character, modifiers_map, warnings)
+        if "hit_points_max" in overrides:
+            maximum = overrides["hit_points_max"]
+            hit_points = HitPointsView(
+                maximum=maximum,
+                current=character.hp.current if character.hp.current else maximum,
+                temporary=character.hp.temporary,
+                parts=(HitPointPart(label="override", value=maximum),),
+            )
+            applied.add("hit_points_max")
         spellcasting = SpellSlotService().compute(
             character.class_entries(),
             {ability: view.total for ability, view in abilities.items()},
@@ -171,6 +199,19 @@ class DerivedStatsCalculator:
         species = character.species
         speed = species.speed if species is not None else 30
         speed += modifiers.total(ModifierKind.SPEED)
+        if "speed" in overrides:
+            speed = overrides["speed"]
+            applied.add("speed")
+
+        initiative = modifiers_map[Ability.DEX] + modifiers.total(ModifierKind.INITIATIVE)
+        if "initiative" in overrides:
+            initiative = overrides["initiative"]
+            applied.add("initiative")
+
+        passive = PASSIVE_BASE + skills[Skill.PERCEPTION]
+        if "passive_perception" in overrides:
+            passive = overrides["passive_perception"]
+            applied.add("passive_perception")
 
         strength = abilities[Ability.STR].total
         return ComputedSheet(
@@ -182,11 +223,11 @@ class DerivedStatsCalculator:
             saving_throw_proficiency=saving_proficiency,
             skills=skills,
             skill_proficiency=skill_proficiency,
-            initiative=modifiers_map[Ability.DEX] + modifiers.total(ModifierKind.INITIATIVE),
+            initiative=initiative,
             speed=speed,
             armor_class=armor_class,
             armor_class_parts=ac_parts,
-            passive_perception=PASSIVE_BASE + skills[Skill.PERCEPTION],
+            passive_perception=passive,
             hit_points=hit_points,
             hit_dice=hit_dice_pool(character.class_entries()),
             spellcasting=spellcasting,
@@ -198,6 +239,7 @@ class DerivedStatsCalculator:
             carried_weight=character.inventory.total_weight,
             modifiers=modifiers,
             feats=character.feats,
+            overridden=frozenset(applied),
             warnings=tuple(warnings),
         )
 

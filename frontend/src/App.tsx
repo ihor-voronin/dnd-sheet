@@ -121,7 +121,7 @@ function CharacterPage({ id, navigate }: { id: string; navigate: (next: Route) =
           ← до списку
         </button>
       </p>
-      <CharacterView sheet={data.sheet} />
+      <CharacterView initial={data.sheet} />
     </>
   );
 }
