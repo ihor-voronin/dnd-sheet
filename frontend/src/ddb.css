@@ -1751,6 +1751,93 @@ body.board {
   color: #fff;
 }
 
+.character-view .reckoning summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.character-view .reckoning summary::after {
+  content: "▾";
+  margin-left: auto;
+  color: var(--ddb-dim);
+  font-size: 9px;
+  transition: transform 120ms ease;
+}
+
+.character-view .reckoning[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.reckoning-list {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reckoning-row {
+  display: grid;
+  grid-template-areas:
+    "name total"
+    "math save";
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1px 8px;
+  padding: 6px 8px;
+  border: 1px solid rgb(125 79 196 / 22%);
+  border-radius: 6px;
+  background: rgb(18 12 28 / 40%);
+}
+
+.reckoning-row__name {
+  grid-area: name;
+  align-self: center;
+  color: var(--ddb-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.reckoning-row__total {
+  grid-area: total;
+  justify-self: end;
+  color: #fff;
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.reckoning-row__math {
+  grid-area: math;
+  color: var(--ddb-dim);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.reckoning-row__save {
+  grid-area: save;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: end;
+  color: var(--ddb-muted);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.reckoning-row__save .editable-value {
+  color: #e9e2f7;
+  font-weight: 600;
+}
+
+.reckoning-row__save .dot {
+  background: var(--ddb-frame);
+  box-shadow: 0 0 6px rgb(176 108 255 / 70%);
+}
+
 /* --- вузькі екрани --------------------------------------------------- */
 
 /* 1078-1400 px: три колонки лишаються, але все на пару пікселів щільніше. */

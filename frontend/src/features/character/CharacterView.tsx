@@ -627,43 +627,36 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             <SkillTable skills={sheet.skills} render={overrideNumber} />
             <details className="reckoning">
               <summary>Звідки числа</summary>
-              <table className="ability-table ability-table--compact">
-                <thead>
-                  <tr>
-                    <th>Характеристика</th>
-                    <th>База</th>
-                    <th>Бонус</th>
-                    <th>Разом</th>
-                    <th>Мод.</th>
-                    <th>Порятунок</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ABILITIES.map((ability) => {
-                    const value = sheet.abilities[ability];
-                    const save = sheet.saving_throws[ability];
-                    return (
-                      <tr key={ability}>
-                        <th scope="row">{abilityLabel(ability)}</th>
-                        <td>{value.base}</td>
-                        <td>{value.bonus ? modifierLabel(value.bonus) : "—"}</td>
-                        <td>
-                          <strong>{value.total}</strong>
-                        </td>
-                        <td>{modifierLabel(value.modifier)}</td>
-                        <td>
-                          {overrideNumber(
-                            `save:${ability}`,
-                            save.value,
-                            `Порятунок ${ABILITY_LABELS[ability]}`,
-                          )}
-                          {save.proficient ? <span className="dot" title="володіє" /> : null}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <ul className="reckoning-list">
+                {ABILITIES.map((ability) => {
+                  const value = sheet.abilities[ability];
+                  const save = sheet.saving_throws[ability];
+                  const parts = [String(value.base)];
+                  if (value.bonus) {
+                    parts.push(`${value.bonus > 0 ? "+" : "−"} ${Math.abs(value.bonus)}`);
+                  }
+                  return (
+                    <li key={ability} className="reckoning-row">
+                      <span className="reckoning-row__name">{abilityLabel(ability)}</span>
+                      <span className="reckoning-row__total" title="Підсумок характеристики">
+                        {value.total}
+                      </span>
+                      <span className="reckoning-row__math">
+                        {parts.join(" ")} = {value.total} · мод {modifierLabel(value.modifier)}
+                      </span>
+                      <span className="reckoning-row__save">
+                        порятунок{" "}
+                        {overrideNumber(
+                          `save:${ability}`,
+                          save.value,
+                          `Порятунок ${ABILITY_LABELS[ability]}`,
+                        )}
+                        {save.proficient ? <span className="dot" title="володіє" /> : null}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
             </details>
           </section>
         </div>
