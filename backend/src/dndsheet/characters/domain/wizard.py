@@ -46,6 +46,7 @@ from dndsheet.shared.rules import (
     ClassMechanics,
     SpeciesMechanics,
     ability_bonus_totals,
+    requires_subspecies,
 )
 
 #: Стандартний набір характеристик (PHB, p. 13).
@@ -437,6 +438,12 @@ class Draft:
             raise NotFoundError(f"немає правил виду {self.species_key!r}")
         if species.is_subspecies:
             raise ValidationError(f"{species.name_en!r} — підраса, а не базовий вид")
+        # Підраса обовʼязкова там, де вона визначає числа: ельф без підраси —
+        # це не «ельф без уточнень», а незакінчений вибір.
+        if requires_subspecies(species.key) and not self.subspecies_key:
+            raise ValidationError(
+                f"{species.name_en}: оберіть підрасу — вона дає свої бонуси й особливості"
+            )
         if self.subspecies_key:
             subspecies = self.rules.species_mechanics(self.subspecies_key)
             if subspecies is None:

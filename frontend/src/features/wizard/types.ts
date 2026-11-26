@@ -43,6 +43,15 @@ export interface SpeciesView {
   shared_cantrips?: string[];
   cantrip_choice?: { from_class: string; count: number } | null;
   granted_spells?: { name: string; level: number; min_level: number }[];
+  /** Особливості з книги: назва й текст (мова — `text_lang`). */
+  traits?: { name_en: string; text: string }[];
+  description?: string;
+  /** Мова тексту книги: uk / en / ru. */
+  text_lang?: string | null;
+  /** Звідки взято текст, якщо власного запису немає (підраса в тексті батька). */
+  text_from?: string | null;
+  /** Підраса обовʼязкова: без неї вид не має всіх чисел. */
+  subspecies_required?: boolean;
   subspecies?: SpeciesView[];
 }
 

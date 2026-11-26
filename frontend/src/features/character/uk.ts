@@ -329,6 +329,146 @@ const TERMS: Record<string, string> = {
   "the great old one": "Великий Стародавній",
 };
 
+/** Назви видів і підрас (ключ — назва з корпусу, нижній регістр).
+ *
+ * Назви підрас у корпусі — це «ознака + батько» («Wood Elf», «Variant; Mark of
+ * Storm Half-Elf»), тому й переклад іде тим самим порядком: «Лісовий ельф».
+ */
+const SPECIES_UK: Record<string, string> = {
+  // --- види -------------------------------------------------------------
+  aarakocra: "Ааракокра",
+  aasimar: "Аазімар",
+  bugbear: "Бугбер",
+  bullywug: "Буллівуґ",
+  centaur: "Кентавр",
+  changeling: "Чейнджлінг",
+  "custom lineage": "Власна лінія",
+  "deep gnome": "Глибинний гном",
+  dhampir: "Дгампір",
+  dragonborn: "Драконороджений",
+  "dragonborn (chromatic)": "Драконороджений (хроматичний)",
+  "dragonborn (gem)": "Драконороджений (самоцвітний)",
+  "dragonborn (metallic)": "Драконороджений (металевий)",
+  duergar: "Дуергар",
+  dwarf: "Дворф",
+  eladrin: "Еладрін",
+  elf: "Ельф",
+  fairy: "Фея",
+  firbolg: "Фірболґ",
+  genasi: "Генасі",
+  gith: "Ґіт",
+  githyanki: "Ґітянкі",
+  githzerai: "Ґітзерай",
+  gnoll: "Ґнол",
+  gnome: "Гном",
+  "gnome (deep)": "Гном (глибинний)",
+  goblin: "Ґоблін",
+  "goblin (dankwood)": "Ґоблін (данквудський)",
+  goliath: "Голіаф",
+  grimlock: "Ґрімлок",
+  grung: "Ґрунґ",
+  "half-elf": "Пів-ельф",
+  "half-orc": "Пів-орк",
+  halfling: "Піврослик",
+  harengon: "Харегон",
+  hexblood: "Гексблад",
+  hobgoblin: "Хобґоблін",
+  human: "Людина",
+  kalashtar: "Калаштар",
+  kender: "Кендер",
+  kenku: "Кенку",
+  kobold: "Кобольд",
+  "kuo-toa": "Куо-тоа",
+  leonin: "Леонін",
+  lizardfolk: "Ящіролюд",
+  locathah: "Локата",
+  loxodon: "Локсодон",
+  merfolk: "Морський народ",
+  minotaur: "Мінотавр",
+  orc: "Орк",
+  owlin: "Овлін",
+  reborn: "Відроджений",
+  satyr: "Сатир",
+  "sea elf": "Морський ельф",
+  "shadar-kai": "Шадар-кай",
+  shifter: "Шифтер",
+  "simic hybrid": "Сіміцький гібрид",
+  skeleton: "Скелет",
+  tabaxi: "Табаксі",
+  tiefling: "Тіфлінг",
+  tortle: "Тортл",
+  triton: "Тритон",
+  troglodyte: "Троглодит",
+  vedalken: "Ведалкен",
+  verdan: "Вердан",
+  warforged: "Ворфордж",
+  "yuan-ti": "Юань-ті",
+  "yuan-ti pureblood": "Юань-ті (чистокровний)",
+  zombie: "Зомбі",
+
+  // --- підраси ----------------------------------------------------------
+  "fallen aasimar": "Аазімар (падший)",
+  "protector aasimar": "Аазімар (захисник)",
+  "scourge aasimar": "Аазімар (бич)",
+  "draconblood dragonborn": "Драконороджений (драконокровний)",
+  "ravenite dragonborn": "Драконороджений (рейвеніт)",
+  "duergar dwarf": "Дуергар (дворф)",
+  "hill dwarf": "Пагорбовий дворф",
+  "mark of warding dwarf": "Дворф (тавро Захисту)",
+  "mountain dwarf": "Гірський дворф",
+  "drow elf": "Дроу (темний ельф)",
+  "eladrin elf": "Еладрін (ельф)",
+  "high elf": "Високий ельф",
+  "mark of shadow elf": "Ельф (тавро Тіні)",
+  "pallid elf": "Блідий ельф",
+  "shadar-kai elf": "Шадар-кай (ельф)",
+  "wood elf": "Лісовий ельф",
+  "air genasi": "Генасі (повітря)",
+  "earth genasi": "Генасі (землі)",
+  "fire genasi": "Генасі (вогню)",
+  "water genasi": "Генасі (води)",
+  "deep/svirfneblin gnome": "Глибинний гном (свірфнеблін)",
+  "forest gnome": "Лісовий гном",
+  "mark of scribing gnome": "Гном (тавро Письма)",
+  "rock gnome": "Кам'яний гном",
+  "variant; aquatic elf descent half-elf": "Пів-ельф (водного роду)",
+  "variant; drow descent half-elf": "Пів-ельф (дроу)",
+  "variant; mark of detection half-elf": "Пів-ельф (тавро Виявлення)",
+  "variant; mark of storm half-elf": "Пів-ельф (тавро Бурі)",
+  "variant; moon elf or sun elf descent half-elf": "Пів-ельф (місячного або сонячного роду)",
+  "variant; wood elf descent half-elf": "Пів-ельф (лісового роду)",
+  "variant; mark of finding half-orc": "Пів-орк (тавро Пошуку)",
+  "ghostwise halfling": "Піврослик (примарний)",
+  "lightfoot halfling": "Легконогий піврослик",
+  "lotusden halfling": "Піврослик (лотосової долини)",
+  "mark of healing halfling": "Піврослик (тавро Зцілення)",
+  "mark of hospitality halfling": "Піврослик (тавро Гостинності)",
+  "stout halfling": "Кремезний піврослик",
+  "mark of handling human": "Людина (тавро Приборкання)",
+  "mark of making human": "Людина (тавро Творення)",
+  "mark of passage human": "Людина (тавро Шляху)",
+  "mark of sentinel human": "Людина (тавро Вартового)",
+  "variant human": "Людина (варіант)",
+  "variant; mark of finding human": "Людина (тавро Пошуку)",
+  "beasthide shifter": "Шифтер (звіриношкурий)",
+  "longtooth shifter": "Шифтер (довгозубий)",
+  "swiftstride shifter": "Шифтер (бистроногий)",
+  "wildhunt shifter": "Шифтер (дикого лову)",
+  "asmodeus tiefling": "Тіфлінг (Асмодей)",
+  "baalzebul tiefling": "Тіфлінг (Баалзебуб)",
+  "dispater tiefling": "Тіфлінг (Диспатер)",
+  "fierna tiefling": "Тіфлінг (Фіерна)",
+  "glasya tiefling": "Тіфлінг (Глазія)",
+  "levistus tiefling": "Тіфлінг (Левістус)",
+  "mammon tiefling": "Тіфлінг (Маммон)",
+  "mephistopheles tiefling": "Тіфлінг (Мефістофель)",
+  "variant; devil's tongue tiefling": "Тіфлінг (диявольський язик)",
+  "variant; hellfire tiefling": "Тіфлінг (пекельний вогонь)",
+  "variant; infernal legacy tiefling": "Тіфлінг (пекельна спадщина)",
+  "variant; winged tiefling": "Тіфлінг (крилатий)",
+  "zariel tiefling": "Тіфлінг (Заріель)",
+};
+
 /** Назви предметів (ключ — нижній регістр). */
 const ITEMS: Record<string, string> = {
   "chain mail": "Кольчуга",
@@ -455,6 +595,15 @@ export function ukSpell(nameEn: string): UkText | undefined {
 
 export function ukTerm(nameEn: string): string | undefined {
   return TERMS[norm(nameEn)];
+}
+
+/** Назва виду чи підраси українською (англійська — у дужках на екрані). */
+export function speciesLabel(nameEn: string): string {
+  const uk = SPECIES_UK[norm(nameEn)] ?? TERMS[norm(nameEn)];
+  if (!uk || norm(uk) === norm(nameEn)) return nameEn;
+  // «Драконороджений (хроматичний) (Dragonborn (Chromatic))» — забагато
+  // дужок; для таких назв англійська йде через тире.
+  return nameEn.includes("(") ? `${uk} — ${nameEn}` : `${uk} (${nameEn})`;
 }
 
 /** Назва предмета: звірене з SRD, далі великий словник, далі ручний. */

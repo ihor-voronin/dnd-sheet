@@ -112,6 +112,22 @@ def test_subspecies_must_belong_to_species(draft: Draft) -> None:
         draft.apply_species(name="Хтось", species_key="human", subspecies_key="wood elf")
 
 
+def test_subspecies_required_where_it_gives_numbers(draft: Draft) -> None:
+    """Ельф без підраси — незакінчений вибір, а не «ельф без уточнень»."""
+    with pytest.raises(ValidationError, match="оберіть підрасу"):
+        draft.apply_species(name="Хтось", species_key="elf")
+
+    draft.apply_species(name="Хтось", species_key="elf", subspecies_key="wood elf")
+    assert draft.species_key == "elf"
+    assert draft.subspecies_key == "wood elf"
+
+
+def test_subspecies_optional_for_human(draft: Draft) -> None:
+    """«Variant Human» — варіант, а не обовʼязок: звичайна людина теж грає."""
+    draft.apply_species(name="Хтось", species_key="human")
+    assert draft.subspecies_key is None
+
+
 def test_species_ability_choice_must_match(draft: Draft) -> None:
     with pytest.raises(ValidationError, match="обрати 2"):
         draft.apply_species(name="Хтось", species_key="half-elf", ability_choices=(A.STR,))

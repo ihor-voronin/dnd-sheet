@@ -181,6 +181,23 @@ def prepared_spell_limit(modifier: int, class_level: int) -> int:
     return max(1, modifier + class_level)
 
 
+#: Види, де підраса **обовʼязкова**: вона визначає числа (PHB p. 20–24 —
+#: дворф, ельф, гном, піврослик; EEPC — genasi; ERLW — shifter; EGtW —
+#: aasimar; gith поділяється на githyanki/githzerai).
+#:
+#: Корпус не позначає «обовʼязковість» окремим полем, а «є підраси» — не те
+#: саме: у людини є *Variant Human*, і він необовʼязковий. Тому список
+#: явний — інакше довелося б або заборонити звичайну людину, або дозволити
+#: ельфа без підраси.
+SUBRACE_REQUIRED: frozenset[str] = frozenset(
+    {"dwarf", "elf", "gnome", "halfling", "genasi", "shifter", "aasimar", "gith"}
+)
+
+
+def requires_subspecies(species_key: str | None) -> bool:
+    return (species_key or "").strip().casefold() in SUBRACE_REQUIRED
+
+
 # ---------------------------------------------------------------------------
 # дрібні ознаки правил
 # ---------------------------------------------------------------------------

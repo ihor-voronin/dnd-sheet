@@ -439,6 +439,33 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
 }
 
+/* --- вид: опис і особливості з книги ---------------------------------- */
+
+.species-details {
+  border-left: 3px solid var(--line);
+}
+
+.species-traits {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  columns: 2;
+  column-gap: 18px;
+}
+
+.species-traits li {
+  break-inside: avoid;
+  margin-bottom: 6px;
+}
+
+.species-traits .reckoning {
+  margin: 0;
+}
+
+.species-description {
+  margin-top: 8px;
+}
+
 .choice {
   display: flex;
   flex-direction: column;

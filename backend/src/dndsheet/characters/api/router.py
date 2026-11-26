@@ -221,7 +221,12 @@ def _step_payload(request: Request, draft: Draft, step: WizardStep) -> dict[str,
         "locked": not status.unlocked,
         "complete": status.complete,
         "answers": step_answers(draft, step),
-        "options": build_options(step, draft, _compendium(request)),
+        "options": build_options(
+            step,
+            draft,
+            _compendium(request),
+            getattr(request.app.state, "species_cache", {}),
+        ),
         "errors": [],
     }
 

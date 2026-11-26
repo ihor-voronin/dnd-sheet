@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ABILITY_SHORT,
   ALIGNMENT_LABELS,
+  DAMAGE_TYPE_LABELS,
   ITEM_KIND_LABELS,
   METHOD_LABELS,
   SIZE_LABELS,
@@ -38,6 +39,8 @@ import type {
   SpellPayload,
 } from "./types";
 import { searchItems } from "../../api";
+import { RuleText } from "../character/panels";
+import { speciesLabel, termLabel } from "../character/uk";
 
 export interface StepProps<TOptions> {
   answers: Record<string, unknown>;
@@ -82,6 +85,11 @@ export function SpeciesStep({
     setSpellChoices([]);
   }, [subspeciesKey]);
   const effective = children.find((item) => item.key === subspeciesKey) ?? selected;
+  // Підраса обовʼязкова, коли вид віддає їй частину чисел (ельф, дворф…).
+  // Сервер перевіряє те саме — тут лише не даємо натиснути «Далі» дарма.
+  const subspeciesMissing = Boolean(
+    selected?.subspecies_required && children.length && !subspeciesKey,
+  );
   const choice = effective?.ability_choice ?? null;
   const cantripChoice = effective?.cantrip_choice ?? null;
   const cantripPool = cantripChoice
@@ -128,8 +136,10 @@ export function SpeciesStep({
             aria-label={item.name_en}
             onClick={() => setSpeciesKey(item.key)}
           >
-            <strong>{item.name_en}</strong>
-            <span className="choice-meta">{SIZE_LABELS[item.size] ?? item.size} · {item.speed} фт</span>
+            <strong>{speciesLabel(item.name_en)}</strong>
+            <span className="choice-meta">
+              {SIZE_LABELS[item.size] ?? item.size} · {item.speed} фт
+            </span>
             <span className="choice-meta">{bonusesText(item.ability_bonuses)}</span>
             {item.darkvision ? <span className="choice-meta">темний зір {item.darkvision}</span> : null}
             {item.subspecies?.length ? (
@@ -139,9 +149,11 @@ export function SpeciesStep({
         ))}
       </div>
 
+      {selected ? <SpeciesDetails item={selected} /> : null}
+
       {children.length ? (
         <section className="wizard-block">
-          <h3>Підраса</h3>
+          <h3>{selected?.subspecies_required ? "Підраса (обовʼязково)" : "Підраса"}</h3>
           <p className="hint">Підраса додає свої числа до виду, не замінюючи їх.</p>
           <div className="choice-grid choice-grid--compact">
             {children.map((child) => (
@@ -152,12 +164,23 @@ export function SpeciesStep({
                 aria-label={child.name_en}
                 onClick={() => setSubspeciesKey(child.key)}
               >
-                <strong>{child.name_en}</strong>
+                <strong>{speciesLabel(child.name_en)}</strong>
                 <span className="choice-meta">{bonusesText(child.ability_bonuses)}</span>
-                <span className="choice-meta">{child.speed} фт{child.darkvision ? ` · темний зір ${child.darkvision}` : ""}</span>
+                <span className="choice-meta">
+                  {child.speed} фт{child.darkvision ? ` · темний зір ${child.darkvision}` : ""}
+                </span>
               </button>
             ))}
           </div>
+          {subspeciesMissing ? (
+            <p className="hint hint--warn">
+              {selected?.name_en}: цей вид дає частину чисел підрасі — оберіть її, інакше
+              персонаж не матиме повних бонусів. Далі без підраси не пустить і сервер.
+            </p>
+          ) : null}
+          {effective && effective.key !== selected?.key ? (
+            <SpeciesDetails item={effective} title="Що додає підраса" />
+          ) : null}
         </section>
       ) : null}
 
@@ -165,10 +188,9 @@ export function SpeciesStep({
         <section className="wizard-block">
           <h3>Бонуси на вибір</h3>
           <p className="hint">
-            {effective?.name_en}: оберіть {choice.count} здібності, кожна отримає {modifierLabel(choice.amount)}.
-            Обрано {choices.length} з {choice.count}.
-          </p>
-          <div className="chip-row">
+            {effective ? speciesLabel(effective.name_en) : ""}: оберіть {choice.count} здібності,
+            кожна отримає {modifierLabel(choice.amount)}. Обрано {choices.length} з {choice.count}.
+          </p>          <div className="chip-row">
             {choice.from.map((ability) => (
               <button
                 key={ability}
@@ -198,7 +220,8 @@ export function SpeciesStep({
         <section className="wizard-block">
           <h3>Заговір від виду</h3>
           <p className="hint">
-            {effective?.name_en}: оберіть {cantripChoice.count} заговір зі списку {
+            {effective ? speciesLabel(effective.name_en) : ""}: оберіть {cantripChoice.count} заговір
+            зі списку {
               cantripChoice.from_class === "wizard" ? "візарда" : cantripChoice.from_class
             }. Обрано {spellChoices.length} з {cantripChoice.count}.
           </p>
@@ -230,8 +253,12 @@ export function SpeciesStep({
       {effective ? (
         <p className="hint">
           Разом від виду: {bonusesText(effective.ability_bonuses)}
-          {effective.languages.length ? ` · мови: ${effective.languages.join(", ")}` : ""}
-          {effective.resistances.length ? ` · опір: ${effective.resistances.join(", ")}` : ""}
+          {effective.languages.length
+            ? ` · мови: ${effective.languages.map((item) => termLabel(item)).join(", ")}`
+            : ""}
+          {effective.resistances.length
+            ? ` · опір: ${effective.resistances.map((item) => damageLabel(item)).join(", ")}`
+            : ""}
         </p>
       ) : null}
 
@@ -242,6 +269,7 @@ export function SpeciesStep({
           busy ||
           !name.trim() ||
           !speciesKey ||
+          subspeciesMissing ||
           Boolean(choice && choices.length !== choice.count) ||
           Boolean(cantripChoice && spellChoices.length !== cantripChoice.count)
         }
@@ -259,6 +287,88 @@ export function SpeciesStep({
       </button>
     </div>
   );
+}
+
+/** Що вид дає: числа з індексу механік + текст книги. */
+function SpeciesDetails({ item, title }: { item: SpeciesView; title?: string }) {
+  const facts: string[] = [];
+  if (item.skill_proficiencies.length) {
+    facts.push(
+      `навички: ${item.skill_proficiencies.map((skill) => skillLabel(skill)).join(", ")}`,
+    );
+  }
+  if (item.skill_any) facts.push(`навичок на вибір: ${item.skill_any}`);
+  if (item.weapon_proficiencies.length) {
+    facts.push(`зброя: ${item.weapon_proficiencies.map((weapon) => termLabel(weapon)).join(", ")}`);
+  }
+  if (item.tool_proficiencies.length) {
+    facts.push(`інструменти: ${item.tool_proficiencies.map((tool) => termLabel(tool)).join(", ")}`);
+  }
+  if (item.tools_any) facts.push(`інструментів на вибір: ${item.tools_any}`);
+  if (item.languages.length) {
+    facts.push(`мови: ${item.languages.map((language) => termLabel(language)).join(", ")}`);
+  }
+  if (item.languages_any_standard) {
+    facts.push(`мов на вибір: ${item.languages_any_standard}`);
+  }
+  if (item.darkvision) facts.push(`темний зір: ${item.darkvision} фт`);
+  if (item.resistances.length) {
+    facts.push(`опір: ${item.resistances.map((damage) => damageLabel(damage)).join(", ")}`);
+  }
+  if (item.ability_unresolved) {
+    facts.push("бонуси характеристик — за правилами 2022 (вільний розподіл)");
+  }
+
+  const traits = item.traits ?? [];
+  const hasText = Boolean(item.description) || traits.length > 0;
+
+  return (
+    <section className="wizard-block species-details">
+      <h3>{title ?? "Про вид"}</h3>
+      <p className="hint">
+        {speciesLabel(item.name_en)}: {SIZE_LABELS[item.size] ?? item.size}, {item.speed} фт,{" "}
+        {bonusesText(item.ability_bonuses)}
+        {facts.length ? ` · ${facts.join(" · ")}` : ""}
+      </p>
+
+      {!hasText ? (
+        <p className="hint hint--warn">
+          У корпусі немає тексту цього виду — показано лише числа з правил.
+        </p>
+      ) : null}
+
+      {traits.length ? (
+        <ul className="species-traits">
+          {traits.map((trait) => (
+            <li key={trait.name_en}>
+              <details className="reckoning">
+                <summary>{trait.name_en}</summary>
+                <RuleText text={trait.text} />
+              </details>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {item.description ? (
+        <details className="reckoning species-description">
+          <summary>Опис виду</summary>
+          <RuleText text={item.description} />
+        </details>
+      ) : null}
+
+      {hasText && item.text_lang && item.text_lang !== "uk" ? (
+        <p className="hint">
+          Текст книги {item.text_lang === "ru" ? "російською" : "англійською"} — українського
+          перекладу описів видів у корпусі немає.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function damageLabel(value: string): string {
+  return DAMAGE_TYPE_LABELS[value] ?? termLabel(value);
 }
 
 // ---------------------------------------------------------------------------

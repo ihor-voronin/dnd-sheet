@@ -245,6 +245,51 @@ def test_abilities_options_explain_point_buy(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
+def test_species_options_carry_traits_from_the_book(client: TestClient) -> None:
+    """Harengon раніше показувався як «без бонусів» — без жодного вміння."""
+    payload = _start(client)
+    species = {item["key"]: item for item in payload["options"]["species"]}
+
+    harengon = species["harengon"]
+    names = [trait["name_en"] for trait in harengon["traits"]]
+    assert "Hare-Trigger" in names
+    assert "Rabbit Hop" in names
+    assert all(trait["text"] for trait in harengon["traits"])
+    assert harengon["description"]
+    assert harengon["text_lang"] == "en"
+
+    # Опис приходить і для підрас — включно з тими, що описані в главі книги.
+    wood = next(item for item in species["elf"]["subspecies"] if item["key"] == "wood elf")
+    assert wood["traits"]
+
+
+def test_species_options_mark_required_subspecies(client: TestClient) -> None:
+    payload = _start(client)
+    species = {item["key"]: item for item in payload["options"]["species"]}
+
+    assert species["elf"]["subspecies_required"] is True
+    assert species["dwarf"]["subspecies_required"] is True
+    # Людина без «Variant Human» — звичайний, повний вид.
+    assert species["human"]["subspecies_required"] is False
+
+
+def test_subspecies_is_enforced_by_the_server(client: TestClient) -> None:
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    response = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={"name": "Ільвен", "species_key": "elf"},
+    )
+    assert response.status_code == 422
+    assert "підрасу" in response.text
+
+    response = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={"name": "Ільвен", "species_key": "elf", "subspecies_key": "wood elf"},
+    )
+    assert response.status_code == 200, response.text
+
+
 def test_species_options_carry_cantrip_grants(client: TestClient) -> None:
     payload = _start(client)
     species = {item["key"]: item for item in payload["options"]["species"]}

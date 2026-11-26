@@ -86,6 +86,8 @@ def create_app() -> FastAPI:
     app.state.feature_cache = {}
     # Кеш опису передісторій для однойменної вкладки.
     app.state.background_cache = {}
+    # Кеш описів і особливостей видів (тексти книг не змінюються).
+    app.state.species_cache = {}
     # Еталонні персонажі рахуються на старті: якщо корпусу немає, список
     # порожній, і `/golden` віддає `items: []`, а не 500.
     app.state.golden_cases = build_cases(compendium)

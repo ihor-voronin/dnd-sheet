@@ -21,6 +21,7 @@ from dndsheet.characters.domain.wizard import (
     Draft,
     WizardStep,
 )
+from dndsheet.characters.api.species_traits import species_details
 from dndsheet.compendium.api.serializers import (
     background_mechanics_full,
     class_mechanics_full,
@@ -29,6 +30,7 @@ from dndsheet.compendium.api.serializers import (
 )
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
+from dndsheet.shared.rules import requires_subspecies
 
 ALIGNMENTS: tuple[str, ...] = (
     "lawful good",
@@ -46,9 +48,10 @@ def build_options(
     step: WizardStep,
     draft: Draft,
     service: CompendiumService,
+    cache: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if step is WizardStep.SPECIES:
-        return _species_options(draft, service)
+        return _species_options(draft, service, cache)
     if step is WizardStep.CLASS:
         return _class_options(draft, service)
     if step is WizardStep.ABILITIES:
@@ -63,13 +66,24 @@ def build_options(
 # ---------------------------------------------------------------------------
 
 
-def _species_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
+def _species_options(
+    draft: Draft,
+    service: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Види з числами й **особливостями з книги**.
+
+    Текст умінь («Hare-Trigger», «Rabbit Hop») живе тільки в довіднику, тому
+    він приходить сюди ж: інакше екран показував Harengon як «без бонусів» і
+    гравець не бачив, що вид дає.
+    """
+    store = cache if cache is not None else {}
     species: list[dict[str, Any]] = []
     choice_classes: set[str] = set()
     for item in service.species_list():
-        payload = species_mechanics_full(item)
+        payload = _species_entry(item, service, store)
         payload["subspecies"] = [
-            species_mechanics_full(child)
+            _species_entry(child, service, store, parent=item.name_en)
             for child in service.subspecies_of(item.name_en)
         ]
         for candidate in (payload, *payload["subspecies"]):
@@ -93,6 +107,30 @@ def _species_options(draft: Draft, service: CompendiumService) -> dict[str, Any]
             "несе +2 CON і +1 WIS."
         ),
     }
+
+
+def _species_entry(
+    item,  # noqa: ANN001 — SpeciesMechanics
+    service: CompendiumService,
+    cache: dict[str, Any],
+    *,
+    parent: str | None = None,
+) -> dict[str, Any]:
+    """Числа виду + текст книги: опис і особливості."""
+    payload = species_mechanics_full(item)
+    details = species_details(service, item.name_en, parent_name_en=parent, cache=cache)
+    payload["traits"] = (details or {}).get("traits") or []
+    payload["description"] = (details or {}).get("description") or ""
+    payload["text_lang"] = (details or {}).get("lang")
+    payload["text_from"] = (
+        (details or {}).get("from_parent") or (details or {}).get("from_rule")
+        if details
+        else None
+    )
+    # Підраса обовʼязкова лише там, де вона визначає числа (PHB: дворф, ельф,
+    # гном, піврослик; EEPC: genasi; ERLW: shifter; EGtW: aasimar; gith).
+    payload["subspecies_required"] = requires_subspecies(item.key)
+    return payload
 
 
 def _class_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
