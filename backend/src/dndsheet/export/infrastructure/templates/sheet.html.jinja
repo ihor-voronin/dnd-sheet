@@ -105,9 +105,15 @@
     }
 
     .field--longtext .value,
-    .field--list .value {
+    .field--list .value,
+    .field--long .value {
       font-size: 9pt;
       font-weight: 400;
+    }
+
+    .field--counter .value {
+      font-size: 13pt;
+      font-weight: 700;
     }
 
     .field .hint {
@@ -159,13 +165,14 @@
       <div class="fields cols-{{ section.columns }}">
         {% for field_id in section.fields %}
         {% set f = doc.fields[field_id] %}
-        <div class="field field--{{ f.type }}">
+        <div class="field field--{{ f.type }}{% if f.type == 'text' and f.value is string and f.value|length > 14 %} field--long{% endif %}">
           <div class="label">
             {{ f.label.uk }}
             {% if o.show_originals and f.label.en != f.label.uk %}
             <span class="orig">{{ f.label.en }}</span>
             {% endif %}
-            {% if f.origin != 'input' %}<span class="origin">•</span>{% endif %}
+            {% if f.origin == 'override' %}<span class="origin">✎</span>
+            {%- elif f.origin == 'computed' %}<span class="origin">•</span>{% endif %}
           </div>
           <div class="value">
             {%- if f.value is none -%}
@@ -193,7 +200,7 @@
     {% endfor %}
 
     <div class="foot">
-      • — поле обчислюється автоматично; курсивом — оригінальний англійський текст.
+      • — обчислено; ✎ — вписано вручну; курсивом — оригінальний англійський текст.
     </div>
   </div>
   {% endfor %}

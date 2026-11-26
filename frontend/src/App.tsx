@@ -2,7 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
-import { fetchCharacter, fetchCharacters, fetchDemoSheet } from "./api";
+import {
+  demoExportUrl,
+  fetchCharacter,
+  fetchCharacters,
+  fetchDemoSheet,
+  fetchRenderers,
+} from "./api";
 import { CharacterView } from "./features/character/CharacterView";
 import { CreateWizard } from "./features/wizard/CreateWizard";
 import { SheetView } from "./features/sheet/SheetView";
@@ -47,6 +53,8 @@ function DemoSheet() {
     queryKey: ["demo-sheet"],
     queryFn: fetchDemoSheet,
   });
+  const renderers = useQuery({ queryKey: ["renderers"], queryFn: fetchRenderers });
+  const pdfReady = renderers.data?.available.includes("pdf") ?? false;
 
   if (isPending) return <p className="status">Завантаження документа…</p>;
   if (error) {
@@ -56,7 +64,25 @@ function DemoSheet() {
       </p>
     );
   }
-  return <SheetView document={data} />;
+  return (
+    <>
+      <div className="export-bar">
+        <a className="button" href={demoExportUrl("markdown")} download>
+          Markdown
+        </a>
+        {pdfReady ? (
+          <a className="button" href={demoExportUrl("pdf")} download>
+            PDF (A4)
+          </a>
+        ) : (
+          <span className="meta" title="На сервері немає WeasyPrint (extra `pdf` + GTK)">
+            PDF недоступний на цьому сервері
+          </span>
+        )}
+      </div>
+      <SheetView document={data} />
+    </>
+  );
 }
 
 function CharactersList({ navigate }: { navigate: (next: Route) => void }) {

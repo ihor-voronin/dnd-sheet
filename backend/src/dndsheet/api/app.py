@@ -8,9 +8,11 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
 
+from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.router import build_cases, router as characters_router
 from dndsheet.characters.application.sheet import SheetService
 from dndsheet.characters.application.wizard import WizardService
+from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.infrastructure.compendium_rules import (
     CompendiumRulesSource,
     CompendiumSubclassCatalog,
@@ -26,7 +28,7 @@ from dndsheet.export.application.registry import RendererRegistry
 from dndsheet.export.domain.renderer import RenderOptions, RendererError, RendererUnavailable
 from dndsheet.export.infrastructure.markdown_renderer import MarkdownRenderer
 from dndsheet.export.infrastructure.pdf_renderer import PdfRenderer
-from dndsheet.sheets.application.demo import build_demo_document
+from dndsheet.sheets.application.demo import build_demo_character, build_demo_document
 
 
 def _default_spa_dist() -> Path:
@@ -84,7 +86,11 @@ def create_app() -> FastAPI:
 
     @app.get("/api/v1/renderers", tags=["export"])
     def list_renderers() -> dict[str, list[str]]:
-        return {"formats": [fmt.value for fmt in renderers.formats()]}
+        """Зареєстровані формати й ті, що справді працюють у цьому середовищі."""
+        return {
+            "formats": [fmt.value for fmt in renderers.formats()],
+            "available": [fmt.value for fmt in renderers.available()],
+        }
 
     @app.get("/api/v1/demo/sheet", tags=["demo"])
     def demo_sheet() -> dict:
@@ -127,4 +133,9 @@ def _demo_document(app: FastAPI):
             status_code=503,
             detail="немає корпусу механік: демо-лист не з чого зібрати",
         )
-    return build_demo_document(app.state.rules)
+    character = build_demo_character(app.state.rules)
+    computed = DerivedStatsCalculator().compute(character)
+    attacks = attacks_for(
+        character, computed, app.state.compendium, app.state.attack_cache
+    )
+    return build_demo_document(app.state.rules, attacks)

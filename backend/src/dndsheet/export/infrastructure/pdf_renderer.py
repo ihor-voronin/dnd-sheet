@@ -1,7 +1,12 @@
 """PDF-рендер через WeasyPrint (HTML + CSS paged media).
 
-WeasyPrint імпортується ліниво: на Windows без GTK його може не бути, і тоді
-адаптер кидає RendererUnavailable, а не ламає застосунок на старті.
+Два кроки навмисно розділені:
+
+* `render_html` — Jinja-шаблон заповнюється документом. Працює завжди й
+  перевіряється тестами: саме тут видно, чи потрапив розділ на сторінку.
+* `render` — HTML перетворюється в PDF через WeasyPrint. Він імпортується
+  ліниво: на Windows без GTK його може не бути, і тоді адаптер кидає
+  `RendererUnavailable`, а не ламає застосунок на старті.
 """
 
 from __future__ import annotations
@@ -35,23 +40,30 @@ class PdfRenderer:
             lstrip_blocks=True,
         )
 
-    def render(self, document: SheetDocument, options: RenderOptions | None = None) -> RenderResult:
+    def available(self) -> bool:
+        """Чи є WeasyPrint. Перевіряємо `find_spec`, а не імпорт: імпорт тягне GTK."""
+        import importlib.util
+
+        return importlib.util.find_spec("weasyprint") is not None
+
+    def render_html(self, document: SheetDocument, options: RenderOptions | None = None) -> str:
+        """HTML листа — проміжний артефакт PDF (і предмет conformance-тестів)."""
         check_contract(document)
         opts = options or RenderOptions()
+        try:
+            template = self._env.get_template(f"{opts.template}.html.jinja")
+        except Exception as exc:  # noqa: BLE001 - шаблон може бути відсутній
+            raise RendererError(f"Шаблон {opts.template!r} недоступний") from exc
+        return template.render(doc=document, o=opts)
 
+    def render(self, document: SheetDocument, options: RenderOptions | None = None) -> RenderResult:
+        html = self.render_html(document, options)
         try:
             from weasyprint import HTML
         except ImportError as exc:
             raise RendererUnavailable(
                 "WeasyPrint не встановлено (потрібен extra `pdf` і GTK на Windows)"
             ) from exc
-
-        try:
-            template = self._env.get_template(f"{opts.template}.html.jinja")
-        except Exception as exc:  # noqa: BLE001 - шаблон може бути відсутній
-            raise RendererError(f"Шаблон {opts.template!r} недоступний") from exc
-
-        html = template.render(doc=document, o=opts)
         try:
             pdf_bytes = HTML(string=html, base_url=str(self._templates_dir)).write_pdf()
         except Exception as exc:  # noqa: BLE001 - помилки WeasyPrint різнорідні

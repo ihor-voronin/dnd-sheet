@@ -26,3 +26,10 @@ class RendererRegistry:
 
     def formats(self) -> list[RenderFormat]:
         return sorted(self._renderers, key=lambda fmt: fmt.value)
+
+    def available(self) -> list[RenderFormat]:
+        """Лише ті формати, які справді віддадуть файл у цьому середовищі."""
+        return sorted(
+            (fmt for fmt, renderer in self._renderers.items() if renderer.available()),
+            key=lambda fmt: fmt.value,
+        )

@@ -75,14 +75,34 @@ def _find(cases: tuple[GoldenCase, ...], key: str) -> GoldenCase:
     raise HTTPException(status_code=404, detail=f"немає еталонного персонажа {key!r}")
 
 
+def _attacks(request: Request, character, computed) -> list[dict[str, Any]]:  # noqa: ANN001
+    """Атаки з довідника; кеш живе на застосунку (імена зброї не змінюються)."""
+    cache = getattr(request.app.state, "attack_cache", {})
+    return attacks_for(character, computed, _compendium(request), cache)
+
+
 def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Character
     """Повний лист: числа, лічильники й атаки з довідника."""
     computed = DerivedStatsCalculator().compute(character)
-    cache = getattr(request.app.state, "attack_cache", {})
-    return computed_sheet(
-        character,
-        computed,
-        attacks_for(character, computed, _compendium(request), cache),
+    return computed_sheet(character, computed, _attacks(request, character, computed))
+
+
+def _render(request: Request, document, render_format: str, options: RenderOptions) -> Response:  # noqa: ANN001
+    """Спільний вихід для всіх експортів: формат → байти → вкладення."""
+    try:
+        renderer = _registry(request).get(render_format)
+    except RendererError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    try:
+        result = renderer.render(document, options)
+    except RendererUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except RendererError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return Response(
+        content=result.content,
+        media_type=result.media_type,
+        headers={"Content-Disposition": f'attachment; filename="{result.filename}"'},
     )
 
 
@@ -125,21 +145,7 @@ def golden_export(key: str, render_format: str, request: Request) -> Response:
     case = _find(_cases(request), key)
     computed = DerivedStatsCalculator().compute(case.character)
     document = build_sheet_document(case.character, computed)
-    try:
-        renderer = _registry(request).get(render_format)
-    except RendererError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    try:
-        result = renderer.render(document, RenderOptions())
-    except RendererUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except RendererError as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-    return Response(
-        content=result.content,
-        media_type=result.media_type,
-        headers={"Content-Disposition": f'attachment; filename="{result.filename}"'},
-    )
+    return _render(request, document, render_format, RenderOptions())
 
 
 # ---------------------------------------------------------------------------
@@ -335,3 +341,31 @@ def spend_hit_die(
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+# ---------------------------------------------------------------------------
+# експорт листа
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{character_id}/export/{render_format}")
+def character_export(
+    character_id: str,
+    render_format: str,
+    request: Request,
+    originals: bool = True,
+) -> Response:
+    """Лист гравця у PDF або Markdown — зі станом, а не з демо-персонажа.
+
+    `originals=false` прибирає англійські підписи (для друку без дрібного
+    тексту). Сам документ завжди український: це мова застосунку.
+    """
+    try:
+        character = _wizard(request).character(character_id)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    computed = DerivedStatsCalculator().compute(character)
+    document = build_sheet_document(
+        character, computed, _attacks(request, character, computed)
+    )
+    return _render(request, document, render_format, RenderOptions(show_originals=originals))

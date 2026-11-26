@@ -65,7 +65,8 @@ class RestService:
         sheet = self._calculator.compute(character)
         healed = max(0, roll + sheet.ability_modifiers[Ability.CON])
         maximum = sheet.hit_points.maximum
-        current = min(maximum, character.hp.current + healed)
+        # Беремо хіти з обчисленого листа: незадані вже замінені максимумом.
+        current = min(maximum, sheet.hit_points.current + healed)
 
         character.set_state(character.state.with_hit_die_used(die, used + 1))
         character.set_hp(current=current)

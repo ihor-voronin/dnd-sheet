@@ -108,6 +108,23 @@ export function fetchCharacters(): Promise<{
   return getJson("/api/v1/characters");
 }
 
+// --- експорт --------------------------------------------------------------
+
+export type ExportFormat = "pdf" | "markdown";
+
+/** Адреса файлу листа. Це не fetch: браузер сам віддасть вкладення. */
+export function exportUrl(id: string, format: ExportFormat): string {
+  return `/api/v1/characters/${encodeURIComponent(id)}/export/${format}`;
+}
+
+export function demoExportUrl(format: ExportFormat): string {
+  return `/api/v1/demo/export/${format}`;
+}
+
+export function fetchRenderers(): Promise<{ formats: ExportFormat[]; available: ExportFormat[] }> {
+  return getJson("/api/v1/renderers");
+}
+
 // --- довідник (пошук предметів у кроці спорядження) ----------------------
 
 export interface ItemSearchResult {

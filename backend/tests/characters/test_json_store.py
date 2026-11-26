@@ -18,6 +18,7 @@ from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalcul
 from dndsheet.characters.domain.services.spell_slots import SpellSlotService
 from dndsheet.characters.domain.wizard import AbilityMethod, Draft
 from dndsheet.characters.infrastructure.character_json import (
+    character_from_record,
     character_to_record,
     draft_to_record,
 )
@@ -122,7 +123,7 @@ def test_file_is_human_readable_json(rules, tmp_data) -> None:
     repository.save(case.character)
     path = tmp_data / "characters" / f"{case.character.id}.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
-    assert payload["schema"] == "character/1"
+    assert payload["schema"] == "character/2"
     assert payload["name"] == case.character.name
     assert not list(path.parent.glob("*.tmp")), "тимчасовий файл не має лишатися"
 
@@ -152,3 +153,37 @@ def test_broken_json_is_an_error(rules, tmp_data) -> None:
     repository = JsonDraftRepository(directory, rules)
     with pytest.raises(ValidationError, match="невірний JSON"):
         repository.get("broken")
+
+
+# ---------------------------------------------------------------------------
+# міграція character/1 -> character/2
+# ---------------------------------------------------------------------------
+
+
+def _legacy_record(case, current: int) -> dict:  # noqa: ANN001
+    record = character_to_record(case.character)
+    record["schema"] = "character/1"
+    record["hp"] = {**record["hp"], "current": current}
+    return record
+
+
+def test_legacy_zero_hp_means_unset(rules) -> None:
+    """У `character/1` нуль не міг означати «нуль хітів» — лист підставляв максимум."""
+    case = build_golden_cases(rules)[0]
+    restored = character_from_record(_legacy_record(case, 0), rules)
+    assert restored.hp.current is None
+
+
+def test_legacy_real_hp_is_kept(rules) -> None:
+    case = build_golden_cases(rules)[0]
+    restored = character_from_record(_legacy_record(case, 4), rules)
+    assert restored.hp.current == 4
+
+
+def test_new_schema_keeps_zero_hp(rules) -> None:
+    """У `character/2` нуль — це справжній нуль: персонаж непритомний."""
+    case = build_golden_cases(rules)[0]
+    record = character_to_record(case.character)
+    record["hp"] = {**record["hp"], "current": 0}
+    restored = character_from_record(record, rules)
+    assert restored.hp.current == 0

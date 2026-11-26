@@ -45,23 +45,31 @@ Character (агрегат) ──> DerivedStatsCalculator ──> ComputedSheet 
       лічильники (хіти, слоти, Pact Magic, хіт-дайси, кидки смерті, натхнення, втома),
       короткий/довгий відпочинок, атаки зі зброї з довідника; стан зберігається у `var/`
       і переживає перезапуск. Деталі — [`docs/sheet.md`](docs/sheet.md)
+- [x] **етап 5 — повний експорт**: `SheetDocument` збирається з реального персонажа
+      **разом зі станом** (хіти, слоти, виправлення, нотатки) і містить усі розділи екрана —
+      особу, бій, порятунки, навички, атаки, уміння, володіння, чарування, закляття,
+      інвентар, гроші, нотатки й застереження. Markdown і PDF (через HTML-шаблон) проходять
+      conformance на справжньому листі; кнопки експорту — на екрані персонажа.
+      Деталі — [`docs/export.md`](docs/export.md)
 
 ### Перевірено локально (Python 3.13, Node 24)
 
 | Гейт | Результат |
 |---|---|
-| `pytest backend` | **460 passed, 1 skipped** (PDF-тест скіпнуто: немає WeasyPrint/GTK) |
+| `pytest backend` | **492 passed, 2 skipped** (обидва PDF-тести скіпнуто: немає WeasyPrint/GTK) |
 | `lint-imports` | **5 contracts kept, 0 broken** |
 | `tsc --noEmit` | чисто |
-| `vite build` | 110 модулів, ~285 kB JS (~91 kB gzip) |
+| `vite build` | 109 модулів, ~286 kB JS (~91 kB gzip) |
+| `python scripts/preflight.py` | OK: 122 .py, контракт, golden-числа, корпус за каноном, механіки 13/69/64/94 |
 | SPA end-to-end | FastAPI віддає `/`, рендериться `SheetDocument`, тултіп на фокусі показує оригінал («Strength») |
 | довідник end-to-end | `/api/v1/compendium/summary` → 3818 записів, 89 книг; `/classes/wizard/spells` → 215 заклять, `source: spell-lists`; `/mechanics` → 13 класів, 69 видів, 94 передісторії |
 | персонаж end-to-end | `/api/v1/characters/golden` → 3 листи: Воїн 1 (AC 18, HP 12), Варлок 1 (Pact Magic 1 слот, DC 13), Воїн 2 / Візард 3 (рівень заклинателя 3, слоти 4×1 + 2×2) |
 | візард end-to-end | створено Воїна 1 через UI (Людина, Солдат, набір, кольчуга): AC 16, HP 12, навички з джерелами; після перезавантаження сторінки чернетка повертається на той самий крок |
 | вибір на 1 рівні | жрець Life: доменні `bless`/`cure wounds` завжди підготовлені; варлок The Fiend: `burning hands`/`command` у виборі; високий ельф: обраний заговір візарда на листі |
 | лист end-to-end | Воїн 1 із довгим мечем: атака +5, `1d8+3 slashing`; хіти 4/12, довгий відпочинок → 12/12; КЗ 16 → 19 виправленням і назад; Pact Magic 1/1 → 0/1 → короткий відпочинок 1/1 |
+| експорт end-to-end | Варлок 1 зі станом (4/9 хітів, витрачений Pact Magic, виправлений КЗ): Markdown-файл 5.3 kB із усіма розділами, `Хіти: зараз 0` при 0 хітів, «PDF недоступний на цьому сервері» замість кнопки, яка відкриває 503 |
 
-Далі — етап 5: повний експорт листа (PDF і Markdown усіх секцій).
+Далі — етап 6: збереження в БД і акаунти (cookie-сесії, публічне посилання).
 Порядок етапів і еталон екранів — у [`docs/plan.md`](docs/plan.md) (§9, §13).
 
 ## Швидкий старт (Windows / PowerShell)
@@ -136,11 +144,13 @@ backend/src/dndsheet/
   characters/      # агрегат Character v2, володіння, інвентар, закляття
                    # + сервіси: DerivedStatsCalculator, ModifierResolver, SpellSlotService
                    # + application/golden.py: еталонні персонажі
-  sheets/          # SheetDocument, формули, лейбли, build_document
-  export/          # порт SheetRenderer, реєстр, адаптери PDF/Markdown
+                   # + application/rows.py: рядки листа для екрана й експорту
+                   # + application/sheet.py: зміни під час гри, відпочинок
+  sheets/          # SheetDocument, формули, лейбли, build_document (усі розділи листа)
+  export/          # порт SheetRenderer, реєстр (format + available), адаптери PDF/Markdown
   compendium/      # довідник: JSONL-корпус, індекси заклять і механік, сервіс, API
   identity/        # (порожньо, етап 6)
-  localization/    # (порожньо, етап 5)
+  localization/    # (порожньо, після етапу 7)
   api/             # FastAPI
 contract/          # JSON Schema + фікстури + формати корпусів і механік (єдине джерело типів)
 content/           # глосарій, реєстр джерел, корпуси записів, похідні індекси

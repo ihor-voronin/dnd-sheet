@@ -1,8 +1,12 @@
-"""Демонстраційні підписи для каркасу.
+"""Підписи листа: українське слово + оригінал англійською.
 
-УВАГА: це тимчасова заглушка до наповнення `compendium` + `glossary` (етап 2).
-Після конвеєра контенту підписи приходитимуть із БД, а цей модуль буде видалено.
-Українські назви тут — чернетка для перевірки верстки, не еталон перекладу.
+Кожен підпис — `LocalizedText` (uk для показу, en для тултіпа й англійського
+рендера). Тут лише **слова інтерфейсу**: назви книг, класів, заклять і
+предметів приходять із довідника англійською, і їх переклад — окремий
+конвеєр (`localization`), а не цей модуль.
+
+Значення мають збігатися з `frontend/src/labels.ts`: якщо екран і PDF
+називають те саме по-різному, це помилка, а не стиль.
 """
 
 from __future__ import annotations
@@ -94,3 +98,126 @@ def hint(glossary_id: str) -> LocalizedText | None:
         return None
     uk, en = pair
     return LocalizedText(uk=uk, en=en, glossary_id=glossary_id)
+
+
+# ---------------------------------------------------------------------------
+# слова листа: інвентар, володіння, нотатки, закляття
+# ---------------------------------------------------------------------------
+
+ITEM_KIND_LABELS: dict[str, tuple[str, str]] = {
+    "armor": ("броня", "armor"),
+    "shield": ("щит", "shield"),
+    "weapon": ("зброя", "weapon"),
+    "gear": ("речі", "gear"),
+    "tool": ("інструмент", "tool"),
+    "pack": ("набір", "pack"),
+    "magic": ("магічне", "magic"),
+}
+
+PROFICIENCY_KIND_LABELS: dict[str, tuple[str, str]] = {
+    "skill": ("навички", "skills"),
+    "saving_throw": ("кидки порятунку", "saving throws"),
+    "armor": ("броня", "armor"),
+    "weapon": ("зброя", "weapons"),
+    "tool": ("інструменти", "tools"),
+    "language": ("мови", "languages"),
+}
+
+SOURCE_KIND_LABELS: dict[str, tuple[str, str]] = {
+    "class": ("клас", "class"),
+    "species": ("вид", "species"),
+    "background": ("передісторія", "background"),
+    "manual": ("вручну", "manual"),
+}
+
+LANGUAGE_LABELS: dict[str, tuple[str, str]] = {
+    "common": ("спільна", "Common"),
+    "elvish": ("ельфійська", "Elvish"),
+    "dwarvish": ("дворфська", "Dwarvish"),
+    "infernal": ("пекельна", "Infernal"),
+    "celestial": ("небесна", "Celestial"),
+    "draconic": ("драконяча", "Draconic"),
+    "gnomish": ("гномівська", "Gnomish"),
+    "goblin": ("гоблінська", "Goblin"),
+    "halfling": ("півросликів", "Halfling"),
+    "orc": ("ороча", "Orc"),
+    "abyssal": ("безодні", "Abyssal"),
+    "sylvan": ("лісова", "Sylvan"),
+    "undercommon": ("підземна", "Undercommon"),
+    "primordial": ("первісна", "Primordial"),
+    "giant": ("велетнів", "Giant"),
+    "deep speech": ("глибока мова", "Deep Speech"),
+}
+
+ALIGNMENT_LABELS: dict[str, tuple[str, str]] = {
+    "lawful good": ("законно-добрий", "Lawful Good"),
+    "neutral good": ("нейтрально-добрий", "Neutral Good"),
+    "chaotic good": ("хаотично-добрий", "Chaotic Good"),
+    "lawful neutral": ("законно-нейтральний", "Lawful Neutral"),
+    "neutral": ("нейтральний", "Neutral"),
+    "chaotic neutral": ("хаотично-нейтральний", "Chaotic Neutral"),
+    "lawful evil": ("законно-злий", "Lawful Evil"),
+    "neutral evil": ("нейтрально-злий", "Neutral Evil"),
+    "chaotic evil": ("хаотично-злий", "Chaotic Evil"),
+}
+
+NOTE_LABELS: dict[str, tuple[str, str]] = {
+    "appearance": ("Зовнішність", "Appearance"),
+    "allies": ("Союзники", "Allies"),
+    "enemies": ("Вороги", "Enemies"),
+    "backstory": ("Передісторія", "Backstory"),
+    "notes": ("Нотатки", "Notes"),
+}
+
+SPELL_SOURCE_LABELS: dict[str, tuple[str, str]] = {
+    "class": ("від класу", "class"),
+    "species": ("від виду", "species"),
+    "subclass": ("від підкласу", "subclass"),
+}
+
+
+def item_kind_label(kind: str) -> LocalizedText:
+    return _pair(ITEM_KIND_LABELS, kind, kind)
+
+
+def proficiency_kind_label(kind: str) -> LocalizedText:
+    return _pair(PROFICIENCY_KIND_LABELS, kind, kind)
+
+
+def source_kind_label(kind: str) -> LocalizedText:
+    return _pair(SOURCE_KIND_LABELS, kind, kind)
+
+
+def language_label(value: str) -> LocalizedText:
+    return _pair(LANGUAGE_LABELS, value, value)
+
+
+def alignment_label(value: str) -> LocalizedText:
+    return _pair(ALIGNMENT_LABELS, value, value)
+
+
+def note_label(key: str) -> LocalizedText:
+    return _pair(NOTE_LABELS, key, key)
+
+
+def spell_source_label(source: str) -> LocalizedText:
+    return _pair(SPELL_SOURCE_LABELS, source, source)
+
+
+def spell_level_label(level: int) -> LocalizedText:
+    if level == 0:
+        return LocalizedText(uk="заговір", en="cantrip")
+    return LocalizedText(uk=f"{level} рівня", en=f"level {level}")
+
+
+def english_name(name: str) -> LocalizedText:
+    """Назва з довідника: перекладу немає, тому uk = en (чесно, без вигадок)."""
+    return LocalizedText(uk=name, en=name)
+
+
+def _pair(table: dict[str, tuple[str, str]], key: str, fallback: str) -> LocalizedText:
+    pair = table.get(key.strip().casefold())
+    if pair is None:
+        return LocalizedText(uk=fallback, en=fallback)
+    uk, en = pair
+    return LocalizedText(uk=uk, en=en)

@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from typing import Any, Iterable, Mapping
+
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
@@ -76,7 +78,14 @@ def build_demo_character(rules: RulesSource) -> Character:
     )
 
 
-def build_demo_document(rules: RulesSource) -> SheetDocument:
+def build_demo_document(
+    rules: RulesSource, attacks: Iterable[Mapping[str, Any]] | None = None
+) -> SheetDocument:
+    """Демо-лист. `attacks` — з довідника (без нього розділу «Атаки» немає).
+
+    Атаки не рахуються тут: для них потрібен довідник, а `sheets` знає лише
+    порт правил. Композиційний корінь додає їх, коли довідник є.
+    """
     character = build_demo_character(rules)
     computed = DerivedStatsCalculator().compute(character)
-    return build_sheet_document(character, computed)
+    return build_sheet_document(character, computed, attacks)

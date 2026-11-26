@@ -7,9 +7,10 @@
  * виправлення: кожна зміна одразу йде на диск.
  */
 
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { patchCharacter, restCharacter, spendHitDie } from "../../api";
+import { exportUrl, fetchRenderers, patchCharacter, restCharacter, spendHitDie } from "../../api";
 import {
   ABILITY_SHORT,
   ALIGNMENT_LABELS,
@@ -119,6 +120,11 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
   const id = sheet.character.id;
   const version = sheet.character.version;
 
+  // PDF збирається на сервері через WeasyPrint: без GTK його немає, і тоді
+  // посилання не показуємо, замість того щоб віддати 503 у новій вкладці.
+  const renderers = useQuery({ queryKey: ["renderers"], queryFn: fetchRenderers });
+  const pdfReady = renderers.data?.available.includes("pdf") ?? false;
+
   async function run(action: Promise<{ sheet: SheetViewPayload }>) {
     setBusy(true);
     setError(null);
@@ -169,6 +175,24 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
           {character.background ? ` · ${character.background.name_en}` : ""}
           {character.alignment ? ` · ${ALIGNMENT_LABELS[character.alignment] ?? character.alignment}` : ""}
         </p>
+        <div className="export-bar">
+          <span className="meta">Експорт листа зі станом:</span>
+          <a className="button" href={exportUrl(id, "markdown")} download>
+            Markdown
+          </a>
+          <a className="button" href={`${exportUrl(id, "markdown")}?originals=false`} download>
+            Markdown без англ.
+          </a>
+          {pdfReady ? (
+            <a className="button button--primary" href={exportUrl(id, "pdf")} download>
+              PDF (A4)
+            </a>
+          ) : (
+            <span className="meta" title="На сервері немає WeasyPrint (extra `pdf` + GTK)">
+              PDF недоступний на цьому сервері
+            </span>
+          )}
+        </div>
       </header>
 
       <nav className="tabs" aria-label="Розділи листа">

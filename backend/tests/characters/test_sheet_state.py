@@ -94,11 +94,34 @@ def test_override_skill_and_save(rules) -> None:
 
 
 def test_override_max_hp_changes_current_too(rules) -> None:
-    character = make_character(rules, hp=HitPointState(current=0))
+    character = make_character(rules, hp=HitPointState())
     character.set_override("hit_points_max", 77)
     sheet = DerivedStatsCalculator().compute(character)
     assert sheet.hit_points.maximum == 77
     assert sheet.hit_points.current == 77
+
+
+def test_zero_hp_stays_zero(rules) -> None:
+    """Нуль хітів — це непритомний персонаж, а не «хіти не задано»."""
+    character = make_character(rules, hp=HitPointState(current=0))
+    sheet = DerivedStatsCalculator().compute(character)
+    assert sheet.hit_points.current == 0
+    assert sheet.hit_points.maximum == 10
+
+
+def test_unset_hp_is_not_the_same_as_zero(rules) -> None:
+    character = make_character(rules)
+    assert character.hp.current is None, "нового персонажа не чіпали — хіти не задані"
+    assert DerivedStatsCalculator().compute(character).hit_points.current == 10
+    character.set_hp(current=0)
+    assert DerivedStatsCalculator().compute(character).hit_points.current == 0
+
+
+def test_damage_needs_known_hp(rules) -> None:
+    from dndsheet.characters.domain.vitals import HitPointState
+
+    with pytest.raises(ValidationError, match="спершу задайте"):
+        HitPointState().apply_damage(3)
 
 
 # ---------------------------------------------------------------------------

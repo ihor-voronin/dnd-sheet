@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from dndsheet.sheets.domain.document import SheetDocument
 
@@ -30,7 +30,14 @@ class RendererUnavailable(RendererError):
 
 @dataclass(frozen=True, slots=True)
 class RenderOptions:
-    lang: Literal["uk", "en"] = "uk"
+    """Опції рендера.
+
+    `lang` тут немає навмисно: документ уже зібраний українською (це мова
+    застосунку), а англійські оригінали лежать у `LocalizedText` для тултіпа.
+    Рендер не перекладає — він малює. `show_originals` показує англійський
+    підпис поряд з українським, щоб число можна було звірити з книгою.
+    """
+
     show_originals: bool = True
     template: str = "sheet"
 
@@ -46,6 +53,14 @@ class RenderResult:
 @runtime_checkable
 class SheetRenderer(Protocol):
     format: RenderFormat
+
+    def available(self) -> bool:
+        """Чи може адаптер працювати в цьому середовищі (чи є залежності).
+
+        Різниця з «зареєстрований» принципова: PDF без WeasyPrint
+        зареєстрований, але віддасть 503, тож UI не має пропонувати кнопку.
+        """
+        ...
 
     def render(self, document: SheetDocument, options: RenderOptions | None = None) -> RenderResult: ...
 

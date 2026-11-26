@@ -104,6 +104,16 @@ def test_pdf_renders_multi_page_document(documents: dict[str, SheetDocument]) ->
 # --- Версія контракту -------------------------------------------------------
 
 
+def test_renderers_report_availability() -> None:
+    """`available()` — не прикраса: за ним UI вирішує, показувати кнопку чи ні."""
+    import importlib.util
+
+    assert MarkdownRenderer().available() is True
+    assert PdfRenderer().available() is (
+        importlib.util.find_spec("weasyprint") is not None
+    )
+
+
 def test_major_version_mismatch_is_refused(documents: dict[str, SheetDocument]) -> None:
     document = documents["minimal"].model_copy(update={"schema_version": "2.0"})
     with pytest.raises(RendererError, match="контракт"):

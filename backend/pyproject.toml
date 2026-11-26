@@ -29,7 +29,7 @@ dev = [
 where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "tests/characters"]
 testpaths = ["tests"]
 addopts = "-ra -p no:cacheprovider"
 

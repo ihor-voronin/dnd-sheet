@@ -4,6 +4,11 @@
 рахує `DerivedStatsCalculator`. Тут — те, що є **станом**, а не правилом:
 скільки зараз, скільки тимчасових, які кидки були на рівнях і чи гравець
 вписав власний максимум вручну.
+
+`current = None` означає «гравець ще не чіпав хіти» — лист показує максимум.
+Це не те саме, що `0`: нуль хітів — це непритомний персонаж із кидками
+смерті, і плутати ці два стани не можна (лист показував би повні хіти замість
+нуля).
 """
 
 from __future__ import annotations
@@ -21,18 +26,23 @@ MAX_HIT_DIE = 20
 class HitPointState:
     """Поточні хіти й те, з чого рахується максимум."""
 
-    current: int = 0
+    #: `None` — «не задано»: показуємо максимум. `0` — непритомний.
+    current: int | None = None
     temporary: int = 0
     rolls: tuple[int, ...] = ()
     bonus: int = 0
     override_max: int | None = None
 
     def __post_init__(self) -> None:
-        for name, value in (("current", self.current), ("temporary", self.temporary)):
-            if isinstance(value, bool) or not isinstance(value, int):
-                raise ValidationError(f"{name} хітів має бути цілим числом")
-            if value < 0:
-                raise ValidationError(f"{name} хітів не може бути відʼємним")
+        if self.current is not None:
+            if isinstance(self.current, bool) or not isinstance(self.current, int):
+                raise ValidationError("current хітів має бути цілим числом")
+            if self.current < 0:
+                raise ValidationError("current хітів не може бути відʼємним")
+        if isinstance(self.temporary, bool) or not isinstance(self.temporary, int):
+            raise ValidationError("temporary хітів має бути цілим числом")
+        if self.temporary < 0:
+            raise ValidationError("temporary хітів не може бути відʼємним")
         for roll in self.rolls:
             if not MIN_HIT_DIE <= roll <= MAX_HIT_DIE:
                 raise ValidationError(
@@ -63,14 +73,27 @@ class HitPointState:
         """Урон спершу знімає тимчасові хіти (PHB, p. 197)."""
         if amount < 0:
             raise ValidationError("урон не може бути відʼємним")
+        current = self._known_current("урон")
         absorbed = min(self.temporary, amount)
         return replace(
             self,
             temporary=self.temporary - absorbed,
-            current=max(0, self.current - (amount - absorbed)),
+            current=max(0, current - (amount - absorbed)),
         )
 
     def apply_healing(self, amount: int) -> "HitPointState":
         if amount < 0:
             raise ValidationError("лікування не може бути відʼємним")
-        return replace(self, current=self.current + amount)
+        return replace(self, current=self._known_current("лікування") + amount)
+
+    def _known_current(self, action: str) -> int:
+        """Хіти «як є». Незадані хіти — помилка виклику, а не мовчазний нуль.
+
+        Хто знає максимум — той і має спершу його підставити
+        (`RestService` читає максимум із обчисленого листа).
+        """
+        if self.current is None:
+            raise ValidationError(
+                f"{action} на невідомих поточних хітах: спершу задайте current"
+            )
+        return self.current

@@ -37,7 +37,10 @@ from dndsheet.characters.domain.wizard import AbilityMethod, Draft
 from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.kernel import Ability, AbilityScore, Money
 
-CHARACTER_SCHEMA = "character/1"
+CHARACTER_SCHEMA = "character/2"
+#: `character/1` писав `hp.current: 0` і для «повних хітів»: калькулятор
+#: підставляв максимум, тому відрізнити «не задано» від «0 хітів» було нічим.
+LEGACY_CHARACTER_SCHEMAS = frozenset({"character/1"})
 DRAFT_SCHEMA = "wizard-draft/1"
 
 
@@ -270,11 +273,13 @@ def character_to_record(character: Character) -> dict[str, Any]:
 
 
 def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Character:
-    if record.get("schema") != CHARACTER_SCHEMA:
+    schema = str(record.get("schema") or "")
+    if schema != CHARACTER_SCHEMA and schema not in LEGACY_CHARACTER_SCHEMAS:
         raise ValidationError(
             f"невідома схема персонажа {record.get('schema')!r}, "
             f"очікується {CHARACTER_SCHEMA!r}"
         )
+    legacy = schema != CHARACTER_SCHEMA
     hp = record.get("hp") or {}
     return Character(
         id=str(record["id"]),
@@ -302,7 +307,7 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
         spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
         feats=tuple(str(item) for item in record.get("feats") or ()),
         hp=HitPointState(
-            current=int(hp.get("current") or 0),
+            current=_hp_current(hp, legacy=legacy),
             temporary=int(hp.get("temporary") or 0),
             rolls=tuple(int(value) for value in hp.get("rolls") or ()),
             bonus=int(hp.get("bonus") or 0),
@@ -311,6 +316,22 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
         state=state_from_record(record.get("state")),
         version=int(record.get("version") or 1),
     )
+
+
+def _hp_current(hp: Mapping[str, Any], *, legacy: bool) -> int | None:
+    """Поточні хіти з файлу; `None` — «гравець їх ще не змінював».
+
+    У `character/1` нуль означав і «не задано», і «нуль»: калькулятор
+    підставляв максимум замість нуля, тож справжнього нуля у файлі бути не
+    могло. Тому для старої схеми нуль читаємо як «не задано».
+    """
+    value = hp.get("current")
+    if value is None:
+        return None
+    current = int(value)
+    if legacy and current == 0:
+        return None
+    return current
 
 
 # ---------------------------------------------------------------------------

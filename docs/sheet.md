@@ -26,6 +26,10 @@ Character.state ── DerivedStatsCalculator ──> ComputedSheet ──> PATC
 | `death_saves`, `inspiration`, `exhaustion` | КЗ, ініціатива, швидкість, навички |
 | `overrides`, `notes` | DC, бонус атаки закляттям |
 
+`hp.current = None` — це «гравець ще не чіпав хіти», лист показує максимум;
+`0` — непритомний персонаж із кидками смерті. Ці два стани не зливаються:
+персонаж на нулі хітів показується як нуль і на екрані, і в експорті.
+
 Максимумів у стані немає навмисно: якщо завтра зміниться правило (новий
 предмет, рівень), лист перерахується, а «витрачено 2 з 4» лишиться осмисленим.
 
@@ -76,6 +80,8 @@ Character.state ── DerivedStatsCalculator ──> ComputedSheet ──> PATC
 | `POST` | `/api/v1/characters/{id}/rest` | `{"kind": "short"\|"long"}` |
 | `POST` | `/api/v1/characters/{id}/hit-dice` | `{"die": 10, "roll": 6}` |
 | `GET` | `/api/v1/characters/{id}` | повний лист |
+| `GET` | `/api/v1/characters/{id}/export/markdown` | лист файлом (етап 5) |
+| `GET` | `/api/v1/characters/{id}/export/pdf` | друк A4 (етап 5), `503` без WeasyPrint |
 
 `PATCH` приймає будь-яке підмножина полів:
 
@@ -111,6 +117,16 @@ Character.state ── DerivedStatsCalculator ──> ComputedSheet ──> PATC
 `editing.tsx` — `EditableNumber` (клік → поле → Enter/blur), `Counter`
 (`− значення +`), `Pips` (кидки смерті).
 
+## Експорт
+
+Той самий лист із тим самим станом віддається файлом: Markdown — для чату й
+редактора, PDF — на друк. Кнопки живуть у шапці екрана персонажа; PDF
+показується лише тоді, коли сервер справді вміє його зібрати (є WeasyPrint).
+
+Документ збирається з `Character` + `ComputedSheet` і містить усі шість
+розділів, а не першу сторінку. Деталі, контракт полів і таблиця «що
+потрапляє» — [`export.md`](export.md).
+
 ## Що свідомо не зроблено
 
 * **Текст умінь класу** — у вкладці «Уміння» лише назви й рівні: повний текст
@@ -121,13 +137,12 @@ Character.state ── DerivedStatsCalculator ──> ComputedSheet ──> PATC
 * **Підготовка заклять на листі** — перемикання `prepared` для класів, що
   готують; зараз показується те, що обрано при створенні.
 * **Умови (poisoned, prone…) і концентрація** — окремий шар, етап 8.
-* **Експорт PDF/Markdown зі станом** — етап 5: рендери поки що будуються з
-  `SheetDocument` демо-персонажа, а не з листа гравця.
 
 ## Тести
 
 | Файл | Що тримає |
 |---|---|
-| `tests/characters/test_sheet_state.py` | валідація стану, виправлення, відпочинок, хіт-дайси, атаки |
+| `tests/characters/test_sheet_state.py` | валідація стану, виправлення, відпочинок, хіт-дайси, атаки, 0 хітів ≠ «не задано» |
 | `tests/api/test_sheet_api.py` | PATCH/rest/hit-dice через HTTP, збереження після перезавантаження, 409, атаки з довідника |
-| `tests/characters/test_json_store.py` | агрегат зі станом → файл → агрегат |
+| `tests/api/test_export_api.py` | експорт листа гравця файлом (Markdown/PDF) зі станом |
+| `tests/characters/test_json_store.py` | агрегат зі станом → файл → агрегат; міграція `character/1` → `character/2` |

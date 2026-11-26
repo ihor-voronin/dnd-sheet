@@ -182,9 +182,10 @@ class DerivedStatsCalculator:
         hit_points = self._hit_points(character, modifiers_map, warnings)
         if "hit_points_max" in overrides:
             maximum = overrides["hit_points_max"]
+            current = character.hp.current
             hit_points = HitPointsView(
                 maximum=maximum,
-                current=character.hp.current if character.hp.current else maximum,
+                current=maximum if current is None else current,
                 temporary=character.hp.temporary,
                 parts=(HitPointPart(label="override", value=maximum),),
             )
@@ -310,7 +311,9 @@ class DerivedStatsCalculator:
         if per_level:
             maximum += per_level * max(1, character.total_level)
         state = character.hp
-        current = state.current if state.current else maximum
+        # Незадані хіти показуємо як максимум; нуль лишається нулем, бо це
+        # непритомний персонаж, а не «повний».
+        current = maximum if state.current is None else state.current
         if current > maximum:
             warnings.append(
                 f"поточні хіти ({current}) більші за максимум ({maximum})"

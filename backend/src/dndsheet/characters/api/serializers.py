@@ -9,6 +9,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from dndsheet.characters.application.rows import (
+    feature_rows,
+    proficiency_rows,
+    spell_rows,
+)
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.proficiencies import Proficiencies
 from dndsheet.characters.domain.services.derived_stats import ComputedSheet
@@ -174,55 +179,42 @@ def resources(character: Character, computed: ComputedSheet) -> dict[str, Any]:
 
 
 def features(character: Character) -> list[dict[str, Any]]:
-    """Уміння класів на поточному рівні — назви й рівень, без тексту."""
-    items: list[dict[str, Any]] = []
-    for entry, definition in character.class_entries():
-        for feature in definition.features_at(entry.level):
-            items.append(
-                {
-                    "name_en": feature.name_en,
-                    "level": feature.level,
-                    "class_key": entry.class_key,
-                    "class_name": definition.name_en,
-                }
-            )
-    items.sort(key=lambda item: (item["level"], item["name_en"]))
-    return items
+    """Уміння класів на поточному рівні — назви й рівень, без тексту.
+
+    Збирання рядків — у `characters.application.rows`, щоб експорт і екран
+    показували однаковий список.
+    """
+    return [
+        {
+            "name_en": row.name_en,
+            "level": row.level,
+            "class_key": row.class_key,
+            "class_name": row.class_name,
+        }
+        for row in feature_rows(character)
+    ]
 
 
 def spells(character: Character, computed: ComputedSheet) -> list[dict[str, Any]]:
     """Усі закляття персонажа: класові (вибір гравця) + надані видом/підкласом."""
-    items: list[dict[str, Any]] = [
+    entry_ids = _entry_ids(character)
+    return [
         {
-            "name_en": spell.name_en,
-            "level": spell.level,
-            "class_key": spell.class_key,
-            "entry_id": spell.entry_id,
-            "prepared": spell.prepared or spell.always_prepared,
-            "always_prepared": spell.always_prepared,
-            "source": "class",
+            "name_en": row.name_en,
+            "level": row.level,
+            "class_key": row.class_key,
+            "entry_id": entry_ids.get(row.name_en.casefold()),
+            "prepared": row.prepared,
+            "always_prepared": row.always_prepared,
+            "source": row.source,
         }
-        for spell in character.spells
+        for row in spell_rows(character, computed)
     ]
-    known = {item["name_en"].casefold() for item in items}
-    for granted in computed.granted_spells:
-        # Домен жреця може дати закляття, яке гравець і сам узяв класом —
-        # показуємо один рядок, а не два.
-        if granted.name_en.casefold() in known:
-            continue
-        known.add(granted.name_en.casefold())
-        items.append(
-            {
-                "name_en": granted.name_en,
-                "level": granted.spell_level,
-                "class_key": None,
-                "entry_id": None,
-                "prepared": granted.prepared,
-                "always_prepared": granted.prepared,
-                "source": granted.source,
-            }
-        )
-    return items
+
+
+def _entry_ids(character: Character) -> dict[str, str | None]:
+    """`entry_id` за назвою закляття — для переходів у довідник з екрана."""
+    return {spell.name_en.casefold(): spell.entry_id for spell in character.spells}
 
 
 def spellcasting(casting: Spellcasting) -> dict[str, Any]:
@@ -259,11 +251,11 @@ def spellcasting(casting: Spellcasting) -> dict[str, Any]:
 def proficiencies(collected: Proficiencies) -> list[dict[str, Any]]:
     return [
         {
-            "kind": item.kind.value,
-            "value": item.value,
-            "source": {"kind": item.source.kind.value, "key": item.source.key},
+            "kind": row.kind.value,
+            "value": row.value,
+            "source": {"kind": row.source_kind, "key": row.source_key},
         }
-        for item in collected.items
+        for row in proficiency_rows(collected)
     ]
 
 

@@ -685,6 +685,28 @@ body {
   font-size: 12.5px;
 }
 
+/* ------------------------------------------------------------------ */
+/* Експорт листа: посилання, які браузер віддає як файли               */
+/* ------------------------------------------------------------------ */
+
+.export-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.export-bar .button {
+  display: inline-block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.export-bar .button--primary {
+  color: #fff;
+}
+
 
 /* ------------------------------------------------------------------ */
 /* Лист: вкладки, редагування на місці, лічильники                     */

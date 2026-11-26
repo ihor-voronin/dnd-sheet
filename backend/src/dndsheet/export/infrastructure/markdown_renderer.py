@@ -1,6 +1,8 @@
 """Markdown-рендер: найдешевший адаптер, який доводить, що порт працює.
 
 Потрібен для швидкого перегляду в чаті/редакторі та для conformance-тестів.
+Позначає лише **виправлення вручну**: решта чисел порахована сервером, і
+писати «обчислено» біля кожного рядка — шум, а не інформація.
 """
 
 from __future__ import annotations
@@ -13,11 +15,19 @@ from dndsheet.export.domain.renderer import (
 )
 from dndsheet.sheets.domain.document import Field, SheetDocument
 
-_ORIGIN_MARK = {"computed": " (обчислено)", "override": " (вручну)"}
+_OVERRIDE_MARK = " _(вручну)_"
+_LEGEND = (
+    "_Значення без позначки пораховані сервером за правилами; "
+    "«вручну» — вписані гравцем._"
+)
 
 
 class MarkdownRenderer:
     format = RenderFormat.MARKDOWN
+
+    def available(self) -> bool:
+        """Залежностей немає — працює завжди."""
+        return True
 
     def render(self, document: SheetDocument, options: RenderOptions | None = None) -> RenderResult:
         check_contract(document)
@@ -34,6 +44,8 @@ class MarkdownRenderer:
                     field = document.fields[field_id]
                     lines.append(self._field_line(field, opts))
                 lines.append("")
+        if opts.show_originals:
+            lines.append(_LEGEND)
 
         content = "\n".join(lines).rstrip() + "\n"
         return RenderResult(
@@ -55,8 +67,12 @@ class MarkdownRenderer:
         label = field.label.uk
         if opts.show_originals and field.label.en != field.label.uk:
             label = f"{label} — {field.label.en}"
-        mark = _ORIGIN_MARK.get(field.origin, "")
-        return f"- **{label}**: {cls._format_value(field)}{mark}"
+        line = f"- **{label}**: {cls._format_value(field)}"
+        if field.hint is not None and opts.show_originals:
+            line += f" — {field.hint.uk}"
+        if field.origin == "override":
+            line += _OVERRIDE_MARK
+        return line
 
     @staticmethod
     def _format_value(field: Field) -> str:
