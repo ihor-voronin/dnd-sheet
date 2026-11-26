@@ -89,6 +89,26 @@ def test_golden_warlock_spells_carry_action_meta(client: TestClient) -> None:
     assert charm["damage"] is None
 
 
+def test_golden_features_have_descriptions(client: TestClient) -> None:
+    """Вкладка «Уміння» показує не лише назви: текст правил іде з довідника."""
+    sheet = client.get("/api/v1/characters/golden/fighter-1").json()["sheet"]
+    features = {item["name_en"]: item for item in sheet["features"]}
+
+    second_wind = features["Second Wind"]
+    assert second_wind["source"] == "class"
+    assert "1d10" in second_wind["description"]
+    assert "short or long rest" in second_wind["description"]
+
+
+def test_golden_fighter_has_second_wind_resource(client: TestClient) -> None:
+    sheet = client.get("/api/v1/characters/golden/fighter-1").json()["sheet"]
+    resources = {item["key"]: item for item in sheet["feature_resources"]}
+    second_wind = resources["fighter:second-wind"]
+    assert second_wind["total"] == 1
+    assert second_wind["used"] == 0
+    assert second_wind["recharge"] == "short"
+
+
 def test_unknown_golden_case_returns_404(client: TestClient) -> None:
     response = client.get("/api/v1/characters/golden/nobody")
     assert response.status_code == 404

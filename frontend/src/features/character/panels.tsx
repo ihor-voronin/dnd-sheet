@@ -226,16 +226,111 @@ export function SpellsKnownList({ spells }: { spells: SheetViewPayload["spells"]
 export function FeaturesList({ features }: { features: SheetViewPayload["features"] }) {
   if (!features.length) return <p className="hint">—</p>;
   return (
-    <ul className="feature-list">
+    <ul className="feature-list feature-list--rich">
       {features.map((feature) => (
-        <li key={`${feature.class_key}-${feature.name_en}`}>
-          <span className="feature-name">{feature.name_en}</span>
-          <span className="feature-meta">
-            {feature.class_name}, {feature.level} рівень
-          </span>
+        <li key={`${feature.class_key}-${feature.name_en}-${feature.source ?? "class"}`}>
+          <details className="feature">
+            <summary className="feature__summary">
+              <span className="feature-name">{feature.name_en}</span>
+              <span className="feature-meta">
+                {feature.source === "subclass" && feature.subclass_name
+                  ? `${feature.subclass_name} · `
+                  : ""}
+                {feature.class_name}, {feature.level} рівень
+              </span>
+              <span className="feature__chevron" aria-hidden>
+                ▾
+              </span>
+            </summary>
+            <FeatureText text={feature.description ?? ""} />
+          </details>
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Текст правила як є: абзаци, списки, курсивний підпис рівня. */
+function FeatureText({ text }: { text: string }) {
+  if (!text.trim()) return <p className="hint">Опис недоступний.</p>;
+  const blocks = text
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  return (
+    <div className="feature-text">
+      {blocks.map((block, index) => {
+        const lines = block.split("\n").map((line) => line.trim());
+        const heading = block.match(/^#{3,5}\s+(.+)$/);
+        if (heading) {
+          return (
+            <h4 key={index} className="feature-text__head">
+              {cleanMarkdown(heading[1])}
+            </h4>
+          );
+        }
+        if (lines.every((line) => line.startsWith("- "))) {
+          return (
+            <ul key={index}>
+              {lines.map((line, position) => (
+                <li key={position}>{cleanMarkdown(line.slice(2))}</li>
+              ))}
+            </ul>
+          );
+        }
+        if (/^\*\d+(?:st|nd|rd|th)-level .*\*$/i.test(block)) {
+          return (
+            <p key={index} className="feature-text__level">
+              {cleanMarkdown(block)}
+            </p>
+          );
+        }
+        return <p key={index}>{cleanMarkdown(block)}</p>;
+      })}
+    </div>
+  );
+}
+
+function cleanMarkdown(text: string): string {
+  return text.replace(/\*\*/g, "").replace(/\*/g, "");
+}
+
+/** Обмежені класові ресурси: Друге дихання, Кі, Канал божественності. */
+export function FeatureResources({
+  resources,
+  disabled = false,
+  onChange,
+}: {
+  resources: SheetViewPayload["feature_resources"];
+  disabled?: boolean;
+  onChange: (key: string, used: number) => void;
+}) {
+  if (!resources.length) return null;
+  return (
+    <div className="feature-resources">
+      {resources.map((resource) => (
+        <div key={resource.key} className="feature-resource">
+          <span className="feature-resource__main">
+            <span className="feature-resource__name">{resource.name_en}</span>
+            <span className="feature-resource__meta">
+              {resource.class_name} ·{" "}
+              {resource.recharge === "short"
+                ? "короткий або довгий відпочинок"
+                : "довгий відпочинок"}
+            </span>
+          </span>
+          <Counter
+            used={resource.used}
+            total={resource.total}
+            title={resource.name_en}
+            onChange={(used) => {
+              if (disabled) return;
+              onChange(resource.key, used);
+            }}
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 

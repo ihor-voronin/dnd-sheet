@@ -18,7 +18,8 @@ from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.inventory import InventoryItem, ItemKind
 from dndsheet.characters.domain.ports import CharacterRepository
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
-from dndsheet.characters.domain.services.rest import RestService
+from dndsheet.characters.domain.services.feature_resources import resources_for
+from dndsheet.characters.domain.services.rest import RestReport, RestService
 from dndsheet.characters.domain.state import DeathSaves
 from dndsheet.shared.errors import ConflictError, NotFoundError, ValidationError
 
@@ -122,6 +123,27 @@ class SheetService:
             state = state.with_pact_used(used)
         if "hit_dice" in patch:
             state = state.with_hit_dice_used(self._hit_dice(patch["hit_dice"]))
+        if "feature_used" in patch:
+            values = patch["feature_used"] or {}
+            if not isinstance(values, Mapping):
+                raise ValidationError("feature_used має бути обʼєктом «ключ: витрачено»")
+            limits = {
+                resource.key: resource.total
+                for resource in resources_for(character, sheet.ability_modifiers)
+            }
+            used: dict[str, int] = {}
+            for key, value in values.items():
+                name = str(key).strip()
+                if name not in limits:
+                    raise ValidationError(f"невідомий класовий ресурс {name!r}")
+                count = _int(value, f"витрачено ресурсу {name}")
+                if count > limits[name]:
+                    raise ValidationError(
+                        f"ресурсу {name!r} усього {limits[name]}, витрачено {count}"
+                    )
+                if count:
+                    used[name] = count
+            state = state.with_feature_used(used)
         if "overrides" in patch:
             overrides = patch["overrides"] or {}
             if not isinstance(overrides, Mapping):
@@ -278,17 +300,17 @@ class SheetService:
     # відпочинок
     # ------------------------------------------------------------------
 
-    def rest(self, character_id: str, kind: str) -> Character:
+    def rest(self, character_id: str, kind: str) -> tuple[Character, RestReport]:
         character = self.load(character_id)
         cleaned = (kind or "").strip().casefold()
         if cleaned == "long":
-            self.rest_service.long_rest(character)
+            report = self.rest_service.long_rest(character)
         elif cleaned == "short":
-            self.rest_service.short_rest(character)
+            report = self.rest_service.short_rest(character)
         else:
             raise ValidationError(f"невідомий відпочинок {kind!r} (short або long)")
         self.characters.save(character)
-        return character
+        return character, report
 
     def spend_hit_die(self, character_id: str, die: int, roll: int) -> Character:
         character = self.load(character_id)

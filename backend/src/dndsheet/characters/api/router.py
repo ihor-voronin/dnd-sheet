@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Request, Response
@@ -26,6 +27,7 @@ from dndsheet.characters.api.serializers import (
     step_answers,
 )
 from dndsheet.characters.api.attacks import attacks_for
+from dndsheet.characters.api.features import enrich_features
 from dndsheet.characters.api.spell_meta import enrich_spells
 from dndsheet.characters.api.wizard_options import build_options
 from dndsheet.characters.application.golden import GoldenCase, build_golden_cases
@@ -83,13 +85,19 @@ def _attacks(request: Request, character, computed) -> list[dict[str, Any]]:  # 
 
 
 def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Character
-    """Повний лист: числа, лічильники, атаки й короткі дані заклять."""
+    """Повний лист: числа, лічильники, атаки й описи вмінь."""
     computed = DerivedStatsCalculator().compute(character)
     payload = computed_sheet(
         character, computed, _attacks(request, character, computed)
     )
-    cache = getattr(request.app.state, "spell_cache", {})
-    enrich_spells(payload["spells"], _compendium(request), cache)
+    compendium = _compendium(request)
+    enrich_spells(payload["spells"], compendium, getattr(request.app.state, "spell_cache", {}))
+    enrich_features(
+        payload,
+        character,
+        compendium,
+        getattr(request.app.state, "feature_cache", {}),
+    )
     return payload
 
 
@@ -394,10 +402,14 @@ def rest_character(
 ) -> dict:
     kind = str((payload or {}).get("kind") or "")
     try:
-        character = _sheet_service(request).rest(character_id, kind)
+        character, report = _sheet_service(request).rest(character_id, kind)
     except DomainError as exc:
         raise _http_error(exc) from exc
-    return {"sheet": _sheet_payload(request, character), "version": character.version}
+    return {
+        "sheet": _sheet_payload(request, character),
+        "version": character.version,
+        "rest": asdict(report),
+    }
 
 
 @router.post("/{character_id}/hit-dice")

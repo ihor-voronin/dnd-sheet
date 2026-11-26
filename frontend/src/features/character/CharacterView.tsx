@@ -25,6 +25,7 @@ import {
   updateCharacterItem,
 } from "../../api";
 import type { ItemBody } from "../../api";
+import type { RestReport, SheetViewPayload } from "../wizard/types";
 import {
   ABILITY_LABELS,
   ALIGNMENT_LABELS,
@@ -33,7 +34,6 @@ import {
   modifierLabel,
   subclassLabel,
 } from "../../labels";
-import type { SheetViewPayload } from "../wizard/types";
 import {
   AbilityHex,
   HexStat,
@@ -50,6 +50,7 @@ import {
   ActionSpells,
   AttacksTable,
   CastingBlock,
+  FeatureResources,
   FeaturesList,
   ProficienciesList,
   SpellsKnownList,
@@ -65,23 +66,69 @@ const TABS: { id: string; label: string }[] = [
   { id: "notes", label: "Нотатки" },
 ];
 
-/** Стандартні дії ходу з правил 2014 — не дані персонажа, а памʼятка. */
-const COMBAT_ACTIONS = [
-  "Атака",
-  "Ривок",
-  "Відхід",
-  "Ухиляння",
-  "Захват",
-  "Допомога",
-  "Сховатися",
-  "Імпровізація",
-  "Вплив",
-  "Магія",
-  "Готовність",
-  "Пошук",
-  "Штовханина",
-  "Вивчення",
-  "Використання",
+/** Стандартні дії ходу з правил 2014 — не дані персонажа, а памʼятка.
+ * Підказка — короткий переказ правила, щоб не тримати PHB під рукою. */
+const COMBAT_ACTIONS: { name: string; hint: string }[] = [
+  {
+    name: "Атака",
+    hint: "Одна атака зброєю або без неї; риси можуть давати більше. Замість атаки — Захват чи Штовханина.",
+  },
+  {
+    name: "Ривок",
+    hint: "Додатковий рух на відстань, що дорівнює швидкості, цього ходу.",
+  },
+  {
+    name: "Відхід",
+    hint: "Рух без атак можливості від істот, яких ви покидаєте, до кінця ходу.",
+  },
+  {
+    name: "Ухиляння",
+    hint: "Атаки по вас — із перешкодою, порятунки СПР — з перевагою; втрачається, якщо не можете діяти.",
+  },
+  {
+    name: "Захват",
+    hint: "Особлива атака: ціль рятується СИЛ або СПР; утримуєте її, доки не вивільниться.",
+  },
+  {
+    name: "Допомога",
+    hint: "Союзник дістає перевагу на атаку по цілі поруч або на перевірку чи порятунок.",
+  },
+  {
+    name: "Сховатися",
+    hint: "Перевірка Скритності проти пасивної Спостережливості; потрібне укриття.",
+  },
+  {
+    name: "Імпровізація",
+    hint: "Будь-яка дія поза списком; чи можлива вона й що коштує — вирішує майстер.",
+  },
+  {
+    name: "Вплив",
+    hint: "Спроба переконати, обманути, залякати чи розважити істоту.",
+  },
+  {
+    name: "Магія",
+    hint: "Чарування закляття з часом «1 дія»; бонусні дії та реакції — окремо.",
+  },
+  {
+    name: "Готовність",
+    hint: "Підготувати дію з умовою-тригером; виконується реакцією до початку вашого наступного ходу.",
+  },
+  {
+    name: "Пошук",
+    hint: "Перевірка МУД (Спостережливість) або ІНТ (Розслідування), щоб щось знайти.",
+  },
+  {
+    name: "Штовханина",
+    hint: "Особлива атака: ціль рятується СИЛ або СПР; відсуваєте на 5 фт або збиваєте з ніг.",
+  },
+  {
+    name: "Вивчення",
+    hint: "Перевірка ІНТ (Магія, Історія, Природа чи Релігія), щоб пригадати знання.",
+  },
+  {
+    name: "Використання",
+    hint: "Взаємодія з предметом; зазвичай раз за хід безкоштовно, далі — дія.",
+  },
 ];
 
 const NOTE_LABELS: Record<string, string> = {
@@ -120,11 +167,40 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** Що саме змінив відпочинок — з відповіді сервера, а не зі стану екрана. */
+function describeRest(report: RestReport): string {
+  const parts: string[] = [];
+  if (report.kind === "long") {
+    if (report.hp_before !== report.hp_after) {
+      parts.push(`хіти ${report.hp_before} → ${report.hp_after}`);
+    }
+    if (report.hit_dice_before !== report.hit_dice_after) {
+      parts.push(`кістки хитів: витрачено ${report.hit_dice_before} → ${report.hit_dice_after}`);
+    }
+    if (report.slots_before > 0) parts.push("слоти відновлено");
+    if (report.exhaustion_before !== report.exhaustion_after) {
+      parts.push(`втома ${report.exhaustion_before} → ${report.exhaustion_after}`);
+    }
+    if (report.temporary > 0) {
+      parts.push(`тимчасові хіти ${report.temporary} збережено`);
+    }
+  } else {
+    parts.push("хіти не змінилися — витрачайте кістки хитів");
+    if (report.slots_before > report.slots_after) parts.push("Pact Magic відновлено");
+  }
+  if (report.features_reset.length) {
+    parts.push(`відновлено: ${report.features_reset.join(", ")}`);
+  }
+  if (!parts.length) parts.push("стан уже був повний");
+  return `${report.kind === "long" ? "Довгий" : "Короткий"} відпочинок · ${parts.join(" · ")}`;
+}
+
 export function CharacterView({ initial }: { initial: SheetViewPayload }) {
   const [sheet, setSheet] = useState<SheetViewPayload>(initial);
   const [tab, setTab] = useState("actions");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [restNote, setRestNote] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({
     ...initial.state.notes,
   });
@@ -139,7 +215,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
   const renderers = useQuery({ queryKey: ["renderers"], queryFn: fetchRenderers });
   const pdfReady = renderers.data?.available.includes("pdf") ?? false;
 
-  async function run(action: Promise<{ sheet: SheetViewPayload }>): Promise<boolean> {
+  async function run(action: Promise<{ sheet: SheetViewPayload }>): Promise<SheetViewPayload | null> {
     setBusy(true);
     setError(null);
     try {
@@ -147,10 +223,10 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
       versionRef.current = result.sheet.character.version;
       setSheet(result.sheet);
       setNotesDraft({ ...result.sheet.state.notes });
-      return true;
+      return result.sheet;
     } catch (failure) {
       setError(messageOf(failure));
-      return false;
+      return null;
     } finally {
       setBusy(false);
     }
@@ -164,11 +240,40 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
   const setHitPoints = (fields: { current?: number; temporary?: number }) =>
     patch({ hp: fields });
   const addItem = (item: ItemBody) =>
-    run(addCharacterItem(id, item, versionRef.current));
+    run(addCharacterItem(id, item, versionRef.current)).then((result) => result !== null);
   const updateItem = (index: number, fields: Partial<ItemBody>) =>
-    run(updateCharacterItem(id, index, fields, versionRef.current));
+    run(updateCharacterItem(id, index, fields, versionRef.current)).then(
+      (result) => result !== null,
+    );
   const removeItem = (index: number) =>
-    run(removeCharacterItem(id, index, versionRef.current));
+    run(removeCharacterItem(id, index, versionRef.current)).then(
+      (result) => result !== null,
+    );
+
+  async function rest(kind: "short" | "long") {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await restCharacter(id, kind);
+      versionRef.current = result.sheet.character.version;
+      setSheet(result.sheet);
+      setNotesDraft({ ...result.sheet.state.notes });
+      setRestNote(describeRest(result.rest));
+    } catch (failure) {
+      setError(messageOf(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function setFeatureUse(key: string, used: number) {
+    const values: Record<string, number> = {};
+    for (const resource of sheet.feature_resources) {
+      const next = resource.key === key ? used : resource.used;
+      if (next) values[resource.key] = next;
+    }
+    patch({ feature_used: values });
+  }
 
   const overridden = new Set(sheet.overridden);
   const { character } = sheet;
@@ -245,9 +350,12 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             <span>Дії в бою</span>
             <span className="short">стандартні</span>
           </h3>
-          <ul className="ddb-actions">
+          <ul className="combat-actions">
             {COMBAT_ACTIONS.map((action) => (
-              <li key={action}>{action}</li>
+              <li key={action.name} className="combat-action">
+                <span className="combat-action__name">{action.name}</span>
+                <span className="combat-action__hint">{action.hint}</span>
+              </li>
             ))}
           </ul>
         </>
@@ -295,8 +403,22 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
     if (tab === "features") {
       return (
         <>
+          {sheet.feature_resources.length ? (
+            <>
+              <h3 className="ddb-work__title">
+                <span>Ресурси класу</span>
+                <span className="short">витрачено</span>
+              </h3>
+              <FeatureResources
+                resources={sheet.feature_resources}
+                disabled={busy}
+                onChange={setFeatureUse}
+              />
+            </>
+          ) : null}
           <h3 className="ddb-work__title">
             <span>Уміння</span>
+            <span className="short">натисніть, щоб читати</span>
           </h3>
           <FeaturesList features={sheet.features} />
           <h3 className="ddb-work__title">
@@ -358,7 +480,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
               type="button"
               className="ddb-btn"
               disabled={busy}
-              onClick={() => run(restCharacter(id, "short"))}
+              onClick={() => void rest("short")}
             >
               Короткий відпочинок
             </button>
@@ -366,7 +488,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
               type="button"
               className="ddb-btn ddb-btn--primary"
               disabled={busy}
-              onClick={() => run(restCharacter(id, "long"))}
+              onClick={() => void rest("long")}
             >
               Довгий відпочинок
             </button>
@@ -399,6 +521,20 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
           </div>
         </div>
       </header>
+
+      {restNote ? (
+        <p className="ddb-rest-note" role="status">
+          <span>{restNote}</span>
+          <button
+            type="button"
+            className="ddb-rest-note__close"
+            onClick={() => setRestNote(null)}
+            aria-label="Закрити повідомлення про відпочинок"
+          >
+            ×
+          </button>
+        </p>
+      ) : null}
 
       <div className="ddb-strip">
         <ul className="ddb-abilities">
@@ -601,7 +737,9 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
               resources={sheet.resources}
               conModifier={sheet.abilities.con?.modifier ?? 0}
               disabled={busy}
-              onSpend={(die, roll) => run(spendHitDie(id, die, roll))}
+              onSpend={(die, roll) =>
+              run(spendHitDie(id, die, roll)).then((result) => result !== null)
+            }
             />
           </section>
 

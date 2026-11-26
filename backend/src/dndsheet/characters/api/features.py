@@ -1,0 +1,171 @@
+"""Описи вмінь для вкладки «Уміння»: класові й підкласові.
+
+Домен знає лише назви й рівні (`feature_rows`), а текст живе в довіднику.
+Тут він вирізається з Markdown-тексту класу чи підкласу:
+
+* класові вміння — заголовки `###` (наприклад `### Second Wind`), рівень
+  береться з індексу механік, а не з тексту;
+* підкласові — заголовки `##`, рівень читається з курсивного підпису
+  `*6th-level Cleric feature*`, який стоїть на початку розділу.
+
+Текст не перекладається: це оригінал правил, як і назви заклять. Кеш живе на
+застосунку — тексти книг не змінюються.
+"""
+
+from __future__ import annotations
+
+import re
+from typing import Any
+
+from dndsheet.characters.domain.character import Character
+from dndsheet.compendium.application.service import CompendiumService
+from dndsheet.shared.errors import NotFoundError
+
+#: Заголовок класового вміння: рівно три решітки.
+CLASS_HEADING = re.compile(r"^###\s+(.+?)\s*$")
+#: Кінець класового розділу — заголовок вищого рівня (## або #).
+CLASS_BOUNDARY = re.compile(r"^#{1,2}\s+")
+#: Заголовок підкласового вміння: рівно дві решітки.
+SUBCLASS_HEADING = re.compile(r"^##\s+(.+?)\s*$")
+SUBCLASS_BOUNDARY = re.compile(r"^#\s+")
+#: `*6th-level Cleric feature*` — рівень підкласового вміння.
+LEVEL_MARK = re.compile(r"\*(\d+)(?:st|nd|rd|th)-level", re.IGNORECASE)
+
+
+def enrich_features(
+    payload: dict[str, Any],
+    character: Character,
+    service: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> None:
+    """Дописати `description` класовим умінням і додати підкласові."""
+    store = cache if cache is not None else {}
+    features: list[dict[str, Any]] = list(payload.get("features") or [])
+    class_order = {entry.class_key: position for position, (entry, _) in enumerate(character.class_entries())}
+
+    for feature in features:
+        texts = _class_texts(store, service, feature.get("class_key") or "")
+        if texts:
+            feature["description"] = texts.get(str(feature.get("name_en") or ""), "")
+
+    for entry, definition in character.class_entries():
+        if not entry.subclass_key:
+            continue
+        for item in _subclass_features(store, service, entry.subclass_key):
+            if item["level"] > entry.level:
+                continue
+            features.append(
+                {
+                    "name_en": item["name_en"],
+                    "level": item["level"],
+                    "class_key": entry.class_key,
+                    "class_name": definition.name_en,
+                    "source": "subclass",
+                    "subclass_name": item["subclass_name"],
+                    "description": item["description"],
+                }
+            )
+
+    features.sort(
+        key=lambda item: (
+            class_order.get(str(item.get("class_key")), 99),
+            int(item.get("level") or 1),
+            0 if item.get("source") == "class" else 1,
+            str(item.get("name_en") or "").casefold(),
+        )
+    )
+    payload["features"] = features
+
+
+def _class_texts(
+    store: dict[str, Any],
+    service: CompendiumService,
+    class_key: str,
+) -> dict[str, str]:
+    key = f"class:{class_key}"
+    if key in store:
+        return store[key]
+    entry = _class_entry(store, service, class_key)
+    texts = _sections(entry.text_en or "", CLASS_HEADING, CLASS_BOUNDARY) if entry else {}
+    store[key] = texts
+    return texts
+
+
+def _class_entry(
+    store: dict[str, Any], service: CompendiumService, class_key: str
+) -> Any:
+    cache_key = "class-entries"
+    entries = store.get(cache_key)
+    if entries is None:
+        try:
+            entries = [summary.entry for summary in service.classes()]
+        except NotFoundError:  # pragma: no cover — порожній корпус
+            entries = []
+        store[cache_key] = entries
+    candidates = [
+        entry for entry in entries if entry.id.casefold().endswith(f"/class/{class_key}")
+    ]
+    if not candidates:
+        return None
+    # «Базові правила» повторюють PHB, але з біднішим текстом — беремо книгу.
+    candidates.sort(key=lambda entry: (entry.source_id == "basic-rules-2014", entry.id))
+    return candidates[0]
+
+
+def _subclass_features(
+    store: dict[str, Any], service: CompendiumService, subclass_key: str
+) -> list[dict[str, Any]]:
+    key = f"subclass:{subclass_key}"
+    if key in store:
+        return store[key]
+    try:
+        entry = service.entry(subclass_key)
+    except NotFoundError:
+        store[key] = []
+        return []
+    sections = _sections(entry.text_en or "", SUBCLASS_HEADING, SUBCLASS_BOUNDARY)
+    items: list[dict[str, Any]] = []
+    for name, text in sections.items():
+        match = LEVEL_MARK.search(text[:400])
+        level = int(match.group(1)) if match else 1
+        items.append(
+            {
+                "name_en": name,
+                "level": level,
+                "description": text,
+                "subclass_name": entry.name_en,
+            }
+        )
+    store[key] = items
+    return items
+
+
+def _sections(
+    text: str, heading: re.Pattern[str], boundary: re.Pattern[str]
+) -> dict[str, str]:
+    """Розрізати Markdown на розділи за заголовками одного рівня."""
+    sections: dict[str, str] = {}
+    name: str | None = None
+    buffer: list[str] = []
+    for line in text.splitlines():
+        match = heading.match(line)
+        if match:
+            if name is not None:
+                sections[name] = "\n".join(buffer).strip()
+            name = match.group(1).strip()
+            buffer = []
+            continue
+        if boundary.match(line):
+            if name is not None:
+                sections[name] = "\n".join(buffer).strip()
+                name = None
+                buffer = []
+            continue
+        if name is not None:
+            buffer.append(line)
+    if name is not None:
+        sections[name] = "\n".join(buffer).strip()
+    return sections
+
+
+__all__ = ["enrich_features"]

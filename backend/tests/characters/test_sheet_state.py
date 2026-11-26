@@ -141,7 +141,8 @@ def test_long_rest_restores_everything(rules) -> None:
     RestService().long_rest(character)
     sheet = DerivedStatsCalculator().compute(character)
     assert character.hp.current == sheet.hit_points.maximum
-    assert character.hp.temporary == 0
+    # Тимчасові хіти живуть, доки їх не знімуть: відпочинок їх не чистить.
+    assert character.hp.temporary == 2
     assert character.state.hit_dice_used == {}
     assert character.state.death_saves == DeathSaves()
     assert character.state.exhaustion == 2
@@ -158,8 +159,15 @@ def test_long_rest_returns_half_of_hit_dice(rules) -> None:
     )
     character.set_state(SheetState(hit_dice_used={10: 4}))
     RestService().long_rest(character)
-    # п'ять рівнів = п'ять d10, повертається половина (3).
-    assert character.state.hit_die_used(10) == 1
+    # П'ять рівнів = п'ять d10; половина — 2.5, тобто 2 кістки (округлення вниз).
+    assert character.state.hit_die_used(10) == 2
+
+
+def test_long_rest_minimum_one_hit_die(rules) -> None:
+    character = make_character(rules, hp=HitPointState(current=5))
+    character.set_state(SheetState(hit_dice_used={10: 1}))
+    RestService().long_rest(character)
+    assert character.state.hit_die_used(10) == 0, "на 1 рівні повертається єдина кістка"
 
 
 def test_short_rest_restores_pact_only(rules) -> None:

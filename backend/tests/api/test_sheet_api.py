@@ -188,11 +188,22 @@ def test_long_rest_restores_hp_and_dice(client: TestClient) -> None:
     )
     response = client.post(f"/api/v1/characters/{character_id}/rest", json={"kind": "long"})
     assert response.status_code == 200, response.text
-    sheet = response.json()["sheet"]
+    payload = response.json()
+    sheet = payload["sheet"]
     assert sheet["hit_points"]["current"] == sheet["hit_points"]["maximum"] == 12
-    assert sheet["hit_points"]["temporary"] == 0
+    assert sheet["hit_points"]["temporary"] == 4, "тимчасові хіти відпочинок не знімає"
     assert sheet["resources"]["hit_dice"]["d10"]["used"] == 0
     assert sheet["state"]["exhaustion"] == 1
+
+    report = payload["rest"]
+    assert report["kind"] == "long"
+    assert report["hp_before"] == 1
+    assert report["hp_after"] == 12
+    assert report["temporary"] == 4
+    assert report["hit_dice_before"] == 1
+    assert report["hit_dice_after"] == 0
+    assert report["exhaustion_before"] == 2
+    assert report["exhaustion_after"] == 1
 
 
 def test_rest_kind_is_validated(client: TestClient) -> None:
@@ -201,6 +212,121 @@ def test_rest_kind_is_validated(client: TestClient) -> None:
         f"/api/v1/characters/{character_id}/rest", json={"kind": "nap"}
     )
     assert response.status_code == 422
+
+
+def test_feature_resource_is_spent_and_reset_by_short_rest(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    sheet = _patch(client, character_id, {"feature_used": {"fighter:second-wind": 1}})[
+        "sheet"
+    ]
+    resources = {item["key"]: item for item in sheet["feature_resources"]}
+    assert resources["fighter:second-wind"]["used"] == 1
+
+    response = client.post(
+        f"/api/v1/characters/{character_id}/rest", json={"kind": "short"}
+    )
+    assert response.status_code == 200, response.text
+    resources = {item["key"]: item for item in response.json()["sheet"]["feature_resources"]}
+    assert resources["fighter:second-wind"]["used"] == 0, "Друге дихання — на короткому"
+
+
+def test_feature_resource_cannot_exceed_its_total(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    response = client.patch(
+        f"/api/v1/characters/{character_id}",
+        json={"feature_used": {"fighter:second-wind": 2}},
+    )
+    assert response.status_code == 422
+    assert "усього 1" in response.json()["detail"]
+
+
+def test_unknown_feature_resource_is_rejected(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    response = client.patch(
+        f"/api/v1/characters/{character_id}",
+        json={"feature_used": {"wizard:arcane-recovery": 1}},
+    )
+    assert response.status_code == 422
+
+
+def _create_cleric(client: TestClient) -> str:
+    draft = client.post("/api/v1/characters/wizard").json()
+    draft_id = draft["draft"]["id"]
+    steps = [
+        ("species", {"name": "Сестра Анна", "species_key": "human"}),
+        ("class", {"class_key": "cleric", "subclass_key": "phb-2014/subclass/war-domain"}),
+        (
+            "abilities",
+            {
+                "method": "standard_array",
+                "scores": {"str": 12, "dex": 10, "con": 14, "int": 8, "wis": 15, "cha": 13},
+            },
+        ),
+        (
+            "background",
+            {
+                "background_key": "acolyte",
+                "picks": [
+                    {"kind": "skill", "value": "history", "source": {"kind": "class", "key": "cleric"}},
+                    {"kind": "skill", "value": "persuasion", "source": {"kind": "class", "key": "cleric"}},
+                ],
+            },
+        ),
+        ("equipment", {"items": [], "money": {}}),
+        (
+            "spells",
+            {
+                "spells": [
+                    {"name_en": "Light", "level": 0, "class_key": "cleric"},
+                    {"name_en": "Sacred Flame", "level": 0, "class_key": "cleric"},
+                    {"name_en": "Guidance", "level": 0, "class_key": "cleric"},
+                ]
+            },
+        ),
+    ]
+    for step, body in steps:
+        response = client.put(f"/api/v1/characters/wizard/{draft_id}/steps/{step}", json=body)
+        assert response.status_code == 200, f"{step}: {response.text}"
+    finished = client.post(f"/api/v1/characters/wizard/{draft_id}/finish")
+    assert finished.status_code == 200, finished.text
+    return finished.json()["character_id"]
+
+
+def test_subclass_features_have_descriptions(client: TestClient) -> None:
+    character_id = _create_cleric(client)
+    sheet = client.get(f"/api/v1/characters/{character_id}").json()["sheet"]
+    features = {item["name_en"]: item for item in sheet["features"]}
+
+    war_priest = features["War Priest"]
+    assert war_priest["source"] == "subclass"
+    assert war_priest["level"] == 1
+    assert war_priest["subclass_name"] == "War Domain"
+    assert "bonus action" in war_priest["description"].casefold()
+    assert "Channel Divinity" not in features, "вміння 2 рівня на 1 рівні не показується"
+
+    domain = features["Divine Domain"]
+    assert domain["source"] == "class"
+    assert "domain" in domain["description"].casefold()
+
+
+def test_resource_recharge_depends_on_rest_kind(client: TestClient) -> None:
+    character_id = _create_cleric(client)
+    sheet = _patch(client, character_id, {"feature_used": {"cleric:war-priest": 3}})["sheet"]
+    resources = {item["key"]: item for item in sheet["feature_resources"]}
+    assert resources["cleric:war-priest"]["total"] == 3, "WIS 16 → +3 використання"
+    assert resources["cleric:war-priest"]["recharge"] == "long"
+
+    short = client.post(
+        f"/api/v1/characters/{character_id}/rest", json={"kind": "short"}
+    ).json()["sheet"]
+    resources = {item["key"]: item for item in short["feature_resources"]}
+    assert resources["cleric:war-priest"]["used"] == 3, "довгий ресурс короткий не повертає"
+
+    long = client.post(
+        f"/api/v1/characters/{character_id}/rest", json={"kind": "long"}
+    ).json()["sheet"]
+    resources = {item["key"]: item for item in long["feature_resources"]}
+    assert resources["cleric:war-priest"]["used"] == 0
 
 
 def test_stale_version_returns_409(client: TestClient) -> None:

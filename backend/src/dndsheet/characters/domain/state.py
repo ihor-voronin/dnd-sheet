@@ -105,6 +105,8 @@ class SheetState:
     slots_used: Mapping[int, int] = field(default_factory=lambda: MappingProxyType({}))
     pact_used: int = 0
     hit_dice_used: Mapping[int, int] = field(default_factory=lambda: MappingProxyType({}))
+    #: Витрачені класові ресурси: ключ ресурсу -> скільки разів використано.
+    feature_used: Mapping[str, int] = field(default_factory=lambda: MappingProxyType({}))
     death_saves: DeathSaves = field(default_factory=DeathSaves)
     inspiration: bool = False
     exhaustion: int = 0
@@ -132,6 +134,14 @@ class SheetState:
             if not 4 <= die <= 20:
                 raise ValidationError(f"хіт-дайс має бути d4..d20, отримано d{die}")
             cleaned_dice[die] = _check_count(int(count), f"витрачені d{die}")
+        cleaned_features: dict[str, int] = {}
+        for key, count in self.feature_used.items():
+            cleaned_key = str(key).strip()
+            if not cleaned_key:
+                raise ValidationError("порожній ключ класового ресурсу")
+            cleaned_features[cleaned_key] = _check_count(
+                int(count), f"витрачено ресурсу {cleaned_key!r}"
+            )
         cleaned_overrides: dict[str, int] = {}
         for key, value in self.overrides.items():
             cleaned_overrides[_valid_override_key(str(key))] = _check_count(
@@ -144,6 +154,7 @@ class SheetState:
             cleaned_notes[key] = str(value)
         object.__setattr__(self, "slots_used", MappingProxyType(cleaned_slots))
         object.__setattr__(self, "hit_dice_used", MappingProxyType(cleaned_dice))
+        object.__setattr__(self, "feature_used", MappingProxyType(cleaned_features))
         object.__setattr__(self, "overrides", MappingProxyType(cleaned_overrides))
         object.__setattr__(self, "notes", MappingProxyType(cleaned_notes))
 
@@ -181,6 +192,31 @@ class SheetState:
         else:
             values[die] = used
         return self.with_hit_dice_used(values)
+
+    # --- класові ресурси ---------------------------------------------------
+
+    def feature_used_count(self, key: str) -> int:
+        return int(self.feature_used.get(key, 0))
+
+    def with_feature_used(self, values: Mapping[str, int]) -> "SheetState":
+        return replace(self, feature_used=MappingProxyType(dict(values)))
+
+    def with_feature_use(self, key: str, used: int) -> "SheetState":
+        values = dict(self.feature_used)
+        if used <= 0:
+            values.pop(key, None)
+        else:
+            values[key] = used
+        return self.with_feature_used(values)
+
+    def reset_features(self, ready: Iterable[str] | None = None) -> "SheetState":
+        """Повернути ресурси: `None` — усі, інакше лише перелічені ключі."""
+        if ready is None:
+            return self.with_feature_used({})
+        keys = set(ready)
+        return self.with_feature_used(
+            {key: value for key, value in self.feature_used.items() if key not in keys}
+        )
 
     # --- інше --------------------------------------------------------------
 

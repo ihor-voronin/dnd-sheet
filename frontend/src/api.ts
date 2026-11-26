@@ -2,6 +2,7 @@ import type { SheetDocument } from "./contract/sheetDocument";
 import type {
   DraftView,
   FinishedCharacter,
+  RestReport,
   SheetViewPayload,
   StepView,
 } from "./features/wizard/types";
@@ -77,6 +78,10 @@ export interface SheetMutation {
   version: number;
 }
 
+export interface RestMutation extends SheetMutation {
+  rest: RestReport;
+}
+
 export function patchCharacter(
   id: string,
   body: Record<string, unknown>,
@@ -87,8 +92,8 @@ export function patchCharacter(
   });
 }
 
-export function restCharacter(id: string, kind: "short" | "long"): Promise<SheetMutation> {
-  return request<SheetMutation>(`/api/v1/characters/${id}/rest`, {
+export function restCharacter(id: string, kind: "short" | "long"): Promise<RestMutation> {
+  return request<RestMutation>(`/api/v1/characters/${id}/rest`, {
     method: "POST",
     body: JSON.stringify({ kind }),
   });

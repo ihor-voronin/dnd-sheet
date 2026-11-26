@@ -17,6 +17,7 @@ from dndsheet.characters.application.rows import (
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.proficiencies import Proficiencies
 from dndsheet.characters.domain.services.derived_stats import ComputedSheet
+from dndsheet.characters.domain.services.feature_resources import resources_for
 from dndsheet.characters.domain.services.spell_slots import Spellcasting
 from dndsheet.characters.domain.wizard import STEP_ORDER, Draft, WizardStep
 from dndsheet.shared.kernel import Ability
@@ -83,6 +84,19 @@ def computed_sheet(
         },
         "overridden": sorted(computed.overridden),
         "features": features(character),
+        "feature_resources": [
+            {
+                "key": resource.key,
+                "name_en": resource.name_en,
+                "class_key": resource.class_key,
+                "class_name": resource.class_name,
+                "level": resource.level,
+                "total": resource.total,
+                "used": resource.used,
+                "recharge": resource.recharge,
+            }
+            for resource in resources_for(character, computed.ability_modifiers)
+        ],
         "attacks": attacks or [],
         "spellcasting": spellcasting(computed.spellcasting),
         "spells": spells(character, computed),
@@ -192,6 +206,7 @@ def features(character: Character) -> list[dict[str, Any]]:
             "level": row.level,
             "class_key": row.class_key,
             "class_name": row.class_name,
+            "source": "class",
         }
         for row in feature_rows(character)
     ]

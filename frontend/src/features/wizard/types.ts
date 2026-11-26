@@ -226,6 +226,41 @@ export interface SheetSpell {
   attack_roll?: boolean;
 }
 
+export interface SheetFeature {
+  name_en: string;
+  level: number;
+  class_key: string;
+  class_name: string;
+  source?: "class" | "subclass";
+  subclass_name?: string | null;
+  description?: string;
+}
+
+export interface SheetFeatureResource {
+  key: string;
+  name_en: string;
+  class_key: string;
+  class_name: string;
+  level: number;
+  total: number;
+  used: number;
+  recharge: "short" | "long";
+}
+
+export interface RestReport {
+  kind: "short" | "long";
+  hp_before: number;
+  hp_after: number;
+  temporary: number;
+  hit_dice_before: number;
+  hit_dice_after: number;
+  slots_before: number;
+  slots_after: number;
+  features_reset: string[];
+  exhaustion_before: number;
+  exhaustion_after: number;
+}
+
 export interface SheetItem {
   name_en: string;
   kind: string;
@@ -379,7 +414,8 @@ export interface SheetViewPayload {
     notes: Record<string, string>;
   };
   overridden: string[];
-  features: { name_en: string; level: number; class_key: string; class_name: string }[];
+  features: SheetFeature[];
+  feature_resources: SheetFeatureResource[];
   attacks: {
     name_en: string;
     attack_bonus: number;

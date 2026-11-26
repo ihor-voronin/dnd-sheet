@@ -156,6 +156,7 @@ def state_to_record(state: SheetState) -> dict[str, Any]:
         "slots_used": {str(level): count for level, count in state.slots_used.items()},
         "pact_used": state.pact_used,
         "hit_dice_used": {f"d{die}": count for die, count in state.hit_dice_used.items()},
+        "feature_used": dict(state.feature_used),
         "death_saves": {
             "successes": state.death_saves.successes,
             "failures": state.death_saves.failures,
@@ -187,6 +188,10 @@ def state_from_record(record: Mapping[str, Any] | None) -> SheetState:
         slots_used=slots,
         pact_used=int(payload.get("pact_used") or 0),
         hit_dice_used=dice,
+        feature_used={
+            str(key): int(value)
+            for key, value in (payload.get("feature_used") or {}).items()
+        },
         death_saves=DeathSaves(
             successes=int(saves.get("successes") or 0),
             failures=int(saves.get("failures") or 0),
