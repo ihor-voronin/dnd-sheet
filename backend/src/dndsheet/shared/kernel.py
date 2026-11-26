@@ -169,3 +169,49 @@ class DiceExpression:
     def __str__(self) -> str:
         mod = f"{self.modifier:+d}" if self.modifier else ""
         return f"{self.count}d{self.sides}{mod}"
+
+
+#: Скільки срібла (у золоті) коштує одна монета кожного номіналу (PHB, p. 143).
+COIN_IN_GP: Mapping[str, float] = {
+    "pp": 10.0,
+    "gp": 1.0,
+    "ep": 0.5,
+    "sp": 0.1,
+    "cp": 0.01,
+}
+
+
+@dataclass(frozen=True, slots=True)
+class Money:
+    """Гаманець: п'ять номіналів, як на листі (pp, gp, ep, sp, cp)."""
+
+    pp: int = 0
+    gp: int = 0
+    ep: int = 0
+    sp: int = 0
+    cp: int = 0
+
+    def __post_init__(self) -> None:
+        for name in COIN_IN_GP:
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ValidationError(f"кількість {name} має бути цілим числом")
+            if value < 0:
+                raise ValidationError(f"кількість {name} не може бути відʼємною")
+
+    @property
+    def total_gp(self) -> float:
+        """Уся сума в золотих — для вантажу й порівняння цін."""
+        return round(sum(getattr(self, coin) * rate for coin, rate in COIN_IN_GP.items()), 2)
+
+    def plus(self, other: "Money") -> "Money":
+        return Money(
+            pp=self.pp + other.pp,
+            gp=self.gp + other.gp,
+            ep=self.ep + other.ep,
+            sp=self.sp + other.sp,
+            cp=self.cp + other.cp,
+        )
+
+    def to_dict(self) -> dict[str, int]:
+        return {"pp": self.pp, "gp": self.gp, "ep": self.ep, "sp": self.sp, "cp": self.cp}

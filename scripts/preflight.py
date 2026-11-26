@@ -158,14 +158,29 @@ def check_domain_behaviour() -> None:
     sys.path.insert(0, str(SRC))
 
     from dndsheet.characters.domain.character import Character
+    from dndsheet.characters.domain.class_level import CharacterClass
+    from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
     from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
+    from dndsheet.characters.domain.services.spell_slots import spellcasting_for_classes
     from dndsheet.shared.kernel import (
         Ability,
         AbilityScore,
-        Armor,
         DiceExpression,
         Skill,
         proficiency_bonus,
+    )
+    from dndsheet.shared.rules import (
+        CASTER_SLOT_TABLE,
+        PACT_SLOT_TABLE,
+        AbilityBonus,
+        BackgroundMechanics,
+        CasterProgression,
+        ClassMechanics,
+        Size,
+        SkillChoice,
+        SpeciesMechanics,
+        caster_level,
+        spell_slots,
     )
     from dndsheet.sheets.domain.formula import FormulaError, evaluate, sheet_functions
 
@@ -178,34 +193,140 @@ def check_domain_behaviour() -> None:
     if (dice.minimum, dice.maximum, dice.average) != (5, 15, 10.0):
         problem("межі DiceExpression невірні")
 
+    # Таблиці правил: 20 рівнів, 9 рівнів заклять, узгоджені з правилами.
+    if len(CASTER_SLOT_TABLE) != 20 or any(len(row) != 9 for row in CASTER_SLOT_TABLE):
+        problem("таблиця слотів заклинателя не 20×9")
+    if spell_slots(3) != (4, 2, 0, 0, 0, 0, 0, 0, 0):
+        problem("слоти 3 рівня заклинателя невірні")
+    if PACT_SLOT_TABLE[0] != (1, 1) or PACT_SLOT_TABLE[10] != (3, 5):
+        problem("таблиця Pact Magic невірна")
+    if caster_level([(None, 5), (None, 3)]) != 0:
+        problem("неклинательські класи дали рівень заклинателя")
+
+    class _Rules:
+        """Мінімум правил для golden-перевірки: Воїн 1, людина, солдат."""
+
+        def __init__(self) -> None:
+            self._fighter = ClassMechanics(
+                key="fighter",
+                name_en="Fighter",
+                source_id="PHB",
+                hit_die=10,
+                saving_throws=frozenset({Ability.STR, Ability.CON}),
+                skill_choices=(
+                    SkillChoice(
+                        count=2,
+                        options=(
+                            Skill.ATHLETICS,
+                            Skill.PERCEPTION,
+                            Skill.SURVIVAL,
+                            Skill.INSIGHT,
+                        ),
+                    ),
+                ),
+                armor_training=("light", "medium", "heavy", "shield"),
+                weapon_training=("simple", "martial"),
+                subclass_level=3,
+            )
+            self._wizard = ClassMechanics(
+                key="wizard",
+                name_en="Wizard",
+                source_id="PHB",
+                hit_die=6,
+                saving_throws=frozenset({Ability.INT, Ability.WIS}),
+                spellcasting_ability=Ability.INT,
+                caster_progression=CasterProgression.FULL,
+                spell_slots=CASTER_SLOT_TABLE,
+                cantrips_known=(3, 3, 3),
+            )
+            self._human = SpeciesMechanics(
+                key="human",
+                name_en="Human",
+                source_id="PHB",
+                size=Size.MEDIUM,
+                speed=30,
+                ability_bonuses=tuple(
+                    AbilityBonus(ability, 1) for ability in Ability
+                ),
+            )
+            self._soldier = BackgroundMechanics(
+                key="soldier",
+                name_en="Soldier",
+                source_id="PHB",
+                skill_proficiencies=frozenset({Skill.ATHLETICS, Skill.INTIMIDATION}),
+            )
+
+        def class_mechanics(self, key: str):
+            return {"fighter": self._fighter, "wizard": self._wizard}.get(key)
+
+        def species_mechanics(self, key: str):
+            return self._human if key == "human" else None
+
+        def background_mechanics(self, key: str):
+            return self._soldier if key == "soldier" else None
+
+    rules = _Rules()
     character = Character(
         id="check-1",
         name="  Перевірка  ",
-        level=3,
         abilities={
-            Ability.STR: AbilityScore(16),
-            Ability.DEX: AbilityScore(14),
-            Ability.CON: AbilityScore(12),
-            Ability.INT: AbilityScore(10),
-            Ability.WIS: AbilityScore(13),
-            Ability.CHA: AbilityScore(8),
+            Ability.STR: AbilityScore(15),
+            Ability.DEX: AbilityScore(13),
+            Ability.CON: AbilityScore(14),
+            Ability.INT: AbilityScore(9),
+            Ability.WIS: AbilityScore(11),
+            Ability.CHA: AbilityScore(7),
         },
-        skill_proficiencies={Skill.ATHLETICS, Skill.PERCEPTION, Skill.SURVIVAL},
-        save_proficiencies={Ability.STR, Ability.CON},
-        armor=Armor(name="Шкіряна броня", base=11),
+        rules=rules,
+        species_key="human",
+        background_key="soldier",
+        classes=[CharacterClass(class_key="fighter", level=1)],
+        inventory=Inventory(
+            items=(
+                InventoryItem(
+                    name_en="chain mail",
+                    kind=ItemKind.ARMOR,
+                    equipped=True,
+                    armor_base=16,
+                    dex_cap=0,
+                ),
+                InventoryItem(name_en="shield", kind=ItemKind.SHIELD, equipped=True),
+            )
+        ),
     )
     computed = DerivedStatsCalculator().compute(character)
     expected = {
-        "AC": (computed.armor_class, 13),
+        "STR total": (computed.abilities[Ability.STR].total, 16),
+        "AC": (computed.armor_class, 18),
+        "HP": (computed.hit_points.maximum, 12),
         "STR save": (computed.saving_throws[Ability.STR], 5),
         "DEX save": (computed.saving_throws[Ability.DEX], 2),
-        "perception": (computed.skills[Skill.PERCEPTION], 3),
-        "passive": (computed.passive_perception, 13),
+        "athletics": (computed.skills[Skill.ATHLETICS], 5),
+        "perception": (computed.skills[Skill.PERCEPTION], 1),
+        "passive": (computed.passive_perception, 11),
         "initiative": (computed.initiative, 2),
     }
     for label, (actual, wanted) in expected.items():
         if actual != wanted:
             problem(f"golden {label}: очікували {wanted}, отримали {actual}")
+
+    # Мультиклас: Воїн 1 + Волшебник 3 → рівень заклинателя 3, слоти 4/2.
+    multiclass = Character(
+        id="check-2",
+        name="Мультиклас",
+        abilities={ability: AbilityScore(12) for ability in Ability},
+        rules=rules,
+        classes=[
+            CharacterClass(class_key="fighter", level=1),
+            CharacterClass(class_key="wizard", level=3),
+        ],
+    )
+    casting = DerivedStatsCalculator().compute(multiclass).spellcasting
+    if casting.caster_level != 3 or dict(casting.slots.by_level) != {1: 4, 2: 2}:
+        problem(
+            f"мультиклас: рівень заклинателя {casting.caster_level}, "
+            f"слоти {dict(casting.slots.by_level)}"
+        )
 
     functions = sheet_functions({"str": 16, "dex": 14}, level=3)
     if evaluate("10 + mod('dex') + proficiency()", functions=functions) != 14:
@@ -216,6 +337,39 @@ def check_domain_behaviour() -> None:
         pass
     else:
         problem("обчислювач формул пропустив __import__ — критично")
+
+
+def check_mechanics_indexes() -> str:
+    """Похідні індекси механік: наявність і базові інваріанти (stdlib-рівень).
+
+    Повна перевірка — `python -m scripts.ingest.mechanics --check` і
+    `tests/contract/test_mechanics_format.py`; тут — запобіжник, що числа
+    не зламані (без індексів просто попередження: свіжий клон їх не має).
+    """
+    index_dir = ROOT / "content" / "index"
+    class_path = index_dir / "class-mechanics.json"
+    origin_path = index_dir / "origin-mechanics.json"
+    if not class_path.is_file() or not origin_path.is_file():
+        return "немає (свіжий клон)"
+
+    classes = json.loads(class_path.read_text(encoding="utf-8"))
+    origins = json.loads(origin_path.read_text(encoding="utf-8"))
+    if len(classes.get("classes") or {}) < 12:
+        problem(f"індекс класів: лише {len(classes.get('classes') or {})} класів")
+    for key, entry in (classes.get("classes") or {}).items():
+        if not 4 <= int(entry.get("hit_die") or 0) <= 20:
+            problem(f"клас {key}: хіт-дайс {entry.get('hit_die')}")
+        if len(entry.get("spell_slots") or []) not in (0, 20):
+            problem(f"клас {key}: таблиця слотів не на 20 рівнів")
+    for collection in ("species", "subspecies", "backgrounds"):
+        if not (origins.get(collection) or {}):
+            problem(f"індекс видів: порожня колекція {collection}")
+    return (
+        f"{len(classes.get('classes') or {})} класів, "
+        f"{len(origins.get('species') or {})} видів, "
+        f"{len(origins.get('subspecies') or {})} підрас, "
+        f"{len(origins.get('backgrounds') or {})} передісторій"
+    )
 
 
 def check_compendium_format() -> tuple[dict[str, tuple[int, int]], list[str]]:
@@ -294,6 +448,7 @@ def main() -> int:
     domain_count = check_domain_purity()
     check_domain_behaviour()
     corpus_stats, missing_corpora = check_compendium_format()
+    mechanics = check_mechanics_indexes()
 
     if problems:
         print(f"PREFLIGHT FAILED ({len(problems)}):")
@@ -309,7 +464,8 @@ def main() -> int:
         "PREFLIGHT OK: "
         f"{py_count} .py, {len(fixtures)} фікстур / {field_count} полів, "
         f"{domain_count} доменних модулів, домен рахує golden-числа, eval заблоковано, "
-        f"корпус за каноном формату ({corpora or 'немає'})"
+        f"корпус за каноном формату ({corpora or 'немає'}), "
+        f"механіки: {mechanics}"
     )
     for missing in missing_corpora:
         print(f"  увага: корпусу {missing} немає — перевірено 0 записів")

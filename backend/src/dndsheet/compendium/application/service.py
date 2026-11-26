@@ -19,9 +19,15 @@ from dndsheet.compendium.domain.entry import (
 from dndsheet.compendium.domain.query import EntryQuery, Page
 from dndsheet.compendium.domain.repository import (
     CompendiumRepository,
+    MechanicsRepository,
     SpellListRepository,
 )
 from dndsheet.shared.errors import NotFoundError
+from dndsheet.shared.rules import (
+    BackgroundMechanics,
+    ClassMechanics,
+    SpeciesMechanics,
+)
 
 MAX_SPELL_LEVEL = 9
 PAGE_SIZE = 200
@@ -64,6 +70,7 @@ class CorpusSummary:
     books: tuple[BookSummary, ...]
     spell_lists: bool
     warnings: tuple[str, ...]
+    mechanics: bool = False
 
 
 class CompendiumService:
@@ -74,10 +81,12 @@ class CompendiumService:
         repository: CompendiumRepository,
         spell_lists: SpellListRepository | None = None,
         titles: Mapping[str, str] | None = None,
+        mechanics: MechanicsRepository | None = None,
     ) -> None:
         self._repository = repository
         self._spell_lists = spell_lists
         self._titles = dict(titles or {})
+        self._mechanics = mechanics
         self._spells_by_name: dict[str, CompendiumEntry] | None = None
         self._books_by_source: dict[str, int] | None = None
 
@@ -86,6 +95,8 @@ class CompendiumService:
     def summary(self) -> CorpusSummary:
         counts = self._repository.counts()
         warnings = list(self._repository.warnings())
+        if self._mechanics is not None and not self._mechanics.available():
+            warnings.extend(self._mechanics.warnings())
         total = sum(counts.values())
         if total == 0:
             warnings.append(
@@ -111,6 +122,7 @@ class CompendiumService:
             books=books,
             spell_lists=bool(self._spell_lists and self._spell_lists.books()),
             warnings=tuple(warnings),
+            mechanics=self.mechanics_available(),
         )
 
     # --- пошук --------------------------------------------------------------
@@ -144,6 +156,78 @@ class CompendiumService:
 
     def subclasses(self, class_name: str) -> tuple[CompendiumEntry, ...]:
         return self._all(Category.SUBCLASS, subclass_of=class_name)
+
+    # --- механіки -----------------------------------------------------------
+
+    def mechanics_available(self) -> bool:
+        """Чи є похідні індекси механік (без них не зібрати персонажа)."""
+        return bool(self._mechanics and self._mechanics.available())
+
+    def mechanics_warnings(self) -> tuple[str, ...]:
+        return tuple(self._mechanics.warnings()) if self._mechanics else (
+            "механіки класів не підключені",
+        )
+
+    def class_definitions(self) -> tuple[ClassMechanics, ...]:
+        """Усі класи 2014 з механіками, за назвою."""
+        if self._mechanics is None:
+            return ()
+        return tuple(sorted(self._mechanics.classes().values(), key=lambda item: item.name_en))
+
+    def class_mechanics(self, class_name: str) -> ClassMechanics:
+        if self._mechanics is None:
+            raise NotFoundError("механіки класів не підключені")
+        found = self._mechanics.class_mechanics(class_name)
+        if found is None:
+            raise NotFoundError(f"немає механік класу {class_name!r}")
+        return found
+
+    def species_list(self) -> tuple[SpeciesMechanics, ...]:
+        """Базові види (без підрас), за назвою."""
+        if self._mechanics is None:
+            return ()
+        return tuple(sorted(self._mechanics.species().values(), key=lambda item: item.name_en))
+
+    def subspecies_of(self, species_name: str) -> tuple[SpeciesMechanics, ...]:
+        """Підраси виду («Dwarf» → «Hill Dwarf», «Mountain Dwarf»)."""
+        if self._mechanics is None:
+            return ()
+        wanted = species_name.strip().casefold()
+        return tuple(
+            sorted(
+                (
+                    item
+                    for item in self._mechanics.subspecies().values()
+                    if (item.subrace_of or "").casefold() == wanted
+                ),
+                key=lambda item: item.name_en,
+            )
+        )
+
+    def species_mechanics(self, name: str) -> SpeciesMechanics:
+        if self._mechanics is None:
+            raise NotFoundError("механіки видів не підключені")
+        found = self._mechanics.species_mechanics(name)
+        if found is None:
+            raise NotFoundError(f"немає механік виду {name!r}")
+        return found
+
+    def backgrounds(self) -> tuple[BackgroundMechanics, ...]:
+        if self._mechanics is None:
+            return ()
+        return tuple(
+            sorted(self._mechanics.backgrounds().values(), key=lambda item: item.name_en)
+        )
+
+    def background_mechanics(self, name: str) -> BackgroundMechanics:
+        if self._mechanics is None:
+            raise NotFoundError("механіки передісторій не підключені")
+        found = self._mechanics.background_mechanics(name)
+        if found is None:
+            raise NotFoundError(f"немає механік передісторії {name!r}")
+        return found
+
+    # --- закляття -----------------------------------------------------------
 
     def class_spells(
         self, class_name: str, max_level: int = MAX_SPELL_LEVEL

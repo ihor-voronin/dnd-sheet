@@ -1,38 +1,82 @@
 """Демонстраційний персонаж для розробки рендерів і фронтенду.
 
-Це НЕ контент із книг: лише числа й підписи-заглушки, щоб можна було
-перевірити документ, Markdown і PDF до появи конвеєра контенту.
+Це НЕ контент із книг: лише числа й предмети, які можна перевірити очима
+(Елара — лісова ельфійка-плут 3 рівня). Механіки приходять із того ж
+довідника, що й у справжнього персонажа, тому демо не бреше про правила.
 """
 
 from __future__ import annotations
 
 from dndsheet.characters.domain.character import Character
+from dndsheet.characters.domain.class_level import CharacterClass
+from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
+from dndsheet.characters.domain.ports import RulesSource
+from dndsheet.characters.domain.proficiencies import (
+    GrantSource,
+    Proficiency,
+    ProficiencyKind,
+    Proficiencies,
+    SourceKind,
+)
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
-from dndsheet.shared.kernel import Ability, AbilityScore, Armor, Skill
+from dndsheet.characters.domain.vitals import HitPointState
+from dndsheet.shared.kernel import Ability, AbilityScore, Money, Skill
 from dndsheet.sheets.application.build_document import build_sheet_document
 from dndsheet.sheets.domain.document import SheetDocument
 
 
-def build_demo_character() -> Character:
+def build_demo_character(rules: RulesSource) -> Character:
+    """Елара Світлотінь — лісова ельфійка, плут 3 рівня."""
     return Character(
         id="demo-elara",
         name="Елара Світлотінь",
-        level=3,
         abilities={
-            Ability.STR: AbilityScore(16),
-            Ability.DEX: AbilityScore(14),
-            Ability.CON: AbilityScore(12),
-            Ability.INT: AbilityScore(10),
-            Ability.WIS: AbilityScore(13),
+            Ability.STR: AbilityScore(10),
+            Ability.DEX: AbilityScore(15),
+            Ability.CON: AbilityScore(13),
+            Ability.INT: AbilityScore(12),
+            Ability.WIS: AbilityScore(14),
             Ability.CHA: AbilityScore(8),
         },
-        skill_proficiencies={Skill.ATHLETICS, Skill.PERCEPTION, Skill.SURVIVAL},
-        save_proficiencies={Ability.STR, Ability.CON},
-        armor=Armor(name="Шкіряна броня", base=11),
+        rules=rules,
+        species_key="elf",
+        subspecies_key="wood elf",
+        background_key="criminal",
+        classes=[CharacterClass(class_key="rogue", level=3)],
+        chosen=Proficiencies(
+            items=(
+                Proficiency(
+                    kind=ProficiencyKind.SKILL,
+                    value=Skill.PERCEPTION.value,
+                    source=GrantSource.of(SourceKind.CLASS, "rogue"),
+                ),
+                Proficiency(
+                    kind=ProficiencyKind.SKILL,
+                    value=Skill.ACROBATICS.value,
+                    source=GrantSource.of(SourceKind.CLASS, "rogue"),
+                ),
+            )
+        ),
+        inventory=Inventory(
+            items=(
+                InventoryItem(
+                    name_en="leather armor",
+                    kind=ItemKind.ARMOR,
+                    weight_lb=10,
+                    equipped=True,
+                    armor_base=11,
+                ),
+                InventoryItem(name_en="shortsword", kind=ItemKind.WEAPON, weight_lb=2),
+                InventoryItem(name_en="thieves' tools", kind=ItemKind.TOOL, weight_lb=1),
+                InventoryItem(name_en="burglar's pack", kind=ItemKind.PACK),
+            ),
+            money=Money(gp=15, sp=5),
+        ),
+        hp=HitPointState(current=19),
     )
 
 
-def build_demo_document() -> SheetDocument:
-    character = build_demo_character()
+def build_demo_document(rules: RulesSource) -> SheetDocument:
+    character = build_demo_character(rules)
     computed = DerivedStatsCalculator().compute(character)
     return build_sheet_document(character, computed)

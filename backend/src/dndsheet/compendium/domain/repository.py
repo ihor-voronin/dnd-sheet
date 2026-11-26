@@ -11,6 +11,11 @@ from typing import Mapping, Protocol, runtime_checkable
 
 from dndsheet.compendium.domain.entry import Category, CompendiumEntry
 from dndsheet.compendium.domain.query import EntryQuery, Page
+from dndsheet.shared.rules import (
+    BackgroundMechanics,
+    ClassMechanics,
+    SpeciesMechanics,
+)
 
 
 @runtime_checkable
@@ -43,3 +48,41 @@ class SpellListRepository(Protocol):
 
     def books(self) -> tuple[str, ...]:
         """Книги, з яких списки зібрані."""
+
+
+@runtime_checkable
+class MechanicsRepository(Protocol):
+    """Механіки класів, видів і передісторій.
+
+    Текст умінь живе в корпусі записів; тут — числа, без яких не порахувати
+    лист: хіт-дайс, володіння, бонуси характеристик, таблиці слотів. Індекс
+    похідний (`content/index/*-mechanics.json`), тому його може не бути —
+    тоді `available()` каже `false`, а не кидає виняток.
+    """
+
+    def available(self) -> bool:
+        """Чи є індекс механік на диску."""
+
+    def warnings(self) -> tuple[str, ...]:
+        """Що не так з індексом (немає, стара схема, битий JSON)."""
+
+    def classes(self) -> Mapping[str, ClassMechanics]:
+        """Усі класи 2014, ключ — назва в нижньому регістрі."""
+
+    def class_mechanics(self, name: str) -> ClassMechanics | None:
+        """Механіки класу за назвою (без регістру й пунктуації)."""
+
+    def species(self) -> Mapping[str, SpeciesMechanics]:
+        """Базові види (без підрас)."""
+
+    def subspecies(self) -> Mapping[str, SpeciesMechanics]:
+        """Підраси; `subrace_of` вказує на базовий вид."""
+
+    def species_mechanics(self, name: str) -> SpeciesMechanics | None:
+        """Вид або підраса за назвою."""
+
+    def backgrounds(self) -> Mapping[str, BackgroundMechanics]:
+        """Передісторії."""
+
+    def background_mechanics(self, name: str) -> BackgroundMechanics | None:
+        """Передісторія за назвою."""

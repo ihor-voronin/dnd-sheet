@@ -14,11 +14,11 @@ Character (агрегат) ──> DerivedStatsCalculator ──> ComputedSheet 
 `SheetDocument` — доменний артефакт, а не DTO. Кожен підпис у ньому двомовний:
 `uk` показується, `en` — оригінал для тултіпа. Деталі рішень — у [`docs/plan.md`](docs/plan.md) і [`docs/adr/`](docs/adr/).
 
-## Статус: етап 0 (каркас)
+## Статус: етап 2 (персонаж v2)
 
 Готово:
 
-- [x] домен: `AbilityScore`, `DiceExpression`, `Armor`, `Character`, `DerivedStatsCalculator`
+- [x] домен: `AbilityScore`, `DiceExpression`, `Armor`, `Money`, `Character`, `DerivedStatsCalculator`
 - [x] безпечний обчислювач формул (whitelisted AST, без `eval`)
 - [x] контракт `contract/sheet-document.schema.json` + 2 фікстури
 - [x] pydantic-модель `SheetDocument`
@@ -30,21 +30,26 @@ Character (агрегат) ──> DerivedStatsCalculator ──> ComputedSheet 
 - [x] глосарій v0 (`content/glossary.uk.yml`) — **чернетка, потребує звірки з офіційним PDF**
 - [x] **етап 1 — довідник як API**: `compendium` (домен + JSONL-корпус + індекси + сервіс + ендпоінти),
       класові списки заклять зі «Spell Lists» книг — деталі в [`docs/api-compendium.md`](docs/api-compendium.md)
+- [x] **етап 2 — персонаж v2**: мультиклас, вид, передісторія, володіння з джерелами, хіти,
+      інвентар, закляття; `ModifierResolver`, `SpellSlotService` (мультикласові слоти + Pact Magic),
+      максимум хітів і пул хіт-дайсів; похідні індекси механік із дзеркала 5e.tools
+      (13 класів, 69 видів, 94 передісторії). Три еталонні персонажі зафіксовані тестами —
+      деталі в [`docs/domain-character.md`](docs/domain-character.md)
 
 ### Перевірено локально (Python 3.13, Node 24)
 
 | Гейт | Результат |
 |---|---|
-| `pytest backend` | **211 passed, 1 skipped** (PDF-тест скіпнуто: немає WeasyPrint/GTK) |
+| `pytest backend` | **328 passed, 1 skipped** (PDF-тест скіпнуто: немає WeasyPrint/GTK) |
 | `lint-imports` | **5 contracts kept, 0 broken** |
 | `tsc --noEmit` | чисто |
 | `vite build` | 104 модулі, ~242 kB JS (~78 kB gzip) |
 | SPA end-to-end | FastAPI віддає `/`, рендериться `SheetDocument`, тултіп на фокусі показує оригінал («Strength») |
-| довідник end-to-end | `/api/v1/compendium/summary` → 3818 записів, 89 книг; `/classes/wizard/spells` → 215 заклять, `source: spell-lists` |
+| довідник end-to-end | `/api/v1/compendium/summary` → 3818 записів, 89 книг; `/classes/wizard/spells` → 215 заклять, `source: spell-lists`; `/mechanics` → 13 класів, 69 видів, 94 передісторії |
+| персонаж end-to-end | `/api/v1/characters/golden` → 3 листи: Воїн 1 (AC 18, HP 12), Варлок 1 (Pact Magic 1 слот, DC 13), Воїн 2 / Візард 3 (рівень заклинателя 3, слоти 4×1 + 2×2) |
 
-Далі — етап 2: `Character` v2 (класи й рівні, вид, передісторія, володіння, HP, броня,
-інвентар, закляття) поверх цього довідника. Порядок етапів і еталон екранів —
-у [`docs/plan.md`](docs/plan.md) (§9, §13).
+Далі — етап 3: візард створення персонажа (6 кроків) поверх цього домену й цих
+ендпоінтів. Порядок етапів і еталон екранів — у [`docs/plan.md`](docs/plan.md) (§9, §13).
 
 ## Швидкий старт (Windows / PowerShell)
 
@@ -98,9 +103,10 @@ cd frontend; npm run contract                                 # перегене
 ```
 
 `scripts/preflight.py` перевіряє синтаксис, JSON-контракт, інваріанти `SheetDocument`,
-чистоту домену (заміна import-linter), golden-числа, безпеку обчислювача формул і
-формат обох корпусів книг (`content/compendium/` — довідник для листа персонажа,
-`content/bestiary/` — статблоки монстрів).
+чистоту домену (заміна import-linter), golden-числа персонажа (v2: бонуси виду, хіти,
+мультикласові слоти), безпеку обчислювача формул, формат обох корпусів книг
+(`content/compendium/` — довідник для листа персонажа, `content/bestiary/` — статблоки
+монстрів) і базові інваріанти похідних індексів механік (`content/index/*-mechanics.json`).
 
 Формат записів довідника описано в [`docs/format.md`](docs/format.md): однакові
 поля, однаковий набір і порядок ключів `data`, однаковий скелет `text_en` для
@@ -112,18 +118,21 @@ cd frontend; npm run contract                                 # перегене
 
 ```
 backend/src/dndsheet/
-  shared/          # kernel: Ability, Skill, AbilityScore, DiceExpression, Armor
-  characters/      # агрегат Character + DerivedStatsCalculator
+  shared/          # kernel: Ability, Skill, AbilityScore, DiceExpression, Armor, Money
+                   # + rules: механіки класів/видів, таблиці слотів (VO, без I/O)
+  characters/      # агрегат Character v2, володіння, інвентар, закляття
+                   # + сервіси: DerivedStatsCalculator, ModifierResolver, SpellSlotService
+                   # + application/golden.py: еталонні персонажі
   sheets/          # SheetDocument, формули, лейбли, build_document
   export/          # порт SheetRenderer, реєстр, адаптери PDF/Markdown
-  identity/        # (порожньо, етап 1)
-  compendium/      # (порожньо, етап 2)
-  localization/    # (порожньо, етап 2)
+  compendium/      # довідник: JSONL-корпус, індекси заклять і механік, сервіс, API
+  identity/        # (порожньо, етап 6)
+  localization/    # (порожньо, етап 5)
   api/             # FastAPI
-contract/          # JSON Schema + фікстури (єдине джерело типів)
-content/           # глосарій, реєстр джерел, корпуси записів (compendium + bestiary)
+contract/          # JSON Schema + фікстури + формати корпусів і механік (єдине джерело типів)
+content/           # глосарій, реєстр джерел, корпуси записів, похідні індекси
 frontend/          # React SPA
-docs/              # план + ADR
+docs/              # план + ADR + описи етапів
 ```
 
 ## Правові застереження

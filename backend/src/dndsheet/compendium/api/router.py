@@ -11,7 +11,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from dndsheet.compendium.api.serializers import entry_brief, entry_full
+from dndsheet.compendium.api.serializers import (
+    background_mechanics_full,
+    class_mechanics_full,
+    entry_brief,
+    entry_full,
+    species_mechanics_full,
+)
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import (
@@ -50,8 +56,78 @@ def summary(service: Service) -> dict:
             for book in report.books
         ],
         "spell_lists": report.spell_lists,
+        "mechanics": report.mechanics,
         "warnings": list(report.warnings),
     }
+
+
+@router.get("/mechanics")
+def mechanics_summary(service: Service) -> dict:
+    """Зведення механік: скільки класів, видів і передісторій є з числами."""
+    classes = service.class_definitions()
+    species = service.species_list()
+    backgrounds = service.backgrounds()
+    return {
+        "available": service.mechanics_available(),
+        "classes": len(classes),
+        "species": len(species),
+        "subspecies": len(
+            [item for name in species for item in service.subspecies_of(name.key)]
+        ),
+        "backgrounds": len(backgrounds),
+        "warnings": list(service.mechanics_warnings()),
+    }
+
+
+@router.get("/classes/mechanics")
+def class_mechanics_list(service: Service) -> dict:
+    """Усі класи з механіками — для екрана вибору класу."""
+    items = [class_mechanics_full(item) for item in service.class_definitions()]
+    return {"items": items, "total": len(items)}
+
+
+@router.get("/classes/{class_name}/mechanics")
+def class_mechanics(class_name: str, service: Service) -> dict:
+    """Механіки одного класу: хіт-дайс, володіння, слоти, риси за рівнями."""
+    try:
+        return class_mechanics_full(service.class_mechanics(class_name))
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/species")
+def species(service: Service) -> dict:
+    """Базові види з механіками (підраси — окремим запитом)."""
+    items = [species_mechanics_full(item) for item in service.species_list()]
+    return {"items": items, "total": len(items)}
+
+
+@router.get("/species/{species_name}/subspecies")
+def subspecies(species_name: str, service: Service) -> dict:
+    items = [species_mechanics_full(item) for item in service.subspecies_of(species_name)]
+    return {"items": items, "total": len(items)}
+
+
+@router.get("/species/{species_name}/mechanics")
+def species_mechanics(species_name: str, service: Service) -> dict:
+    try:
+        return species_mechanics_full(service.species_mechanics(species_name))
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/backgrounds")
+def backgrounds(service: Service) -> dict:
+    items = [background_mechanics_full(item) for item in service.backgrounds()]
+    return {"items": items, "total": len(items)}
+
+
+@router.get("/backgrounds/{background_name}/mechanics")
+def background_mechanics(background_name: str, service: Service) -> dict:
+    try:
+        return background_mechanics_full(service.background_mechanics(background_name))
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.get("/entries")
