@@ -146,6 +146,49 @@ export function ActionSpells({
   );
 }
 
+/** Ячейки заклять: заповнена клітинка = доступна, натиск гасить/повертає одну. */
+function SlotTrack({
+  label,
+  title,
+  used,
+  total,
+  onChange,
+}: {
+  label: string;
+  title: string;
+  used: number;
+  total: number;
+  onChange: (used: number) => void;
+}) {
+  const remaining = total - used;
+  return (
+    <div className="slot-track">
+      <span className="slot-track__label">{label}</span>
+      <span className="slot-track__boxes" role="group" aria-label={title}>
+        {Array.from({ length: total }, (_, index) => {
+          const spent = index < used;
+          return (
+            <button
+              key={index}
+              type="button"
+              className={`slot-track__box ${spent ? "is-spent" : "is-ready"}`}
+              aria-pressed={!spent}
+              aria-label={`${title}: ячейка ${index + 1} — ${
+                spent ? "витрачена" : "доступна"
+              }`}
+              title={spent ? `${title}: повернути ячейку` : `${title}: витратити ячейку`}
+              onClick={() => onChange(spent ? used - 1 : used + 1)}
+            />
+          );
+        })}
+      </span>
+      <span className="slot-track__count">
+        {remaining} / {total}
+      </span>
+    </div>
+  );
+}
+
 export function CastingBlock({
   casting,
   resources,
@@ -173,28 +216,31 @@ export function CastingBlock({
           </li>
         ))}
       </ul>
-      <div className="resource-row">
-        {Object.entries(resources.slots).map(([level, resource]) => (
-          <span key={level} className="resource">
-            {level} рівень
-            <Counter
+      <div className="spell-slots">
+        {Object.entries(resources.slots)
+          .filter(([, resource]) => resource.total > 0)
+          .map(([level, resource]) => (
+            <SlotTrack
+              key={level}
+              label={`${level} рівень`}
+              title={`слоти ${level} рівня`}
               used={resource.used}
               total={resource.total}
-              title={`слоти ${level} рівня`}
               onChange={(used) => onSlotsUsed(level, used)}
             />
-          </span>
-        ))}
+          ))}
         {resources.pact ? (
-          <span className="resource">
-            Pact Magic
-            <Counter
-              used={resources.pact.used}
-              total={resources.pact.total}
-              title="слоти Pact Magic"
-              onChange={onPactUsed}
-            />
-          </span>
+          <SlotTrack
+            label="Pact Magic"
+            title="слоти Pact Magic"
+            used={resources.pact.used}
+            total={resources.pact.total}
+            onChange={onPactUsed}
+          />
+        ) : null}
+        {Object.values(resources.slots).some((resource) => resource.total > 0) ||
+        resources.pact ? (
+          <p className="slot-hint">клік по ячейці витрачає слот, повторний — повертає</p>
         ) : null}
       </div>
     </>

@@ -1468,6 +1468,76 @@ body.board {
 
 /* --- відомі закляття -------------------------------------------------- */
 
+/* Ячейки заклять: заповнена клітинка — доступна, порожня — витрачена. */
+.spell-slots {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.slot-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 9px;
+  border: 1px solid rgb(90 60 133 / 55%);
+  border-radius: 6px;
+  background: rgb(18 12 28 / 55%);
+}
+
+.slot-track__label {
+  min-width: 68px;
+  color: #cbb6ee;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.slot-track__boxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.slot-track__box {
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 1px solid #5d3f86;
+  border-radius: 4px;
+  background: #120c1c;
+  cursor: pointer;
+}
+
+.slot-track__box.is-ready {
+  border-color: #b06cff;
+  background: linear-gradient(160deg, #b06cff 0%, #6d3fa8 100%);
+  box-shadow: 0 0 6px rgb(176 108 255 / 45%);
+}
+
+.slot-track__box.is-spent:hover {
+  border-color: #b06cff;
+}
+
+.slot-track__box.is-ready:hover {
+  border-color: #e4c8ff;
+}
+
+.slot-track__count {
+  margin-left: auto;
+  color: #ffd27d;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.slot-hint {
+  margin: 0;
+  color: var(--ddb-dim);
+  font-size: 9px;
+}
+
 .spell-known {
   display: grid;
   gap: 14px;
