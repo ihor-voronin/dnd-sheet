@@ -50,6 +50,7 @@ import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
 import { BackgroundPanel } from "./background";
 import { ActionPanel } from "./actions";
+import { termLabel, ukSubclass, ukTerm, withEnglish } from "./uk";
 import {
   CastingBlock,
   FeatureResources,
@@ -279,20 +280,23 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
   }
 
   const totalLevel = character.total_level;
-  const speciesText = character.species
-    ? (character.species.subspecies ?? character.species.name_en)
+  const speciesKey = character.species?.subspecies ?? character.species?.name_en;
+  const speciesText = speciesKey
+    ? ukTerm(speciesKey)
+      ? termLabel(speciesKey)
+      : subclassLabel(speciesKey)
     : "вид не вказано";
   const classText = character.classes.length
     ? character.classes
         .map(
           (item) =>
-            `${item.name_en} ${item.level}${item.subclass ? ` (${subclassLabel(item.subclass)})` : ""}`,
+            `${termLabel(item.name_en)} ${item.level}${item.subclass ? ` · ${withEnglish(subclassLabel(item.subclass), ukSubclass(item.subclass))}` : ""}`,
         )
         .join(" / ")
     : "клас не вказано";
   const originText = [
     character.alignment ? (ALIGNMENT_LABELS[character.alignment] ?? character.alignment) : "",
-    character.background?.name_en ?? "",
+    character.background ? termLabel(character.background.name_en) : "",
     "правила 2014",
   ]
     .filter(Boolean)

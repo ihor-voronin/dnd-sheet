@@ -10,6 +10,7 @@ import { Counter } from "./editing";
 import {
   ABILITY_SHORT,
   PROFICIENCY_LABELS,
+  abilityGenitive,
   abilityLabel,
   castingTimeLabel,
   damageTypeLabel,
@@ -20,6 +21,19 @@ import {
   schoolLabel,
 } from "../../labels";
 import type { SheetViewPayload } from "../wizard/types";
+import {
+  componentsLabel,
+  featureLabel,
+  featureText,
+  itemLabel,
+  proficiencySourceLabel,
+  spellHigher,
+  spellLabel,
+  spellText,
+  termLabel,
+  weaponDamage,
+  weaponNotes,
+} from "./uk";
 
 export function AttacksTable({ attacks }: { attacks: SheetViewPayload["attacks"] }) {
   if (!attacks.length) {
@@ -43,11 +57,11 @@ export function AttacksTable({ attacks }: { attacks: SheetViewPayload["attacks"]
       <tbody>
         {attacks.map((attack) => (
           <tr key={attack.name_en}>
-            <th scope="row">{attack.name_en}</th>
+            <th scope="row">{itemLabel(attack.name_en)}</th>
             <td>{modifierLabel(attack.attack_bonus)}</td>
-            <td>{attack.damage}</td>
+            <td>{weaponDamage(attack.damage)}</td>
             <td>{abilityLabel(attack.ability)}</td>
-            <td className="short">{attack.notes || "—"}</td>
+            <td className="short">{weaponNotes(attack.notes) || "—"}</td>
           </tr>
         ))}
       </tbody>
@@ -110,7 +124,7 @@ export function ActionSpells({
               ].filter(Boolean);
               return (
                 <li key={`${spell.name_en}-${spell.source}`} className="action-spell">
-                  <span className="action-spell__name">{spell.name_en}</span>
+                  <span className="action-spell__name">{spellLabel(spell.name_en)}</span>
                   {spell.always_prepared ? (
                     <span className="action-spell__tag">завжди</span>
                   ) : null}
@@ -208,8 +222,8 @@ export function CastingBlock({
       <ul className="plain-list">
         {casting.classes.map((item) => (
           <li key={item.key}>
-            {item.name_en}: опір {item.save_dc}, атака {modifierLabel(item.attack_bonus)} (від{" "}
-            {abilityLabel(item.ability)})
+            {termLabel(item.name_en)}: ОС порятунку {item.save_dc}, атака{" "}
+            {modifierLabel(item.attack_bonus)} (від {abilityGenitive(item.ability)})
             {item.prepares
               ? `, готує до ${item.prepared_limit}`
               : `, знає до ${item.spells_known_limit ?? 0}`}
@@ -279,7 +293,7 @@ export function SpellsKnownList({ spells }: { spells: SheetViewPayload["spells"]
                 <li key={`${spell.name_en}-${spell.source}`}>
                   <details className="spell">
                     <summary className="spell__summary">
-                      <span className="spell__name">{spell.name_en}</span>
+                      <span className="spell__name">{spellLabel(spell.name_en)}</span>
                       <span className="spell__tags">
                         {spell.school ? (
                           <span className="spell-tag">{schoolLabel(spell.school)}</span>
@@ -302,7 +316,7 @@ export function SpellsKnownList({ spells }: { spells: SheetViewPayload["spells"]
                     <div className="spell__body">
                       {meta.length ? <p className="spell__meta">{meta.join(" · ")}</p> : null}
                       {spell.components ? (
-                        <p className="spell__components">Компоненти: {spell.components}</p>
+                        <p className="spell__components">Компоненти: {componentsLabel(spell.components)}</p>
                       ) : null}
                       <div className="spell__effects">
                         {spell.damage ? (
@@ -325,11 +339,11 @@ export function SpellsKnownList({ spells }: { spells: SheetViewPayload["spells"]
                           <span className="action-chip action-chip--quiet">ритуал</span>
                         ) : null}
                       </div>
-                      <RuleText text={spell.description ?? ""} />
+                      <RuleText text={spellText(spell.name_en, spell.description)} />
                       {spell.at_higher_levels ? (
                         <div className="spell__higher">
                           <span className="spell__higher-label">На вищих рівнях</span>
-                          <RuleText text={spell.at_higher_levels} />
+                          <RuleText text={spellHigher(spell.name_en, spell.at_higher_levels)} />
                         </div>
                       ) : null}
                     </div>
@@ -352,18 +366,18 @@ export function FeaturesList({ features }: { features: SheetViewPayload["feature
         <li key={`${feature.class_key}-${feature.name_en}-${feature.source ?? "class"}`}>
           <details className="feature">
             <summary className="feature__summary">
-              <span className="feature-name">{feature.name_en}</span>
+              <span className="feature-name">{featureLabel(feature.name_en)}</span>
               <span className="feature-meta">
                 {feature.source === "subclass" && feature.subclass_name
-                  ? `${feature.subclass_name} · `
+                  ? `${termLabel(feature.subclass_name)} · `
                   : ""}
-                {feature.class_name}, {feature.level} рівень
+                {termLabel(feature.class_name)}, {feature.level} рівень
               </span>
               <span className="feature__chevron" aria-hidden>
                 ▾
               </span>
             </summary>
-            <RuleText text={feature.description ?? ""} />
+            <RuleText text={featureText(feature.name_en, feature.description)} />
           </details>
         </li>
       ))}
@@ -432,9 +446,9 @@ export function FeatureResources({
       {resources.map((resource) => (
         <div key={resource.key} className="feature-resource">
           <span className="feature-resource__main">
-            <span className="feature-resource__name">{resource.name_en}</span>
+            <span className="feature-resource__name">{featureLabel(resource.name_en)}</span>
             <span className="feature-resource__meta">
-              {resource.class_name} ·{" "}
+              {termLabel(resource.class_name)} ·{" "}
               {resource.recharge === "short"
                 ? "короткий або довгий відпочинок"
                 : "довгий відпочинок"}
@@ -443,7 +457,7 @@ export function FeatureResources({
           <Counter
             used={resource.used}
             total={resource.total}
-            title={resource.name_en}
+            title={featureLabel(resource.name_en)}
             onChange={(used) => {
               if (disabled) return;
               onChange(resource.key, used);
@@ -471,7 +485,7 @@ export function ProficienciesList({
           {showSource ? (
             <span className="short">
               {" "}
-              ({item.source.kind}: {item.source.key})
+              ({proficiencySourceLabel(item.source.kind, item.source.key)})
             </span>
           ) : null}
         </li>

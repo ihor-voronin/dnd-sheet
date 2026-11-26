@@ -11,6 +11,7 @@ import type { BackgroundDetails } from "../wizard/types";
 import { NoteArea, notesStatusText } from "./notes";
 import type { NoteStatus } from "./notes";
 import { RuleText } from "./panels";
+import { ukBackground, withEnglish } from "./uk";
 
 function joinOrDash(values: string[], kind: string, any: number): string {
   const labels = values.map((value) => proficiencyValue(kind, value));
@@ -48,6 +49,8 @@ export function BackgroundPanel({
     );
   }
 
+  const uk = ukBackground(details.key);
+
   return (
     <div className="background-panel">
       <h3 className="ddb-work__title">
@@ -57,7 +60,7 @@ export function BackgroundPanel({
 
       <section className="bg-card">
         <div className="bg-card__head">
-          <span className="bg-card__name">{details.name_en}</span>
+          <span className="bg-card__name">{withEnglish(details.name_en, uk?.name)}</span>
           {alignment ? (
             <span className="bg-card__align">
               {ALIGNMENT_LABELS[alignment] ?? alignment}
@@ -79,13 +82,13 @@ export function BackgroundPanel({
           </li>
           <li>
             <span>Риса</span>
-            <span>{details.feature_en ?? "—"}</span>
+            <span>{details.feature_en ? withEnglish(details.feature_en, uk?.feature) : "—"}</span>
           </li>
         </ul>
         {details.equipment ? (
           <p className="bg-equipment">
             <span>Спорядження </span>
-            {details.equipment}
+            {uk?.equipment ?? details.equipment}
           </p>
         ) : null}
       </section>
@@ -93,13 +96,15 @@ export function BackgroundPanel({
       {details.feature_text ? (
         <details className="feature">
           <summary className="feature__summary">
-            <span className="feature-name">{details.feature_en}</span>
+            <span className="feature-name">
+              {details.feature_en ? withEnglish(details.feature_en, uk?.feature) : "Риса передісторії"}
+            </span>
             <span className="feature-meta">риса передісторії</span>
             <span className="feature__chevron" aria-hidden>
               ▾
             </span>
           </summary>
-          <RuleText text={details.feature_text} />
+          <RuleText text={uk?.featureText ?? details.feature_text} />
         </details>
       ) : null}
 
@@ -112,7 +117,7 @@ export function BackgroundPanel({
               ▾
             </span>
           </summary>
-          <RuleText text={details.description} />
+          <RuleText text={uk?.description ?? details.description} />
         </details>
       ) : null}
 

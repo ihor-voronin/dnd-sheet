@@ -15,6 +15,15 @@ import { damageTypeLabel, modifierLabel, rangeLabel, schoolLabel } from "../../l
 import type { SheetFeatureResource, SheetSpell, SheetViewPayload } from "../wizard/types";
 import { Counter } from "./editing";
 import { RuleText } from "./panels";
+import {
+  componentsLabel,
+  featureLabel,
+  featureText,
+  itemLabel,
+  spellLabel,
+  weaponDamage,
+  weaponNotes,
+} from "./uk";
 
 type ActionType = "action" | "bonus" | "reaction" | "other";
 type Filter = "all" | "attack" | ActionType | "limited";
@@ -153,12 +162,12 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
   for (const [index, attack] of sheet.attacks.entries()) {
     rows.push({
       id: `weapon-${index}`,
-      name: attack.name_en,
+      name: itemLabel(attack.name_en),
       typeLabel: "Зброя",
       range: rangeLabel(attack.range) || "—",
       hit: modifierLabel(attack.attack_bonus),
-      damage: attack.damage,
-      notes: attack.notes,
+      damage: weaponDamage(attack.damage),
+      notes: weaponNotes(attack.notes),
       actionType: "action",
       attack: true,
     });
@@ -182,19 +191,19 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
     description:
       "Можна вдарити (1 + модифікатор СИЛИ дроблячої шкоди), захопити ціль або " +
       "штовхнути її на 5 фт чи збити з ніг. Для захвату й штовханини ціль " +
-      "рятується СИЛ або СПР (DC 8 + бонус майстерності + СИЛ).",
+      "рятується СИЛ або СПР (ОС 8 + бонус майстерності + СИЛ).",
   });
 
   const casters = sheet.spellcasting.classes;
   for (const spell of availableSpells(sheet)) {
     const caster = casters.find((item) => item.key === spell.class_key) ?? casters[0];
     const hit = spell.save
-      ? `DC ${caster?.save_dc ?? "—"}`
+      ? `ОС ${caster?.save_dc ?? "—"}`
       : spell.attack_roll
         ? modifierLabel(caster?.attack_bonus ?? 0)
         : "—";
     const notes = [
-      spell.components ? `компоненти ${spell.components}` : "",
+      spell.components ? `компоненти ${componentsLabel(spell.components)}` : "",
       spell.concentration ? "концентрація" : "",
       spell.ritual ? "ритуал" : "",
       spell.school ? schoolLabel(spell.school) : "",
@@ -203,7 +212,7 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
       .join(" · ");
     rows.push({
       id: `spell-${spell.name_en}-${spell.source}`,
-      name: spell.name_en,
+      name: spellLabel(spell.name_en),
       typeLabel: spell.level === 0 ? "Заговір" : `Закляття ${spell.level} рівня`,
       range: rangeLabel(spell.range) || "—",
       hit,
@@ -220,7 +229,7 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
     const feature = sheet.features.find((item) => item.name_en === resource.name_en);
     rows.push({
       id: `resource-${resource.key}`,
-      name: resource.name_en,
+      name: featureLabel(resource.name_en),
       typeLabel: "Обмежене",
       range: "—",
       hit: "—",
@@ -232,7 +241,7 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
       attack: false,
       limited: true,
       resource,
-      description: feature?.description,
+      description: featureText(resource.name_en, feature?.description),
     });
   }
 

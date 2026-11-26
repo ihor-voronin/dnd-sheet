@@ -130,8 +130,22 @@ export const METHOD_LABELS: Record<string, string> = {
   manual: "Вручну",
 };
 
+export const ABILITY_GENITIVE: Record<string, string> = {
+  str: "Сили",
+  dex: "Спритності",
+  con: "Статури",
+  int: "Інтелекту",
+  wis: "Мудрості",
+  cha: "Харизми",
+};
+
 export function abilityLabel(code: string): string {
   return ABILITY_LABELS[code] ?? code;
+}
+
+/** Родовий відмінок для «від Мудрості»: підпис уже з великої літери. */
+export function abilityGenitive(code: string): string {
+  return ABILITY_GENITIVE[code] ?? abilityLabel(code);
 }
 
 export const LANGUAGE_LABELS: Record<string, string> = {

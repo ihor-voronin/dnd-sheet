@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { searchItems } from "../../api";
 import type { ItemBody, ItemSearchResult } from "../../api";
 import { ITEM_KIND_LABELS } from "../../labels";
+import { itemLabel } from "./uk";
 import type { SheetItem } from "../wizard/types";
 import { NumberField } from "./editing";
 
@@ -314,7 +315,7 @@ export function InventoryPanel({
             return (
               <li key={entry.id}>
                 <button type="button" className="inv-results__row" onClick={() => openAdd(entry)}>
-                  <span className="inv-results__name">{entry.name_en}</span>
+                  <span className="inv-results__name">{itemLabel(entry.name_en)}</span>
                   <span className="inv-results__meta">{meta.join(" · ")}</span>
                 </button>
               </li>
@@ -486,7 +487,7 @@ export function InventoryPanel({
               >
                 <span className="item-main">
                   <span className="item-name">
-                    {item.name_en}
+                    {itemLabel(item.name_en)}
                     {item.quantity > 1 ? ` × ${item.quantity}` : ""}
                   </span>
                   <span className="item-meta">{meta.join(" · ")}</span>
