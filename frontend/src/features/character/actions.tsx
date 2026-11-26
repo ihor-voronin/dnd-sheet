@@ -12,6 +12,7 @@ import { useState } from "react";
 import { damageTypeLabel, modifierLabel, rangeLabel, schoolLabel } from "../../labels";
 import type { SheetFeatureResource, SheetSpell, SheetViewPayload } from "../wizard/types";
 import { Counter } from "./editing";
+import { RuleText } from "./panels";
 
 type ActionType = "action" | "bonus" | "reaction" | "other";
 type Filter = "all" | "attack" | ActionType | "limited";
@@ -381,7 +382,7 @@ function ActionRowView({
       {row.description ? (
         <details className="action-row__more">
           <summary>як працює</summary>
-          <p>{row.description}</p>
+          <RuleText text={row.description} />
         </details>
       ) : null}
     </li>

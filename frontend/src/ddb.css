@@ -2073,6 +2073,12 @@ body.board {
   line-height: 1.45;
 }
 
+.action-row__more .feature-text {
+  padding: 5px 0 0;
+  color: var(--ddb-muted);
+  font-size: 10.5px;
+}
+
 /* --- відпочинок ------------------------------------------------------- */
 
 .ddb-rest-note {
