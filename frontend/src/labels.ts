@@ -208,6 +208,21 @@ export const DAMAGE_TYPE_LABELS: Record<string, string> = {
   thunder: "грім",
 };
 
+export const SCHOOL_LABELS: Record<string, string> = {
+  abjuration: "захисна",
+  conjuration: "виклик",
+  divination: "віщування",
+  enchantment: "чари",
+  evocation: "втілення",
+  illusion: "ілюзія",
+  necromancy: "некромантія",
+  transmutation: "перетворення",
+};
+
+export function schoolLabel(code: string): string {
+  return SCHOOL_LABELS[code] ?? code;
+}
+
 export function damageTypeLabel(code: string): string {
   return DAMAGE_TYPE_LABELS[code] ?? code;
 }

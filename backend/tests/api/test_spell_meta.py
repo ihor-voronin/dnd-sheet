@@ -64,3 +64,22 @@ def test_bonus_action_and_concentration(service: CompendiumService) -> None:
 def test_fixed_bonus_damage_kept(service: CompendiumService) -> None:
     meta = _meta(service, "Magic Missile", "phb-2014/spell/magic-missile")
     assert meta["damage"] == {"dice": "1d4+1", "type": "force"}
+
+
+def test_components_and_description(service: CompendiumService) -> None:
+    meta = _meta(service, "Shield", "phb-2014/spell/shield")
+    assert meta["components"] == "V, S"
+    assert meta["description"].startswith("An invisible barrier")
+    assert "1st-level" not in meta["description"], "рядок рівня вже показаний окремо"
+    assert meta["at_higher_levels"] == ""
+
+
+def test_higher_levels_text(service: CompendiumService) -> None:
+    meta = _meta(service, "Magic Missile", "phb-2014/spell/magic-missile")
+    assert "one more dart" in meta["at_higher_levels"]
+
+
+def test_material_components_kept(service: CompendiumService) -> None:
+    meta = _meta(service, "Hex", "phb-2014/spell/hex")
+    assert meta["components"].startswith("V, S, M")
+    assert "petrified eye" in meta["components"]

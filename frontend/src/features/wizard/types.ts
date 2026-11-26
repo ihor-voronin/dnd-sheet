@@ -218,9 +218,12 @@ export interface SheetSpell {
   casting_time?: string;
   range?: string;
   duration?: string;
+  components?: string;
   concentration?: boolean;
   ritual?: boolean;
   school?: string;
+  description?: string;
+  at_higher_levels?: string;
   damage?: { dice: string; type: string } | null;
   save?: string | null;
   attack_roll?: boolean;

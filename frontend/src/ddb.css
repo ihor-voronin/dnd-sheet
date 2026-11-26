@@ -1464,6 +1464,151 @@ body.board {
   text-transform: uppercase;
 }
 
+/* --- відомі закляття -------------------------------------------------- */
+
+.spell-known {
+  display: grid;
+  gap: 14px;
+}
+
+.spell-group__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 5px;
+  color: var(--ddb-dim);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.spell-group__count {
+  padding: 1px 6px;
+  border: 1px solid rgb(125 79 196 / 40%);
+  border-radius: 999px;
+  font-size: 8.5px;
+  letter-spacing: 0;
+}
+
+.spell-group__list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spell {
+  border: 1px solid rgb(90 60 133 / 55%);
+  border-radius: 6px;
+  background: rgb(18 12 28 / 45%);
+}
+
+.spell__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 9px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.spell__summary::-webkit-details-marker {
+  display: none;
+}
+
+.spell__summary:hover {
+  background: rgb(176 108 255 / 8%);
+}
+
+.spell__name {
+  min-width: 0;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.spell__tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.spell-tag {
+  padding: 1px 6px;
+  border: 1px solid rgb(125 79 196 / 40%);
+  border-radius: 999px;
+  color: var(--ddb-muted);
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.spell-tag--gold {
+  border-color: rgb(201 168 106 / 55%);
+  color: #ffd27d;
+}
+
+.spell__chevron {
+  flex: none;
+  color: var(--ddb-dim);
+  font-size: 9px;
+  transition: transform 120ms ease;
+}
+
+.spell[open] .spell__chevron {
+  transform: rotate(180deg);
+}
+
+.spell__body {
+  padding: 0 10px 10px;
+}
+
+.spell__meta {
+  margin: 6px 0 0;
+  color: var(--ddb-muted);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.spell__components {
+  margin: 3px 0 0;
+  color: var(--ddb-dim);
+  font-size: 10.5px;
+}
+
+.spell__effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.spell__body .feature-text {
+  padding: 8px 0 0;
+}
+
+.spell__higher {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed rgb(125 79 196 / 25%);
+}
+
+.spell__higher-label {
+  display: block;
+  color: var(--ddb-dim);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.spell__higher .feature-text {
+  padding: 2px 0 0;
+}
+
 /* --- дії в бою -------------------------------------------------------- */
 
 .combat-actions {

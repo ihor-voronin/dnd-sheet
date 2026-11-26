@@ -60,10 +60,10 @@ Character (агрегат) ──> DerivedStatsCalculator ──> ComputedSheet 
 
 | Гейт | Результат |
 |---|---|
-| `pytest backend` | **519 passed, 2 skipped** (обидва PDF-тести скіпнуто: немає WeasyPrint/GTK) |
+| `pytest backend` | **522 passed, 2 skipped** (обидва PDF-тести скіпнуто: немає WeasyPrint/GTK) |
 | `lint-imports` | **5 contracts kept, 0 broken** |
 | `tsc --noEmit` | чисто |
-| `vite build` | 114 модулів, ~315 kB JS (~101 kB gzip) |
+| `vite build` | 114 модулів, ~317 kB JS (~101 kB gzip) |
 | `python scripts/preflight.py` | OK: 122 .py, контракт, golden-числа, корпус за каноном, механіки 13/69/64/94 |
 | SPA end-to-end | FastAPI віддає `/`, рендериться `SheetDocument`, тултіп на фокусі показує оригінал («Strength») |
 | довідник end-to-end | `/api/v1/compendium/summary` → 3818 записів, 89 книг; `/classes/wizard/spells` → 215 заклять, `source: spell-lists`; `/mechanics` → 13 класів, 69 видів, 94 передісторії |

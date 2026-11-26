@@ -17,6 +17,7 @@ import {
   modifierLabel,
   proficiencyValue,
   rangeLabel,
+  schoolLabel,
 } from "../../labels";
 import type { SheetViewPayload } from "../wizard/types";
 
@@ -202,24 +203,98 @@ export function CastingBlock({
 
 export function SpellsKnownList({ spells }: { spells: SheetViewPayload["spells"] }) {
   if (!spells.length) return <p className="hint">—</p>;
+
+  const sorted = [...spells].sort(
+    (left, right) => left.level - right.level || left.name_en.localeCompare(right.name_en),
+  );
+  const groups = new Map<number, typeof sorted>();
+  for (const spell of sorted) {
+    const bucket = groups.get(spell.level);
+    if (bucket) bucket.push(spell);
+    else groups.set(spell.level, [spell]);
+  }
+
   return (
-    <ul className="plain-list">
-      {spells.map((spell) => (
-        <li key={`${spell.name_en}-${spell.source}`}>
-          {spell.level === 0 ? "заговір" : `${spell.level} рівня`} · {spell.name_en}
-          {spell.always_prepared
-            ? " · завжди підготовлене"
-            : spell.prepared
-              ? " · підготовлене"
-              : ""}
-          {spell.source === "species"
-            ? " · від виду"
-            : spell.source === "subclass"
-              ? " · від підкласу"
-              : ""}
-        </li>
+    <div className="spell-known">
+      {Array.from(groups.entries()).map(([level, list]) => (
+        <section key={level} className="spell-group">
+          <h4 className="spell-group__head">
+            <span>{level === 0 ? "Заговори" : `${level} рівень`}</span>
+            <span className="spell-group__count">{list.length}</span>
+          </h4>
+          <ul className="spell-group__list">
+            {list.map((spell) => {
+              const meta = [
+                castingTimeLabel(spell.casting_time),
+                rangeLabel(spell.range),
+                durationLabel(spell.duration),
+              ].filter(Boolean);
+              return (
+                <li key={`${spell.name_en}-${spell.source}`}>
+                  <details className="spell">
+                    <summary className="spell__summary">
+                      <span className="spell__name">{spell.name_en}</span>
+                      <span className="spell__tags">
+                        {spell.school ? (
+                          <span className="spell-tag">{schoolLabel(spell.school)}</span>
+                        ) : null}
+                        {spell.always_prepared ? (
+                          <span className="spell-tag spell-tag--gold">завжди</span>
+                        ) : spell.prepared ? (
+                          <span className="spell-tag">підготовлене</span>
+                        ) : null}
+                        {spell.source === "species" ? (
+                          <span className="spell-tag">від виду</span>
+                        ) : spell.source === "subclass" ? (
+                          <span className="spell-tag">від підкласу</span>
+                        ) : null}
+                      </span>
+                      <span className="spell__chevron" aria-hidden>
+                        ▾
+                      </span>
+                    </summary>
+                    <div className="spell__body">
+                      {meta.length ? <p className="spell__meta">{meta.join(" · ")}</p> : null}
+                      {spell.components ? (
+                        <p className="spell__components">Компоненти: {spell.components}</p>
+                      ) : null}
+                      <div className="spell__effects">
+                        {spell.damage ? (
+                          <span className="action-chip action-chip--damage">
+                            {spell.damage.dice} {damageTypeLabel(spell.damage.type)}
+                          </span>
+                        ) : null}
+                        {spell.save ? (
+                          <span className="action-chip">
+                            рятунок {ABILITY_SHORT[spell.save] ?? spell.save}
+                          </span>
+                        ) : null}
+                        {spell.attack_roll ? (
+                          <span className="action-chip">атака закляттям</span>
+                        ) : null}
+                        {spell.concentration ? (
+                          <span className="action-chip action-chip--quiet">концентрація</span>
+                        ) : null}
+                        {spell.ritual ? (
+                          <span className="action-chip action-chip--quiet">ритуал</span>
+                        ) : null}
+                      </div>
+                      <RuleText text={spell.description ?? ""} />
+                      {spell.at_higher_levels ? (
+                        <div className="spell__higher">
+                          <span className="spell__higher-label">На вищих рівнях</span>
+                          <RuleText text={spell.at_higher_levels} />
+                        </div>
+                      ) : null}
+                    </div>
+                  </details>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ))}
-    </ul>
+    </div>
   );
 }
 
@@ -242,7 +317,7 @@ export function FeaturesList({ features }: { features: SheetViewPayload["feature
                 ▾
               </span>
             </summary>
-            <FeatureText text={feature.description ?? ""} />
+            <RuleText text={feature.description ?? ""} />
           </details>
         </li>
       ))}
@@ -251,7 +326,7 @@ export function FeaturesList({ features }: { features: SheetViewPayload["feature
 }
 
 /** Текст правила як є: абзаци, списки, курсивний підпис рівня. */
-function FeatureText({ text }: { text: string }) {
+export function RuleText({ text }: { text: string }) {
   if (!text.trim()) return <p className="hint">Опис недоступний.</p>;
   const blocks = text
     .split(/\n{2,}/)

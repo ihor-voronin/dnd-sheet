@@ -1,10 +1,11 @@
-"""Короткі дані заклять для листа: час, дистанція, урон, порятунок.
+"""Дані заклять для листа: час, дистанція, компоненти, урон, опис.
 
-Повний текст закляття листові не потрібен: у вкладці «Дії» важливо бачити
-дію, дистанцію й те, чим саме закляття бʼє. Тому з довідника береться
-`data` (час, дистанція, тривалість, школа) і з тексту — перший кубик урону,
-тип порятунку та згадка атаки закляттям. Це саме **підказка**, а не правило:
-лист не рахує ефект закляття.
+У вкладці «Дії» потрібні короткі дані (дія, дистанція, чим бʼє), а у
+«Відомих закляттях» — ще й компоненти та текст правила. Тому з довідника
+береться `data` (час, дистанція, тривалість, школа, компоненти, текст вищих
+рівнів) і `text_en` (опис); з тексту ж вичитуються перший кубик урону, тип
+порятунку та згадка атаки закляттям. Це **підказка**, а не розрахунок ефекту:
+лист не застосовує закляття.
 
 Порятунок шукається лише тоді, коли він не є «saving throw to avoid the
 spell» (так у `Light`: предмет можна врятувати, але ефекту на ціль немає).
@@ -47,6 +48,13 @@ SAVE_CODES = {
 
 SPELL_ATTACK = re.compile(r"spell\s+attack", re.IGNORECASE)
 
+#: Перший рядок опису — «2nd-level abjuration» або «Evocation cantrip»:
+#: рівень і школу лист уже показує окремо, у тексті він зайвий.
+HEADER = re.compile(
+    r"^(?:\d+(?:st|nd|rd|th)-level\s+[a-z]+(?:\s*\(ritual\))?|[A-Z][a-z]+\s+cantrip)$",
+    re.IGNORECASE,
+)
+
 
 def enrich_spells(
     spells: list[dict[str, Any]],
@@ -80,9 +88,12 @@ def _meta_for(
         "casting_time": _text(data.get("casting_time")),
         "range": _text(data.get("range")),
         "duration": _text(data.get("duration")),
+        "components": _text(data.get("components")),
         "concentration": bool(data.get("concentration")),
         "ritual": bool(data.get("ritual")),
         "school": _text(data.get("school")),
+        "description": _body(text),
+        "at_higher_levels": _text(data.get("at_higher_levels")),
         "damage": (
             {
                 "dice": damage.group(1).replace(" ", "").replace("−", "-"),
@@ -119,3 +130,13 @@ def _entry(service: CompendiumService, spell: dict[str, Any]):  # noqa: ANN202
 
 def _text(value: Any) -> str:
     return str(value).strip() if value is not None else ""
+
+
+def _body(text: str) -> str:
+    """Опис без першого рядка «2nd-level abjuration» — він уже є в підписах."""
+    lines = text.splitlines()
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    if lines and HEADER.match(lines[0].strip()):
+        lines.pop(0)
+    return "\n".join(lines).strip()
