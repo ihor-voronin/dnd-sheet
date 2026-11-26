@@ -1872,6 +1872,87 @@ body.board {
   line-height: 1.4;
 }
 
+/* Згортваний довідник унизу вкладки: спільні дії бою. */
+.combat-ref {
+  margin-top: 4px;
+  border: 1px solid rgb(90 60 133 / 45%);
+  border-radius: 8px;
+  background: rgb(18 12 28 / 40%);
+}
+
+.combat-ref__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  padding: 8px 10px;
+  color: #cbb6ee;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+
+.combat-ref__head::-webkit-details-marker {
+  display: none;
+}
+
+.combat-ref__head::before {
+  content: "▸";
+  color: var(--ddb-muted);
+  font-size: 10px;
+}
+
+.combat-ref[open] > .combat-ref__head {
+  color: #fff;
+}
+
+.combat-ref[open] > .combat-ref__head::before {
+  content: "▾";
+}
+
+.combat-ref__head:hover {
+  color: #fff;
+}
+
+.combat-ref__hint {
+  color: var(--ddb-dim);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.combat-ref__body {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+.combat-ref__label {
+  margin: 0 0 4px;
+  color: var(--ddb-dim);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* У довіднику — легкі рядки-перелік, без карток: так 18 пунктів читаються. */
+.combat-ref__body .combat-action {
+  padding: 5px 0;
+  border: none;
+  border-bottom: 1px dashed rgb(125 79 196 / 20%);
+  border-radius: 0;
+  background: none;
+}
+
+.combat-ref__body .combat-action:last-child {
+  border-bottom: none;
+}
+
 /* --- вкладка «Дії»: фільтри й групи ----------------------------------- */
 
 .action-panel {
@@ -1946,15 +2027,6 @@ body.board {
   color: var(--ddb-muted);
   font-size: 8.5px;
   letter-spacing: 0;
-}
-
-.action-group__hint {
-  margin: 6px 0 0;
-  color: var(--ddb-dim);
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
 }
 
 .action-list {

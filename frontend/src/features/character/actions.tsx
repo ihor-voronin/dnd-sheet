@@ -4,7 +4,9 @@
  * Реакції / Інше» і фільтри над ними. Ми робимо те саме, але компактними
  * рядками: назва й тип, дистанція, атака/ОС, урон, нотатки. Зброя, Удар без
  * зброї, доступні закляття й обмежені класові ресурси живуть в одній моделі,
- * тому фільтр «Обмежене» чи «Бонусна дія» просто відсіює рядки.
+ * тому фільтр «Обмежене» чи «Бонусна дія» просто відсіює рядки. Унизу
+ * вкладки — згортваний довідник «Дії в бою»: загальні дії ходу, які не
+ * залежать від арсеналу персонажа.
  */
 
 import { useState } from "react";
@@ -254,8 +256,6 @@ export function ActionPanel({
     return rows.filter((row) => row.actionType === filter);
   })();
 
-  const showHints = filter === "all" || filter === "action" || filter === "bonus" || filter === "reaction" || filter === "other";
-
   return (
     <div className="action-panel">
       <div className="action-panel__bar">
@@ -299,40 +299,52 @@ export function ActionPanel({
       ) : (
         (Object.keys(GROUP_LABELS) as ActionType[]).map((type) => {
           const groupRows = visible.filter((row) => row.actionType === type);
-          const hints = showHints ? COMBAT[type] : [];
-          if (!groupRows.length && !hints.length) return null;
+          if (!groupRows.length) return null;
           return (
             <section key={type} className="action-group">
               <h4 className="action-group__head">
                 <span>{GROUP_LABELS[type]}</span>
-                {groupRows.length ? (
-                  <span className="action-group__count">{groupRows.length}</span>
-                ) : null}
+                <span className="action-group__count">{groupRows.length}</span>
               </h4>
-              {groupRows.length ? (
-                <ul className="action-list">
-                  {groupRows.map((row) => (
-                    <ActionRowView key={row.id} row={row} onUseFeature={onUseFeature} />
-                  ))}
-                </ul>
-              ) : null}
-              {hints.length ? (
-                <>
-                  <p className="action-group__hint">Дії в бою</p>
-                  <ul className="combat-actions">
-                    {hints.map((hint) => (
-                      <li key={hint.name} className="combat-action">
-                        <span className="combat-action__name">{hint.name}</span>
-                        <span className="combat-action__hint">{hint.hint}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : null}
+              <ul className="action-list">
+                {groupRows.map((row) => (
+                  <ActionRowView key={row.id} row={row} onUseFeature={onUseFeature} />
+                ))}
+              </ul>
             </section>
           );
         })
       )}
+
+      {filter !== "limited" && !visible.length ? (
+        <p className="hint">
+          За цим фільтром у персонажа нічого немає — загальні дії бою є в довіднику нижче.
+        </p>
+      ) : null}
+
+      <details className="combat-ref">
+        <summary className="combat-ref__head">
+          <span className="combat-ref__title">Дії в бою</span>
+          <span className="combat-ref__hint">
+            загальний довідник: що взагалі можна робити в бою
+          </span>
+        </summary>
+        <div className="combat-ref__body">
+          {(Object.keys(GROUP_LABELS) as ActionType[]).map((type) => (
+            <div key={type} className="combat-ref__group">
+              <p className="combat-ref__label">{GROUP_LABELS[type]}</p>
+              <ul className="combat-actions">
+                {COMBAT[type].map((hint) => (
+                  <li key={hint.name} className="combat-action">
+                    <span className="combat-action__name">{hint.name}</span>
+                    <span className="combat-action__hint">{hint.hint}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }
