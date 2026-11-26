@@ -162,11 +162,72 @@ export const PROFICIENCY_VALUE_LABELS: Record<string, string> = {
   martial: "воєнна зброя",
 };
 
+export const TOOL_LABELS: Record<string, string> = {
+  "thieves' tools": "злодійські інструменти",
+  "vehicles (land)": "транспорт (наземний)",
+  "vehicles (water)": "транспорт (водний)",
+  "cartographer's tools": "інструменти картографа",
+  "navigator's tools": "інструменти навігатора",
+  "smith's tools": "інструменти коваля",
+  "tinker's tools": "інструменти майстра",
+  "carpenter's tools": "інструменти теслі",
+  "mason's tools": "інструменти муляра",
+  "jeweler's tools": "інструменти ювеліра",
+  "potter's tools": "інструменти гончара",
+  "weaver's tools": "інструменти ткача",
+  "woodcarver's tools": "інструменти різьбяра",
+  "leatherworker's tools": "інструменти кожумʼяки",
+  "glassblower's tools": "інструменти склодува",
+  "cobbler's tools": "інструменти шевця",
+  "alchemist's supplies": "приладдя алхіміка",
+  "brewer's supplies": "приладдя пивовара",
+  "calligrapher's supplies": "приладдя каліграфа",
+  "painter's supplies": "приладдя художника",
+  "cook's utensils": "кухонне приладдя",
+  "disguise kit": "набір для маскування",
+  "forgery kit": "набір для підробок",
+  "herbalism kit": "набір травника",
+  "poisoner's kit": "набір отруйника",
+  "gaming set": "ігровий набір",
+  "musical instrument": "музичний інструмент",
+};
+
+export const DAMAGE_TYPE_LABELS: Record<string, string> = {
+  acid: "кислота",
+  bludgeoning: "дробляча",
+  cold: "холод",
+  fire: "вогонь",
+  force: "сила",
+  lightning: "блискавка",
+  necrotic: "некротична",
+  piercing: "колюча",
+  poison: "отрута",
+  psychic: "психічна",
+  radiant: "промениста",
+  slashing: "рубляча",
+  thunder: "грім",
+};
+
+export function damageTypeLabel(code: string): string {
+  return DAMAGE_TYPE_LABELS[code] ?? code;
+}
+
+/** Ключ підкласу з домену («phb-2014/subclass/the-fiend») → людська назва. */
+export function subclassLabel(key: string): string {
+  const tail = key.split("/").pop() ?? key;
+  return tail
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 /** Людська назва значення володіння: навичка, порятунок, мова або тип броні. */
 export function proficiencyValue(kind: string, value: string): string {
   if (kind === "skill") return skillLabel(value);
   if (kind === "saving_throw") return abilityLabel(value);
   if (kind === "language") return LANGUAGE_LABELS[value] ?? value;
+  if (kind === "tool") return TOOL_LABELS[value] ?? value;
   return PROFICIENCY_VALUE_LABELS[value] ?? value;
 }
 

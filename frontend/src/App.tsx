@@ -154,8 +154,20 @@ function CharacterPage({ id, navigate }: { id: string; navigate: (next: Route) =
 
 function Shell() {
   const [route, navigate] = useRoute();
+
+  // Лист персонажа має темну «дошку» на всю ширину; решта застосунку світла.
+  // Клас ставимо і на <html>, інакше за межами body видно світлий canvas.
+  useEffect(() => {
+    document.body.classList.toggle("board", route.name === "character");
+    document.documentElement.classList.toggle("board", route.name === "character");
+    return () => {
+      document.body.classList.remove("board");
+      document.documentElement.classList.remove("board");
+    };
+  }, [route.name]);
+
   return (
-    <main className="app">
+    <main className={route.name === "character" ? "app app--board" : "app"}>
       <p className="badge">
         Правила 2014 · {route.name === "create" ? "створення персонажа" : "листок персонажа"} · сервер рахує все
       </p>

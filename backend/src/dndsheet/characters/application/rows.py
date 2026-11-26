@@ -116,15 +116,29 @@ def spell_rows(character: Character, computed: ComputedSheet) -> tuple[SpellRow,
 
 
 def proficiency_rows(collected: Proficiencies) -> tuple[ProficiencyRow, ...]:
-    return tuple(
-        ProficiencyRow(
-            kind=item.kind,
-            value=item.value,
-            source_kind=item.source.kind.value,
-            source_key=item.source.key,
+    """Володіння для екрана й експорту, без буквальних повторів.
+
+    Домен навмисно зберігає те саме володіння з різних джерел: «Атлетика» від
+    класу й від передісторії — два факти. Але коли збігається ще й джерело,
+    це вже один факт, записаний двічі (повторний вибір, перенесена чернетка),
+    і на аркуші він не має друкуватися двічі.
+    """
+    rows: list[ProficiencyRow] = []
+    seen: set[tuple[ProficiencyKind, str, str, str]] = set()
+    for item in collected.items:
+        key = (item.kind, item.value.casefold(), item.source.kind.value, item.source.key)
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append(
+            ProficiencyRow(
+                kind=item.kind,
+                value=item.value,
+                source_kind=item.source.kind.value,
+                source_key=item.source.key,
+            )
         )
-        for item in collected.items
-    )
+    return tuple(rows)
 
 
 def item_rows(character: Character) -> tuple[ItemRow, ...]:

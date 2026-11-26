@@ -1,10 +1,14 @@
-/** Екран персонажа: вкладки, редагування на місці, лічильники й відпочинок.
+/** Екран персонажа: огляд у дусі D&D Beyond, вкладки, правки на місці.
  *
  * Усі числа приходять із сервера; компонент їх не перераховує. Клік по
  * похідному числу (КЗ, ініціатива, навичка) створює **виправлення** — сервер
  * зберігає його окремо й позначає поле як «вручну», доки гравець не скине.
  * Лічильники (хіти, слоти, хіт-дайси, кидки смерті) — це стан, а не
  * виправлення: кожна зміна одразу йде на диск.
+ *
+ * Розкладка повторює звичний аркуш D&D Beyond: шапка з портретом, рядок
+ * характеристик-гексагонів, далі три колонки — порятунки й володіння,
+ * ініціатива з навичками, робоча панель із вкладками.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -12,29 +16,54 @@ import { useState } from "react";
 
 import { exportUrl, fetchRenderers, patchCharacter, restCharacter, spendHitDie } from "../../api";
 import {
-  ABILITY_SHORT,
+  ABILITY_LABELS,
   ALIGNMENT_LABELS,
   ITEM_KIND_LABELS,
-  SKILL_ABILITY,
-  SKILL_LABELS,
   abilityLabel,
+  damageTypeLabel,
   modifierLabel,
-  skillLabel,
+  subclassLabel,
 } from "../../labels";
 import type { SheetViewPayload } from "../wizard/types";
+import {
+  AbilityHex,
+  HexStat,
+  PassiveList,
+  ProficiencyGroups,
+  SavePills,
+  SkillTable,
+  initials,
+} from "./ddb";
 import { EditableNumber, Pips } from "./editing";
 import { AttacksTable, CastingBlock, FeaturesList, ProficienciesList, SpellsKnownList } from "./panels";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
-const SKILL_ORDER = Object.keys(SKILL_LABELS);
 
 const TABS: { id: string; label: string }[] = [
-  { id: "overview", label: "Огляд" },
   { id: "actions", label: "Дії" },
   { id: "spells", label: "Закляття" },
   { id: "inventory", label: "Інвентар" },
   { id: "features", label: "Уміння" },
   { id: "notes", label: "Нотатки" },
+];
+
+/** Стандартні дії ходу з правил 2014 — не дані персонажа, а памʼятка. */
+const COMBAT_ACTIONS = [
+  "Атака",
+  "Ривок",
+  "Відхід",
+  "Ухиляння",
+  "Захват",
+  "Допомога",
+  "Сховатися",
+  "Імпровізація",
+  "Вплив",
+  "Магія",
+  "Готовність",
+  "Пошук",
+  "Штовханина",
+  "Вивчення",
+  "Використання",
 ];
 
 const NOTE_LABELS: Record<string, string> = {
@@ -75,7 +104,7 @@ function messageOf(error: unknown): string {
 
 export function CharacterView({ initial }: { initial: SheetViewPayload }) {
   const [sheet, setSheet] = useState<SheetViewPayload>(initial);
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState("actions");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [rollDraft, setRollDraft] = useState<Record<string, string>>({});
@@ -112,12 +141,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
   const { character } = sheet;
   const casting = sheet.spellcasting;
 
-  function overrideNumber(
-    key: string,
-    value: number,
-    title: string,
-    suffix = "",
-  ) {
+  function overrideNumber(key: string, value: number, title: string, suffix = "") {
     return (
       <EditableNumber
         value={value}
@@ -130,72 +154,285 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
     );
   }
 
-  const totalLevel = character.classes.reduce((sum, item) => sum + item.level, 0);
+  const totalLevel = character.total_level;
+  const speciesText = character.species
+    ? (character.species.subspecies ?? character.species.name_en)
+    : "вид не вказано";
+  const classText = character.classes.length
+    ? character.classes
+        .map(
+          (item) =>
+            `${item.name_en} ${item.level}${item.subclass ? ` (${subclassLabel(item.subclass)})` : ""}`,
+        )
+        .join(" / ")
+    : "клас не вказано";
+  const originText = [
+    character.alignment ? (ALIGNMENT_LABELS[character.alignment] ?? character.alignment) : "",
+    character.background?.name_en ?? "",
+    "правила 2014",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  // Пасивна уважність рахується на сервері; розслідування й проникливість
+  // показуємо як 10 + навичка — це похідне число для ока, воно не зберігається.
+  const passives = [
+    { label: "Пасивна спостережливість", value: sheet.passive_perception },
+    {
+      label: "Пасивне розслідування",
+      value: 10 + (sheet.skills.investigation?.value ?? 0),
+      note: "10 + навичка",
+    },
+    {
+      label: "Пасивна проникливість",
+      value: 10 + (sheet.skills.insight?.value ?? 0),
+      note: "10 + навичка",
+    },
+  ];
+
+  const hitDice = Object.entries(sheet.resources.hit_dice);
+  const freeHitDice = hitDice.reduce((sum, [, item]) => sum + (item.total - item.used), 0);
+  const totalHitDice = hitDice.reduce((sum, [, item]) => sum + item.total, 0);
+  const hitDieFaces = hitDice.map(([die]) => die).join(" / ");
+
+  const workTab = (() => {
+    if (tab === "actions") {
+      return (
+        <>
+          <h3 className="ddb-work__title">
+            <span>Атаки</span>
+            <span className="short">дій за хід: 1</span>
+          </h3>
+          <AttacksTable attacks={sheet.attacks} />
+          <h3 className="ddb-work__title">
+            <span>Дії в бою</span>
+            <span className="short">стандартні</span>
+          </h3>
+          <ul className="ddb-actions">
+            {COMBAT_ACTIONS.map((action) => (
+              <li key={action}>{action}</li>
+            ))}
+          </ul>
+        </>
+      );
+    }
+    if (tab === "spells") {
+      return (
+        <>
+          <h3 className="ddb-work__title">
+            <span>Чарування</span>
+          </h3>
+          <CastingBlock
+            casting={casting}
+            resources={sheet.resources}
+            onSlotsUsed={(level, used) => {
+              const usedMap: Record<string, number> = {};
+              for (const [key, value] of Object.entries(sheet.resources.slots)) {
+                const next = key === level ? used : value.used;
+                if (next) usedMap[key] = next;
+              }
+              patch({ slots: usedMap });
+            }}
+            onPactUsed={(used) => patch({ pact_used: used })}
+          />
+          <h3 className="ddb-work__title">
+            <span>Відомі закляття</span>
+          </h3>
+          <SpellsKnownList spells={sheet.spells} />
+        </>
+      );
+    }
+    if (tab === "inventory") {
+      return (
+        <>
+          <h3 className="ddb-work__title">
+            <span>Інвентар</span>
+            <span className="short">
+              вага {sheet.carrying.weight} з {sheet.carrying.capacity} фнт
+            </span>
+          </h3>
+          <div className="money-row">
+            {Object.entries({ gp: "золото", sp: "срібло", cp: "мідь" }).map(([coin, label]) => (
+              <span key={coin} className="resource">
+                {label}: {sheet.inventory.money[coin] ?? 0}
+              </span>
+            ))}
+          </div>
+          {sheet.inventory.items.length ? (
+            <ul className="item-list">
+              {sheet.inventory.items.map((item) => (
+                <li key={item.name_en} className="item-row">
+                  <span className="item-main">
+                    <span className="item-name">
+                      {item.name_en}
+                      {item.quantity > 1 ? ` × ${item.quantity}` : ""}
+                    </span>
+                    <span className="item-meta">
+                      {ITEM_KIND_LABELS[item.kind] ?? item.kind}
+                      {item.armor_base ? ` · КЗ ${item.armor_base}` : ""}
+                      {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className={`chip ${item.equipped ? "chip--active" : ""}`}
+                    onClick={() => patch({ equip: { name: item.name_en, equipped: !item.equipped } })}
+                  >
+                    {item.equipped ? "споряджено" : "не споряджено"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="hint">Порожньо.</p>
+          )}
+        </>
+      );
+    }
+    if (tab === "features") {
+      return (
+        <>
+          <h3 className="ddb-work__title">
+            <span>Уміння</span>
+          </h3>
+          <FeaturesList features={sheet.features} />
+          <h3 className="ddb-work__title">
+            <span>Володіння з джерелами</span>
+          </h3>
+          <ProficienciesList proficiencies={sheet.proficiencies} />
+        </>
+      );
+    }
+    return (
+      <>
+        <h3 className="ddb-work__title">
+          <span>Нотатки</span>
+        </h3>
+        <div className="notes-grid">
+          {Object.entries(NOTE_LABELS).map(([key, label]) => (
+            <label key={key} className="field">
+              <span>{label}</span>
+              <textarea
+                rows={4}
+                value={notesDraft[key] ?? ""}
+                onChange={(event) => setNotesDraft({ ...notesDraft, [key]: event.target.value })}
+              />
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="button button--primary"
+          onClick={() => patch({ notes: notesDraft })}
+        >
+          Зберегти нотатки
+        </button>
+      </>
+    );
+  })();
 
   return (
     <article className="sheet character-view">
-      <header className="sheet-banner">
-        <div className="banner-main">
-          <p className="banner-kicker">Лист персонажа</p>
-          <h1>{character.name}</h1>
-          <p className="banner-sub">
-            <span className="banner-level">рівень {totalLevel}</span>
-            {character.classes.map((item) => `${item.name_en} ${item.level}`).join(" / ")}
-            {character.species ? ` · ${character.species.name_en}` : ""}
-            {character.species?.subspecies ? ` (${character.species.subspecies})` : ""}
-            {character.background ? ` · ${character.background.name_en}` : ""}
-            {character.alignment ? ` · ${ALIGNMENT_LABELS[character.alignment] ?? character.alignment}` : ""}
-          </p>
+      <header className="ddb-top">
+        <div className="ddb-identity">
+          <span className="ddb-portrait" aria-hidden="true">
+            {initials(character.name)}
+          </span>
+          <div>
+            <p className="ddb-kicker">Лист персонажа · {originText}</p>
+            <h1 className="ddb-name">{character.name}</h1>
+            <p className="ddb-sub">
+              <span>{speciesText}</span>
+              <span>·</span>
+              <span>{classText}</span>
+              <span>· рівень {totalLevel}</span>
+            </p>
+          </div>
         </div>
-        <div className="export-bar">
-          <span className="export-label">Експорт зі станом</span>
-          <a className="button" href={exportUrl(id, "markdown")} download>
-            Markdown
-          </a>
-          <a className="button" href={`${exportUrl(id, "markdown")}?originals=false`} download>
-            Markdown без англ.
-          </a>
-          {pdfReady ? (
-            <a className="button button--primary" href={exportUrl(id, "pdf")} download>
-              PDF (A4)
+        <div className="ddb-top__actions">
+          <div className="ddb-rest">
+            <button
+              type="button"
+              className="ddb-btn"
+              disabled={busy}
+              onClick={() => run(restCharacter(id, "short"))}
+            >
+              Короткий відпочинок
+            </button>
+            <button
+              type="button"
+              className="ddb-btn ddb-btn--primary"
+              disabled={busy}
+              onClick={() => run(restCharacter(id, "long"))}
+            >
+              Довгий відпочинок
+            </button>
+          </div>
+          <div className="ddb-export">
+            <span className="ddb-export__label">Експорт</span>
+            <a className="ddb-btn ddb-btn--link" href={exportUrl(id, "markdown")} download>
+              Markdown
             </a>
-          ) : (
-            <span className="meta" title="На сервері немає WeasyPrint (extra `pdf` + GTK)">
-              PDF недоступний на цьому сервері
-            </span>
-          )}
+            <a
+              className="ddb-btn ddb-btn--link"
+              href={`${exportUrl(id, "markdown")}?originals=false`}
+              download
+            >
+              без англ.
+            </a>
+            {pdfReady ? (
+              <a
+                className="ddb-btn ddb-btn--link ddb-btn--primary"
+                href={exportUrl(id, "pdf")}
+                download
+              >
+                PDF (A4)
+              </a>
+            ) : (
+              <span className="meta" title="На сервері немає WeasyPrint (extra `pdf` + GTK)">
+                без PDF
+              </span>
+            )}
+          </div>
         </div>
       </header>
 
-      <nav className="tabs" aria-label="Розділи листа">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`tab ${tab === item.id ? "tab--active" : ""}`}
-            onClick={() => setTab(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
+      <div className="ddb-strip">
+        <ul className="ddb-abilities">
+          {ABILITIES.map((ability) => (
+            <AbilityHex key={ability} code={ability} ability={sheet.abilities[ability]} />
+          ))}
+        </ul>
 
-      {error ? <p className="status status--error">{error}</p> : null}
-      {busy ? <p className="meta">Зберігаємо…</p> : null}
+        <HexStat label="Майстерність" value={modifierLabel(sheet.proficiency_bonus)} />
+        <HexStat
+          label="Швидкість"
+          value={overrideNumber("speed", sheet.speed, "Швидкість", " фт")}
+        />
 
-      {tab === "overview" ? (
-        <>
-          <section className="vitals">
-            <div className="stat stat--ac">
-              <span className="stat-label">Клас захисту</span>
-              <span className="stat-value">
-                {overrideNumber("armor_class", sheet.armor_class.value, "Клас захисту")}
-              </span>
-              <span className="stat-note">{partList(sheet.armor_class.parts)}</span>
-            </div>
-            <div className="stat stat--hp">
-              <span className="stat-label">Хіти</span>
-              <span className="stat-value">
+        <div className="ddb-hitdice">
+          <span className="ddb-hitdice__label">Кістки хитів</span>
+          <div className="ddb-hitdice__face" title="Тип і кількість кісток хитів">
+            {hitDieFaces || "—"}
+          </div>
+          <span className="ddb-hexstat__note">
+            {freeHitDice} / {totalHitDice}
+          </span>
+        </div>
+
+        <section className="ddb-hp" aria-label="Хіти">
+          <div className="ddb-hp__marks">
+            <span className="ddb-hp__mark ddb-hp__mark--heal" title="Поточні хіти змінюються кліком по числу">
+              Лікування
+            </span>
+            <span className="ddb-hp__mark ddb-hp__mark--damage" title="Поточні хіти змінюються кліком по числу">
+              Шкода
+            </span>
+          </div>
+          <div className="ddb-hp__fields">
+            <div className="ddb-hp__field">
+              <span>Поточні</span>
+              <strong>
                 <EditableNumber
                   value={sheet.hit_points.current}
                   title="Поточні хіти"
@@ -203,48 +440,146 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
                   min={0}
                   max={999}
                 />
-                <span className="stat-slash"> / </span>
+              </strong>
+            </div>
+            <div className="ddb-hp__field">
+              <span>Макс.</span>
+              <strong>
                 {overrideNumber("hit_points_max", sheet.hit_points.maximum, "Максимум хітів")}
-              </span>
-              <span className="stat-note">{partList(sheet.hit_points.parts)}</span>
-              <span className="stat-note">
-                тимчасові:{" "}
+              </strong>
+            </div>
+            <div className="ddb-hp__field ddb-hp__field--temp">
+              <span>Тимч.</span>
+              <strong>
                 <EditableNumber
                   value={sheet.hit_points.temporary}
                   title="Тимчасові хіти"
                   onSave={(value) => patch({ hp: { temporary: value } })}
                   min={0}
                 />
-              </span>
+              </strong>
             </div>
-            <div className="stat">
-              <span className="stat-label">Ініціатива</span>
-              <span className="stat-value">
-                {overrideNumber("initiative", sheet.initiative, "Ініціатива")}
-              </span>
-            </div>
-            <div className="stat">
-              <span className="stat-label">Швидкість</span>
-              <span className="stat-value">
-                {overrideNumber("speed", sheet.speed, "Швидкість", " фт")}
-              </span>
-            </div>
-            <div className="stat stat--wide">
-              <span className="stat-label">Майстерність</span>
-              <span className="stat-value">{modifierLabel(sheet.proficiency_bonus)}</span>
-            </div>
-            <div className="stat stat--wide">
-              <span className="stat-label">Пасивна уважність</span>
-              <span className="stat-value">
-                {overrideNumber("passive_perception", sheet.passive_perception, "Пасивна уважність")}
-              </span>
-            </div>
+          </div>
+          <p className="ddb-hp__caption">
+            Хіти{sheet.hit_points.bloodied ? " · поранений" : ""}
+          </p>
+        </section>
+      </div>
+
+      {error ? <p className="status status--error ddb-status">{error}</p> : null}
+      {busy ? <p className="meta ddb-status">Зберігаємо…</p> : null}
+
+      <div className="ddb-grid">
+        <div className="ddb-col">
+          <section className="ddb-card">
+            <h2 className="ddb-card__title">
+              <span>Кидки порятунку</span>
+            </h2>
+            <SavePills saves={sheet.saving_throws} render={overrideNumber} />
           </section>
 
-          <div className="sheet-columns">
-          <div className="sheet-column sheet-column--combat">
-          <section className="panel">
-            <h3>Стан</h3>
+          <section className="ddb-card">
+            <h2 className="ddb-card__title">
+              <span>Пасивні показники</span>
+            </h2>
+            <PassiveList items={passives} />
+          </section>
+
+          <section className="ddb-card">
+            <h2 className="ddb-card__title">
+              <span>Чуття та опір</span>
+            </h2>
+            <ul className="ddb-rows">
+              <li>
+                <span className="ddb-rows__label">Темний зір</span>
+                <span>{sheet.darkvision ? `${sheet.darkvision} фт` : "—"}</span>
+              </li>
+              <li>
+                <span className="ddb-rows__label">Швидкість</span>
+                <span>{sheet.speed} фт</span>
+              </li>
+              <li>
+                <span className="ddb-rows__label">Опір</span>
+                <span>{sheet.resistances.length ? sheet.resistances.map(damageTypeLabel).join(", ") : "—"}</span>
+              </li>
+            </ul>
+          </section>
+
+          <section className="ddb-card">
+            <h2 className="ddb-card__title">
+              <span>Володіння</span>
+            </h2>
+            <ProficiencyGroups proficiencies={sheet.proficiencies} />
+          </section>
+        </div>
+
+        <div className="ddb-col ddb-col--mid">
+          <div className="ddb-hexrow">
+            <HexStat
+              label="Ініціатива"
+              value={overrideNumber("initiative", sheet.initiative, "Ініціатива")}
+            />
+            <HexStat
+              label="Клас захисту"
+              value={overrideNumber("armor_class", sheet.armor_class.value, "Клас захисту")}
+              note="КЗ"
+              title={partList(sheet.armor_class.parts)}
+            />
+          </div>
+
+          <section className="ddb-card">
+            <h2 className="ddb-card__title">
+              <span>Навички</span>
+            </h2>
+            <SkillTable skills={sheet.skills} render={overrideNumber} />
+            <details className="reckoning">
+              <summary>Звідки числа</summary>
+              <table className="ability-table ability-table--compact">
+                <thead>
+                  <tr>
+                    <th>Характеристика</th>
+                    <th>База</th>
+                    <th>Бонус</th>
+                    <th>Разом</th>
+                    <th>Мод.</th>
+                    <th>Порятунок</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ABILITIES.map((ability) => {
+                    const value = sheet.abilities[ability];
+                    const save = sheet.saving_throws[ability];
+                    return (
+                      <tr key={ability}>
+                        <th scope="row">{abilityLabel(ability)}</th>
+                        <td>{value.base}</td>
+                        <td>{value.bonus ? modifierLabel(value.bonus) : "—"}</td>
+                        <td>
+                          <strong>{value.total}</strong>
+                        </td>
+                        <td>{modifierLabel(value.modifier)}</td>
+                        <td>
+                          {overrideNumber(
+                            `save:${ability}`,
+                            save.value,
+                            `Порятунок ${ABILITY_LABELS[ability]}`,
+                          )}
+                          {save.proficient ? <span className="dot" title="володіє" /> : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </details>
+          </section>
+        </div>
+
+        <div className="ddb-col ddb-col--work">
+          <section className="ddb-card">
+            <h2 className="ddb-card__title">
+              <span>Стан</span>
+            </h2>
             <div className="state-row">
               <span>
                 Натхнення:{" "}
@@ -266,54 +601,46 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
                   onSave={(value) => patch({ exhaustion: value })}
                 />
               </span>
-            </div>
-            <div className="state-row">
-              <span>
-                Кидки смерті — успіхи:{" "}
+              <span className="state-row__wide">
+                Кидки смерті: успіхи{" "}
                 <Pips
                   count={sheet.state.death_saves.successes}
                   max={3}
                   title="Успіхи кидків смерті"
                   onChange={(value) =>
-                    patch({ death_saves: { successes: value, failures: sheet.state.death_saves.failures } })
+                    patch({
+                      death_saves: {
+                        successes: value,
+                        failures: sheet.state.death_saves.failures,
+                      },
+                    })
                   }
-                />
-              </span>
-              <span>
-                провали:{" "}
+                />{" "}
+                провали{" "}
                 <Pips
                   count={sheet.state.death_saves.failures}
                   max={3}
                   title="Провали кидків смерті"
                   onChange={(value) =>
-                    patch({ death_saves: { successes: sheet.state.death_saves.successes, failures: value } })
+                    patch({
+                      death_saves: {
+                        successes: sheet.state.death_saves.successes,
+                        failures: value,
+                      },
+                    })
                   }
                 />
               </span>
             </div>
-            <div className="button-row button-row--start">
-              <button
-                type="button"
-                className="button"
-                onClick={() => run(restCharacter(id, "short"))}
-              >
-                Короткий відпочинок
-              </button>
-              <button
-                type="button"
-                className="button button--primary"
-                onClick={() => run(restCharacter(id, "long"))}
-              >
-                Довгий відпочинок
-              </button>
-            </div>
           </section>
 
-          <section className="panel">
-            <h3>Хіт-дайси</h3>
-            {Object.entries(sheet.resources.hit_dice).length ? (
-              <ul className="plain-list">
-                {Object.entries(sheet.resources.hit_dice).map(([die, resource]) => {
+          <section className="ddb-card">
+            <h2 className="ddb-card__title">
+              <span>Кістки хитів</span>
+            </h2>
+            {hitDice.length ? (
+              <ul className="hitdice-list">
+                {hitDice.map(([die, resource]) => {
                   const size = Number(die.replace("d", ""));
                   return (
                     <li key={die}>
@@ -351,250 +678,23 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             )}
           </section>
 
-          <section className="sheet-section">
-            <h2>Атаки</h2>
-            <AttacksTable attacks={sheet.attacks} />
-          </section>
-
-          {casting.classes.length ? (
-            <section className="sheet-section">
-              <h2>Чарування</h2>
-              <CastingBlock
-                casting={casting}
-                resources={sheet.resources}
-                onSlotsUsed={(level, used) => {
-                  const usedMap: Record<string, number> = {};
-                  for (const [key, value] of Object.entries(sheet.resources.slots)) {
-                    const next = key === level ? used : value.used;
-                    if (next) usedMap[key] = next;
-                  }
-                  patch({ slots: usedMap });
-                }}
-                onPactUsed={(used) => patch({ pact_used: used })}
-              />
-            </section>
-          ) : null}
-
-          <section className="sheet-section">
-            <h2>Уміння</h2>
-            <FeaturesList features={sheet.features} />
-          </section>
-
-          <section className="sheet-section">
-            <h2>Володіння</h2>
-            <ProficienciesList proficiencies={sheet.proficiencies} showSource={false} />
-          </section>
-          </div>
-
-          <div className="sheet-column sheet-column--stats">
-          <section className="sheet-section">
-            <h2>Характеристики</h2>
-            <ul className="ability-cards">
-              {ABILITIES.map((ability) => {
-                const value = sheet.abilities[ability];
-                const save = sheet.saving_throws[ability];
-                return (
-                  <li key={ability} className="ability-card">
-                    <span className="ability-card__name" title={abilityLabel(ability)}>
-                      {ABILITY_SHORT[ability]}
-                    </span>
-                    <span
-                      className="ability-card__score"
-                      title={`База ${value.base}${value.bonus ? `, бонус ${modifierLabel(value.bonus)}` : ""}`}
-                    >
-                      {value.total}
-                    </span>
-                    <span className="ability-card__mod">{modifierLabel(value.modifier)}</span>
-                    <span className="ability-card__save">
-                      {save.proficient ? <span className="dot" title="володіє порятунком" /> : null}
-                      порятунок{" "}
-                      {overrideNumber(`save:${ability}`, save.value, `Порятунок ${abilityLabel(ability)}`)}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-            <details className="reckoning">
-              <summary>Звідки числа</summary>
-              <table className="ability-table">
-                <thead>
-                  <tr>
-                    <th>Характеристика</th>
-                    <th>База</th>
-                    <th>Бонус</th>
-                    <th>Разом</th>
-                    <th>Мод.</th>
-                    <th>Порятунок</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ABILITIES.map((ability) => {
-                    const value = sheet.abilities[ability];
-                    const save = sheet.saving_throws[ability];
-                    return (
-                      <tr key={ability}>
-                        <th scope="row">
-                          {abilityLabel(ability)} <span className="short">{ABILITY_SHORT[ability]}</span>
-                        </th>
-                        <td>{value.base}</td>
-                        <td>{value.bonus ? modifierLabel(value.bonus) : "—"}</td>
-                        <td>
-                          <strong>{value.total}</strong>
-                        </td>
-                        <td>{modifierLabel(value.modifier)}</td>
-                        <td>
-                          {overrideNumber(`save:${ability}`, save.value, `Порятунок ${abilityLabel(ability)}`)}
-                          {save.proficient ? <span className="dot" title="володіє" /> : null}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </details>
-          </section>
-
-          <section className="sheet-section">
-            <h2>Навички</h2>
-            <ul className="skill-grid">
-              {SKILL_ORDER.map((skill) => {
-                const value = sheet.skills[skill];
-                if (!value) return null;
-                const key = `skill:${skill}`;
-                return (
-                  <li key={skill} className={value.proficient ? "skill skill--proficient" : "skill"}>
-                    <span className="skill-mark" aria-hidden>
-                      {value.proficient ? "●" : "○"}
-                    </span>
-                    <span className="skill-name">{skillLabel(skill)}</span>
-                    <span className="skill-ability">{ABILITY_SHORT[SKILL_ABILITY[skill]] ?? ""}</span>
-                    <span className="skill-value">
-                      {overrideNumber(key, value.value, `Навичка ${skillLabel(skill)}`)}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-          </div>
-          </div>
-        </>
-      ) : null}
-
-      {tab === "actions" ? (
-        <section className="sheet-section">
-          <h2>Атаки</h2>
-          <AttacksTable attacks={sheet.attacks} />
-        </section>
-      ) : null}
-
-      {tab === "spells" ? (
-        <>
-          <section className="sheet-section">
-            <h2>Чарування</h2>
-            <CastingBlock
-              casting={casting}
-              resources={sheet.resources}
-              onSlotsUsed={(level, used) => {
-                const usedMap: Record<string, number> = {};
-                for (const [key, value] of Object.entries(sheet.resources.slots)) {
-                  const next = key === level ? used : value.used;
-                  if (next) usedMap[key] = next;
-                }
-                patch({ slots: usedMap });
-              }}
-              onPactUsed={(used) => patch({ pact_used: used })}
-            />
-          </section>
-
-          <section className="sheet-section">
-            <h2>Відомі закляття</h2>
-            <SpellsKnownList spells={sheet.spells} />
-          </section>
-        </>
-      ) : null}
-
-      {tab === "inventory" ? (
-        <section className="sheet-section">
-          <h2>Інвентар</h2>
-          <p className="hint">
-            Вага {sheet.carrying.weight} з {sheet.carrying.capacity} фнт
-          </p>
-          <div className="money-row">
-            {Object.entries({ gp: "золото", sp: "срібло", cp: "мідь" }).map(([coin, label]) => (
-              <span key={coin} className="resource">
-                {label}: {sheet.inventory.money[coin] ?? 0}
-              </span>
-            ))}
-          </div>
-          {sheet.inventory.items.length ? (
-            <ul className="item-list">
-              {sheet.inventory.items.map((item) => (
-                <li key={item.name_en} className="item-row">
-                  <span className="item-main">
-                    <span className="item-name">
-                      {item.name_en}
-                      {item.quantity > 1 ? ` × ${item.quantity}` : ""}
-                    </span>
-                    <span className="item-meta">
-                      {ITEM_KIND_LABELS[item.kind] ?? item.kind}
-                      {item.armor_base ? ` · КЗ ${item.armor_base}` : ""}
-                      {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    className={`chip ${item.equipped ? "chip--active" : ""}`}
-                    onClick={() => patch({ equip: { name: item.name_en, equipped: !item.equipped } })}
-                  >
-                    {item.equipped ? "споряджено" : "не споряджено"}
-                  </button>
-                </li>
+          <div className="ddb-work">
+            <nav className="ddb-tabs" aria-label="Розділи листа">
+              {TABS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`ddb-tab ${tab === item.id ? "is-active" : ""}`}
+                  onClick={() => setTab(item.id)}
+                >
+                  {item.label}
+                </button>
               ))}
-            </ul>
-          ) : (
-            <p className="hint">Порожньо.</p>
-          )}
-        </section>
-      ) : null}
-
-      {tab === "features" ? (
-        <>
-          <section className="sheet-section">
-            <h2>Уміння</h2>
-            <FeaturesList features={sheet.features} />
-          </section>
-          <section className="sheet-section">
-            <h2>Володіння</h2>
-            <ProficienciesList proficiencies={sheet.proficiencies} />
-          </section>
-        </>
-      ) : null}
-
-      {tab === "notes" ? (
-        <section className="sheet-section">
-          <h2>Нотатки</h2>
-          <div className="notes-grid">
-            {Object.entries(NOTE_LABELS).map(([key, label]) => (
-              <label key={key} className="field">
-                <span>{label}</span>
-                <textarea
-                  rows={4}
-                  value={notesDraft[key] ?? ""}
-                  onChange={(event) => setNotesDraft({ ...notesDraft, [key]: event.target.value })}
-                />
-              </label>
-            ))}
+            </nav>
+            <div className="ddb-work__body">{workTab}</div>
           </div>
-          <button
-            type="button"
-            className="button button--primary"
-            onClick={() => patch({ notes: notesDraft })}
-          >
-            Зберегти нотатки
-          </button>
-        </section>
-      ) : null}
+        </div>
+      </div>
     </article>
   );
 }
