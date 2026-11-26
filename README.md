@@ -28,19 +28,23 @@ Character (агрегат) ──> DerivedStatsCalculator ──> ComputedSheet 
 - [x] HTTP API: `/healthz`, `/api/v1/demo/sheet`, `/api/v1/demo/export/{format}`
 - [x] каркас SPA (React + TS + Vite) з тултіпами «?» → оригінал англійською
 - [x] глосарій v0 (`content/glossary.uk.yml`) — **чернетка, потребує звірки з офіційним PDF**
+- [x] **етап 1 — довідник як API**: `compendium` (домен + JSONL-корпус + індекси + сервіс + ендпоінти),
+      класові списки заклять зі «Spell Lists» книг — деталі в [`docs/api-compendium.md`](docs/api-compendium.md)
 
 ### Перевірено локально (Python 3.13, Node 24)
 
 | Гейт | Результат |
 |---|---|
-| `pytest backend` | **109 passed, 1 skipped** (PDF-тест скіпнуто: немає WeasyPrint/GTK) |
-| `lint-imports` | **4 contracts kept, 0 broken** |
+| `pytest backend` | **211 passed, 1 skipped** (PDF-тест скіпнуто: немає WeasyPrint/GTK) |
+| `lint-imports` | **5 contracts kept, 0 broken** |
 | `tsc --noEmit` | чисто |
 | `vite build` | 104 модулі, ~242 kB JS (~78 kB gzip) |
 | SPA end-to-end | FastAPI віддає `/`, рендериться `SheetDocument`, тултіп на фокусі показує оригінал («Strength») |
+| довідник end-to-end | `/api/v1/compendium/summary` → 3818 записів, 89 книг; `/classes/wizard/spells` → 215 заклять, `source: spell-lists` |
 
-Далі — етап 1: довідник як API (корпус уже повний: 3818 записів довідника), потім `Character` v2,
-візард створення й лист з вкладками. Порядок етапів і еталон екранів — у [`docs/plan.md`](docs/plan.md) (§9, §13).
+Далі — етап 2: `Character` v2 (класи й рівні, вид, передісторія, володіння, HP, броня,
+інвентар, закляття) поверх цього довідника. Порядок етапів і еталон екранів —
+у [`docs/plan.md`](docs/plan.md) (§9, §13).
 
 ## Швидкий старт (Windows / PowerShell)
 

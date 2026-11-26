@@ -8,6 +8,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
 
+from dndsheet.compendium.api.router import router as compendium_router
+from dndsheet.compendium.infrastructure.factory import build_service
 from dndsheet.export.application.registry import RendererRegistry
 from dndsheet.export.domain.renderer import RenderOptions, RendererError, RendererUnavailable
 from dndsheet.export.infrastructure.markdown_renderer import MarkdownRenderer
@@ -34,6 +36,12 @@ def create_app() -> FastAPI:
         description="D&D 5e (2014) character sheet builder, Ukrainian",
     )
     renderers = _build_registry()
+
+    # Довідник завантажується один раз на застосунок: 3818 записів у памʼяті
+    # дешевші за будь-який кеш на диску. Немає корпусу — сервіс порожній,
+    # `/summary` чесно про це скаже.
+    app.state.compendium = build_service()
+    app.include_router(compendium_router)
 
     @app.get("/healthz", tags=["ops"])
     def healthz() -> dict[str, str]:

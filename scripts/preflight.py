@@ -218,7 +218,7 @@ def check_domain_behaviour() -> None:
         problem("обчислювач формул пропустив __import__ — критично")
 
 
-def check_compendium_format() -> dict[str, tuple[int, int]]:
+def check_compendium_format() -> tuple[dict[str, tuple[int, int]], list[str]]:
     """Корпуси: одна категорія — одна форма (contract/compendium-format.json).
 
     Той самий прогон, що й `python -m scripts.normalize --check`, але без
@@ -226,6 +226,8 @@ def check_compendium_format() -> dict[str, tuple[int, int]]:
     падає з першими прикладами. Перевіряються обидва корпуси — компендіум для
     листа персонажа і бестіарій — плюс те, що кожна категорія лежить саме у
     своєму корпусі (монстр не має права опинитися в компендіумі).
+
+    Повертає статистику по корпусах і список відсутніх тек (свіжий клон).
     """
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
@@ -233,10 +235,11 @@ def check_compendium_format() -> dict[str, tuple[int, int]]:
         from scripts.normalize import canonical
     except ImportError as exc:  # pragma: no cover — контракт є в репозиторії
         problem(f"формат корпусу: не вдалося завантажити scripts.normalize ({exc})")
-        return {}
+        return {}, []
 
     spec = canonical.load_spec()
     stats: dict[str, tuple[int, int]] = {}
+    missing: list[str] = []
     changed = 0
     shown = 0
 
@@ -276,8 +279,12 @@ def check_compendium_format() -> dict[str, tuple[int, int]]:
                             f"корпус {corpus}: {book.name}/{file.name} — категорія "
                             f"живе в іншому корпусі"
                         )
+        else:
+            # Свіжий клон репозиторію: текстів книг у ньому немає (копирайт і
+            # обсяг). Це не привід падати — але й не привід мовчати.
+            missing.append(f"{corpus} ({directory})")
         stats[corpus] = (books, rows)
-    return stats
+    return stats, missing
 
 
 def main() -> int:
@@ -286,7 +293,7 @@ def main() -> int:
     field_count = check_fixtures(fixtures)
     domain_count = check_domain_purity()
     check_domain_behaviour()
-    corpus_stats = check_compendium_format()
+    corpus_stats, missing_corpora = check_compendium_format()
 
     if problems:
         print(f"PREFLIGHT FAILED ({len(problems)}):")
@@ -304,6 +311,8 @@ def main() -> int:
         f"{domain_count} доменних модулів, домен рахує golden-числа, eval заблоковано, "
         f"корпус за каноном формату ({corpora or 'немає'})"
     )
+    for missing in missing_corpora:
+        print(f"  увага: корпусу {missing} немає — перевірено 0 записів")
     return 0
 
 
