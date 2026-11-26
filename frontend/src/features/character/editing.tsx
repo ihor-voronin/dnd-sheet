@@ -235,26 +235,26 @@ export function Counter({
 }) {
   return (
     <span className="counter">
-      <button
-        type="button"
-        className="counter-button"
-        disabled={used <= 0}
-        onClick={() => onChange(used - 1)}
-        title={`Повернути (${title})`}
-      >
-        −
-      </button>
       <span className="counter-value">
         {total - used} / {total}
       </span>
       <button
         type="button"
-        className="counter-button"
+        className="counter-btn counter-btn--use"
         disabled={used >= total}
         onClick={() => onChange(used + 1)}
-        title={`Витратити (${title})`}
+        title={`${title}: витратити`}
       >
-        +
+        Використати
+      </button>
+      <button
+        type="button"
+        className="counter-btn"
+        disabled={used <= 0}
+        onClick={() => onChange(used - 1)}
+        title={`${title}: повернути`}
+      >
+        Відновити
       </button>
     </span>
   );

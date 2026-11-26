@@ -1022,14 +1022,15 @@ body.board {
   color: #fff;
 }
 
-.character-view .counter-button {
+.character-view .counter-btn {
   border-color: #4a3168;
   background: #1a1328;
   color: #fff;
 }
 
-.character-view .counter-button:hover:not(:disabled) {
+.character-view .counter-btn:hover:not(:disabled) {
   border-color: var(--ddb-frame);
+  color: #fff;
 }
 
 .character-view .pip {
@@ -1327,9 +1328,10 @@ body.board {
 
 .feature-resource {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px 10px;
   padding: 7px 9px;
   border: 1px solid rgb(90 60 133 / 55%);
   border-radius: 6px;
@@ -1357,7 +1359,7 @@ body.board {
   margin-left: 0;
 }
 
-.character-view .feature-resource .counter-button {
+.character-view .feature-resource .counter-btn {
   border-color: #4a3168;
   background: #1a1328;
   color: #fff;
@@ -2104,9 +2106,10 @@ body.board {
 
 .action-row__resource {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px 8px;
 }
 
 .action-row__recharge {
@@ -2118,7 +2121,7 @@ body.board {
   margin-left: 0;
 }
 
-.action-row__resource .counter-button {
+.action-row__resource .counter-btn {
   border-color: #4a3168;
   background: #1a1328;
   color: #fff;
