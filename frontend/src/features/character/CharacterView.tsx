@@ -54,7 +54,7 @@ import type { NoteStatus } from "./notes";
 import { BackgroundPanel } from "./background";
 import { ActionPanel } from "./actions";
 import { AddSpellForm, SpellsPreparePanel } from "./spells";
-import { termLabel, ukSubclass, ukTerm, withEnglish } from "./uk";
+import { speciesLabel, termLabel, ukSubclass, withEnglish } from "./uk";
 import {
   CastingBlock,
   FeatureResources,
@@ -337,11 +337,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
 
   const totalLevel = character.total_level;
   const speciesKey = character.species?.subspecies ?? character.species?.name_en;
-  const speciesText = speciesKey
-    ? ukTerm(speciesKey)
-      ? termLabel(speciesKey)
-      : subclassLabel(speciesKey)
-    : "вид не вказано";
+  const speciesText = speciesKey ? speciesLabel(speciesKey) : "вид не вказано";
   const classText = character.classes.length
     ? character.classes
         .map(

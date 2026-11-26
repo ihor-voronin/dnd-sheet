@@ -115,6 +115,17 @@ class ModifierResolver:
                             note_en="species-choice",
                         )
                     )
+            # Правила 2022: вид без фіксованих бонусів — гравець розставив сам.
+            for ability, amount in character.ability_spread.items():
+                collected.append(
+                    Modifier(
+                        kind=ModifierKind.ABILITY,
+                        value=amount,
+                        source=source,
+                        key=ability.value,
+                        note_en="species-free",
+                    )
+                )
 
         for item in character.chosen.items:
             continue

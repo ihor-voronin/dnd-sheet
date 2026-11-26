@@ -326,6 +326,8 @@ export interface SpeciesAnswers {
   species_key: string | null;
   subspecies_key: string | null;
   ability_choices: string[];
+  /** Правила 2022: +2 і +1 або три +1 (для видів без фіксованих бонусів). */
+  ability_spread: Record<string, number>;
   spell_choices: string[];
 }
 

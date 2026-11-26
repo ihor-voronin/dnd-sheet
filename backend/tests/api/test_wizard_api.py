@@ -498,7 +498,8 @@ def test_cleric_domain_spells_reach_the_sheet(client: TestClient) -> None:
     assert all(item["always_prepared"] for item in granted.values())
 
 
-def test_2022_species_cannot_be_chosen(client: TestClient) -> None:
+def test_2022_species_requires_ability_spread(client: TestClient) -> None:
+    """Без розподілу виду 2022 не створити — і в повідомленні сказано чому."""
     draft = _start(client)
     draft_id = draft["draft"]["id"]
     response = client.put(
@@ -507,6 +508,98 @@ def test_2022_species_cannot_be_chosen(client: TestClient) -> None:
     )
     assert response.status_code == 422
     assert "2022" in response.json()["detail"]
+
+    # З розподілом +2/+1 крок проходить.
+    response = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={
+            "name": "Хтось",
+            "species_key": "deep gnome",
+            "ability_spread": {"int": 2, "dex": 1},
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["answers"]["ability_spread"] == {"int": 2, "dex": 1}
+
+
+def test_2022_spread_reaches_the_sheet(client: TestClient) -> None:
+    """+2 і +1 — це справжні бонуси: вони у характеристиках листа й у модифікаторі."""
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    steps = [
+        (
+            "species",
+            {
+                "name": "Безіменний",
+                "species_key": "custom lineage",
+                "ability_spread": {"int": 2, "con": 1},
+            },
+        ),
+        ("class", {"class_key": "fighter"}),
+        (
+            "abilities",
+            {
+                "method": "standard_array",
+                "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8},
+            },
+        ),
+        (
+            "background",
+            {
+                "background_key": "soldier",
+                "picks": [
+                    {"kind": "skill", "value": "athletics", "source": {"kind": "class", "key": "fighter"}},
+                    {"kind": "skill", "value": "intimidation", "source": {"kind": "class", "key": "fighter"}},
+                    # Custom Lineage дає одну навичку на вибір.
+                    {"kind": "skill", "value": "perception", "source": {"kind": "species", "key": "custom lineage"}},
+                ],
+            },
+        ),
+    ]
+    _walk(client, draft_id, steps)
+    response = client.post(f"/api/v1/characters/wizard/{draft_id}/finish")
+    assert response.status_code == 200, response.text
+    sheet = response.json()["sheet"]
+
+    assert sheet["abilities"]["int"]["base"] == 12
+    assert sheet["abilities"]["int"]["bonus"] == 2
+    assert sheet["abilities"]["int"]["total"] == 14
+    assert sheet["abilities"]["con"]["bonus"] == 1
+    assert sheet["abilities"]["str"]["bonus"] == 0
+    # Бонус походить із виду, тому й у розкладі модифікаторів він із цим джерелом.
+    sources = {
+        (item["key"], item["value"], item["source"]["kind"])
+        for item in sheet["modifiers"]
+        if item["kind"] == "ability"
+    }
+    assert ("int", 2, "species") in sources
+
+
+def test_2022_spread_cannot_break_the_twenty_cap(client: TestClient) -> None:
+    """Межа 20 діє разом із вільним розподілом: 19 + 2 — відмова."""
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={
+            "name": "Хтось",
+            "species_key": "custom lineage",
+            "ability_spread": {"int": 2, "con": 1},
+        },
+    )
+    client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/class",
+        json={"class_key": "fighter"},
+    )
+    response = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/abilities",
+        json={
+            "method": "manual",
+            "scores": {"str": 10, "dex": 10, "con": 10, "int": 19, "wis": 10, "cha": 10},
+        },
+    )
+    assert response.status_code == 422
+    assert "20" in response.text
 
 
 def test_warlock_patron_expands_spell_choices(client: TestClient) -> None:

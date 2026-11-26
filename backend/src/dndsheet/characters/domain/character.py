@@ -46,6 +46,7 @@ from dndsheet.shared.rules import (
     ClassMechanics,
     SpeciesMechanics,
     ability_bonus_totals,
+    ability_spread,
     prepared_spell_limit,
 )
 
@@ -63,6 +64,9 @@ class Character:
     #: це позначка для листа, щоб персонаж не виглядав узгодженим із PHB.
     multiclass_waivers: tuple[MulticlassWaiver, ...] = ()
     ability_bonus_choices: tuple[Ability, ...] = ()
+    #: Вільний розподіл бонусів виду (правила 2022): +2 і +1 або три +1.
+    #: Діє лише для видів, у яких бонуси не фіксовані (`ability_unresolved`).
+    ability_spread: dict[Ability, int] = field(default_factory=dict)
     species_key: str | None = None
     subspecies_key: str | None = None
     background_key: str | None = None
@@ -101,6 +105,7 @@ class Character:
         self._validate_classes()
         self._validate_waivers()
         self._validate_ability_choices()
+        self._validate_ability_spread()
         self._validate_chosen()
         self._validate_spells()
         self._validate_spell_choices()
@@ -356,6 +361,9 @@ class Character:
                 )
         self.species_key = species.key if species else None
         self.subspecies_key = subspecies_key.strip().casefold() if subspecies_key else None
+        # Вільний розподіл належить виду: змінили вид — розподіл скидається.
+        if self.species is None or not self.species.ability_unresolved:
+            self.ability_spread = {}
         self.ability_bonus_choices = tuple(
             choice
             for choice in self.ability_bonus_choices
@@ -611,8 +619,11 @@ class Character:
         self.bump_version()
 
     def ability_bonus_from_origin(self, ability: Ability) -> int:
-        """Бонус характеристики від виду (разом із зробленим вибором)."""
-        return ability_bonus_totals(self.species, self.ability_bonus_choices)[ability]
+        """Бонус характеристики від виду: фіксовані, вибір і вільний розподіл."""
+        return (
+            ability_bonus_totals(self.species, self.ability_bonus_choices)[ability]
+            + self.ability_spread.get(ability, 0)
+        )
 
     def increase_ability(self, ability: Ability, amount: int) -> None:
         """Покращення характеристики за рівень (PHB, p. 165).
@@ -857,6 +868,17 @@ class Character:
         # Рівень, з якого клас дає підклас; 0 означає «підкласів немає» —
         # тоді наявний вибір не скидаємо.
         return 0 if entry.subclass_key is None else 1
+
+    def _validate_ability_spread(self) -> None:
+        """Вільний розподіл (правила 2022) — лише там, де вид його дає."""
+        spread = ability_spread(self.ability_spread)
+        species = self.species
+        if spread and (species is None or not species.ability_unresolved):
+            raise ValidationError(
+                "вид не дає вільного розподілу бонусів характеристик "
+                "(правила 2022)"
+            )
+        self.ability_spread = spread
 
     def _validate_ability_choices(self) -> None:
         choices = self.ability_bonus_choices

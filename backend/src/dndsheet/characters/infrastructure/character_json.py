@@ -53,6 +53,17 @@ def abilities_to_record(abilities: Mapping[Ability, AbilityScore]) -> dict[str, 
     return {ability.value: score.value for ability, score in abilities.items()}
 
 
+def ability_spread_from_record(record: Mapping[str, Any] | None) -> dict[Ability, int]:
+    """Вільний розподіл бонусів (правила 2022) із файлу."""
+    spread: dict[Ability, int] = {}
+    for key, value in (record or {}).items():
+        try:
+            spread[Ability(str(key))] = int(value)
+        except (ValueError, TypeError) as exc:
+            raise ValidationError(f"невірний розподіл бонусів: {key!r}") from exc
+    return spread
+
+
 def abilities_from_record(record: Mapping[str, Any] | None) -> dict[Ability, AbilityScore]:
     values: dict[Ability, AbilityScore] = {}
     for key, value in (record or {}).items():
@@ -273,6 +284,9 @@ def character_to_record(character: Character) -> dict[str, Any]:
         "version": character.version,
         "abilities": abilities_to_record(character.abilities),
         "ability_bonus_choices": [ability.value for ability in character.ability_bonus_choices],
+        "ability_spread": {
+            ability.value: amount for ability, amount in character.ability_spread.items()
+        },
         "classes": [
             {
                 "class_key": entry.class_key,
@@ -332,6 +346,7 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
         ability_bonus_choices=tuple(
             Ability(str(name)) for name in record.get("ability_bonus_choices") or ()
         ),
+        ability_spread=ability_spread_from_record(record.get("ability_spread")),
         multiclass_waivers=multiclass_waivers_from_record(record.get("multiclass_waivers")),
         species_key=record.get("species_key") or None,
         subspecies_key=record.get("subspecies_key") or None,
@@ -387,6 +402,9 @@ def draft_to_record(draft: Draft) -> dict[str, Any]:
         "species_key": draft.species_key,
         "subspecies_key": draft.subspecies_key,
         "ability_choices": [ability.value for ability in draft.ability_choices],
+        "ability_spread": {
+            ability.value: amount for ability, amount in draft.ability_spread.items()
+        },
         "class_key": draft.class_key,
         "subclass_key": draft.subclass_key,
         "ability_method": draft.ability_method.value if draft.ability_method else None,
@@ -419,6 +437,7 @@ def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
         ability_choices=tuple(
             Ability(str(name)) for name in record.get("ability_choices") or ()
         ),
+        ability_spread=ability_spread_from_record(record.get("ability_spread")),
         class_key=record.get("class_key") or None,
         subclass_key=record.get("subclass_key") or None,
         ability_method=AbilityMethod(str(method)) if method else None,
@@ -436,3 +455,6 @@ def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
         spells=spells_from_record(record.get("spells")),
         spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
     )
+
+
+

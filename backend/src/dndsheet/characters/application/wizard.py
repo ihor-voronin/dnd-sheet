@@ -96,6 +96,7 @@ class WizardService:
                 subspecies_key=_optional_text(body, "subspecies_key"),
                 ability_choices=_abilities(body.get("ability_choices")),
                 spell_choices=_text_list(body.get("spell_choices")),
+                ability_spread=body.get("ability_spread"),
             )
         elif step is WizardStep.CLASS:
             class_key = _text(body, "class_key")
@@ -333,3 +334,4 @@ def _spells(values: Any) -> tuple[KnownSpell, ...]:
         except (KeyError, ValueError, TypeError) as exc:
             raise ValidationError(f"невірне закляття: {record!r}") from exc
     return tuple(spells)
+

@@ -46,8 +46,14 @@ from dndsheet.shared.rules import (
     ClassMechanics,
     SpeciesMechanics,
     ability_bonus_totals,
+    ability_spread as validate_ability_spread,
     requires_subspecies,
 )
+
+
+def ability_spread_values(values: object) -> dict[Ability, int]:
+    """Розподіл із тіла запиту: перевірку форми робить `shared.rules`."""
+    return validate_ability_spread(values if isinstance(values, Mapping) else None)
 
 #: Стандартний набір характеристик (PHB, p. 13).
 STANDARD_ARRAY: tuple[int, ...] = (15, 14, 13, 12, 10, 8)
@@ -126,6 +132,8 @@ class Draft:
     species_key: str | None = None
     subspecies_key: str | None = None
     ability_choices: tuple[Ability, ...] = ()
+    #: Вільний розподіл бонусів виду (правила 2022): +2/+1 або три +1.
+    ability_spread: dict[Ability, int] = field(default_factory=dict)
     class_key: str | None = None
     subclass_key: str | None = None
     ability_method: AbilityMethod | None = None
@@ -178,7 +186,10 @@ class Draft:
 
     @property
     def ability_bonuses(self) -> dict[Ability, int]:
-        return ability_bonus_totals(self.species, self.ability_choices)
+        totals = ability_bonus_totals(self.species, self.ability_choices)
+        for ability, amount in self.ability_spread.items():
+            totals[ability] += amount
+        return totals
 
     def ability_modifier(self, ability: Ability) -> int:
         """Модифікатор уже з бонусами виду — потрібен для ліміту підготовлених."""
@@ -198,6 +209,7 @@ class Draft:
         subspecies_key: str | None = None,
         ability_choices: Iterable[Ability] = (),
         spell_choices: Iterable[str] = (),
+        ability_spread: Mapping[Any, Any] | None = None,
     ) -> None:
         species = self.rules.species_mechanics(species_key)
         if species is None:
@@ -222,6 +234,9 @@ class Draft:
         candidate.species_key = species.key
         candidate.subspecies_key = subspecies.key if subspecies else None
         candidate.ability_choices = choices
+        # Вільний розподіл (правила 2022) є лише у видів без фіксованих
+        # бонусів; для решти навіть надісланий розподіл — помилка.
+        candidate.ability_spread = ability_spread_values(ability_spread)
         candidate.spell_choices = tuple(
             name.strip() for name in spell_choices if str(name).strip()
         )
@@ -413,6 +428,7 @@ class Draft:
                 )
             ],
             ability_bonus_choices=self.ability_choices,
+            ability_spread=dict(self.ability_spread),
             species_key=self.species_key,
             subspecies_key=self.subspecies_key,
             background_key=self.background_key,
@@ -456,9 +472,15 @@ class Draft:
                 )
         effective = self.species
         if effective is not None and effective.ability_unresolved:
+            if not self.ability_spread:
+                raise ValidationError(
+                    f"{effective.name_en}: оберіть бонуси характеристик — +2 і +1 до "
+                    f"двох різних або +1, +1 і +1 до трьох (правила 2022)"
+                )
+        elif self.ability_spread:
             raise ValidationError(
-                f"{effective.name_en}: вільний розподіл характеристик (правила 2022) "
-                f"поки що не підтримується — оберіть вид із фіксованими бонусами"
+                f"{effective.name_en if effective is not None else 'вид'} має фіксовані "
+                f"бонуси — вільний розподіл (правила 2022) для нього не діє"
             )
         allowed = (
             effective.cantrip_choice_count
@@ -639,3 +661,7 @@ class Draft:
         table = definition.slots_at(1)
         levels = [index for index, count in enumerate(table, start=1) if count]
         return max(levels, default=0)
+
+
+
+

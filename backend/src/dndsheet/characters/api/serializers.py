@@ -337,6 +337,9 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
             "species_key": draft.species_key,
             "subspecies_key": draft.subspecies_key,
             "ability_choices": [ability.value for ability in draft.ability_choices],
+            "ability_spread": {
+                ability.value: amount for ability, amount in draft.ability_spread.items()
+            },
             "spell_choices": list(draft.spell_choices),
         }
     if step is WizardStep.CLASS:
@@ -392,3 +395,4 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
             for spell in draft.spells
         ]
     }
+

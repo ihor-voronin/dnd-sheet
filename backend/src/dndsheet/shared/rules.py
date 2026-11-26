@@ -664,6 +664,51 @@ class BackgroundMechanics:
 # ---------------------------------------------------------------------------
 
 
+def ability_spread(
+    raw: Mapping[Any, Any] | None = None,
+) -> dict[Ability, int]:
+    """Розподіл характеристик за правилами 2022 (MotM, p. 7; TCoE «Custom Lineage»).
+
+    Два дозволені види: **+2 і +1** до двох різних характеристик або **+1,
+    +1 і +1** до трьох. Старе правило видів давало фіксовані бонуси, тому тут
+    їх немає — гравець розставляє сам, а сервер перевіряє форму.
+
+    Повертає `{Ability: бонус}`; порожній вхід — порожній результат.
+    """
+    if not raw:
+        return {}
+    if not isinstance(raw, Mapping):
+        raise ValidationError(
+            "ability_spread має бути обʼєктом «характеристика: +»"
+        )
+    spread: dict[Ability, int] = {}
+    for name, amount in raw.items():
+        try:
+            ability = Ability(str(name).strip().casefold())
+        except ValueError as exc:
+            raise ValidationError(f"невідома характеристика {name!r}") from exc
+        if isinstance(amount, bool) or not isinstance(amount, int):
+            raise ValidationError(f"{name}: бонус має бути цілим числом")
+        if amount < 1 or amount > 2:
+            raise ValidationError(
+                f"{name}: бонус вільного розподілу — +1 або +2, надіслано {amount}"
+            )
+        if ability in spread:
+            raise ValidationError(f"характеристика {ability.value!r} повторюється")
+        spread[ability] = amount
+    if sum(spread.values()) != 3:
+        raise ValidationError(
+            f"вільний розподіл дає рівно +3 (два бонуси або три), надіслано "
+            f"{sum(spread.values())}"
+        )
+    shape = sorted(spread.values(), reverse=True)
+    if shape not in ([2, 1], [1, 1, 1]):
+        raise ValidationError(
+            "вільний розподіл: або +2 і +1 до двох характеристик, або +1, +1 і +1 до трьох"
+        )
+    return spread
+
+
 def ability_bonus_totals(
     species: SpeciesMechanics | None,
     choices: Iterable[Ability] = (),

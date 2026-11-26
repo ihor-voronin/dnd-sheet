@@ -88,6 +88,17 @@ export function SpeciesStep({
   const [subspeciesKey, setSubspeciesKey] = useState(initial.subspecies_key ?? "");
   const [choices, setChoices] = useState<string[]>(initial.ability_choices ?? []);
   const [spellChoices, setSpellChoices] = useState<string[]>(initial.spell_choices ?? []);
+  // Правила 2022: вид без фіксованих бонусів — гравець розставляє сам.
+  const initialSpread = initial.ability_spread ?? {};
+  const spreadAbilities = Object.keys(initialSpread);
+  const [spreadMode, setSpreadMode] = useState<"two" | "three">(
+    spreadAbilities.length === 3 ? "three" : "two",
+  );
+  const [spreadPicks, setSpreadPicks] = useState<string[]>(
+    spreadAbilities.length
+      ? spreadAbilities
+      : ["str", "dex"],
+  );
   // Список видів згортається, щойно вид обрано: на його місці — картка виду.
   const [gridOpen, setGridOpen] = useState(!initial.species_key);
   const summaryRef = useRef<HTMLDivElement | null>(null);
@@ -123,6 +134,9 @@ export function SpeciesStep({
     setSubspeciesKey("");
     setChoices([]);
     setSpellChoices([]);
+    // Вільний розподіл належить виду: інший вид — інший вибір.
+    setSpreadMode("two");
+    setSpreadPicks(["str", "dex"]);
   }, [speciesKey]);
 
   function toggleChoice(ability: string) {
@@ -142,6 +156,36 @@ export function SpeciesStep({
       summaryRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
     );
   }
+
+  function changeSpreadMode(mode: "two" | "three") {
+    setSpreadMode(mode);
+    setSpreadPicks((current) => {
+      const next = [...current];
+      for (const fallback of ["str", "dex", "con"]) {
+        if (next.length >= 3) break;
+        if (!next.includes(fallback)) next.push(fallback);
+      }
+      return next;
+    });
+  }
+
+  /** Розподіл для запиту; `null` — вибір ще недійсний. */
+  function spreadPayload(): Record<string, number> | null {
+    if (!effective?.ability_unresolved) return null;
+    const slots = spreadMode === "three" ? 3 : 2;
+    const picks = spreadPicks.slice(0, slots);
+    if (picks.length < slots || new Set(picks).size !== picks.length) return null;
+    const spread: Record<string, number> = {};
+    if (spreadMode === "three") {
+      for (const code of picks) spread[code] = 1;
+    } else {
+      spread[picks[0]] = 2;
+      spread[picks[1]] = 1;
+    }
+    return spread;
+  }
+
+  const spreadReady = !effective?.ability_unresolved || spreadPayload() !== null;
 
   return (
     <div className="wizard-step">
@@ -191,6 +235,70 @@ export function SpeciesStep({
                     персонаж не матиме повних бонусів. Далі без підраси не пустить і сервер.
                   </p>
                 ) : null}
+              </div>
+            ) : null}
+
+            {effective?.ability_unresolved ? (
+              <div className="species-card__subs">
+                <h4>Бонуси характеристик (правила 2022)</h4>
+                <div className="chip-row">
+                  <button
+                    type="button"
+                    className={`chip ${spreadMode === "two" ? "chip--active" : ""}`}
+                    onClick={() => changeSpreadMode("two")}
+                  >
+                    +2 і +1
+                  </button>
+                  <button
+                    type="button"
+                    className={`chip ${spreadMode === "three" ? "chip--active" : ""}`}
+                    onClick={() => changeSpreadMode("three")}
+                  >
+                    +1, +1 і +1
+                  </button>
+                </div>
+                <div className="levelup-row">
+                  {(spreadMode === "three" ? [0, 1, 2] : [0, 1]).map((slot) => (
+                    <label key={slot} className="field field--small">
+                      <span>{spreadMode === "three" ? "+1" : slot === 0 ? "+2" : "+1"}</span>
+                      <select
+                        value={spreadPicks[slot]}
+                        onChange={(event) =>
+                          setSpreadPicks((current) =>
+                            current.map((value, index) =>
+                              index === slot ? event.target.value : value,
+                            ),
+                          )
+                        }
+                      >
+                        {ABILITIES.map((code) => (
+                          <option
+                            key={code}
+                            value={code}
+                            disabled={
+                              code !== spreadPicks[slot] &&
+                              spreadPicks
+                                .slice(0, spreadMode === "three" ? 3 : 2)
+                                .includes(code)
+                            }
+                          >
+                            {abilityLabel(code)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+                {!spreadReady ? (
+                  <p className="hint hint--warn">
+                    Оберіть {spreadMode === "three" ? "три різні характеристики по +1" : "дві різні характеристики: +2 і +1"}.
+                  </p>
+                ) : (
+                  <p className="hint">
+                    Разом +3 до характеристик — ці бонуси додадуться на кроці
+                    «Характеристики» й на листі.
+                  </p>
+                )}
               </div>
             ) : null}
 
@@ -300,6 +408,7 @@ export function SpeciesStep({
           !name.trim() ||
           !speciesKey ||
           subspeciesMissing ||
+          !spreadReady ||
           Boolean(choice && choices.length !== choice.count) ||
           Boolean(cantripChoice && spellChoices.length !== cantripChoice.count)
         }
@@ -309,6 +418,7 @@ export function SpeciesStep({
             species_key: speciesKey,
             subspecies_key: subspeciesKey || null,
             ability_choices: choices,
+            ability_spread: spreadPayload() ?? {},
             spell_choices: spellChoices,
           })
         }
@@ -1644,5 +1754,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
     </div>
   );
 }
+
+
 
 
