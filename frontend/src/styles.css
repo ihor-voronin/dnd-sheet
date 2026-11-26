@@ -560,6 +560,12 @@ body {
   color: #fff;
 }
 
+/* На активному чипі підпис («+1 МУД, +2 СПР») має читатися. */
+.chip--active .meta,
+.chip--active .choice-meta {
+  color: rgb(255 255 255 / 85%);
+}
+
 .chip--row {
   display: inline-flex;
   align-items: center;
