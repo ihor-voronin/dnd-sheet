@@ -404,6 +404,29 @@ export function RuleText({ text }: { text: string }) {
             </h4>
           );
         }
+        const table = markdownTable(lines);
+        if (table) {
+          return (
+            <table key={index} className="feature-table">
+              <thead>
+                <tr>
+                  {table.header.map((cell, position) => (
+                    <th key={position}>{cleanMarkdown(cell)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {table.rows.map((row, position) => (
+                  <tr key={position}>
+                    {row.map((cell, cellIndex) => (
+                      <td key={cellIndex}>{cleanMarkdown(cell)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          );
+        }
         if (lines.every((line) => line.startsWith("- "))) {
           return (
             <ul key={index}>
@@ -428,6 +451,24 @@ export function RuleText({ text }: { text: string }) {
 
 function cleanMarkdown(text: string): string {
   return text.replace(/\*\*/g, "").replace(/\*/g, "");
+}
+
+/** Markdown-таблиця: рядки з `|`, другий рядок — роздільник `| --- |`. */
+function markdownTable(
+  lines: string[],
+): { header: string[]; rows: string[][] } | null {
+  const pipes = lines.filter(Boolean);
+  if (pipes.length < 2) return null;
+  if (!pipes.every((line) => line.startsWith("|") && line.endsWith("|"))) return null;
+  const cells = pipes.map((line) =>
+    line
+      .slice(1, -1)
+      .split("|")
+      .map((cell) => cell.trim()),
+  );
+  const separator = cells[1]?.every((cell) => /^:?-{2,}:?$/.test(cell));
+  if (!separator) return null;
+  return { header: cells[0], rows: cells.slice(2) };
 }
 
 /** Обмежені класові ресурси: Друге дихання, Кі, Канал божественності. */

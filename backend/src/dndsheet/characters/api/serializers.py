@@ -118,6 +118,7 @@ def computed_sheet(
                     "weight_lb": item.weight_lb,
                     "equipped": item.equipped,
                     "attuned": item.attuned,
+                    "entry_id": item.entry_id,
                     "armor_base": item.armor_base,
                     "dex_cap": item.dex_cap,
                     "notes": item.notes,

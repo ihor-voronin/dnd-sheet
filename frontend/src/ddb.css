@@ -2683,3 +2683,185 @@ body.board {
     font-size: 9px;
   }
 }
+
+/* --- інвентар: каталог предметів і опис у рядку ----------------------- */
+
+.inv-catalog {
+  margin: 6px 0 12px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--ddb-frame-soft);
+  border-radius: 8px;
+  background: rgb(23 17 34 / 88%);
+}
+
+.inv-catalog__filters {
+  margin-bottom: 6px;
+}
+
+.inv-catalog__list {
+  display: grid;
+  gap: 1px;
+  max-height: 420px;
+  margin: 6px 0 8px;
+  padding: 4px;
+  overflow: auto;
+  border: 1px solid rgb(125 79 196 / 35%);
+  border-radius: 7px;
+  background: rgb(13 9 21 / 70%);
+  list-style: none;
+}
+
+.inv-catalog__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 7px;
+  border-radius: 5px;
+}
+
+.inv-catalog__row:hover {
+  background: rgb(176 108 255 / 10%);
+}
+
+.inv-catalog__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.inv-catalog__name {
+  color: #fff;
+  font-size: 13px;
+}
+
+.inv-catalog__meta {
+  color: var(--ddb-muted);
+  font-size: 10.5px;
+}
+
+.inv-catalog__add {
+  flex: none;
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
+.inv-catalog__more {
+  width: 100%;
+  font-size: 12px;
+}
+
+.character-view .item-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+}
+
+.item-row__line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+}
+
+.item-name--button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #fff;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.item-name--button:hover {
+  color: #d9c2ff;
+}
+
+.item-name__caret {
+  color: var(--ddb-dim);
+  font-size: 9px;
+}
+
+.item-detail {
+  padding: 2px 0 10px 8px;
+  border-left: 2px solid rgb(125 79 196 / 45%);
+  color: var(--ddb-text);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.item-detail__toggle {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.character-view .link-button {
+  color: #c9a6ff;
+}
+
+.feature-table {
+  width: 100%;
+  margin: 8px 0;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.feature-table th,
+.feature-table td {
+  padding: 4px 7px;
+  border: 1px solid rgb(125 79 196 / 35%);
+  text-align: left;
+}
+
+.feature-table th {
+  color: var(--ddb-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.item-detail__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 4px 14px;
+  margin: 2px 0 8px;
+}
+
+.item-detail__stat {
+  display: flex;
+  gap: 7px;
+  font-size: 12px;
+}
+
+.item-detail__stat dt {
+  color: var(--ddb-muted);
+  white-space: nowrap;
+}
+
+.item-detail__stat dd {
+  margin: 0;
+  color: #fff;
+}
+
+.inv-search {
+  flex-wrap: wrap;
+}
+
+.inv-search__input {
+  flex: 1 1 100%;
+}
+
+.inv-search .button {
+  flex: 1 1 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}

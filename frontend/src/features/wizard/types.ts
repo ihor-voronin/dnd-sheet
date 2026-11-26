@@ -288,6 +288,8 @@ export interface SheetItem {
   weight_lb: number;
   equipped: boolean;
   attuned: boolean;
+  /** Запис довідника, з якого предмет узяли: звідти ж беремо опис. */
+  entry_id?: string | null;
   armor_base: number | null;
   dex_cap: number | null;
   notes: string | null;

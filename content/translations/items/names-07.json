@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "cos/item/holy-symbol-of-ravenkind",
+   "name_uk": "Священний символ Воронів"
+  },
+  {
+   "id": "basic-rules-2014/item/holy-water-flask",
+   "name_uk": "Свята вода (флакон)"
+  },
+  {
+   "id": "idrotf/item/hook-of-fisher-s-delight",
+   "name_uk": "Гак рибальської втіхи"
+  },
+  {
+   "id": "oota/item/hooked-shortspear",
+   "name_uk": "Короткий спис із гаком"
+  },
+  {
+   "id": "sotdq/item/hoopak",
+   "name_uk": "Хупак"
+  },
+  {
+   "id": "phb-2014/item/horn",
+   "name_uk": "Ріг"
+  },
+  {
+   "id": "xgte/item/horn-of-silent-alarm",
+   "name_uk": "Ріг мовчазної тривоги"
+  },
+  {
+   "id": "basic-rules-2014/item/hourglass",
+   "name_uk": "Пісочний годинник"
+  },
+  {
+   "id": "egtw/item/hunter-s-coat",
+   "name_uk": "Мисливський плащ"
+  },
+  {
+   "id": "basic-rules-2014/item/hunting-trap",
+   "name_uk": "Мисливська пастка"
+  },
+  {
+   "id": "idrotf/item/icewind-dale-trinket",
+   "name_uk": "Дрібничка Льодяного Вітру"
+  },
+  {
+   "id": "cos/item/icon-of-ravenloft",
+   "name_uk": "Ікона Воронового Лофту"
+  },
+  {
+   "id": "ditlcot/item/iggwilv-s-horn",
+   "name_uk": "Ріг Іггвілв"
+  },
+  {
+   "id": "twbtw/item/iggwilv-s-cauldron",
+   "name_uk": "Казан Іггвілв"
+  },
+  {
+   "id": "tcoe/item/illuminator-s-tattoo",
+   "name_uk": "Татуювання освітлювача"
+  },
+  {
+   "id": "erftlw/item/imbued-wood-focus",
+   "name_uk": "Наповнений деревиною осередок"
+  },
+  {
+   "id": "coa/item/infernal-amulet",
+   "name_uk": "Пекельний амулет"
+  },
+  {
+   "id": "coa/item/infernal-plate-armor",
+   "name_uk": "Пекельна пластинчаста броня"
+  },
+  {
+   "id": "bgdia/item/infernal-puzzle-box",
+   "name_uk": "Пекельна головоломка-скринька"
+  },
+  {
+   "id": "egtw/item/infiltrator-s-key",
+   "name_uk": "Ключ проникача"
+  },
+  {
+   "id": "skt/item/ingot-of-the-skold-rune",
+   "name_uk": "Зливок руни Скольд"
+  },
+  {
+   "id": "basic-rules-2014/item/ink-1-ounce-bottle",
+   "name_uk": "Чорнило (флакон 1 унція)"
+  },
+  {
+   "id": "basic-rules-2014/item/ink-pen",
+   "name_uk": "Пір’яна ручка"
+  },
+  {
+   "id": "wgte/item/inquisitive-s-goggles",
+   "name_uk": "Окуляри допитливого"
+  },
+  {
+   "id": "toa/item/insect-repellent-block-of-incense",
+   "name_uk": "Засіб від комах (брила ладану)"
+  },
+  {
+   "id": "toa/item/insect-repellent-greasy-salve",
+   "name_uk": "Засіб від комах (жирна масть)"
+  },
+  {
+   "id": "hotdq/item/insignia-of-claws",
+   "name_uk": "Знак пазурів"
+  },
+  {
+   "id": "xgte/item/instrument-of-illusions",
+   "name_uk": "Інструмент ілюзій"
+  },
+  {
+   "id": "twbtw/item/instrument-of-scribing",
+   "name_uk": "Інструмент письма"
+  },
+  {
+   "id": "dmg-2014/item/instrument-of-the-bards",
+   "name_uk": "Інструмент бардів"
+  },
+  {
+   "id": "imr/item/ioun-stone-of-vitality",
+   "name_uk": "Камінь Іоун життєвості"
+  },
+  {
+   "id": "idrotf/item/iron-ball",
+   "name_uk": "Залізна куля"
+  },
+  {
+   "id": "dmg-2014/item/iron-bands-of-bilarro",
+   "name_uk": "Залізні обручі Біларро"
+  },
+  {
+   "id": "ps-ixalan/item/jade-bowl-river-heralds",
+   "name_uk": "Нефритова чаша (Річкові вісники)"
+  },
+  {
+   "id": "ps-ixalan/item/jade-breastplate-river-heralds",
+   "name_uk": "Нефритова нагрудна пластина (Річкові вісники)"
+  },
+  {
+   "id": "ps-ixalan/item/jade-headpiece-river-heralds",
+   "name_uk": "Нефритовий головний убір (Річкові вісники)"
+  },
+  {
+   "id": "ps-ixalan/item/jade-sword-with-amber-river-heralds",
+   "name_uk": "Нефритовий меч з бурштином (Річкові вісники)"
+  },
+  {
+   "id": "ps-ixalan/item/jade-totem-with-diamond-eyes-river-heralds",
+   "name_uk": "Нефритовий тотем із діамантовими очима (Річкові вісники)"
+  },
+  {
+   "id": "cos/item/jakarion-s-staff-of-frost",
+   "name_uk": "Посох морозу Джакаріона"
+  },
+  {
+   "id": "basic-rules-2014/item/javelin",
+   "name_uk": "Метальний спис"
+  },
+  {
+   "id": "cotn/item/jewel-of-three-prayers",
+   "name_uk": "Самоцвіт трьох молитов"
+  },
+  {
+   "id": "ps-ixalan/item/jeweled-anklet-brazen-coalition",
+   "name_uk": "Коштоцінний браслет на ногу (Мідна коаліція)"
+  },
+  {
+   "id": "basic-rules-2014/item/jeweler-s-tools",
+   "name_uk": "Інструменти ювеліра"
+  },
+  {
+   "id": "phb-2014/item/jeweler-s-tools",
+   "name_uk": "Інструменти ювеліра"
+  },
+  {
+   "id": "basic-rules-2014/item/jug-or-pitcher",
+   "name_uk": "Глечик або дзбан"
+  },
+  {
+   "id": "sotdq/item/kagonesti-forest-shroud",
+   "name_uk": "Лісовий саван кагоністі"
+  },
+  {
+   "id": "basic-rules-2014/item/keelboat",
+   "name_uk": "Кільова лодка"
+  },
+  {
+   "id": "lox/item/keg-of-alchemist-s-fire",
+   "name_uk": "Барильце алхімічного вогню"
+  },
+  {
+   "id": "erftlw/item/keycharm",
+   "name_uk": "Ключ-оберіг"
+  },
+  {
+   "id": "aitfr-avt/item/keystone-of-creation",
+   "name_uk": "Наріжний камінь творення"
+  },
+  {
+   "id": "moot/item/khrusor-spear-of-heliod",
+   "name_uk": "Хрусор, спис Геліода"
+  },
+  {
+   "id": "wdh/item/knave-s-eye-patch",
+   "name_uk": "Пов’язка на око шахрая"
+  },
+  {
+   "id": "coa/item/knife-of-stolen-resistance",
+   "name_uk": "Ніж украденої стійкості"
+  },
+  {
+   "id": "skt/item/korolnor-scepter",
+   "name_uk": "Скіпетр Корольнора"
+  },
+  {
+   "id": "erftlw/item/kyrzin-s-ooze",
+   "name_uk": "Слиз Кірзіна"
+  },
+  {
+   "id": "basic-rules-2014/item/ladder-10-foot",
+   "name_uk": "Драбина (10 футів)"
+  },
+  {
+   "id": "basic-rules-2014/item/lamp",
+   "name_uk": "Лампа"
+  },
+  {
+   "id": "basic-rules-2014/item/lance",
+   "name_uk": "Спис-ланс"
+  },
+  {
+   "id": "idrotf/item/lantern-of-tracking-aberrations",
+   "name_uk": "Ліхтар вистежування (аберанти)"
+  },
+  {
+   "id": "idrotf/item/lantern-of-tracking-celestials",
+   "name_uk": "Ліхтар вистежування (небожителі)"
+  }
+ ]
+}

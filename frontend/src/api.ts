@@ -185,6 +185,9 @@ export function fetchRenderers(): Promise<{ formats: ExportFormat[]; available: 
 export interface ItemSearchResult {
   id: string;
   name_en: string;
+  name_uk?: string | null;
+  source_id?: string;
+  category?: string;
   data: Record<string, unknown>;
 }
 
@@ -194,4 +197,89 @@ export function searchItems(
 ): Promise<{ items: ItemSearchResult[]; total: number }> {
   const params = new URLSearchParams({ q: query, limit: String(limit) });
   return getJson(`/api/v1/compendium/items?${params.toString()}`);
+}
+
+/** Скільки записів віддає довідник за один запит (стеля API). */
+const CATALOG_PAGE = 200;
+
+let catalog: Promise<ItemSearchResult[]> | null = null;
+
+/** Весь каталог предметів одним махом.
+ *
+ * Фільтри в панелі (тип, джерело, магічність, пошук) мають спрацьовувати
+ * одразу, без запиту на кожне натискання. Записів півтори тисячі, у
+ * «короткому» вигляді це кількасот кілобайт — тож вантажимо один раз і
+ * тримаємо в памʼяті до перезавантаження сторінки.
+ */
+export function fetchItemCatalog(): Promise<ItemSearchResult[]> {
+  if (catalog) return catalog;
+  catalog = (async () => {
+    const all: ItemSearchResult[] = [];
+    for (let offset = 0; ; offset += CATALOG_PAGE) {
+      const page = await getJson<{
+        items: ItemSearchResult[];
+        total: number;
+      }>(`/api/v1/compendium/items?limit=${CATALOG_PAGE}&offset=${offset}`);
+      all.push(...page.items);
+      if (!page.items.length || all.length >= page.total) break;
+    }
+    return all;
+  })();
+  return catalog;
+}
+
+/** Повний запис довідника: у «короткому» немає тексту книги. */
+export interface CompendiumEntry {
+  id: string;
+  name_en: string;
+  name_uk?: string | null;
+  text_en?: string | null;
+  text_uk?: string | null;
+  data: Record<string, unknown>;
+}
+
+export function fetchEntry(entryId: string): Promise<CompendiumEntry> {
+  return getJson<CompendiumEntry>(`/api/v1/compendium/entries/${entryId}`);
+}
+
+let bookTitles: Promise<Record<string, string>> | null = null;
+
+/** Коди книг → назви («phb-2014» → «Player's Handbook (2014)»). */
+export function fetchBookTitles(): Promise<Record<string, string>> {
+  if (bookTitles) return bookTitles;
+  bookTitles = (async () => {
+    try {
+      const payload = await getJson<{
+        books: { source_id: string; title: string }[];
+      }>("/api/v1/compendium/summary");
+      const map: Record<string, string> = {};
+      for (const book of payload.books ?? []) map[book.source_id] = book.title;
+      return map;
+    } catch {
+      return {};
+    }
+  })();
+  return bookTitles;
+}
+
+/** Переклади предметів (назви в бандлі, описи — окремим файлом). */
+export interface ItemUkPayload {
+  items: Record<string, { name?: string; text?: string }>;
+}
+
+let itemsUk: Promise<ItemUkPayload["items"]> | null = null;
+
+export function fetchItemsUk(): Promise<ItemUkPayload["items"]> {
+  if (itemsUk) return itemsUk;
+  itemsUk = (async () => {
+    try {
+      const response = await fetch("/items-uk.json");
+      if (!response.ok) return {};
+      const payload = (await response.json()) as ItemUkPayload;
+      return payload.items ?? {};
+    } catch {
+      return {};
+    }
+  })();
+  return itemsUk;
 }

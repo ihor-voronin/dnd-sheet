@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "basic-rules-2014/item/candle",
+   "name_uk": "Свічка"
+  },
+  {
+   "id": "bgdia/item/candle-mace",
+   "name_uk": "Свічкова булава"
+  },
+  {
+   "id": "xgte/item/candle-of-the-deep",
+   "name_uk": "Свічка глибин"
+  },
+  {
+   "id": "coa/item/canian-fork",
+   "name_uk": "Канійські вила"
+  },
+  {
+   "id": "toa/item/canoe",
+   "name_uk": "Каное"
+  },
+  {
+   "id": "dmg-2014/item/cap-of-water-breathing",
+   "name_uk": "Шапка дихання під водою"
+  },
+  {
+   "id": "pabtso/item/cape-of-enlargement",
+   "name_uk": "Плащ збільшення"
+  },
+  {
+   "id": "tbomt/item/card-sharp-s-deck",
+   "name_uk": "Колода шахрая-картяра"
+  },
+  {
+   "id": "basic-rules-2014/item/carpenter-s-tools",
+   "name_uk": "Теслярські інструменти"
+  },
+  {
+   "id": "phb-2014/item/carpenter-s-tools",
+   "name_uk": "Теслярські інструменти"
+  },
+  {
+   "id": "basic-rules-2014/item/carriage",
+   "name_uk": "Карета"
+  },
+  {
+   "id": "basic-rules-2014/item/cart",
+   "name_uk": "Віз"
+  },
+  {
+   "id": "basic-rules-2014/item/cartographer-s-tools",
+   "name_uk": "Інструменти картографа"
+  },
+  {
+   "id": "phb-2014/item/cartographer-s-tools",
+   "name_uk": "Інструменти картографа"
+  },
+  {
+   "id": "ps-ixalan/item/carved-jade-statuette-river-heralds",
+   "name_uk": "Різьблена нефритова статуетка (Річкові провісники)"
+  },
+  {
+   "id": "basic-rules-2014/item/case-crossbow-bolt",
+   "name_uk": "Футляр для арбалетних болтів"
+  },
+  {
+   "id": "basic-rules-2014/item/case-map-or-scroll",
+   "name_uk": "Футляр для карт або сувоїв"
+  },
+  {
+   "id": "xgte/item/cast-off-armor",
+   "name_uk": "Броня, що скидається"
+  },
+  {
+   "id": "idrotf/item/cauldron-of-plenty",
+   "name_uk": "Казан достатку"
+  },
+  {
+   "id": "tcoe/item/cauldron-of-rebirth",
+   "name_uk": "Казан відродження"
+  },
+  {
+   "id": "ps-ixalan/item/ceremonial-silver-dagger-with-gold-pommel-and-black-pearl-legion-of-dusk",
+   "name_uk": "Церемоніальний срібний кинджал із золотим навершям і чорною перлиною (Легіон сутінків)"
+  },
+  {
+   "id": "basic-rules-2014/item/chain-10-feet",
+   "name_uk": "Ланцюг (10 футів)"
+  },
+  {
+   "id": "basic-rules-2014/item/chain-mail",
+   "name_uk": "Кольчуга"
+  },
+  {
+   "id": "basic-rules-2014/item/chain-shirt",
+   "name_uk": "Кольчужна сорочка"
+  },
+  {
+   "id": "basic-rules-2014/item/chalk-1-piece",
+   "name_uk": "Крейда (1 штука)"
+  },
+  {
+   "id": "basic-rules-2014/item/chariot",
+   "name_uk": "Колісниця"
+  },
+  {
+   "id": "xgte/item/charlatan-s-die",
+   "name_uk": "Гральна кістка шахрая"
+  },
+  {
+   "id": "gos/item/charm-of-plant-command",
+   "name_uk": "Оберіг влади над рослинами"
+  },
+  {
+   "id": "basic-rules-2014/item/chest",
+   "name_uk": "Скриня"
+  },
+  {
+   "id": "veor/item/chime-of-exile",
+   "name_uk": "Дзвіночок вигнання"
+  },
+  {
+   "id": "aitfr-avt/item/chip-of-creation",
+   "name_uk": "Скалка творіння"
+  },
+  {
+   "id": "twbtw/item/chromatic-rose",
+   "name_uk": "Хроматична троянда"
+  },
+  {
+   "id": "ai/item/chronolometer",
+   "name_uk": "Хронолометр"
+  },
+  {
+   "id": "skt/item/claw-of-the-wyrm-rune",
+   "name_uk": "Кіготь руни дракона"
+  },
+  {
+   "id": "erftlw/item/cleansing-stone",
+   "name_uk": "Камінь очищення"
+  },
+  {
+   "id": "basic-rules-2014/item/climber-s-kit",
+   "name_uk": "Альпіністський набір"
+  },
+  {
+   "id": "phb-2014/item/climber-s-kit",
+   "name_uk": "Альпіністський набір"
+  },
+  {
+   "id": "xgte/item/cloak-of-billowing",
+   "name_uk": "Плащ, що майорить"
+  },
+  {
+   "id": "dmg-2014/item/cloak-of-invisibility",
+   "name_uk": "Плащ невидимості"
+  },
+  {
+   "id": "twbtw/item/cloak-of-many-fashions",
+   "name_uk": "Плащ багатьох фасонів"
+  },
+  {
+   "id": "basic-rules-2014/item/cloak-of-protection",
+   "name_uk": "Плащ захисту"
+  },
+  {
+   "id": "xgte/item/clockwork-amulet",
+   "name_uk": "Механічний амулет"
+  },
+  {
+   "id": "ps-ixalan/item/cloth-of-gold-vestments-legion-of-dusk",
+   "name_uk": "Парчеві шати (Легіон сутінків)"
+  },
+  {
+   "id": "xgte/item/clothes-of-mending",
+   "name_uk": "Одяг лагодження"
+  },
+  {
+   "id": "basic-rules-2014/item/clothes-common",
+   "name_uk": "Одяг, звичайний"
+  },
+  {
+   "id": "basic-rules-2014/item/clothes-costume",
+   "name_uk": "Одяг, костюм"
+  },
+  {
+   "id": "basic-rules-2014/item/clothes-fine",
+   "name_uk": "Одяг, вишуканий"
+  },
+  {
+   "id": "basic-rules-2014/item/clothes-traveler-s",
+   "name_uk": "Одяг мандрівника"
+  },
+  {
+   "id": "phb-2014/item/clothes-traveler-s",
+   "name_uk": "Одяг мандрівника"
+  },
+  {
+   "id": "idrotf/item/clothing-cold-weather",
+   "name_uk": "Одяг для холодної погоди"
+  },
+  {
+   "id": "basic-rules-2014/item/club",
+   "name_uk": "Палиця"
+  },
+  {
+   "id": "basic-rules-2014/item/cobbler-s-tools",
+   "name_uk": "Шевські інструменти"
+  },
+  {
+   "id": "phb-2014/item/cobbler-s-tools",
+   "name_uk": "Шевські інструменти"
+  },
+  {
+   "id": "tcoe/item/coiling-grasp-tattoo",
+   "name_uk": "Татуювання зміїного захоплення"
+  },
+  {
+   "id": "egtw/item/coin-of-delving",
+   "name_uk": "Монета копання"
+  },
+  {
+   "id": "basic-rules-2014/item/component-pouch",
+   "name_uk": "Сумка для компонентів"
+  },
+  {
+   "id": "rmbre/item/concertina",
+   "name_uk": "Концертина"
+  },
+  {
+   "id": "skt/item/conch-of-teleportation",
+   "name_uk": "Мушля телепортації"
+  },
+  {
+   "id": "qftis/item/concussion-grenade",
+   "name_uk": "Контузійна граната"
+  },
+  {
+   "id": "coa/item/condensed-order",
+   "name_uk": "Стислий наказ"
+  }
+ ]
+}

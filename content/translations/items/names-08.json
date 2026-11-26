@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "idrotf/item/lantern-of-tracking-constructs",
+   "name_uk": "Ліхтар стеження (конструкти)"
+  },
+  {
+   "id": "idrotf/item/lantern-of-tracking-dragons",
+   "name_uk": "Ліхтар стеження (дракони)"
+  },
+  {
+   "id": "idrotf/item/lantern-of-tracking-elementals",
+   "name_uk": "Ліхтар стеження (елементалі)"
+  },
+  {
+   "id": "idrotf/item/lantern-of-tracking-fey",
+   "name_uk": "Ліхтар стеження (фейрі)"
+  },
+  {
+   "id": "idrotf/item/lantern-of-tracking-fiends",
+   "name_uk": "Ліхтар стеження (пекельні істоти)"
+  },
+  {
+   "id": "idrotf/item/lantern-of-tracking-giants",
+   "name_uk": "Ліхтар стеження (велетні)"
+  },
+  {
+   "id": "idrotf/item/lantern-of-tracking-monstrosities",
+   "name_uk": "Ліхтар стеження (потвори)"
+  },
+  {
+   "id": "idrotf/item/lantern-of-tracking-undead",
+   "name_uk": "Ліхтар стеження (нежить)"
+  },
+  {
+   "id": "basic-rules-2014/item/lantern-bullseye",
+   "name_uk": "Ліхтар, спрямований"
+  },
+  {
+   "id": "basic-rules-2014/item/lantern-hooded",
+   "name_uk": "Ліхтар, із заслінкою"
+  },
+  {
+   "id": "ps-ixalan/item/large-gold-bracelet-legion-of-dusk",
+   "name_uk": "Великий золотий браслет (Легіон Сутінок)"
+  },
+  {
+   "id": "ps-ixalan/item/large-jade-totem-river-heralds",
+   "name_uk": "Великий нефритовий тотем (Річкові Вісники)"
+  },
+  {
+   "id": "ps-ixalan/item/large-well-made-tapestry-legion-of-dusk",
+   "name_uk": "Великий добротний гобелен (Легіон Сутінок)"
+  },
+  {
+   "id": "gotg/item/lash-of-immolation",
+   "name_uk": "Батіг спалення"
+  },
+  {
+   "id": "egtw/item/lash-of-shadows",
+   "name_uk": "Батіг тіней"
+  },
+  {
+   "id": "egtw/item/last-stand-armor",
+   "name_uk": "Броня останнього рубежу"
+  },
+  {
+   "id": "basic-rules-2014/item/leather",
+   "name_uk": "Шкіряна броня"
+  },
+  {
+   "id": "llok/item/leather-golem-armor",
+   "name_uk": "Броня шкіряного голема"
+  },
+  {
+   "id": "basic-rules-2014/item/leatherworker-s-tools",
+   "name_uk": "Інструменти шкірника"
+  },
+  {
+   "id": "phb-2014/item/leatherworker-s-tools",
+   "name_uk": "Інструменти шкірника"
+  },
+  {
+   "id": "jttrc/item/lesser-hammock-of-worlds",
+   "name_uk": "Малий гамак світів"
+  },
+  {
+   "id": "tcoe/item/libram-of-souls-and-flesh",
+   "name_uk": "Лібрам душ і плоті"
+  },
+  {
+   "id": "tcoe/item/lifewell-tattoo",
+   "name_uk": "Татуювання джерела життя"
+  },
+  {
+   "id": "basic-rules-2014/item/light-hammer",
+   "name_uk": "Легкий молот"
+  },
+  {
+   "id": "oota/item/light-repeating-crossbow",
+   "name_uk": "Легкий повторювальний арбалет"
+  },
+  {
+   "id": "pabtso/item/lightbringer",
+   "name_uk": "Світлоносець"
+  },
+  {
+   "id": "erftlw/item/living-armor",
+   "name_uk": "Жива броня"
+  },
+  {
+   "id": "erftlw/item/living-gloves",
+   "name_uk": "Живі рукавички"
+  },
+  {
+   "id": "tftyp/item/loadstone",
+   "name_uk": "Камінь тягаря"
+  },
+  {
+   "id": "basic-rules-2014/item/lock",
+   "name_uk": "Замок"
+  },
+  {
+   "id": "xgte/item/lock-of-trickery",
+   "name_uk": "Замок хитрощів"
+  },
+  {
+   "id": "basic-rules-2014/item/longbow",
+   "name_uk": "Довгий лук"
+  },
+  {
+   "id": "gotg/item/longbow-of-the-healing-hearth",
+   "name_uk": "Довгий лук зцілювального вогнища"
+  },
+  {
+   "id": "basic-rules-2014/item/longship",
+   "name_uk": "Довгий корабель"
+  },
+  {
+   "id": "basic-rules-2014/item/longsword",
+   "name_uk": "Довгий меч"
+  },
+  {
+   "id": "wdh/item/lord-s-ensemble",
+   "name_uk": "Вбрання лорда"
+  },
+  {
+   "id": "tcoe/item/luba-s-tarokka-of-souls",
+   "name_uk": "Тарока душ Люби"
+  },
+  {
+   "id": "gotg/item/lucent-destroyer",
+   "name_uk": "Сяйний руйнівник"
+  },
+  {
+   "id": "pabtso/item/luminous-war-pick",
+   "name_uk": "Світне бойове кайло"
+  },
+  {
+   "id": "phb-2014/item/lute",
+   "name_uk": "Лютня"
+  },
+  {
+   "id": "ps-ixalan/item/lute-crafted-of-exotic-wood-with-mother-of-pearl-inlay-and-zircon-gems-brazen-coalition",
+   "name_uk": "Лютня з екзотичного дерева з інкрустацією перламутром і цирконовим камінням (Мідна Коаліція)"
+  },
+  {
+   "id": "egtw/item/luxon-beacon",
+   "name_uk": "Маяк Люксона"
+  },
+  {
+   "id": "phb-2014/item/lyre",
+   "name_uk": "Ліра"
+  },
+  {
+   "id": "tcoe/item/lyre-of-building",
+   "name_uk": "Ліра будівництва"
+  },
+  {
+   "id": "basic-rules-2014/item/mace",
+   "name_uk": "Булава"
+  },
+  {
+   "id": "egtw/item/mace-of-the-black-crown",
+   "name_uk": "Булава чорної корони"
+  },
+  {
+   "id": "basic-rules-2014/item/magnifying-glass",
+   "name_uk": "Збільшувальне скло"
+  },
+  {
+   "id": "basic-rules-2014/item/manacles",
+   "name_uk": "Кайдани"
+  },
+  {
+   "id": "basic-rules-2014/item/mantle-of-spell-resistance",
+   "name_uk": "Мантія опору закляттям"
+  },
+  {
+   "id": "ps-ixalan/item/marble-font-with-gold-inlay-legion-of-dusk",
+   "name_uk": "Мармурова купіль із золотою інкрустацією (Легіон Сутінок)"
+  },
+  {
+   "id": "dmg-2014/item/mariner-s-armor",
+   "name_uk": "Броня мореплавця"
+  },
+  {
+   "id": "toa/item/mask-of-the-beast",
+   "name_uk": "Маска звіра"
+  },
+  {
+   "id": "rot/item/mask-of-the-dragon-queen",
+   "name_uk": "Маска Королеви Драконів"
+  },
+  {
+   "id": "basic-rules-2014/item/mason-s-tools",
+   "name_uk": "Інструменти муляра"
+  },
+  {
+   "id": "phb-2014/item/mason-s-tools",
+   "name_uk": "Інструменти муляра"
+  },
+  {
+   "id": "tcoe/item/masquerade-tattoo",
+   "name_uk": "Татуювання маскараду"
+  },
+  {
+   "id": "ps-ixalan/item/masterpiece-painting-in-mahogany-frame-with-gold-inlay-legion-of-dusk",
+   "name_uk": "Шедевр живопису в рамці з червоного дерева із золотою інкрустацією (Легіон Сутінок)"
+  },
+  {
+   "id": "basic-rules-2014/item/mastiff",
+   "name_uk": "Мастиф"
+  },
+  {
+   "id": "moot/item/mastix-whip-of-erebos",
+   "name_uk": "Мастикс, батіг Ереба"
+  },
+  {
+   "id": "bgdia/item/matalotok",
+   "name_uk": "Маталоток"
+  }
+ ]
+}

@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "egtw/item/potion-of-possibility",
+   "name_uk": "Зілля можливості"
+  },
+  {
+   "id": "pabtso/item/potion-of-psionic-fortitude",
+   "name_uk": "Зілля псіонічної стійкості"
+  },
+  {
+   "id": "basic-rules-2014/item/potter-s-tools",
+   "name_uk": "Гончарні інструменти"
+  },
+  {
+   "id": "phb-2014/item/potter-s-tools",
+   "name_uk": "Гончарні інструменти"
+  },
+  {
+   "id": "basic-rules-2014/item/pouch",
+   "name_uk": "Мішечок"
+  },
+  {
+   "id": "llok/item/powered-armor",
+   "name_uk": "Механізована броня"
+  },
+  {
+   "id": "gotg/item/prehistoric-figurines-of-wondrous-power",
+   "name_uk": "Доісторичні фігурки дивовижної сили"
+  },
+  {
+   "id": "gos/item/pressure-capsule",
+   "name_uk": "Капсула тиску"
+  },
+  {
+   "id": "xmts/item/primal-amulet",
+   "name_uk": "Первісний амулет"
+  },
+  {
+   "id": "nrh-at/item/prismatic-well",
+   "name_uk": "Призматичний колодязь"
+  },
+  {
+   "id": "idrotf/item/professor-skant",
+   "name_uk": "Професор Скант"
+  },
+  {
+   "id": "egtw/item/prosthetic-limb",
+   "name_uk": "Протез кінцівки"
+  },
+  {
+   "id": "tcoe/item/protective-verses",
+   "name_uk": "Захисні вірші"
+  },
+  {
+   "id": "xmts/item/prying-blade",
+   "name_uk": "Клинок допитливості"
+  },
+  {
+   "id": "idrotf/item/psi-crystal",
+   "name_uk": "Псі-кристал"
+  },
+  {
+   "id": "moot/item/pyxis-of-pandemonium",
+   "name_uk": "Піксида пандемоніуму"
+  },
+  {
+   "id": "dmg-2014/item/quaal-s-feather-token",
+   "name_uk": "Пір'яний жетон Куала"
+  },
+  {
+   "id": "basic-rules-2014/item/quarterstaff",
+   "name_uk": "Бойова жердина"
+  },
+  {
+   "id": "basic-rules-2014/item/quiver",
+   "name_uk": "Сагайдак"
+  },
+  {
+   "id": "dmg-2014/item/quiver-of-ehlonna",
+   "name_uk": "Сагайдак Елонни"
+  },
+  {
+   "id": "toa/item/rain-catcher",
+   "name_uk": "Збирач дощу"
+  },
+  {
+   "id": "basic-rules-2014/item/ram-portable",
+   "name_uk": "Портативний таран"
+  },
+  {
+   "id": "coa/item/ranseur-of-torture",
+   "name_uk": "Рансер катувань"
+  },
+  {
+   "id": "basic-rules-2014/item/rapier",
+   "name_uk": "Рапіра"
+  },
+  {
+   "id": "basic-rules-2014/item/rations-1-day",
+   "name_uk": "Пайок (1 день)"
+  },
+  {
+   "id": "gotg/item/reapers-scream",
+   "name_uk": "Крик жнеця"
+  },
+  {
+   "id": "tod/item/red-dragon-mask",
+   "name_uk": "Маска червоного дракона"
+  },
+  {
+   "id": "hcs/item/red-feather-bow",
+   "name_uk": "Лук червоного пера"
+  },
+  {
+   "id": "egtw/item/reincarnation-dust",
+   "name_uk": "Пил реінкарнації"
+  },
+  {
+   "id": "phb-2014/item/reliquary",
+   "name_uk": "Релікварій"
+  },
+  {
+   "id": "tcoe/item/reveler-s-concertina",
+   "name_uk": "Концертина гуляки"
+  },
+  {
+   "id": "tcoe/item/rhythm-maker-s-drum",
+   "name_uk": "Барабан ритмотворця"
+  },
+  {
+   "id": "phb-2014/item/riding",
+   "name_uk": "Їздовий кінь"
+  },
+  {
+   "id": "basic-rules-2014/item/riding-horse",
+   "name_uk": "Їздовий кінь"
+  },
+  {
+   "id": "basic-rules-2014/item/ring-mail",
+   "name_uk": "Кільчаста броня"
+  },
+  {
+   "id": "gotg/item/ring-of-amity",
+   "name_uk": "Перстень дружби"
+  },
+  {
+   "id": "coa/item/ring-of-collecting",
+   "name_uk": "Перстень колекціонування"
+  },
+  {
+   "id": "egtw/item/ring-of-obscuring",
+   "name_uk": "Перстень затьмарення"
+  },
+  {
+   "id": "basic-rules-2014/item/ring-of-protection",
+   "name_uk": "Перстень захисту"
+  },
+  {
+   "id": "cotn/item/ring-of-red-fury",
+   "name_uk": "Перстень червоної люті"
+  },
+  {
+   "id": "basic-rules-2014/item/ring-of-swimming",
+   "name_uk": "Перстень плавання"
+  },
+  {
+   "id": "egtw/item/ring-of-temporal-salvation",
+   "name_uk": "Перстень часового порятунку"
+  },
+  {
+   "id": "coa/item/ring-of-the-copycat",
+   "name_uk": "Перстень наслідувача"
+  },
+  {
+   "id": "pabtso/item/ring-of-the-orator",
+   "name_uk": "Перстень оратора"
+  },
+  {
+   "id": "coa/item/ring-of-treachery",
+   "name_uk": "Перстень зради"
+  },
+  {
+   "id": "wdh/item/ring-of-truth-telling",
+   "name_uk": "Перстень правдомовності"
+  },
+  {
+   "id": "basic-rules-2014/item/ring-of-water-walking",
+   "name_uk": "Перстень ходіння по воді"
+  },
+  {
+   "id": "toa/item/ring-of-winter",
+   "name_uk": "Перстень зими"
+  },
+  {
+   "id": "wgte/item/rings-of-shared-suffering",
+   "name_uk": "Перстні спільного страждання"
+  },
+  {
+   "id": "skt/item/robe-of-serpents",
+   "name_uk": "Мантія змій"
+  },
+  {
+   "id": "tftyp/item/robe-of-summer",
+   "name_uk": "Мантія літа"
+  },
+  {
+   "id": "basic-rules-2014/item/robes",
+   "name_uk": "Мантії"
+  },
+  {
+   "id": "qftis/item/robot-controller",
+   "name_uk": "Контролер робота"
+  },
+  {
+   "id": "phb-2014/item/rod",
+   "name_uk": "Жезл"
+  },
+  {
+   "id": "dmg-2014/item/rod-of-resurrection",
+   "name_uk": "Жезл воскресіння"
+  },
+  {
+   "id": "egtw/item/rod-of-retribution",
+   "name_uk": "Жезл відплати"
+  },
+  {
+   "id": "veor/item/rod-of-seven-parts",
+   "name_uk": "Жезл семи частин"
+  },
+  {
+   "id": "dmg-2014/item/rod-of-the-pact-keeper",
+   "name_uk": "Жезл хоронителя угоди"
+  },
+  {
+   "id": "skt/item/rod-of-the-vonindod",
+   "name_uk": "Жезл Воніндода"
+  },
+  {
+   "id": "xgte/item/rope-of-mending",
+   "name_uk": "Мотузка лагодження"
+  }
+ ]
+}
