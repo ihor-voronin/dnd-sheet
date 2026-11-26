@@ -382,6 +382,66 @@ const ITEMS: Record<string, string> = {
   "traveler's clothes": "Дорожній одяг",
 };
 
+/** Зброя й броня: назви з українського перекладу SRD (5esrd.kyiv.ua).
+ *
+ * Це не «наш варіант», а звірка з перекладом, який читають за столом: у
+ * базових правилах українською саме ці слова стоять у таблицях. Свої
+ * (машинні) варіанти були буквальними — «Кільчаста броня» замість
+ * «Байдана», «Шинна броня» замість «Бригантина».
+ */
+const ITEM_SRD: Record<string, string> = {
+  padded: "Гамбезон",
+  "leather armor": "Шкіряна броня",
+  "studded leather armor": "Шипована шкіра",
+  "hide armor": "Шкура",
+  "chain shirt": "Кольчужна сорочка",
+  "scale mail": "Луската броня",
+  breastplate: "Нагрудник",
+  "half plate armor": "Напівлати",
+  "ring mail": "Байдана",
+  "chain mail": "Кольчуга",
+  "splint armor": "Бригантина",
+  "plate armor": "Лати",
+  shield: "Щит",
+  club: "Палиця",
+  dagger: "Кинджал",
+  greatclub: "Дубина",
+  handaxe: "Ручна сокира",
+  javelin: "Сулиця",
+  "light hammer": "Легкий молот",
+  mace: "Булава",
+  quarterstaff: "Бойовий посох",
+  sickle: "Серп",
+  spear: "Спис",
+  "light crossbow": "Арбалет, легкий",
+  dart: "Дротик",
+  shortbow: "Короткий лук",
+  sling: "Праща",
+  battleaxe: "Бойова сокира",
+  flail: "Бойовий ціп",
+  glaive: "Глефа",
+  greataxe: "Дворучна сокира",
+  greatsword: "Дворучний меч",
+  halberd: "Алебарда",
+  lance: "Кавалерійський спис",
+  longsword: "Довгий меч",
+  maul: "Вершляг",
+  morningstar: "Моргенштерн",
+  pike: "Піка",
+  rapier: "Рапіра",
+  scimitar: "Скимитар",
+  shortsword: "Короткий меч",
+  trident: "Тризуб",
+  "war pick": "Клевець",
+  warhammer: "Бойовий молот",
+  whip: "Батіг",
+  blowgun: "Духова трубка",
+  "hand crossbow": "Арбалет, ручний",
+  "heavy crossbow": "Арбалет, важкий",
+  longbow: "Довгий лук",
+  net: "Сітка",
+};
+
 const norm = (value: string): string =>
   value.trim().toLowerCase().replace(/\s+/g, " ").replace(/[’ʼ]/g, "'");
 
@@ -397,9 +457,9 @@ export function ukTerm(nameEn: string): string | undefined {
   return TERMS[norm(nameEn)];
 }
 
-/** Назва предмета: спершу великий згенерований словник, потім ручний. */
+/** Назва предмета: звірене з SRD, далі великий словник, далі ручний. */
 export function ukItem(nameEn: string): string | undefined {
-  return ITEM_NAMES[norm(nameEn)] ?? ITEMS[norm(nameEn)];
+  return ITEM_SRD[norm(nameEn)] ?? ITEM_NAMES[norm(nameEn)] ?? ITEMS[norm(nameEn)];
 }
 
 /** Ключ, за яким шукаємо переклад у словниках і в `items-uk.json`. */
