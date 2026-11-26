@@ -134,6 +134,42 @@ export function abilityLabel(code: string): string {
   return ABILITY_LABELS[code] ?? code;
 }
 
+export const LANGUAGE_LABELS: Record<string, string> = {
+  common: "спільна",
+  elvish: "ельфійська",
+  dwarvish: "дворфська",
+  infernal: "пекельна",
+  celestial: "небесна",
+  draconic: "драконяча",
+  gnomish: "гномівська",
+  goblin: "гоблінська",
+  halfling: "півросликів",
+  orc: "ороча",
+  abyssal: "безодні",
+  sylvan: "лісова",
+  undercommon: "підземна",
+  primordial: "первісна",
+  giant: "велетнів",
+  "deep speech": "глибока мова",
+};
+
+export const PROFICIENCY_VALUE_LABELS: Record<string, string> = {
+  light: "легка броня",
+  medium: "середня броня",
+  heavy: "важка броня",
+  shield: "щити",
+  simple: "проста зброя",
+  martial: "воєнна зброя",
+};
+
+/** Людська назва значення володіння: навичка, порятунок, мова або тип броні. */
+export function proficiencyValue(kind: string, value: string): string {
+  if (kind === "skill") return skillLabel(value);
+  if (kind === "saving_throw") return abilityLabel(value);
+  if (kind === "language") return LANGUAGE_LABELS[value] ?? value;
+  return PROFICIENCY_VALUE_LABELS[value] ?? value;
+}
+
 export function skillLabel(code: string): string {
   return SKILL_LABELS[code] ?? code;
 }

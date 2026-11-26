@@ -15,7 +15,6 @@ import {
   ABILITY_SHORT,
   ALIGNMENT_LABELS,
   ITEM_KIND_LABELS,
-  PROFICIENCY_LABELS,
   SKILL_ABILITY,
   SKILL_LABELS,
   abilityLabel,
@@ -23,7 +22,8 @@ import {
   skillLabel,
 } from "../../labels";
 import type { SheetViewPayload } from "../wizard/types";
-import { Counter, EditableNumber, Pips } from "./editing";
+import { EditableNumber, Pips } from "./editing";
+import { AttacksTable, CastingBlock, FeaturesList, ProficienciesList, SpellsKnownList } from "./panels";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
 const SKILL_ORDER = Object.keys(SKILL_LABELS);
@@ -43,34 +43,6 @@ const NOTE_LABELS: Record<string, string> = {
   enemies: "Вороги",
   backstory: "Передісторія",
   notes: "Нотатки",
-};
-
-const LANGUAGE_LABELS: Record<string, string> = {
-  common: "спільна",
-  elvish: "ельфійська",
-  dwarvish: "дворфська",
-  infernal: "пекельна",
-  celestial: "небесна",
-  draconic: "драконяча",
-  gnomish: "гномівська",
-  goblin: "гоблінська",
-  halfling: "півросликів",
-  orc: "ороча",
-  abyssal: "безодні",
-  sylvan: "лісова",
-  undercommon: "підземна",
-  primordial: "первісна",
-  giant: "велетнів",
-  "deep speech": "глибока мова",
-};
-
-const PROFICIENCY_VALUE_LABELS: Record<string, string> = {
-  light: "легка броня",
-  medium: "середня броня",
-  heavy: "важка броня",
-  shield: "щити",
-  simple: "проста зброя",
-  martial: "воєнна зброя",
 };
 
 function partLabel(raw: string): string {
@@ -95,13 +67,6 @@ function partLabel(raw: string): string {
 
 function partList(parts: { label: string; value: number }[]): string {
   return parts.map((part) => `${partLabel(part.label)} ${part.value}`).join(" · ");
-}
-
-function proficiencyValue(kind: string, value: string): string {
-  if (kind === "skill") return skillLabel(value);
-  if (kind === "saving_throw") return abilityLabel(value);
-  if (kind === "language") return LANGUAGE_LABELS[value] ?? value;
-  return PROFICIENCY_VALUE_LABELS[value] ?? value;
 }
 
 function messageOf(error: unknown): string {
@@ -276,6 +241,8 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             </div>
           </section>
 
+          <div className="sheet-columns">
+          <div className="sheet-column sheet-column--combat">
           <section className="panel">
             <h3>Стан</h3>
             <div className="state-row">
@@ -385,6 +352,42 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
           </section>
 
           <section className="sheet-section">
+            <h2>Атаки</h2>
+            <AttacksTable attacks={sheet.attacks} />
+          </section>
+
+          {casting.classes.length ? (
+            <section className="sheet-section">
+              <h2>Чарування</h2>
+              <CastingBlock
+                casting={casting}
+                resources={sheet.resources}
+                onSlotsUsed={(level, used) => {
+                  const usedMap: Record<string, number> = {};
+                  for (const [key, value] of Object.entries(sheet.resources.slots)) {
+                    const next = key === level ? used : value.used;
+                    if (next) usedMap[key] = next;
+                  }
+                  patch({ slots: usedMap });
+                }}
+                onPactUsed={(used) => patch({ pact_used: used })}
+              />
+            </section>
+          ) : null}
+
+          <section className="sheet-section">
+            <h2>Уміння</h2>
+            <FeaturesList features={sheet.features} />
+          </section>
+
+          <section className="sheet-section">
+            <h2>Володіння</h2>
+            <ProficienciesList proficiencies={sheet.proficiencies} showSource={false} />
+          </section>
+          </div>
+
+          <div className="sheet-column sheet-column--stats">
+          <section className="sheet-section">
             <h2>Характеристики</h2>
             <ul className="ability-cards">
               {ABILITIES.map((ability) => {
@@ -473,118 +476,40 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
               })}
             </ul>
           </section>
+          </div>
+          </div>
         </>
       ) : null}
 
       {tab === "actions" ? (
         <section className="sheet-section">
           <h2>Атаки</h2>
-          {sheet.attacks.length ? (
-            <table className="ability-table">
-              <thead>
-                <tr>
-                  <th>Зброя</th>
-                  <th>Атака</th>
-                  <th>Урон</th>
-                  <th>Здібність</th>
-                  <th>Властивості</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sheet.attacks.map((attack) => (
-                  <tr key={attack.name_en}>
-                    <th scope="row">{attack.name_en}</th>
-                    <td>{modifierLabel(attack.attack_bonus)}</td>
-                    <td>{attack.damage}</td>
-                    <td>{abilityLabel(attack.ability)}</td>
-                    <td className="short">{attack.notes || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="hint">
-              Зброї немає. Додайте її в інвентар — бонус і урон порахуються з довідника.
-            </p>
-          )}
+          <AttacksTable attacks={sheet.attacks} />
         </section>
       ) : null}
 
       {tab === "spells" ? (
         <>
-          {casting.classes.length ? (
-            <section className="sheet-section">
-              <h2>Чарування</h2>
-              <ul className="plain-list">
-                {casting.classes.map((item) => (
-                  <li key={item.key}>
-                    {item.name_en}: опір {item.save_dc}, атака {modifierLabel(item.attack_bonus)} (від{" "}
-                    {abilityLabel(item.ability)})
-                    {item.prepares
-                      ? `, готує до ${item.prepared_limit}`
-                      : `, знає до ${item.spells_known_limit ?? 0}`}
-                  </li>
-                ))}
-              </ul>
-              <div className="resource-row">
-                {Object.entries(sheet.resources.slots).map(([level, resource]) => (
-                  <span key={level} className="resource">
-                    {level} рівень
-                    <Counter
-                      used={resource.used}
-                      total={resource.total}
-                      title={`слоти ${level} рівня`}
-                      onChange={(used) => {
-                        const usedMap: Record<string, number> = {};
-                        for (const [key, value] of Object.entries(sheet.resources.slots)) {
-                          const next = key === level ? used : value.used;
-                          if (next) usedMap[key] = next;
-                        }
-                        patch({ slots: usedMap });
-                      }}
-                    />
-                  </span>
-                ))}
-                {sheet.resources.pact ? (
-                  <span className="resource">
-                    Pact Magic
-                    <Counter
-                      used={sheet.resources.pact.used}
-                      total={sheet.resources.pact.total}
-                      title="слоти Pact Magic"
-                      onChange={(used) => patch({ pact_used: used })}
-                    />
-                  </span>
-                ) : null}
-              </div>
-            </section>
-          ) : (
-            <p className="hint">Персонаж не чарує.</p>
-          )}
+          <section className="sheet-section">
+            <h2>Чарування</h2>
+            <CastingBlock
+              casting={casting}
+              resources={sheet.resources}
+              onSlotsUsed={(level, used) => {
+                const usedMap: Record<string, number> = {};
+                for (const [key, value] of Object.entries(sheet.resources.slots)) {
+                  const next = key === level ? used : value.used;
+                  if (next) usedMap[key] = next;
+                }
+                patch({ slots: usedMap });
+              }}
+              onPactUsed={(used) => patch({ pact_used: used })}
+            />
+          </section>
 
           <section className="sheet-section">
             <h2>Відомі закляття</h2>
-            {sheet.spells.length ? (
-              <ul className="plain-list">
-                {sheet.spells.map((spell) => (
-                  <li key={`${spell.name_en}-${spell.source}`}>
-                    {spell.level === 0 ? "заговір" : `${spell.level} рівня`} · {spell.name_en}
-                    {spell.always_prepared
-                      ? " · завжди підготовлене"
-                      : spell.prepared
-                        ? " · підготовлене"
-                        : ""}
-                    {spell.source === "species"
-                      ? " · від виду"
-                      : spell.source === "subclass"
-                        ? " · від підкласу"
-                        : ""}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="hint">—</p>
-            )}
+            <SpellsKnownList spells={sheet.spells} />
           </section>
         </>
       ) : null}
@@ -634,29 +559,16 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
       ) : null}
 
       {tab === "features" ? (
-        <section className="sheet-section">
-          <h2>Уміння</h2>
-          {sheet.features.length ? (
-            <ul className="plain-list">
-              {sheet.features.map((feature) => (
-                <li key={`${feature.class_key}-${feature.name_en}`}>
-                  <strong>{feature.name_en}</strong> · {feature.class_name}, {feature.level} рівень
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hint">—</p>
-          )}
-          <h3>Володіння</h3>
-          <ul className="plain-list">
-            {sheet.proficiencies.map((item, index) => (
-              <li key={`${item.kind}-${item.value}-${index}`}>
-                {PROFICIENCY_LABELS[item.kind] ?? item.kind}: {proficiencyValue(item.kind, item.value)}{" "}
-                <span className="short">({item.source.kind}: {item.source.key})</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <>
+          <section className="sheet-section">
+            <h2>Уміння</h2>
+            <FeaturesList features={sheet.features} />
+          </section>
+          <section className="sheet-section">
+            <h2>Володіння</h2>
+            <ProficienciesList proficiencies={sheet.proficiencies} />
+          </section>
+        </>
       ) : null}
 
       {tab === "notes" ? (

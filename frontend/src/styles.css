@@ -1171,10 +1171,85 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/* Огляд у дві колонки: бій ліворуч, характеристики праворуч           */
+/* ------------------------------------------------------------------ */
+
+.sheet-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 430px;
+  gap: 16px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.sheet-column {
+  min-width: 0;
+}
+
+.sheet-column > * {
+  margin-top: 0;
+}
+
+.sheet-column > * + * {
+  margin-top: 16px;
+}
+
+.sheet-column--stats {
+  order: -1;
+}
+
+.sheet-column--stats .skill-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ability-table--compact {
+  font-size: 12.5px;
+}
+
+.ability-table--compact th,
+.ability-table--compact td {
+  padding: 5px 6px;
+}
+
+.feature-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feature-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+.feature-list li:last-child {
+  border-bottom: none;
+}
+
+.feature-name {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.feature-meta {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
 /* Вузькі екрани: лист розкладається в одну-дві колонки               */
 /* ------------------------------------------------------------------ */
 
 @media (max-width: 980px) {
+  .sheet-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .vitals {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
