@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from dndsheet.characters.domain.character import Character
-from dndsheet.characters.domain.class_level import CharacterClass
+from dndsheet.characters.domain.class_level import CharacterClass, MulticlassWaiver
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.proficiencies import (
@@ -243,6 +243,24 @@ def spells_from_record(records: list[Mapping[str, Any]] | None) -> tuple[KnownSp
 # ---------------------------------------------------------------------------
 
 
+def multiclass_waivers_from_record(
+    records: list[Mapping[str, Any]] | None,
+) -> tuple[MulticlassWaiver, ...]:
+    """Позначки «взято без вимог». Немає поля — немає й позначок."""
+    waivers: list[MulticlassWaiver] = []
+    for record in records or ():
+        try:
+            waivers.append(
+                MulticlassWaiver(
+                    class_key=str(record["class_key"]),
+                    requirements=tuple(str(item) for item in record.get("requirements") or ()),
+                )
+            )
+        except (KeyError, ValueError, TypeError) as exc:
+            raise ValidationError(f"невірна позначка вимог у файлі: {record!r}") from exc
+    return tuple(waivers)
+
+
 def character_to_record(character: Character) -> dict[str, Any]:
     return {
         "schema": CHARACTER_SCHEMA,
@@ -258,6 +276,11 @@ def character_to_record(character: Character) -> dict[str, Any]:
                 "subclass_key": entry.subclass_key,
             }
             for entry in character.classes
+        ],
+        # Вимоги мультикласу, які група обійшла: лист показує це явно.
+        "multiclass_waivers": [
+            {"class_key": waiver.class_key, "requirements": list(waiver.requirements)}
+            for waiver in character.multiclass_waivers
         ],
         "species_key": character.species_key,
         "subspecies_key": character.subspecies_key,
@@ -305,6 +328,7 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
         ability_bonus_choices=tuple(
             Ability(str(name)) for name in record.get("ability_bonus_choices") or ()
         ),
+        multiclass_waivers=multiclass_waivers_from_record(record.get("multiclass_waivers")),
         species_key=record.get("species_key") or None,
         subspecies_key=record.get("subspecies_key") or None,
         background_key=record.get("background_key") or None,

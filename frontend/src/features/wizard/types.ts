@@ -376,7 +376,17 @@ export interface SheetCharacter {
   alignment: string | null;
   species: { key: string; name_en: string; subspecies: string | null } | null;
   background: { key: string; name_en: string } | null;
-  classes: { key: string; name_en: string; level: number; subclass: string | null; hit_die: number }[];
+  classes: {
+    key: string;
+    name_en: string;
+    level: number;
+    subclass: string | null;
+    hit_die: number;
+    /** Клас узято всупереч вимогам мультикласу (правило дому). */
+    requirements_ignored?: boolean;
+  }[];
+  /** Що саме обійшли: клас і його вимоги («INT 13»). */
+  multiclass_waivers?: { class_key: string; requirements: string[] }[];
   version: number;
 }
 
@@ -567,6 +577,9 @@ export interface LevelUpReport {
   slots: LevelUpSlotRow[];
   spells_added: string[];
   resources_added: string[];
+  /** Рівень узято без вимог мультикласу — лист це покаже. */
+  requirements_ignored: boolean;
+  ignored_requirements: string[];
 }
 
 export interface ClassSpell {

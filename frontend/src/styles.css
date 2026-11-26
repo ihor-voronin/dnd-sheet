@@ -1520,3 +1520,29 @@ body {
   max-height: 260px;
   overflow: auto;
 }
+
+/* Галочка «ігнорувати вимоги»: свідомий виняток, тому й позначається. */
+.levelup-ignore {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 10px;
+  padding: 4px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.levelup-ignore input {
+  margin: 0;
+}
+
+.levelup-ignore label {
+  cursor: pointer;
+}
+
+.levelup-warning {
+  color: #a8641a;
+}

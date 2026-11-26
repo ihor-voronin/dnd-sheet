@@ -146,6 +146,7 @@ def character_brief(character: Character) -> dict[str, Any]:
     """Шапка листа: хто це, з чого зібраний."""
     species = character.species
     background = character.background
+    waiver_keys = {waiver.class_key for waiver in character.multiclass_waivers}
     return {
         "id": character.id,
         "name": character.name,
@@ -172,8 +173,14 @@ def character_brief(character: Character) -> dict[str, Any]:
                 "level": entry.level,
                 "subclass": entry.subclass_key,
                 "hit_die": definition.hit_die,
+                "requirements_ignored": entry.class_key in waiver_keys,
             }
             for entry, definition in character.class_entries()
+        ],
+        # Лист має показати, що вимоги мультикласу обійшли, а не мовчати.
+        "multiclass_waivers": [
+            {"class_key": waiver.class_key, "requirements": list(waiver.requirements)}
+            for waiver in character.multiclass_waivers
         ],
         "version": character.version,
     }

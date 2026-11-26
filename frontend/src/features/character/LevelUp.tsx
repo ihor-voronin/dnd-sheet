@@ -86,6 +86,8 @@ export function LevelUpWizard({
   const [busy, setBusy] = useState(false);
 
   const [classKey, setClassKey] = useState<string | null>(null);
+  // Правило дому: вимоги мультикласу можна обійти, але лист це запамʼятає.
+  const [ignoreRequirements, setIgnoreRequirements] = useState(false);
   const [hpMode, setHpMode] = useState<"average" | "roll">("average");
   const [hpRoll, setHpRoll] = useState(1);
   const [subclassKey, setSubclassKey] = useState<string | null>(null);
@@ -175,6 +177,9 @@ export function LevelUpWizard({
             : { mode: "average" },
       };
       if (plan.subclass?.required && subclassKey) body.subclass_key = subclassKey;
+      // Галочку надсилаємо лише тоді, коли вимог справді бракує: інакше
+      // лист отримав би позначку «проігноровано» без причини.
+      if (!plan.allowed) body.ignore_requirements = true;
       if (plan.asi.pending) {
         if (asiMode === "feat") {
           if (!featId) throw new Error("оберіть рису або покращення характеристик");
@@ -266,6 +271,24 @@ export function LevelUpWizard({
             ))}
           </div>
           <p className="hint">Новий клас — мультиклас; він вимагає 13 у ключовій характеристиці.</p>
+          {fresh.some((item) => !item.allowed) ? (
+            <span className="levelup-ignore">
+              <input
+                id="levelup-ignore-requirements"
+                type="checkbox"
+                checked={ignoreRequirements}
+                onChange={(event) => {
+                  const next = event.target.checked;
+                  setIgnoreRequirements(next);
+                  // Вимкнали галочку — недоступний клас більше не вибраний.
+                  if (!next && plan && !plan.allowed) setClassKey(null);
+                }}
+              />
+              <label htmlFor="levelup-ignore-requirements">
+                ігнорувати вимоги мультикласу (правило дому)
+              </label>
+            </span>
+          ) : null}
           <div className="levelup-grid">
             {fresh.map((item) => {
               const title = item.allowed
@@ -277,7 +300,7 @@ export function LevelUpWizard({
                   type="button"
                   className={`chip ${classKey === item.class_key ? "chip--active" : ""}`}
                   title={item.blocked_reason ?? item.requirements.join(" / ")}
-                  disabled={!item.allowed}
+                  disabled={!item.allowed && !ignoreRequirements}
                   onClick={() => setClassKey(item.class_key)}
                 >
                   {title}
@@ -506,6 +529,12 @@ export function LevelUpWizard({
                   рівень {plan.total_level_before} → {plan.total_level_after}
                   {plan.is_new_class ? " · новий клас" : ""}
                 </li>
+                {plan.allowed ? null : (
+                  <li className="levelup-warning">
+                    вимоги мультикласу проігноровано: {plan.requirements.join(" або ")} — на
+                    листі буде позначка
+                  </li>
+                )}
                 <li>
                   хіти: {sheet.data?.sheet.hit_points.maximum ?? "?"} →{" "}
                   {(sheet.data?.sheet.hit_points.maximum ?? 0) + hpGain}

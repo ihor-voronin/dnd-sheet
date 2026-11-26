@@ -314,6 +314,17 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
     .filter(Boolean)
     .join(" · ");
 
+  // Класи, узяті без вимог мультикласу: лист каже це прямо, а не мовчить.
+  const waiverText = (character.multiclass_waivers ?? [])
+    .map((waiver) => {
+      const name =
+        character.classes.find((item) => item.key === waiver.class_key)?.name_en ??
+        waiver.class_key;
+      const required = waiver.requirements.join(" або ");
+      return required ? `${termLabel(name)} · ${required}` : termLabel(name);
+    })
+    .join("; ");
+
   // Пасивна уважність рахується на сервері; розслідування й проникливість
   // показуємо як 10 + навичка — це похідне число для ока, воно не зберігається.
   const passives = [
@@ -505,6 +516,15 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
           </div>
         </div>
       </header>
+
+      {waiverText ? (
+        <p className="ddb-waiver-note" role="note">
+          <span>
+            Вимоги мультикласу проігноровано: {waiverText}. Це правило дому — PHB вимагає
+            13 у ключовій характеристиці класу.
+          </span>
+        </p>
+      ) : null}
 
       {restNote ? (
         <p className="ddb-rest-note" role="status">

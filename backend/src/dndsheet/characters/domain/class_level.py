@@ -44,3 +44,28 @@ class CharacterClass:
 
     def gain_level(self) -> "CharacterClass":
         return replace(self, level=self.level + 1)
+
+
+@dataclass(frozen=True, slots=True)
+class MulticlassWaiver:
+    """Клас, узятий без вимог мультикласу (правило дому, а не PHB).
+
+    Вимоги (PHB, p. 163) — це допуск до класу, а не похідне число листа.
+    Коли група вирішує їх обійти, лист має це **памʼятати**: інакше персонаж
+    виглядав би так, ніби відповідає вимогам, яких не має. Тому тут
+    зберігається і клас, і те, чого саме не було («INT 13», «STR 13 або DEX 13»).
+    """
+
+    class_key: str
+    requirements: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        key = self.class_key.strip()
+        if not key:
+            raise ValidationError("вимоги проігноровано для класу без ключа")
+        object.__setattr__(self, "class_key", key.casefold())
+        object.__setattr__(
+            self,
+            "requirements",
+            tuple(text.strip() for text in self.requirements if text and text.strip()),
+        )

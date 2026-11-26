@@ -154,3 +154,51 @@ def test_twenty_level_character_cannot_grow(client: TestClient) -> None:
     assert payload["total_level"] == 20
     assert payload["can_level_up"] is False
     assert payload["plans"] == []
+
+
+def test_ignored_requirements_are_marked_on_the_sheet(client: TestClient) -> None:
+    """Галочка «ігнорувати вимоги» додає клас і лишає слід на листі."""
+    from dndsheet.shared.kernel import Ability, AbilityScore
+
+    fighter = next(
+        case for case in client.app.state.golden_cases if case.key == "fighter-1"
+    )
+    # Усі 10: не виконано ні вимоги мага (INT 13), ні навіть Воїна (STR 13).
+    weak = replace(
+        fighter.character,
+        id="level-up-no-requirements",
+        abilities={ability: AbilityScore(10) for ability in Ability},
+    )
+    client.app.state.characters.save(weak)
+
+    plan = next(
+        item
+        for item in client.get("/api/v1/characters/level-up-no-requirements/level-up").json()[
+            "plans"
+        ]
+        if item["class_key"] == "wizard"
+    )
+    assert plan["allowed"] is False
+    assert plan["requirements"]
+
+    blocked = client.post(
+        "/api/v1/characters/level-up-no-requirements/level-up",
+        json={"class_key": "wizard"},
+    )
+    assert blocked.status_code == 422
+
+    response = client.post(
+        "/api/v1/characters/level-up-no-requirements/level-up",
+        json={"class_key": "wizard", "ignore_requirements": True},
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+
+    assert payload["level_up"]["requirements_ignored"] is True
+    assert payload["level_up"]["ignored_requirements"] == plan["requirements"]
+    classes = {item["key"]: item for item in payload["sheet"]["character"]["classes"]}
+    assert classes["wizard"]["requirements_ignored"] is True
+    assert classes["fighter"]["requirements_ignored"] is False
+    waivers = payload["sheet"]["character"]["multiclass_waivers"]
+    assert [item["class_key"] for item in waivers] == ["wizard"]
+    assert waivers[0]["requirements"] == plan["requirements"]

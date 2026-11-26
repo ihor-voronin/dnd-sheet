@@ -19,7 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Any, Iterable, Mapping
 
-from dndsheet.characters.domain.class_level import CharacterClass
+from dndsheet.characters.domain.class_level import CharacterClass, MulticlassWaiver
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem
 from dndsheet.characters.domain.pick_rules import is_choice_label, validate_pick
 from dndsheet.characters.domain.ports import RulesSource
@@ -58,6 +58,9 @@ class Character:
     abilities: dict[Ability, AbilityScore]
     rules: RulesSource = field(repr=False, compare=False)
     classes: list[CharacterClass] = field(default_factory=list)
+    #: Класи, узяті без вимог мультикласу (правило дому). Не впливає на числа:
+    #: це позначка для листа, щоб персонаж не виглядав узгодженим із PHB.
+    multiclass_waivers: tuple[MulticlassWaiver, ...] = ()
     ability_bonus_choices: tuple[Ability, ...] = ()
     species_key: str | None = None
     subspecies_key: str | None = None
@@ -95,6 +98,7 @@ class Character:
         self._normalize_keys()
         self._validate_origins()
         self._validate_classes()
+        self._validate_waivers()
         self._validate_ability_choices()
         self._validate_chosen()
         self._validate_spells()
@@ -233,6 +237,30 @@ class Character:
         self.events.append(LevelGained(character_id=self.id, level=self.total_level))
         self.bump_version()
 
+    def waive_multiclass_requirements(
+        self, class_key: str, requirements: Iterable[str] = ()
+    ) -> None:
+        """Позначити клас як узятий без вимог мультикласу (правило дому).
+
+        Вимоги не стають «виконаними»: вони саме **проігноровані**, і лист
+        показує це окремим рядком. Повторний виклик нічого не додає.
+        """
+        key = class_key.strip().casefold()
+        if not self.has_class(key):
+            raise ValidationError(f"персонаж не має класу {class_key!r}")
+        if self.waiver_for(key) is not None:
+            return
+        waiver = MulticlassWaiver(class_key=key, requirements=tuple(requirements))
+        self.multiclass_waivers = self.multiclass_waivers + (waiver,)
+        self.bump_version()
+
+    def waiver_for(self, class_key: str) -> MulticlassWaiver | None:
+        wanted = class_key.strip().casefold()
+        for waiver in self.multiclass_waivers:
+            if waiver.class_key == wanted:
+                return waiver
+        return None
+
     def set_class_level(self, class_key: str, level: int) -> None:
         wanted = class_key.strip().casefold()
         for index, entry in enumerate(self.classes):
@@ -275,6 +303,9 @@ class Character:
         self.classes = remaining
         self.spells = tuple(spell for spell in self.spells if spell.class_key != wanted)
         self.chosen = self.chosen.without_source(SourceKind.CLASS, wanted)
+        self.multiclass_waivers = tuple(
+            waiver for waiver in self.multiclass_waivers if waiver.class_key != wanted
+        )
         self.bump_version()
 
     def set_subclass(self, class_key: str, subclass_key: str | None) -> None:
@@ -661,6 +692,7 @@ class Character:
             self.background_key.strip().casefold() if self.background_key else None
         )
         self.classes = list(self.classes)
+        self.multiclass_waivers = tuple(self.multiclass_waivers)
 
     def _validate_origins(self) -> None:
         if self.subspecies_key and not self.species_key:
@@ -696,6 +728,21 @@ class Character:
             if total > MAX_LEVEL:
                 raise ValidationError(f"сумарний рівень не може бути більшим за {MAX_LEVEL}")
             self._check_subclass(entry, definition)
+
+    def _validate_waivers(self) -> None:
+        """Позначка «вимоги проігноровано» має вказувати на наявний клас."""
+        seen: set[str] = set()
+        unique: list[MulticlassWaiver] = []
+        for waiver in self.multiclass_waivers:
+            if waiver.class_key in seen:
+                continue
+            seen.add(waiver.class_key)
+            if not self.has_class(waiver.class_key):
+                raise ValidationError(
+                    f"вимоги проігноровано для класу {waiver.class_key!r}, якого немає"
+                )
+            unique.append(waiver)
+        self.multiclass_waivers = tuple(unique)
 
     def _check_subclass(self, entry: CharacterClass, definition: ClassMechanics) -> None:
         if entry.subclass_key is None:

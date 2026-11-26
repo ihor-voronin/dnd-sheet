@@ -2226,6 +2226,25 @@ body.board {
 
 /* --- відпочинок ------------------------------------------------------- */
 
+/* Клас узято без вимог мультикласу: попередження, а не подробиця. */
+.ddb-waiver-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 24px 0;
+  padding: 7px 12px;
+  border: 1px solid rgb(235 190 100 / 38%);
+  border-radius: 6px;
+  background: rgb(235 190 100 / 9%);
+  color: #f0dcb4;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.ddb-waiver-note > span {
+  flex: 1 1 auto;
+}
+
 .ddb-rest-note {
   display: flex;
   align-items: center;

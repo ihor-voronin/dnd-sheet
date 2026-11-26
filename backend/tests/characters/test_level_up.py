@@ -497,3 +497,78 @@ def test_asi_counter_cannot_exceed_slots(rules) -> None:  # noqa: ANN001
             classes=[CharacterClass(class_key="fighter", level=3)],
             asi_taken=1,
         )
+
+
+# ---------------------------------------------------------------------------
+# ігнорування вимог мультикласу (правило дому)
+# ---------------------------------------------------------------------------
+
+
+def test_ignore_requirements_adds_class_and_marks_it(rules) -> None:  # noqa: ANN001
+    character = make_character(rules)  # усі 10: INT 13 для мага немає
+    service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
+
+    character, report = service.apply(
+        "c-1",
+        {"class_key": "wizard", "ignore_requirements": True, "hp": {"mode": "average"}},
+    )
+
+    assert [entry.class_key for entry in character.classes] == ["fighter", "wizard"]
+    assert report.requirements_ignored is True
+    assert report.ignored_requirements == ("INT 13",)
+    # Позначка не вигадує виконаних вимог: вона каже саме те, що сталося.
+    assert [waiver.class_key for waiver in character.multiclass_waivers] == ["wizard"]
+    assert character.multiclass_waivers[0].requirements == ("INT 13",)
+
+
+def test_ignore_flag_marks_nothing_when_requirements_are_met(rules) -> None:  # noqa: ANN001
+    character = mage_ready(rules)
+    service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
+
+    character, report = service.apply(
+        "c-1", {"class_key": "wizard", "ignore_requirements": True}
+    )
+
+    assert report.requirements_ignored is False
+    assert character.multiclass_waivers == ()
+
+
+def test_waiver_is_removed_with_its_class(rules) -> None:  # noqa: ANN001
+    character = make_character(rules)
+    service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
+    character, _ = service.apply(
+        "c-1", {"class_key": "wizard", "ignore_requirements": True}
+    )
+
+    character.remove_class("wizard")
+
+    assert character.multiclass_waivers == ()
+
+
+def test_waiver_survives_reload(rules) -> None:  # noqa: ANN001
+    """Позначка живе у файлі: після читання лист усе ще знає про обхід."""
+    from dndsheet.characters.infrastructure.character_json import (
+        character_from_record,
+        character_to_record,
+    )
+
+    character = make_character(rules)
+    service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
+    character, _ = service.apply(
+        "c-1", {"class_key": "wizard", "ignore_requirements": True}
+    )
+
+    record = character_to_record(character)
+    assert record["multiclass_waivers"] == [
+        {"class_key": "wizard", "requirements": ["INT 13"]}
+    ]
+    restored = character_from_record(record, rules)
+    assert restored.multiclass_waivers[0].class_key == "wizard"
+    assert restored.multiclass_waivers[0].requirements == ("INT 13",)
+
+
+def test_waiver_for_missing_class_rejected(rules) -> None:  # noqa: ANN001
+    from dndsheet.characters.domain.class_level import MulticlassWaiver
+
+    with pytest.raises(ValidationError):
+        make_character(rules, multiclass_waivers=(MulticlassWaiver(class_key="wizard"),))

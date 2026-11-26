@@ -220,7 +220,24 @@ def _identity_fields(
             [titles.get(key, key) for key in character.feats],
             LocalizedText(uk="Риси", en="Feats"),
         )
+    if character.multiclass_waivers:
+        # Не похідне число, а слід рішення: вимоги обійшли свідомо.
+        fields["identity.waivers"] = _computed_list(
+            "identity.waivers",
+            [_waiver_text(character, waiver) for waiver in character.multiclass_waivers],
+            LocalizedText(
+                uk="Вимоги мультикласу проігноровано",
+                en="Multiclass requirements ignored",
+            ),
+        )
     return fields
+
+
+def _waiver_text(character: Character, waiver) -> str:  # noqa: ANN001 — MulticlassWaiver
+    definition = character.rules.class_mechanics(waiver.class_key)
+    name = definition.name_en if definition is not None else waiver.class_key
+    required = " або ".join(waiver.requirements)
+    return f"{name} ({required})" if required else name
 
 
 def _classes_text(character: Character) -> str:

@@ -61,6 +61,10 @@ class LevelUpReport:
     slots: tuple[SlotRow, ...] = ()
     spells_added: tuple[str, ...] = ()
     resources_added: tuple[str, ...] = ()
+    #: Клас узято всупереч вимогам мультикласу (галочка на екрані рівня).
+    requirements_ignored: bool = False
+    #: Що саме проігноровано: «INT 13», «STR 13 або DEX 13».
+    ignored_requirements: tuple[str, ...] = ()
 
 
 @dataclass(slots=True)
@@ -115,8 +119,12 @@ class LevelUpService:
         payload = dict(body or {})
         class_key = _text(payload.get("class_key"), "клас").casefold()
         plan = self.planner.plan(character, class_key)
-        if not plan.allowed:
+        # Правило дому: вимоги мультикласу можна обійти свідомо. Тоді клас
+        # усе одно додається, але лист памʼятає, що вимог не було.
+        ignore_requirements = _flag(payload.get("ignore_requirements"))
+        if not plan.allowed and not ignore_requirements:
             raise ValidationError(plan.blocked_reason or f"клас {class_key!r} недоступний")
+        waived = ignore_requirements and not plan.allowed
 
         subclass_key = self._subclass(plan, payload.get("subclass_key"))
         hp_mode, hp_roll = _hp_choice(payload.get("hp"), plan)
@@ -131,6 +139,10 @@ class LevelUpService:
             character.add_class(plan.class_key, 1)
         else:
             character.raise_level(plan.class_key)
+
+        # 1а. позначка «взято без вимог» — уже після появи класу в списку
+        if waived:
+            character.waive_multiclass_requirements(plan.class_key, plan.requirements)
 
         # 2. кидок хітів — на місце, яке цей рівень займає в пулі
         if hp_mode == "roll":
@@ -190,6 +202,8 @@ class LevelUpService:
                 for key in plan.resources_after
                 if key not in plan.resources_before
             ),
+            requirements_ignored=waived,
+            ignored_requirements=plan.requirements if waived else (),
         )
         return character, report
 
@@ -323,6 +337,20 @@ def _optional_text(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _flag(value: Any) -> bool:
+    """Галочка з JSON. Рядок "false" не має ставати істиною."""
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().casefold()
+    if text in {"true", "1", "yes"}:
+        return True
+    if text in {"false", "0", "no", ""}:
+        return False
+    raise ValidationError(f"ignore_requirements має бути true або false, надіслано {value!r}")
 
 
 __all__ = ["LevelUpReport", "LevelUpService"]
