@@ -339,6 +339,7 @@ def test_background_details_come_from_compendium(client: TestClient) -> None:
     assert "athletics" in background["skills"]
     assert "insignia" in background["equipment"]
     assert "Skill Proficiencies" not in background["description"]
+    assert background["tools_any"] == 1, "у солдата лишається вибір одного набору"
 
 
 def test_stale_version_returns_409(client: TestClient) -> None:

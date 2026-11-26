@@ -22,7 +22,7 @@ from dndsheet.compendium.domain.query import EntryQuery
 from dndsheet.shared.errors import NotFoundError
 
 #: `#### Feature: Military Rank` — так оформлені риси передісторій.
-FEATURE_HEAD = re.compile(r"^####\s+Feature:\s*(.+?)\s*$", re.IGNORECASE)
+FEATURE_HEAD = re.compile(r"^#{2,4}\s+Feature:\s*(.+?)\s*$", re.IGNORECASE)
 HEADING = re.compile(r"^#{2,4}\s+")
 MECHANICAL = ("Skill Proficiencies:", "Tool Proficiencies:", "Languages:", "Equipment:")
 
@@ -61,6 +61,16 @@ def _details(service: CompendiumService, character: Character) -> dict[str, Any]
     def values(kind: ProficiencyKind) -> list[str]:
         return sorted({str(item.value) for item in mine if item.kind is kind})
 
+    chosen = [
+        item
+        for item in character.chosen.items
+        if item.source.kind.value == "background" and item.source.key == background.key
+    ]
+
+    def remaining(kind: ProficiencyKind, total: int) -> int:
+        picked = sum(1 for item in chosen if item.kind is kind)
+        return max(0, total - picked)
+
     return {
         "key": background.key,
         "name_en": background.name_en,
@@ -72,9 +82,11 @@ def _details(service: CompendiumService, character: Character) -> dict[str, Any]
         "skills": values(ProficiencyKind.SKILL),
         "tools": values(ProficiencyKind.TOOL),
         "languages": values(ProficiencyKind.LANGUAGE),
-        "skill_any": background.skill_any,
-        "tools_any": background.tools_any,
-        "languages_any": background.languages_any_standard,
+        "skill_any": remaining(ProficiencyKind.SKILL, background.skill_any),
+        "tools_any": remaining(ProficiencyKind.TOOL, background.tools_any),
+        "languages_any": remaining(
+            ProficiencyKind.LANGUAGE, background.languages_any_standard
+        ),
     }
 
 
