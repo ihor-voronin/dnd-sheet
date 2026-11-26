@@ -52,6 +52,9 @@ const ARMOR_DEX_CAP: Record<string, number | null> = {
   "Heavy Armor": 0,
 };
 
+/** Скільком предметам можна настроїтися одночасно (PHB, с. 138). */
+const MAX_ATTUNED = 3;
+
 /** Рідкість так, як її називає книга. */
 const RARITY_LABELS: Record<string, string> = {
   common: "звичайний",
@@ -300,7 +303,6 @@ function statsOf(data: Record<string, unknown>): [string, string][] {
   if (data.properties) rows.push(["Властивості", weaponNotes(String(data.properties))]);
   if (data.cost) rows.push(["Ціна", moneyLabel(data.cost)]);
   if (data.weight) rows.push(["Вага", weightLabel(data.weight)]);
-  if (data.attunement === true) rows.push(["Настроювання", "потрібне"]);
   return rows;
 }
 
@@ -345,6 +347,8 @@ export function InventoryPanel({
     index: number;
     text: string;
     english: string | null;
+    /** Чи є український переклад: без нього перемикач «оригінал» не потрібен. */
+    translated: boolean;
     showEnglish: boolean;
     loading: boolean;
     stats: [string, string][];
@@ -514,6 +518,7 @@ export function InventoryPanel({
       index,
       text: translated,
       english: null,
+      translated: Boolean(translated.trim()),
       showEnglish: false,
       loading: true,
       stats: known ? statsOf(dataOf(known)) : [],
@@ -528,6 +533,7 @@ export function InventoryPanel({
             index,
             text: current.text || english || "",
             english,
+            translated: current.translated,
             showEnglish: current.showEnglish,
             loading: false,
             stats: current.stats.length ? current.stats : stats,
@@ -536,12 +542,15 @@ export function InventoryPanel({
     );
   }
 
+  const attunedCount = items.filter((item) => item.attuned).length;
+
   return (
     <>
       <h3 className="ddb-work__title">
         <span>Інвентар</span>
         <span className="short">
-          вага {carrying.weight} з {carrying.capacity} фнт
+          настроювання {attunedCount} з {MAX_ATTUNED} · вага {carrying.weight} з{" "}
+          {carrying.capacity} фнт
         </span>
       </h3>
 
@@ -858,7 +867,9 @@ export function InventoryPanel({
             const meta = [
               ITEM_KIND_LABELS[item.kind] ?? item.kind,
               rarity,
-              data.attunement === true ? "настроювання" : "",
+              data.attunement === true && item.attuned ? "настроєно" : "",
+              data.attunement === true && !item.attuned ? "потрібне настроювання" : "",
+              !data.attunement && item.attuned ? "настроєно" : "",
               item.damage,
               item.armor_base ? `КЗ ${item.armor_base}` : "",
               item.dex_cap !== null && item.armor_base ? `СПР ≤ ${item.dex_cap}` : "",
@@ -871,6 +882,19 @@ export function InventoryPanel({
               : entry
                 ? statsOf(data)
                 : [];
+            //: Настроювання показуємо, коли предмет його потребує (це знає
+            //: довідник) або коли гравець уже настроївся. Порожній чип на
+            //: кожній мотузці був би шумом.
+            const needsAttunement = data.attunement === true;
+            const showAttune = needsAttunement || item.attuned;
+            const attuneBlocked = !item.attuned && attunedCount >= MAX_ATTUNED;
+            const statsRows = stats.filter(([label]) => label !== "Настроювання");
+            if (showAttune) {
+              statsRows.push([
+                "Настроювання",
+                item.attuned ? "настроєно" : "потрібне, ще не настроєно",
+              ]);
+            }
             return (
               <li
                 key={`${item.name_en}-${index}`}
@@ -893,6 +917,23 @@ export function InventoryPanel({
                     <span className="item-meta">{meta.join(" · ")}</span>
                   </span>
                   <span className="inv-row__actions">
+                    {showAttune ? (
+                      <button
+                        type="button"
+                        className={`chip ${item.attuned ? "chip--active" : ""}`}
+                        disabled={disabled || attuneBlocked}
+                        onClick={() => void onUpdate(index, { attuned: !item.attuned })}
+                        title={
+                          attuneBlocked
+                            ? `Уже настроєно ${MAX_ATTUNED} предмети — спершу зніміть настроювання з іншого`
+                            : item.attuned
+                              ? "Зняти настроювання"
+                              : "Настроїтися на предмет"
+                        }
+                      >
+                        {item.attuned ? "настроєно" : "настроїти"}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className={`chip ${item.equipped ? "chip--active" : ""}`}
@@ -947,9 +988,9 @@ export function InventoryPanel({
 
                 {isOpen ? (
                   <div className="item-detail">
-                    {stats.length ? (
+                    {statsRows.length ? (
                       <dl className="item-detail__stats">
-                        {stats.map(([label, value]) => (
+                        {statsRows.map(([label, value]) => (
                           <div key={label} className="item-detail__stat">
                             <dt>{label}</dt>
                             <dd>{value}</dd>
@@ -967,7 +1008,7 @@ export function InventoryPanel({
                         дописати кнопкою ✎.
                       </p>
                     )}
-                    {detail.english && detail.text ? (
+                    {detail.english && detail.translated ? (
                       <button
                         type="button"
                         className="link-button item-detail__toggle"

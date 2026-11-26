@@ -16,6 +16,9 @@ from dndsheet.shared.kernel import Money
 #: Скільки фунтів тягне одна одиниця Сила (PHB, p. 176).
 CARRY_PER_STRENGTH = 15
 
+#: Скільком предметам можна настроїтися одночасно (PHB, p. 138).
+MAX_ATTUNED = 3
+
 
 class ItemKind(StrEnum):
     """Що це за предмет — від цього залежить, як він впливає на лист."""
@@ -104,6 +107,10 @@ class Inventory:
             raise ValidationError("одночасно можна носити лише одну броню")
         if sum(1 for item in self.items if item.is_shield and item.equipped) > 1:
             raise ValidationError("одночасно можна тримати лише один щит")
+        if self.attuned_count > MAX_ATTUNED:
+            raise ValidationError(
+                f"одночасно можна настроїтися не більше ніж на {MAX_ATTUNED} предмети"
+            )
 
     def __len__(self) -> int:
         return len(self.items)

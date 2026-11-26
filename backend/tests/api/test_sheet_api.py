@@ -515,3 +515,41 @@ def test_armor_can_be_equipped_through_item_edit(client: TestClient) -> None:
         item["name_en"] for item in sheet["inventory"]["items"] if item["equipped"]
     ]
     assert "chain mail" not in names, "нова броня знімає стару"
+
+
+def test_only_three_items_can_be_attuned(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    for name in ("Ring of Protection", "Cloak of Elvenkind", "Boots of Elvenkind", "Bag of Holding"):
+        added = client.post(
+            f"/api/v1/characters/{character_id}/items",
+            json={"item": {"name_en": name, "kind": "magic"}},
+        )
+        assert added.status_code == 200, added.text
+    items = added.json()["sheet"]["inventory"]["items"]
+    for index in range(3):
+        response = client.patch(
+            f"/api/v1/characters/{character_id}/items/{index}",
+            json={"fields": {"attuned": True}},
+        )
+        assert response.status_code == 200, response.text
+
+    fourth = client.patch(
+        f"/api/v1/characters/{character_id}/items/3",
+        json={"fields": {"attuned": True}},
+    )
+    assert fourth.status_code == 422, "четвертий предмет настроїти не можна"
+    assert "3" in fourth.json()["detail"]
+
+    sheet = client.get(f"/api/v1/characters/{character_id}").json()["sheet"]
+    assert sum(1 for item in sheet["inventory"]["items"] if item["attuned"]) == 3
+
+    freed = client.patch(
+        f"/api/v1/characters/{character_id}/items/0",
+        json={"fields": {"attuned": False}},
+    )
+    assert freed.status_code == 200, freed.text
+    again = client.patch(
+        f"/api/v1/characters/{character_id}/items/3",
+        json={"fields": {"attuned": True}},
+    )
+    assert again.status_code == 200, "звільнене місце знову доступне"

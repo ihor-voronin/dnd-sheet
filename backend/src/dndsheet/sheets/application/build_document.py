@@ -670,7 +670,7 @@ def _inventory_sections(
             parts.append(f"{row.weight_lb:g} фнт")
         parts.append("споряджено" if row.equipped else "не споряджено")
         if row.attuned:
-            parts.append("налаштовано")
+            parts.append("настроєно")
         fields[field_id] = Field(
             id=field_id,
             type="text",
