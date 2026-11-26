@@ -240,6 +240,7 @@ function unitsLabel(text: string): string {
     .replace(/\brounds?\b/gi, "раунд")
     .replace(/\bfeet\b/gi, "фт")
     .replace(/\bfoot\b/gi, "фт")
+    .replace(/\breach\b/gi, "досяжність")
     .replace(/\bmiles?\b/gi, "миля")
     .replace(/\bSelf\b/g, "на себе")
     .replace(/\bTouch\b/g, "дотик")

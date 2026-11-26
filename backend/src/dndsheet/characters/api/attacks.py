@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import replace
 from typing import Any
 
@@ -19,6 +20,23 @@ from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
 from dndsheet.shared.errors import NotFoundError
 from dndsheet.shared.kernel import Ability
+
+#: `Range (20/60)` або `range 20/60` у властивостях зброї.
+WEAPON_RANGE = re.compile(r"range\s*\(?\s*(\d+)\s*/\s*(\d+)", re.IGNORECASE)
+
+
+def _range_label(profile: WeaponProfile) -> str:
+    """Дистанція зброї з `properties`: 5 ft, досяжність або 20/60 ft."""
+    text = profile.properties or ""
+    match = WEAPON_RANGE.search(text)
+    if match:
+        return f"{match.group(1)}/{match.group(2)} feet"
+    folded = text.casefold()
+    if "reach" in folded:
+        return "5 feet (reach)"
+    if "ammunition" in folded:
+        return "—"
+    return "5 feet"
 
 
 def attacks_for(
@@ -65,6 +83,7 @@ def attacks_for(
                 "name_en": view.name_en,
                 "attack_bonus": view.attack_bonus,
                 "damage": view.damage,
+                "range": _range_label(profile),
                 "ability": view.ability.value,
                 "notes": view.notes,
                 "equipped": item.equipped,

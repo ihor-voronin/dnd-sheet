@@ -100,6 +100,12 @@ def test_golden_features_have_descriptions(client: TestClient) -> None:
     assert "short or long rest" in second_wind["description"]
 
 
+def test_golden_warlock_weapon_range(client: TestClient) -> None:
+    sheet = client.get("/api/v1/characters/golden/warlock-1").json()["sheet"]
+    dagger = next(item for item in sheet["attacks"] if item["name_en"] == "Dagger")
+    assert dagger["range"] == "20/60 feet", "кинджал можна метати"
+
+
 def test_golden_fighter_has_second_wind_resource(client: TestClient) -> None:
     sheet = client.get("/api/v1/characters/golden/fighter-1").json()["sheet"]
     resources = {item["key"]: item for item in sheet["feature_resources"]}
@@ -107,6 +113,7 @@ def test_golden_fighter_has_second_wind_resource(client: TestClient) -> None:
     assert second_wind["total"] == 1
     assert second_wind["used"] == 0
     assert second_wind["recharge"] == "short"
+    assert second_wind["action"] == "bonus"
 
 
 def test_unknown_golden_case_returns_404(client: TestClient) -> None:

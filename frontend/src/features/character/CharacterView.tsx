@@ -49,9 +49,8 @@ import { InventoryPanel } from "./inventory";
 import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
 import { BackgroundPanel } from "./background";
+import { ActionPanel } from "./actions";
 import {
-  ActionSpells,
-  AttacksTable,
   CastingBlock,
   FeatureResources,
   FeaturesList,
@@ -68,71 +67,6 @@ const TABS: { id: string; label: string }[] = [
   { id: "features", label: "Уміння" },
   { id: "background", label: "Передісторія" },
   { id: "notes", label: "Нотатки" },
-];
-
-/** Стандартні дії ходу з правил 2014 — не дані персонажа, а памʼятка.
- * Підказка — короткий переказ правила, щоб не тримати PHB під рукою. */
-const COMBAT_ACTIONS: { name: string; hint: string }[] = [
-  {
-    name: "Атака",
-    hint: "Одна атака зброєю або без неї; риси можуть давати більше. Замість атаки — Захват чи Штовханина.",
-  },
-  {
-    name: "Ривок",
-    hint: "Додатковий рух на відстань, що дорівнює швидкості, цього ходу.",
-  },
-  {
-    name: "Відхід",
-    hint: "Рух без атак можливості від істот, яких ви покидаєте, до кінця ходу.",
-  },
-  {
-    name: "Ухиляння",
-    hint: "Атаки по вас — із перешкодою, порятунки СПР — з перевагою; втрачається, якщо не можете діяти.",
-  },
-  {
-    name: "Захват",
-    hint: "Особлива атака: ціль рятується СИЛ або СПР; утримуєте її, доки не вивільниться.",
-  },
-  {
-    name: "Допомога",
-    hint: "Союзник дістає перевагу на атаку по цілі поруч або на перевірку чи порятунок.",
-  },
-  {
-    name: "Сховатися",
-    hint: "Перевірка Скритності проти пасивної Спостережливості; потрібне укриття.",
-  },
-  {
-    name: "Імпровізація",
-    hint: "Будь-яка дія поза списком; чи можлива вона й що коштує — вирішує майстер.",
-  },
-  {
-    name: "Вплив",
-    hint: "Спроба переконати, обманути, залякати чи розважити істоту.",
-  },
-  {
-    name: "Магія",
-    hint: "Чарування закляття з часом «1 дія»; бонусні дії та реакції — окремо.",
-  },
-  {
-    name: "Готовність",
-    hint: "Підготувати дію з умовою-тригером; виконується реакцією до початку вашого наступного ходу.",
-  },
-  {
-    name: "Пошук",
-    hint: "Перевірка МУД (Спостережливість) або ІНТ (Розслідування), щоб щось знайти.",
-  },
-  {
-    name: "Штовханина",
-    hint: "Особлива атака: ціль рятується СИЛ або СПР; відсуваєте на 5 фт або збиваєте з ніг.",
-  },
-  {
-    name: "Вивчення",
-    hint: "Перевірка ІНТ (Магія, Історія, Природа чи Релігія), щоб пригадати знання.",
-  },
-  {
-    name: "Використання",
-    hint: "Взаємодія з предметом; зазвичай раз за хід безкоштовно, далі — дія.",
-  },
 ];
 
 const NOTE_LABELS: Record<string, string> = {
@@ -382,36 +316,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
 
   const workTab = (() => {
     if (tab === "actions") {
-      return (
-        <>
-          <h3 className="ddb-work__title">
-            <span>Атаки</span>
-            <span className="short">дій за хід: 1</span>
-          </h3>
-          <AttacksTable attacks={sheet.attacks} />
-          {casting.classes.length ? (
-            <>
-              <h3 className="ddb-work__title">
-                <span>Закляття</span>
-                <span className="short">доступні зараз</span>
-              </h3>
-              <ActionSpells spells={sheet.spells} casting={casting} />
-            </>
-          ) : null}
-          <h3 className="ddb-work__title">
-            <span>Дії в бою</span>
-            <span className="short">стандартні</span>
-          </h3>
-          <ul className="combat-actions">
-            {COMBAT_ACTIONS.map((action) => (
-              <li key={action.name} className="combat-action">
-                <span className="combat-action__name">{action.name}</span>
-                <span className="combat-action__hint">{action.hint}</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      );
+      return <ActionPanel sheet={sheet} onUseFeature={setFeatureUse} />;
     }
     if (tab === "spells") {
       return (

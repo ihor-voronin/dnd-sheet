@@ -40,6 +40,7 @@ class FeatureResource:
     total: int
     used: int
     recharge: str
+    action: str = "other"
 
     @property
     def available(self) -> int:
@@ -223,6 +224,31 @@ RULES: tuple[_Rule, ...] = (
 )
 
 
+#: Тип дії для ресурсу: з чим його показувати у вкладці «Дії».
+ACTIONS: dict[str, str] = {
+    "fighter:second-wind": "bonus",
+    "fighter:action-surge": "other",
+    "fighter:indomitable": "other",
+    "fighter:superiority-dice": "other",
+    "barbarian:rage": "bonus",
+    "bard:bardic-inspiration": "bonus",
+    "cleric:channel-divinity": "action",
+    "cleric:divine-intervention": "action",
+    "cleric:war-priest": "bonus",
+    "druid:wild-shape": "action",
+    "druid:natural-recovery": "other",
+    "monk:ki": "bonus",
+    "monk:wholeness-of-body": "action",
+    "paladin:divine-sense": "action",
+    "paladin:channel-divinity": "action",
+    "rogue:stroke-of-luck": "other",
+    "sorcerer:sorcery-points": "other",
+    "warlock:eldritch-master": "action",
+    "warlock:dark-ones-luck": "other",
+    "wizard:arcane-recovery": "other",
+}
+
+
 def _uses(
     rule: _Rule, level: int, ability_modifiers: Mapping[Ability, int]
 ) -> int:
@@ -273,6 +299,7 @@ def resources_for(
                     total=total,
                     used=used,
                     recharge=recharge,
+                    action=ACTIONS.get(rule.key, "other"),
                 )
             )
     return tuple(resources)

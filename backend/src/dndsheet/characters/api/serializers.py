@@ -84,6 +84,8 @@ def computed_sheet(
         },
         "overridden": sorted(computed.overridden),
         "features": features(character),
+        "attacks_per_action": 1
+        + sum(1 for row in feature_rows(character) if row.name_en.startswith("Extra Attack")),
         "feature_resources": [
             {
                 "key": resource.key,
@@ -94,6 +96,7 @@ def computed_sheet(
                 "total": resource.total,
                 "used": resource.used,
                 "recharge": resource.recharge,
+                "action": resource.action,
             }
             for resource in resources_for(character, computed.ability_modifiers)
         ],

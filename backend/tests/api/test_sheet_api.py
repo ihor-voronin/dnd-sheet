@@ -105,6 +105,8 @@ def test_sheet_has_state_resources_and_attacks(client: TestClient) -> None:
     assert sword["attack_bonus"] == 5  # майстерність 2 + STR 3
     assert sword["damage"] == "1d8+3 slashing"
     assert sword["ability"] == "str"
+    assert sword["range"] == "5 feet"
+    assert sheet["attacks_per_action"] == 1
 
     features = {item["name_en"] for item in sheet["features"]}
     assert {"Second Wind", "Fighting Style"} <= features

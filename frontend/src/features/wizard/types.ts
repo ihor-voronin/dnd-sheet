@@ -264,6 +264,7 @@ export interface SheetFeatureResource {
   total: number;
   used: number;
   recharge: "short" | "long";
+  action: "action" | "bonus" | "reaction" | "other";
 }
 
 export interface RestReport {
@@ -440,10 +441,12 @@ export interface SheetViewPayload {
     name_en: string;
     attack_bonus: number;
     damage: string;
+    range: string;
     ability: string;
     notes: string;
     equipped: boolean;
   }[];
+  attacks_per_action: number;
   proficiencies: { kind: string; value: string; source: { kind: string; key: string } }[];
   carrying: { capacity: number; weight: number };
   inventory: {
