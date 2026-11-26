@@ -214,6 +214,7 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
   }
 
   for (const resource of sheet.feature_resources) {
+    const feature = sheet.features.find((item) => item.name_en === resource.name_en);
     rows.push({
       id: `resource-${resource.key}`,
       name: resource.name_en,
@@ -228,6 +229,7 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
       attack: false,
       limited: true,
       resource,
+      description: feature?.description,
     });
   }
 
