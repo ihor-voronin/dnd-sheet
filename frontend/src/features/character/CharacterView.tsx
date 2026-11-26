@@ -239,7 +239,7 @@ export function CharacterView({ sheet }: { sheet: SheetViewPayload }) {
 
       {sheet.spells.length ? (
         <section className="sheet-section">
-          <h2>Закляття</h2>
+          <h2>Відомі закляття</h2>
           <ul className="plain-list">
             {sheet.spells.map((spell) => (
               <li key={`${spell.name_en}-${spell.source}`}>
