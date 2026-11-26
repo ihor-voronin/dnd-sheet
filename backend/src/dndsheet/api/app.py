@@ -77,6 +77,8 @@ def create_app() -> FastAPI:
     app.state.spell_cache = {}
     # Кеш текстів умінь класів і підкласів для вкладки «Уміння».
     app.state.feature_cache = {}
+    # Кеш опису передісторій для однойменної вкладки.
+    app.state.background_cache = {}
     # Еталонні персонажі рахуються на старті: якщо корпусу немає, список
     # порожній, і `/golden` віддає `items: []`, а не 500.
     app.state.golden_cases = build_cases(compendium)

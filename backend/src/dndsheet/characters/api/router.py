@@ -27,6 +27,7 @@ from dndsheet.characters.api.serializers import (
     step_answers,
 )
 from dndsheet.characters.api.attacks import attacks_for
+from dndsheet.characters.api.background_info import enrich_background
 from dndsheet.characters.api.features import enrich_features
 from dndsheet.characters.api.spell_meta import enrich_spells
 from dndsheet.characters.api.wizard_options import build_options
@@ -97,6 +98,12 @@ def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Cha
         character,
         compendium,
         getattr(request.app.state, "feature_cache", {}),
+    )
+    enrich_background(
+        payload,
+        character,
+        compendium,
+        getattr(request.app.state, "background_cache", {}),
     )
     return payload
 

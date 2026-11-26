@@ -12,7 +12,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   addCharacterItem,
@@ -46,6 +46,9 @@ import {
 import { EditableNumber, NumberField, Pips } from "./editing";
 import { HitDiceBlock, HitPointsBlock } from "./hp";
 import { InventoryPanel } from "./inventory";
+import { NotesPanel, downloadNotes } from "./notes";
+import type { NoteStatus } from "./notes";
+import { BackgroundPanel } from "./background";
 import {
   ActionSpells,
   AttacksTable,
@@ -63,6 +66,7 @@ const TABS: { id: string; label: string }[] = [
   { id: "spells", label: "Закляття" },
   { id: "inventory", label: "Інвентар" },
   { id: "features", label: "Уміння" },
+  { id: "background", label: "Передісторія" },
   { id: "notes", label: "Нотатки" },
 ];
 
@@ -222,7 +226,6 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
       const result = await action;
       versionRef.current = result.sheet.character.version;
       setSheet(result.sheet);
-      setNotesDraft({ ...result.sheet.state.notes });
       return result.sheet;
     } catch (failure) {
       setError(messageOf(failure));
@@ -257,7 +260,6 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
       const result = await restCharacter(id, kind);
       versionRef.current = result.sheet.character.version;
       setSheet(result.sheet);
-      setNotesDraft({ ...result.sheet.state.notes });
       setRestNote(describeRest(result.rest));
     } catch (failure) {
       setError(messageOf(failure));
@@ -273,6 +275,56 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
       if (next) values[resource.key] = next;
     }
     patch({ feature_used: values });
+  }
+
+  // --- нотатки й зовнішність: автозбереження через паузу ---------------
+  const [notesStatus, setNotesStatus] = useState<NoteStatus>("idle");
+  const [notesSavedAt, setNotesSavedAt] = useState<string | null>(null);
+  const notesTimer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (notesTimer.current) window.clearTimeout(notesTimer.current);
+    },
+    [],
+  );
+
+  function updateNote(key: string, value: string) {
+    const next = { ...notesDraft, [key]: value };
+    setNotesDraft(next);
+    if (notesTimer.current) window.clearTimeout(notesTimer.current);
+    setNotesStatus("saving");
+    notesTimer.current = window.setTimeout(() => {
+      void saveNotes(next);
+    }, 800);
+  }
+
+  async function saveNotes(next: Record<string, string>) {
+    try {
+      const result = await patchCharacter(id, { notes: next });
+      versionRef.current = Math.max(versionRef.current, result.sheet.character.version);
+      setNotesStatus("saved");
+      setNotesSavedAt(
+        new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }),
+      );
+    } catch (failure) {
+      setNotesStatus("error");
+      setError(messageOf(failure));
+    }
+  }
+
+  function saveNotesNow() {
+    if (notesTimer.current) window.clearTimeout(notesTimer.current);
+    setNotesStatus("saving");
+    void saveNotes(notesDraft);
+  }
+
+  function exportNotes() {
+    downloadNotes(
+      notesDraft,
+      character.name,
+      Object.entries(NOTE_LABELS).map(([key, label]) => ({ key, label })),
+    );
   }
 
   const overridden = new Set(sheet.overridden);
@@ -428,31 +480,27 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
         </>
       );
     }
+    if (tab === "background") {
+      return (
+        <BackgroundPanel
+          details={sheet.background_details}
+          alignment={character.alignment}
+          appearance={notesDraft.appearance ?? ""}
+          status={notesStatus}
+          savedAt={notesSavedAt}
+          onAppearanceChange={(value) => updateNote("appearance", value)}
+        />
+      );
+    }
     return (
-      <>
-        <h3 className="ddb-work__title">
-          <span>Нотатки</span>
-        </h3>
-        <div className="notes-grid">
-          {Object.entries(NOTE_LABELS).map(([key, label]) => (
-            <label key={key} className="field">
-              <span>{label}</span>
-              <textarea
-                rows={4}
-                value={notesDraft[key] ?? ""}
-                onChange={(event) => setNotesDraft({ ...notesDraft, [key]: event.target.value })}
-              />
-            </label>
-          ))}
-        </div>
-        <button
-          type="button"
-          className="button button--primary"
-          onClick={() => patch({ notes: notesDraft })}
-        >
-          Зберегти нотатки
-        </button>
-      </>
+      <NotesPanel
+        notes={notesDraft}
+        status={notesStatus}
+        savedAt={notesSavedAt}
+        onUpdate={updateNote}
+        onSaveNow={saveNotesNow}
+        onExport={exportNotes}
+      />
     );
   })();
 

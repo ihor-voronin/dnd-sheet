@@ -329,6 +329,18 @@ def test_resource_recharge_depends_on_rest_kind(client: TestClient) -> None:
     assert resources["cleric:war-priest"]["used"] == 0
 
 
+def test_background_details_come_from_compendium(client: TestClient) -> None:
+    character_id = _create_fighter(client)
+    sheet = client.get(f"/api/v1/characters/{character_id}").json()["sheet"]
+    background = sheet["background_details"]
+    assert background["name_en"] == "Soldier"
+    assert background["feature_en"] == "Military Rank"
+    assert "military rank" in background["feature_text"].casefold()
+    assert "athletics" in background["skills"]
+    assert "insignia" in background["equipment"]
+    assert "Skill Proficiencies" not in background["description"]
+
+
 def test_stale_version_returns_409(client: TestClient) -> None:
     character_id = _create_fighter(client)
     first = _patch(client, character_id, {"hp": {"current": 7}})

@@ -229,6 +229,22 @@ export interface SheetSpell {
   attack_roll?: boolean;
 }
 
+export interface BackgroundDetails {
+  key: string;
+  name_en: string;
+  source_id: string;
+  feature_en: string | null;
+  feature_text: string;
+  description: string;
+  equipment: string;
+  skills: string[];
+  tools: string[];
+  languages: string[];
+  skill_any: number;
+  tools_any: number;
+  languages_any: number;
+}
+
 export interface SheetFeature {
   name_en: string;
   level: number;
@@ -419,6 +435,7 @@ export interface SheetViewPayload {
   overridden: string[];
   features: SheetFeature[];
   feature_resources: SheetFeatureResource[];
+  background_details: BackgroundDetails | null;
   attacks: {
     name_en: string;
     attack_bonus: number;

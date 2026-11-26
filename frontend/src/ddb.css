@@ -1609,6 +1609,238 @@ body.board {
   padding: 2px 0 0;
 }
 
+/* --- нотатки ---------------------------------------------------------- */
+
+.notes-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.notes-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notes-status {
+  color: var(--ddb-muted);
+  font-size: 10.5px;
+}
+
+.notes-status--saving {
+  color: #ffd27d;
+}
+
+.notes-status--saved {
+  color: var(--ddb-green);
+}
+
+.notes-status--error {
+  color: #ffb3bb;
+}
+
+.notes-toolbar__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.note-tool {
+  padding: 5px 9px;
+  border: 1px solid rgb(125 79 196 / 45%);
+  border-radius: 5px;
+  background: rgb(18 12 28 / 60%);
+  color: var(--ddb-muted);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.note-tool:hover:not(:disabled) {
+  border-color: var(--ddb-frame);
+  color: #fff;
+}
+
+.note-tool:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notes-grid--rich {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.note-card {
+  display: grid;
+  gap: 6px;
+  padding: 9px 10px;
+  border: 1px solid rgb(90 60 133 / 55%);
+  border-radius: 8px;
+  background: rgb(18 12 28 / 45%);
+}
+
+.note-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.note-card__label {
+  color: #cbb6ee;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.note-card__count {
+  color: var(--ddb-dim);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.note-area {
+  width: 100%;
+  min-height: 120px;
+  padding: 8px 9px;
+  border: 1px solid #4a3168;
+  border-radius: 6px;
+  background: #120d1c;
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.note-area::placeholder {
+  color: var(--ddb-dim);
+}
+
+.note-area:focus {
+  outline: none;
+  border-color: var(--ddb-frame);
+  box-shadow: 0 0 0 1px rgb(176 108 255 / 25%);
+}
+
+.note-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.note-clear {
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--ddb-dim);
+  font: inherit;
+  font-size: 9.5px;
+  cursor: pointer;
+}
+
+.note-clear:hover:not(:disabled) {
+  border-color: #4a3168;
+  color: #fff;
+}
+
+.note-clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.note-clear--danger {
+  border-color: #a13848;
+  color: #ffb3bb;
+}
+
+/* --- передісторія ----------------------------------------------------- */
+
+.background-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.bg-card {
+  padding: 10px 12px;
+  border: 1px solid rgb(125 79 196 / 45%);
+  border-radius: 8px;
+  background: rgb(18 12 28 / 45%);
+}
+
+.bg-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bg-card__name {
+  color: #fff;
+  font-family: var(--serif);
+  font-size: 19px;
+}
+
+.bg-card__align {
+  padding: 2px 8px;
+  border: 1px solid rgb(125 79 196 / 45%);
+  border-radius: 999px;
+  color: var(--ddb-muted);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bg-grants {
+  display: grid;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bg-grants li {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px dashed rgb(125 79 196 / 20%);
+  color: #e9e2f7;
+  font-size: 12px;
+}
+
+.bg-grants li:first-child {
+  border-top: none;
+}
+
+.bg-grants li > span:first-child {
+  align-self: center;
+  color: var(--ddb-muted);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.bg-equipment {
+  margin: 8px 0 0;
+  color: var(--ddb-dim);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.bg-equipment span {
+  color: var(--ddb-muted);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 /* --- дії в бою -------------------------------------------------------- */
 
 .combat-actions {
