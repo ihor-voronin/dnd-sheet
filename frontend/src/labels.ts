@@ -44,6 +44,27 @@ export const SKILL_LABELS: Record<string, string> = {
   persuasion: "Переконання",
 };
 
+export const SKILL_ABILITY: Record<string, string> = {
+  athletics: "str",
+  acrobatics: "dex",
+  sleight_of_hand: "dex",
+  stealth: "dex",
+  arcana: "int",
+  history: "int",
+  investigation: "int",
+  nature: "int",
+  religion: "int",
+  animal_handling: "wis",
+  insight: "wis",
+  medicine: "wis",
+  perception: "wis",
+  survival: "wis",
+  deception: "cha",
+  intimidation: "cha",
+  performance: "cha",
+  persuasion: "cha",
+};
+
 export const STEP_LABELS: Record<string, string> = {
   species: "Вид",
   class: "Клас",

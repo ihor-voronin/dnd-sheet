@@ -16,6 +16,7 @@ import {
   ALIGNMENT_LABELS,
   ITEM_KIND_LABELS,
   PROFICIENCY_LABELS,
+  SKILL_ABILITY,
   SKILL_LABELS,
   abilityLabel,
   modifierLabel,
@@ -164,19 +165,25 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
     );
   }
 
+  const totalLevel = character.classes.reduce((sum, item) => sum + item.level, 0);
+
   return (
     <article className="sheet character-view">
-      <header className="sheet-header">
-        <h1>{character.name}</h1>
-        <p className="meta character-meta">
-          {character.classes.map((item) => `${item.name_en} ${item.level}`).join(" / ")}
-          {character.species ? ` · ${character.species.name_en}` : ""}
-          {character.species?.subspecies ? ` (${character.species.subspecies})` : ""}
-          {character.background ? ` · ${character.background.name_en}` : ""}
-          {character.alignment ? ` · ${ALIGNMENT_LABELS[character.alignment] ?? character.alignment}` : ""}
-        </p>
+      <header className="sheet-banner">
+        <div className="banner-main">
+          <p className="banner-kicker">Лист персонажа</p>
+          <h1>{character.name}</h1>
+          <p className="banner-sub">
+            <span className="banner-level">рівень {totalLevel}</span>
+            {character.classes.map((item) => `${item.name_en} ${item.level}`).join(" / ")}
+            {character.species ? ` · ${character.species.name_en}` : ""}
+            {character.species?.subspecies ? ` (${character.species.subspecies})` : ""}
+            {character.background ? ` · ${character.background.name_en}` : ""}
+            {character.alignment ? ` · ${ALIGNMENT_LABELS[character.alignment] ?? character.alignment}` : ""}
+          </p>
+        </div>
         <div className="export-bar">
-          <span className="meta">Експорт листа зі станом:</span>
+          <span className="export-label">Експорт зі станом</span>
           <a className="button" href={exportUrl(id, "markdown")} download>
             Markdown
           </a>
@@ -213,15 +220,15 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
 
       {tab === "overview" ? (
         <>
-          <section className="combat-panel">
-            <div className="stat">
+          <section className="vitals">
+            <div className="stat stat--ac">
               <span className="stat-label">Клас захисту</span>
               <span className="stat-value">
                 {overrideNumber("armor_class", sheet.armor_class.value, "Клас захисту")}
               </span>
               <span className="stat-note">{partList(sheet.armor_class.parts)}</span>
             </div>
-            <div className="stat">
+            <div className="stat stat--hp">
               <span className="stat-label">Хіти</span>
               <span className="stat-value">
                 <EditableNumber
@@ -231,7 +238,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
                   min={0}
                   max={999}
                 />
-                {" / "}
+                <span className="stat-slash"> / </span>
                 {overrideNumber("hit_points_max", sheet.hit_points.maximum, "Максимум хітів")}
               </span>
               <span className="stat-note">{partList(sheet.hit_points.parts)}</span>
@@ -257,11 +264,11 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
                 {overrideNumber("speed", sheet.speed, "Швидкість", " фт")}
               </span>
             </div>
-            <div className="stat">
+            <div className="stat stat--wide">
               <span className="stat-label">Майстерність</span>
               <span className="stat-value">{modifierLabel(sheet.proficiency_bonus)}</span>
             </div>
-            <div className="stat">
+            <div className="stat stat--wide">
               <span className="stat-label">Пасивна уважність</span>
               <span className="stat-value">
                 {overrideNumber("passive_perception", sheet.passive_perception, "Пасивна уважність")}
@@ -269,7 +276,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             </div>
           </section>
 
-          <section className="wizard-block">
+          <section className="panel">
             <h3>Стан</h3>
             <div className="state-row">
               <span>
@@ -317,7 +324,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
                 />
               </span>
             </div>
-            <div className="button-row">
+            <div className="button-row button-row--start">
               <button
                 type="button"
                 className="button"
@@ -335,7 +342,7 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             </div>
           </section>
 
-          <section className="wizard-block">
+          <section className="panel">
             <h3>Хіт-дайси</h3>
             {Object.entries(sheet.resources.hit_dice).length ? (
               <ul className="plain-list">
@@ -379,41 +386,69 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
 
           <section className="sheet-section">
             <h2>Характеристики</h2>
-            <table className="ability-table">
-              <thead>
-                <tr>
-                  <th>Характеристика</th>
-                  <th>База</th>
-                  <th>Бонус</th>
-                  <th>Разом</th>
-                  <th>Мод.</th>
-                  <th>Порятунок</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ABILITIES.map((ability) => {
-                  const value = sheet.abilities[ability];
-                  const save = sheet.saving_throws[ability];
-                  return (
-                    <tr key={ability}>
-                      <th scope="row">
-                        {abilityLabel(ability)} <span className="short">{ABILITY_SHORT[ability]}</span>
-                      </th>
-                      <td>{value.base}</td>
-                      <td>{value.bonus ? modifierLabel(value.bonus) : "—"}</td>
-                      <td>
-                        <strong>{value.total}</strong>
-                      </td>
-                      <td>{modifierLabel(value.modifier)}</td>
-                      <td>
-                        {overrideNumber(`save:${ability}`, save.value, `Порятунок ${abilityLabel(ability)}`)}
-                        {save.proficient ? <span className="dot" title="володіє" /> : null}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <ul className="ability-cards">
+              {ABILITIES.map((ability) => {
+                const value = sheet.abilities[ability];
+                const save = sheet.saving_throws[ability];
+                return (
+                  <li key={ability} className="ability-card">
+                    <span className="ability-card__name" title={abilityLabel(ability)}>
+                      {ABILITY_SHORT[ability]}
+                    </span>
+                    <span
+                      className="ability-card__score"
+                      title={`База ${value.base}${value.bonus ? `, бонус ${modifierLabel(value.bonus)}` : ""}`}
+                    >
+                      {value.total}
+                    </span>
+                    <span className="ability-card__mod">{modifierLabel(value.modifier)}</span>
+                    <span className="ability-card__save">
+                      {save.proficient ? <span className="dot" title="володіє порятунком" /> : null}
+                      порятунок{" "}
+                      {overrideNumber(`save:${ability}`, save.value, `Порятунок ${abilityLabel(ability)}`)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <details className="reckoning">
+              <summary>Звідки числа</summary>
+              <table className="ability-table">
+                <thead>
+                  <tr>
+                    <th>Характеристика</th>
+                    <th>База</th>
+                    <th>Бонус</th>
+                    <th>Разом</th>
+                    <th>Мод.</th>
+                    <th>Порятунок</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ABILITIES.map((ability) => {
+                    const value = sheet.abilities[ability];
+                    const save = sheet.saving_throws[ability];
+                    return (
+                      <tr key={ability}>
+                        <th scope="row">
+                          {abilityLabel(ability)} <span className="short">{ABILITY_SHORT[ability]}</span>
+                        </th>
+                        <td>{value.base}</td>
+                        <td>{value.bonus ? modifierLabel(value.bonus) : "—"}</td>
+                        <td>
+                          <strong>{value.total}</strong>
+                        </td>
+                        <td>{modifierLabel(value.modifier)}</td>
+                        <td>
+                          {overrideNumber(`save:${ability}`, save.value, `Порятунок ${abilityLabel(ability)}`)}
+                          {save.proficient ? <span className="dot" title="володіє" /> : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </details>
           </section>
 
           <section className="sheet-section">
@@ -425,10 +460,11 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
                 const key = `skill:${skill}`;
                 return (
                   <li key={skill} className={value.proficient ? "skill skill--proficient" : "skill"}>
-                    <span className="skill-name">
-                      {value.proficient ? "● " : "○ "}
-                      {skillLabel(skill)}
+                    <span className="skill-mark" aria-hidden>
+                      {value.proficient ? "●" : "○"}
                     </span>
+                    <span className="skill-name">{skillLabel(skill)}</span>
+                    <span className="skill-ability">{ABILITY_SHORT[SKILL_ABILITY[skill]] ?? ""}</span>
                     <span className="skill-value">
                       {overrideNumber(key, value.value, `Навичка ${skillLabel(skill)}`)}
                     </span>
@@ -567,14 +603,20 @@ export function CharacterView({ initial }: { initial: SheetViewPayload }) {
             ))}
           </div>
           {sheet.inventory.items.length ? (
-            <ul className="plain-list">
+            <ul className="item-list">
               {sheet.inventory.items.map((item) => (
-                <li key={item.name_en}>
-                  {item.name_en}
-                  {item.quantity > 1 ? ` × ${item.quantity}` : ""} ·{" "}
-                  {ITEM_KIND_LABELS[item.kind] ?? item.kind}
-                  {item.armor_base ? ` · КЗ ${item.armor_base}` : ""}
-                  {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}{" "}
+                <li key={item.name_en} className="item-row">
+                  <span className="item-main">
+                    <span className="item-name">
+                      {item.name_en}
+                      {item.quantity > 1 ? ` × ${item.quantity}` : ""}
+                    </span>
+                    <span className="item-meta">
+                      {ITEM_KIND_LABELS[item.kind] ?? item.kind}
+                      {item.armor_base ? ` · КЗ ${item.armor_base}` : ""}
+                      {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}
+                    </span>
+                  </span>
                   <button
                     type="button"
                     className={`chip ${item.equipped ? "chip--active" : ""}`}
