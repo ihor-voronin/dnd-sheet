@@ -75,6 +75,9 @@ export function SpeciesStep({
   const [subspeciesKey, setSubspeciesKey] = useState(initial.subspecies_key ?? "");
   const [choices, setChoices] = useState<string[]>(initial.ability_choices ?? []);
   const [spellChoices, setSpellChoices] = useState<string[]>(initial.spell_choices ?? []);
+  // Список видів згортається, щойно вид обрано: на його місці — картка виду.
+  const [gridOpen, setGridOpen] = useState(!initial.species_key);
+  const summaryRef = useRef<HTMLDivElement | null>(null);
 
   const selected = options.species.find((item) => item.key === speciesKey);
   const children = selected?.subspecies ?? [];
@@ -118,6 +121,15 @@ export function SpeciesStep({
     });
   }
 
+  function pickSpecies(key: string) {
+    setSpeciesKey(key);
+    setGridOpen(false);
+    // Список згортається — інакше око лишається на порожньому місці.
+    requestAnimationFrame(() =>
+      summaryRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+    );
+  }
+
   return (
     <div className="wizard-step">
       <div className="field-row">
@@ -127,61 +139,77 @@ export function SpeciesStep({
         </label>
       </div>
 
-      <div className="choice-grid">
-        {options.species.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className={`choice ${item.key === speciesKey ? "choice--active" : ""}`}
-            aria-label={item.name_en}
-            onClick={() => setSpeciesKey(item.key)}
-          >
-            <strong>{speciesLabel(item.name_en)}</strong>
-            <span className="choice-meta">
-              {SIZE_LABELS[item.size] ?? item.size} · {item.speed} фт
-            </span>
-            <span className="choice-meta">{bonusesText(item.ability_bonuses)}</span>
-            {item.darkvision ? <span className="choice-meta">темний зір {item.darkvision}</span> : null}
-            {item.subspecies?.length ? (
-              <span className="choice-meta">підраси: {item.subspecies.length}</span>
-            ) : null}
-          </button>
-        ))}
-      </div>
-
-      {selected ? <SpeciesDetails item={selected} /> : null}
-
-      {children.length ? (
-        <section className="wizard-block">
-          <h3>{selected?.subspecies_required ? "Підраса (обовʼязково)" : "Підраса"}</h3>
-          <p className="hint">Підраса додає свої числа до виду, не замінюючи їх.</p>
-          <div className="choice-grid choice-grid--compact">
-            {children.map((child) => (
+      {selected ? (
+        <div ref={summaryRef}>
+          <section className="wizard-block species-card">
+            <header className="species-card__head">
+              <h3>{speciesLabel(selected.name_en)}</h3>
               <button
-                key={child.key}
                 type="button"
-                className={`choice ${child.key === subspeciesKey ? "choice--active" : ""}`}
-                aria-label={child.name_en}
-                onClick={() => setSubspeciesKey(child.key)}
+                className="link-button"
+                onClick={() => setGridOpen((open) => !open)}
               >
-                <strong>{speciesLabel(child.name_en)}</strong>
-                <span className="choice-meta">{bonusesText(child.ability_bonuses)}</span>
-                <span className="choice-meta">
-                  {child.speed} фт{child.darkvision ? ` · темний зір ${child.darkvision}` : ""}
-                </span>
+                {gridOpen ? "Згорнути список видів" : "Змінити вид"}
               </button>
-            ))}
-          </div>
-          {subspeciesMissing ? (
-            <p className="hint hint--warn">
-              {selected?.name_en}: цей вид дає частину чисел підрасі — оберіть її, інакше
-              персонаж не матиме повних бонусів. Далі без підраси не пустить і сервер.
-            </p>
-          ) : null}
-          {effective && effective.key !== selected?.key ? (
-            <SpeciesDetails item={effective} title="Що додає підраса" />
-          ) : null}
-        </section>
+            </header>
+
+            {children.length ? (
+              <div className="species-card__subs">
+                <h4>
+                  Підраса{selected.subspecies_required ? " (обовʼязково)" : ""}
+                </h4>
+                <div className="chip-row">
+                  {children.map((child) => (
+                    <button
+                      key={child.key}
+                      type="button"
+                      className={`chip chip--row ${child.key === subspeciesKey ? "chip--active" : ""}`}
+                      aria-label={child.name_en}
+                      onClick={() => setSubspeciesKey(child.key)}
+                    >
+                      <span>{speciesLabel(child.name_en)}</span>
+                      <span className="meta">{bonusesText(child.ability_bonuses)}</span>
+                    </button>
+                  ))}
+                </div>
+                {subspeciesMissing ? (
+                  <p className="hint hint--warn">
+                    {selected.name_en}: цей вид дає частину чисел підрасі — оберіть її, інакше
+                    персонаж не матиме повних бонусів. Далі без підраси не пустить і сервер.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            <SpeciesSummary base={selected} effective={effective ?? selected} />
+          </section>
+        </div>
+      ) : (
+        <p className="hint">Оберіть вид — і тут зʼявиться все, що він дає.</p>
+      )}
+
+      {gridOpen ? (
+        <div className="choice-grid species-grid">
+          {options.species.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`choice ${item.key === speciesKey ? "choice--active" : ""}`}
+              aria-label={item.name_en}
+              onClick={() => pickSpecies(item.key)}
+            >
+              <strong>{speciesLabel(item.name_en)}</strong>
+              <span className="choice-meta">
+                {SIZE_LABELS[item.size] ?? item.size} · {item.speed} фт
+              </span>
+              <span className="choice-meta">{bonusesText(item.ability_bonuses)}</span>
+              {item.darkvision ? <span className="choice-meta">темний зір {item.darkvision}</span> : null}
+              {item.subspecies?.length ? (
+                <span className="choice-meta">підраси: {item.subspecies.length}</span>
+              ) : null}
+            </button>
+          ))}
+        </div>
       ) : null}
 
       {choice ? (
@@ -190,7 +218,8 @@ export function SpeciesStep({
           <p className="hint">
             {effective ? speciesLabel(effective.name_en) : ""}: оберіть {choice.count} здібності,
             кожна отримає {modifierLabel(choice.amount)}. Обрано {choices.length} з {choice.count}.
-          </p>          <div className="chip-row">
+          </p>
+          <div className="chip-row">
             {choice.from.map((ability) => (
               <button
                 key={ability}
@@ -250,18 +279,6 @@ export function SpeciesStep({
         </section>
       ) : null}
 
-      {effective ? (
-        <p className="hint">
-          Разом від виду: {bonusesText(effective.ability_bonuses)}
-          {effective.languages.length
-            ? ` · мови: ${effective.languages.map((item) => termLabel(item)).join(", ")}`
-            : ""}
-          {effective.resistances.length
-            ? ` · опір: ${effective.resistances.map((item) => damageLabel(item)).join(", ")}`
-            : ""}
-        </p>
-      ) : null}
-
       <button
         type="button"
         className="button button--primary"
@@ -289,8 +306,87 @@ export function SpeciesStep({
   );
 }
 
-/** Що вид дає: числа з індексу механік + текст книги. */
-function SpeciesDetails({ item, title }: { item: SpeciesView; title?: string }) {
+/** Картка виду: підраса, «що дає», «як виглядає» й особливості — згори. */
+function SpeciesSummary({ base, effective }: { base: SpeciesView; effective: SpeciesView }) {
+  const isSub = effective.key !== base.key;
+  const facts = speciesFacts(effective);
+  const hasText = Boolean(base.description) || (base.traits?.length ?? 0) > 0;
+
+  return (
+    <div className="species-card__body">
+      <p className="species-card__facts">
+        {SIZE_LABELS[effective.size] ?? effective.size} · {effective.speed} фт ·{" "}
+        {bonusesText(effective.ability_bonuses)}
+        {facts.length ? ` · ${facts.join(" · ")}` : ""}
+      </p>
+
+      {!hasText && !isSub ? (
+        <p className="hint hint--warn">
+          У корпусі немає тексту цього виду — показано лише числа з правил.
+        </p>
+      ) : null}
+
+      {base.description ? (
+        <details className="reckoning species-description">
+          <summary>Як виглядає (з книги)</summary>
+          <RuleText text={base.description} />
+        </details>
+      ) : null}
+
+      {isSub && effective.description ? (
+        <details className="reckoning species-description" open>
+          <summary>Опис підраси</summary>
+          <RuleText text={effective.description} />
+        </details>
+      ) : null}
+
+      {base.traits?.length ? (
+        <TraitList
+          title={isSub ? `Спільні особливості: ${speciesLabel(base.name_en)}` : "Особливості"}
+          traits={base.traits}
+        />
+      ) : null}
+
+      {isSub && effective.traits?.length ? (
+        <TraitList title="Додає підраса" traits={effective.traits} />
+      ) : null}
+
+      {hasText && base.text_lang && base.text_lang !== "uk" ? (
+        <p className="hint">
+          Текст книги {base.text_lang === "ru" ? "російською" : "англійською"} — українського
+          перекладу описів видів у корпусі немає.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function TraitList({
+  title,
+  traits,
+}: {
+  title: string;
+  traits: { name_en: string; text: string }[];
+}) {
+  return (
+    <>
+      <h4 className="species-card__h4">{title}</h4>
+      <ul className="species-traits">
+        {traits.map((trait) => (
+          <li key={trait.name_en}>
+            <details className="reckoning">
+              <summary>{trait.name_en}</summary>
+              <RuleText text={trait.text} />
+            </details>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/** Числа виду: навички, зброя, мови, опір тощо. */
+function speciesFacts(item: SpeciesView): string[] {
   const facts: string[] = [];
   if (item.skill_proficiencies.length) {
     facts.push(
@@ -318,53 +414,7 @@ function SpeciesDetails({ item, title }: { item: SpeciesView; title?: string }) 
   if (item.ability_unresolved) {
     facts.push("бонуси характеристик — за правилами 2022 (вільний розподіл)");
   }
-
-  const traits = item.traits ?? [];
-  const hasText = Boolean(item.description) || traits.length > 0;
-
-  return (
-    <section className="wizard-block species-details">
-      <h3>{title ?? "Про вид"}</h3>
-      <p className="hint">
-        {speciesLabel(item.name_en)}: {SIZE_LABELS[item.size] ?? item.size}, {item.speed} фт,{" "}
-        {bonusesText(item.ability_bonuses)}
-        {facts.length ? ` · ${facts.join(" · ")}` : ""}
-      </p>
-
-      {!hasText ? (
-        <p className="hint hint--warn">
-          У корпусі немає тексту цього виду — показано лише числа з правил.
-        </p>
-      ) : null}
-
-      {traits.length ? (
-        <ul className="species-traits">
-          {traits.map((trait) => (
-            <li key={trait.name_en}>
-              <details className="reckoning">
-                <summary>{trait.name_en}</summary>
-                <RuleText text={trait.text} />
-              </details>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {item.description ? (
-        <details className="reckoning species-description">
-          <summary>Опис виду</summary>
-          <RuleText text={item.description} />
-        </details>
-      ) : null}
-
-      {hasText && item.text_lang && item.text_lang !== "uk" ? (
-        <p className="hint">
-          Текст книги {item.text_lang === "ru" ? "російською" : "англійською"} — українського
-          перекладу описів видів у корпусі немає.
-        </p>
-      ) : null}
-    </section>
-  );
+  return facts;
 }
 
 function damageLabel(value: string): string {

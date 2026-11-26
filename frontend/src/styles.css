@@ -439,14 +439,58 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
 }
 
-/* --- вид: опис і особливості з книги ---------------------------------- */
+/* --- вид: картка обраного виду згори ---------------------------------- */
 
-.species-details {
-  border-left: 3px solid var(--line);
+/* Обраний вид показується **над** списком: підраса, що вид дає,
+ * як він виглядає й особливості. Список 69 карток згортається, щоб
+ * не прокручувати його щоразу. */
+.species-card {
+  border: 1px solid var(--line);
+  border-left: 3px solid #b9a7d6;
+  border-radius: 9px;
+  background: var(--surface);
+  padding: 12px 14px 14px;
 }
 
+.species-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.species-card__head h3 {
+  margin: 0;
+}
+
+.species-card__subs {
+  margin-top: 10px;
+}
+
+.species-card__subs h4,
+.species-card__h4 {
+  margin: 12px 0 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.species-card__facts {
+  margin: 8px 0 2px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.species-grid {
+  margin-top: 10px;
+}
+
+/* --- вид: опис і особливості з книги ---------------------------------- */
+
 .species-traits {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   padding: 0;
   list-style: none;
   columns: 2;
