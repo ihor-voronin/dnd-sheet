@@ -579,6 +579,24 @@ def finish_draft(draft_id: str, request: Request) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def _roster_entry(character, compendium: CompendiumService) -> dict:  # noqa: ANN001 — Character
+    """Рядок «Моїх персонажів»: хто це (вид, класи з підкласами, передісторія) і як він зараз.
+
+    Хіти й КЗ рахуються тим самим калькулятором, що й лист, — щоб картка в списку
+    не розходилася з листом (поранений герой видно ще до відкриття).
+    """
+    brief = character_brief(character)
+    _subclass_names({"character": brief}, compendium)
+    computed = DerivedStatsCalculator().compute(character)
+    brief["hit_points"] = {
+        "maximum": computed.hit_points.maximum,
+        "current": computed.hit_points.current,
+        "temporary": computed.hit_points.temporary,
+    }
+    brief["armor_class"] = computed.armor_class
+    return brief
+
+
 @router.get("")
 def saved_characters(request: Request) -> dict:
     store = request.app.state.characters
@@ -586,7 +604,8 @@ def saved_characters(request: Request) -> dict:
     # Без входу — усі персонажі бази (тести й старі записи можуть не мати власника).
     identifiers = store.ids_of(user.id) if request.app.state.auth_enabled else store.ids()
     characters = [found for identifier in identifiers if (found := store.get(identifier)) is not None]
-    items = [character_brief(character) for character in characters]
+    compendium = _compendium(request)
+    items = [_roster_entry(character, compendium) for character in characters]
     # Незавершена чернетка — щоб продовжити створення з іншого пристрою.
     draft_id = request.app.state.drafts.latest_of(user.id)
     return {"items": items, "total": len(items), "draft_id": draft_id}

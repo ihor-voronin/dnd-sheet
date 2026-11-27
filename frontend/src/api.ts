@@ -439,8 +439,28 @@ export function removeCharacterItem(
   });
 }
 
+/** Рядок «Моїх персонажів»: шапка листа в мініатюрі й поточний стан. */
+export type CharacterRosterEntry = {
+  id: string;
+  name: string;
+  total_level: number;
+  alignment?: string | null;
+  species: { key: string; name_en: string; subspecies?: string | null } | null;
+  background: { key: string; name_en: string } | null;
+  classes: {
+    key: string;
+    name_en: string;
+    level: number;
+    subclass?: string | null;
+    subclass_name?: string;
+    subclass_name_uk?: string | null;
+  }[];
+  hit_points?: { maximum: number; current: number; temporary: number };
+  armor_class?: number;
+};
+
 export function fetchCharacters(): Promise<{
-  items: { id: string; name: string; total_level: number }[];
+  items: CharacterRosterEntry[];
   total: number;
   /** Незавершена чернетка гравця — продовжити з будь-якого пристрою. */
   draft_id?: string | null;

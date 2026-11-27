@@ -161,6 +161,11 @@ def test_full_creation_and_saved_sheet(client: TestClient) -> None:
 
     listing = client.get("/api/v1/characters").json()
     assert character_id in {item["id"] for item in listing["items"]}
+    # Картка у «Моїх персонажах»: вид, клас із рівнем і стан — ті самі числа, що на листі.
+    entry = next(item for item in listing["items"] if item["id"] == character_id)
+    assert entry["species"]["name_en"] and entry["classes"][0]["level"] == 1
+    assert entry["hit_points"] == {"maximum": 12, "current": 12, "temporary": 0}
+    assert entry["armor_class"] == 16
 
     # Чернетка після фінішу зникає — персонаж уже не «недобудований».
     assert client.get(f"/api/v1/characters/wizard/{draft_id}").status_code == 404

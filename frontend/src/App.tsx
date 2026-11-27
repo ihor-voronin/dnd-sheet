@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CharacterCard } from "./features/home/CharacterCard";
 import {
   QueryClient,
   QueryClientProvider,
@@ -140,13 +141,10 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
         </p>
       ) : null}
       {data && data.total > 0 ? (
-        <ul className="character-list">
+        <ul className="roster">
           {data.items.map((item) => (
             <li key={item.id}>
-              <button type="button" className="link-button" onClick={() => navigate({ name: "character", id: item.id })}>
-                {item.name}
-              </button>
-              <span className="meta"> рівень {item.total_level}</span>
+              <CharacterCard entry={item} />
             </li>
           ))}
         </ul>

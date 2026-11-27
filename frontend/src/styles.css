@@ -1855,3 +1855,211 @@ input[type="radio"] {
   color: inherit;
   opacity: 0.9;
 }
+
+/* --- «Мої персонажі»: картки ------------------------------------------- */
+
+.roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster > li {
+  display: flex;
+}
+
+.roster-card {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "portrait head level"
+    "classes classes classes"
+    "vitals vitals vitals";
+  /* Картки одного ряду однакової висоти: хіти завжди внизу, рівно в ряд. */
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
+  gap: 10px 12px;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(160deg, var(--leaf-hi), var(--leaf) 70%);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.roster-card:hover {
+  border-color: var(--brass);
+}
+
+.roster-card:focus-visible {
+  outline: 2px solid var(--act);
+  outline-offset: 2px;
+}
+
+.roster-card__portrait {
+  grid-area: portrait;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: linear-gradient(150deg, var(--leaf-hi), var(--paper) 70%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--act) 30%, transparent);
+  font-family: var(--serif);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+
+.roster-card__head {
+  grid-area: head;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.roster-card__name {
+  overflow-wrap: anywhere;
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.roster-card:hover .roster-card__name {
+  text-decoration: underline;
+  text-decoration-color: var(--brass);
+  text-underline-offset: 3px;
+}
+
+.roster-card__origin {
+  color: var(--graphite);
+  font-size: var(--t-sm);
+  line-height: 1.3;
+}
+
+.roster-card__en {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  font-weight: 400;
+}
+
+/* Рівень — шестикутник з латуні, як жетони характеристик у візарді. */
+.roster-card__level {
+  grid-area: level;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.roster-card__level-num {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 40px;
+  background: no-repeat center / 100% 100%
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 46'%3E%3Cpath d='M14 1.5h28L54.5 23 42 44.5H14L1.5 23z' fill='none' stroke='%23d1a654' stroke-width='2'/%3E%3C/svg%3E");
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.roster-card__level-cap {
+  color: var(--graphite);
+  font-size: 12px;
+}
+
+.roster-card__classes {
+  grid-area: classes;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.roster-class {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+}
+
+.roster-class__name {
+  font-weight: 700;
+}
+
+.roster-class__sub {
+  flex-basis: 100%;
+  color: var(--brass);
+  font-size: var(--t-sm);
+}
+
+.roster-card__vitals {
+  grid-area: vitals;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.roster-hp {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.roster-hp__bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line-soft);
+}
+
+.roster-hp__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ok);
+}
+
+.roster-hp--bloodied .roster-hp__fill {
+  background: var(--brass);
+}
+
+.roster-hp--down .roster-hp__fill {
+  background: var(--act);
+}
+
+.roster-hp__text {
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.roster-hp__text strong,
+.roster-ac strong {
+  color: var(--ink);
+}
+
+.roster-hp--down .roster-hp__text {
+  color: var(--wax-text);
+}
+
+.roster-hp__temp {
+  color: var(--ink);
+}
+
+.roster-ac {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px 6px 12px 12px;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
