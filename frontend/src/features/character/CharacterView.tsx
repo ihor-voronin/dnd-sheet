@@ -118,7 +118,7 @@ function describeRest(report: RestReport): string {
       parts.push(`хіти ${report.hp_before} → ${report.hp_after}`);
     }
     if (report.hit_dice_before !== report.hit_dice_after) {
-      parts.push(`кістки хитів: витрачено ${report.hit_dice_before} → ${report.hit_dice_after}`);
+      parts.push(`кістки хітів: витрачено ${report.hit_dice_before} → ${report.hit_dice_after}`);
     }
     if (report.slots_before > 0) parts.push("слоти відновлено");
     if (report.exhaustion_before !== report.exhaustion_after) {
@@ -128,7 +128,7 @@ function describeRest(report: RestReport): string {
       parts.push(`тимчасові хіти ${report.temporary} збережено`);
     }
   } else {
-    parts.push("хіти не змінилися — витрачайте кістки хитів");
+    parts.push("хіти не змінилися — витрачайте кістки хітів");
     if (report.slots_before > report.slots_after) parts.push("Pact Magic відновлено");
   }
   if (report.features_reset.length) {
@@ -781,7 +781,7 @@ export function CharacterView({
             </div>
           </section>
 
-          {/* Кістки хитів не є ключовим блоком (хіти — так), тому згорнуті:
+          {/* Кістки хітів не є ключовим блоком (хіти — так), тому згорнуті:
               розгортає гравець, коли справді витрачає кістку. */}
           <details className="ddb-card ddb-card--collapsible">
             <summary className="ddb-card__title">
@@ -789,7 +789,7 @@ export function CharacterView({
                 <span className="ddb-caret" aria-hidden>
                   ▸
                 </span>{" "}
-                Кістки хитів
+                Кістки хітів
               </span>
             </summary>
             <HitDiceBlock

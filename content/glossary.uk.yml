@@ -120,18 +120,19 @@ terms:
 
   - id: combat.hp
     en: Hit Points
-    uk: Пункти здоровʼя
-    source: tbd
-    citation: null
-    status: draft
-    note: "Скорочення ПЗ. Перевірити, чи офіційний переклад не використовує «пункти влучань»."
-
-  - id: combat.hit_dice
-    en: Hit Dice
-    uk: Кістки здоровʼя
+    uk: Хіти
     source: own
     citation: null
     status: draft
+    note: "У застосунку — «хіти» (хіт → хіта → хітів), не «пункти здоровʼя»: так кажуть за столом і так у перекладах корпусу. Офіційний PDF може мати інший варіант — звірити."
+
+  - id: combat.hit_dice
+    en: Hit Dice
+    uk: Кістки хітів
+    source: own
+    citation: null
+    status: draft
+    note: "Однина — «кістка хіту» («Кістка хіту d10»). Не «кістки хитів»: «хит» — інше слово."
 
   - id: combat.damage
     en: Damage
@@ -149,7 +150,7 @@ terms:
 
   - id: combat.temporary_hp
     en: Temporary Hit Points
-    uk: Тимчасові пункти здоровʼя
+    uk: Тимчасові хіти
     source: own
     citation: null
     status: draft
