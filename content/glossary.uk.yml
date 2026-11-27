@@ -1,299 +1,496 @@
-# Глосарій v0 — українська термінологія D&D 5e
-# Канонічні терміни й правило показу — docs/translation-rules.md.
-
-> **Статус: чернетка.** Кожен термін має бути звірений з офіційним українським PDF (наявний у власника проєкту)
-> і отримати `citation` (книга + сторінка). Поки `source` не вказано як `official`, термін вважається власним.
->
-> Це не UI-рядки: інтерфейс перекладається через gettext, а ігрові терміни — тільки тут.
+# Глосарій — ЄДИНЕ джерело української термінології проєкту.
+#
+# Тут вирішується, як перекладається термін. Правило показу «Українська (English)»
+# і де лежать переклади — docs/translation-rules.md.
+#   avoid       — написання, заборонені скрізь (код, екран, переклади корпусу);
+#   avoid_code  — заборонені в коді й на екрані (у художніх текстах слово має інше значення).
+# Тест backend/tests/api/test_terminology.py читає ці списки.
+#
+# Статус: чернетка. Кожен термін має бути звірений з офіційним українським PDF
+# і отримати `citation` (книга + сторінка). Поки `source` не `official`, термін власний.
 
 meta:
   version: 0
-  verified_against: "TODO: офіційний UA PDF"
-  updated: "2026-11-25"
-
+  verified_against: 'TODO: офіційний UA PDF'
+  updated: '2026-11-27'
 terms:
-  - id: ability.str
-    en: Strength
-    uk: Сила
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: ability.dex
-    en: Dexterity
-    uk: Спритність
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: ability.con
-    en: Constitution
-    uk: Статура
-    source: tbd
-    citation: null
-    status: draft
-    note: "Альтернатива: Витривалість. Звірити з офіційним PDF."
-
-  - id: ability.int
-    en: Intelligence
-    uk: Інтелект
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: ability.wis
-    en: Wisdom
-    uk: Мудрість
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: ability.cha
-    en: Charisma
-    uk: Харизма
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: rules.proficiency
-    en: Proficiency
-    uk: Майстерність
-    source: tbd
-    citation: null
-    status: draft
-    note: "Володіння / майстерність — вибір впливає на всі похідні терми (proficient, proficiency bonus)."
-
-  - id: rules.proficiency_bonus
-    en: Proficiency Bonus
-    uk: Бонус майстерності
-    source: own
-    citation: null
-    status: draft
-
-  - id: rules.saving_throw
-    en: Saving Throw
-    uk: Рятівний кидок
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: rules.advantage
-    en: Advantage
-    uk: Перевага
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: rules.disadvantage
-    en: Disadvantage
-    uk: Завада
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: rules.ability_check
-    en: Ability Check
-    uk: Перевірка характеристики
-    source: own
-    citation: null
-    status: draft
-
-  - id: rules.difficulty_class
-    en: Difficulty Class
-    uk: КС (клас складності)
-    source: own
-    citation: null
-    status: draft
-
-  - id: combat.ac
-    en: Armor Class
-    uk: Клас захисту
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: combat.initiative
-    en: Initiative
-    uk: Ініціатива
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: combat.hp
-    en: Hit Points
-    uk: Хіти
-    source: own
-    citation: null
-    status: draft
-    note: "У застосунку — «хіти» (хіт → хіта → хітів), не «пункти здоровʼя»: так кажуть за столом і так у перекладах корпусу. Офіційний PDF може мати інший варіант — звірити."
-
-  - id: combat.hit_dice
-    en: Hit Dice
-    uk: Кістки хітів
-    source: own
-    citation: null
-    status: draft
-    note: "Однина — «кість хітів» («Кість хітів d10»). Не «кістки хитів»: «хит» — інше слово."
-
-  - id: combat.damage
-    en: Damage
-    uk: Урон
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: combat.resistance
-    en: Resistance
-    uk: Опір
-    source: own
-    citation: null
-    status: draft
-
-  - id: combat.temporary_hp
-    en: Temporary Hit Points
-    uk: Тимчасові хіти
-    source: own
-    citation: null
-    status: draft
-
-  - id: char.class
-    en: Class
-    uk: Клас
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: char.subclass
-    en: Subclass
-    uk: Підклас
-    source: own
-    citation: null
-    status: draft
-
-  - id: char.race
-    en: Race
-    uk: Раса
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: char.subrace
-    en: Subrace
-    uk: Підраса
-    source: own
-    citation: null
-    status: draft
-
-  - id: char.background
-    en: Background
-    uk: Передісторія
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: char.feat
-    en: Feat
-    uk: Ри́са
-    source: tbd
-    citation: null
-    status: draft
-    note: "Ризик колізії з «feature». Узгодити пару feat/feature одним рішенням."
-
-  - id: char.feature
-    en: Feature
-    uk: Уміння
-    source: own
-    citation: null
-    status: draft
-
-  - id: char.level
-    en: Level
-    uk: Рівень
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: char.alignment
-    en: Alignment
-    uk: Світогляд
-    source: own
-    citation: null
-    status: draft
-
-  - id: spell.spell
-    en: Spell
-    uk: Закляття
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: spell.cantrip
-    en: Cantrip
-    uk: Заговір
-    source: tbd
-    citation: null
-    status: draft
-    note: "Варіанти: «фокус», «чарівна дрібничка». Звірити з офіційним PDF."
-
-  - id: spell.spell_slot
-    en: Spell Slot
-    uk: Комірка закляття
-    source: own
-    citation: null
-    status: draft
-
-  - id: spell.spell_level
-    en: Spell Level
-    uk: Рівень закляття
-    source: own
-    citation: null
-    status: draft
-
-  - id: spell.concentration
-    en: Concentration
-    uk: Концентрація
-    source: own
-    citation: null
-    status: draft
-
-  - id: skill.athletics
-    en: Athletics
-    uk: Атлетика
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: skill.stealth
-    en: Stealth
-    uk: Скритність
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: skill.perception
-    en: Perception
-    uk: Спостережливість
-    source: tbd
-    citation: null
-    status: draft
-
-  - id: skill.persuasion
-    en: Persuasion
-    uk: Переконання
-    source: own
-    citation: null
-    status: draft
-
-  - id: skill.insight
-    en: Insight
-    uk: Проникливість
-    source: own
-    citation: null
-    status: draft
-
-  - id: gm.dungeon_master
-    en: Dungeon Master
-    uk: Майстер підземелля
-    source: tbd
-    citation: null
-    status: draft
+- id: ability.str
+  en: Strength
+  uk: Сила
+  source: tbd
+  citation: null
+  status: draft
+- id: ability.dex
+  en: Dexterity
+  uk: Спритність
+  source: tbd
+  citation: null
+  status: draft
+- id: ability.con
+  en: Constitution
+  uk: Статура
+  source: tbd
+  citation: null
+  status: draft
+  note: 'Альтернатива: Витривалість. Звірити з офіційним PDF.'
+- id: ability.int
+  en: Intelligence
+  uk: Інтелект
+  source: tbd
+  citation: null
+  status: draft
+- id: ability.wis
+  en: Wisdom
+  uk: Мудрість
+  source: tbd
+  citation: null
+  status: draft
+- id: ability.cha
+  en: Charisma
+  uk: Харизма
+  source: tbd
+  citation: null
+  status: draft
+- id: rules.proficiency
+  en: Proficiency
+  uk: Володіння
+  source: tbd
+  citation: null
+  status: draft
+  note: Proficient — «володієте». Бонус — «бонус майстерності».
+- id: rules.proficiency_bonus
+  en: Proficiency Bonus
+  uk: Бонус майстерності
+  source: own
+  citation: null
+  status: draft
+- id: rules.saving_throw
+  en: Saving Throw
+  uk: Рятівний кидок
+  source: tbd
+  citation: null
+  status: draft
+  avoid:
+  - '[Пп]орятун'
+  - кид\w* порятунку
+- id: rules.advantage
+  en: Advantage
+  uk: Перевага
+  source: tbd
+  citation: null
+  status: draft
+- id: rules.disadvantage
+  en: Disadvantage
+  uk: Завада
+  source: tbd
+  citation: null
+  status: draft
+  avoid_code:
+  - '[Пп]ерешкод(?:а|и|у|ою)\b'
+- id: rules.ability_check
+  en: Ability Check
+  uk: Перевірка характеристики
+  source: own
+  citation: null
+  status: draft
+  avoid:
+  - '[Пп]еревірк\w* здібност'
+- id: rules.difficulty_class
+  en: Difficulty Class
+  uk: КС (клас складності)
+  source: own
+  citation: null
+  status: draft
+  note: «КС рятівного кидка», «КС 15».
+  avoid:
+  - (?<![А-Яа-яІіЇїЄєҐґ])ОС(?![А-Яа-яІіЇїЄєҐґ])
+- id: combat.ac
+  en: Armor Class
+  uk: Клас захисту
+  source: tbd
+  citation: null
+  status: draft
+- id: combat.initiative
+  en: Initiative
+  uk: Ініціатива
+  source: tbd
+  citation: null
+  status: draft
+- id: combat.hp
+  en: Hit Points
+  uk: Хіти
+  source: own
+  citation: null
+  status: draft
+  note: 'У застосунку — «хіти» (хіт → хіта → хітів), не «пункти здоровʼя»: так кажуть за столом і так
+    у перекладах корпусу. Офіційний PDF може мати інший варіант — звірити.'
+- id: combat.hit_dice
+  en: Hit Dice
+  uk: Кістки хітів
+  source: own
+  citation: null
+  status: draft
+  note: Однина — «кість хітів» («Кість хітів d10»). Не «хит».
+  avoid:
+  - '[Хх]іт-дайс'
+  - '[Кк]убик\w* хітів'
+- id: combat.damage
+  en: Damage
+  uk: Урон
+  source: tbd
+  citation: null
+  status: draft
+  note: 'Чоловічий рід: «некротичного урону». «Шкода» — лише в значенні harm (ідеали, назва «Рука шкоди»).'
+  avoid_code:
+  - (?<![а-яі])[Шш]код(?:а|и|у|ою)(?![а-яі])
+- id: combat.resistance
+  en: Resistance
+  uk: Опір
+  source: own
+  citation: null
+  status: draft
+- id: combat.temporary_hp
+  en: Temporary Hit Points
+  uk: Тимчасові хіти
+  source: own
+  citation: null
+  status: draft
+- id: char.class
+  en: Class
+  uk: Клас
+  source: tbd
+  citation: null
+  status: draft
+- id: char.subclass
+  en: Subclass
+  uk: Підклас
+  source: own
+  citation: null
+  status: draft
+- id: char.race
+  en: Race
+  uk: Вид
+  source: tbd
+  citation: null
+  status: draft
+  note: У застосунку — «вид» (species), не «раса».
+- id: char.subrace
+  en: Subrace
+  uk: Підвид
+  source: own
+  citation: null
+  status: draft
+  note: На екрані — «підраса» лише як назва поля з корпусу; в описах — «підвид».
+- id: char.background
+  en: Background
+  uk: Передісторія
+  source: tbd
+  citation: null
+  status: draft
+- id: char.feat
+  en: Feat
+  uk: Риса
+  source: tbd
+  citation: null
+  status: draft
+  note: Ризик колізії з «feature». Узгодити пару feat/feature одним рішенням.
+- id: char.feature
+  en: Feature
+  uk: Уміння
+  source: own
+  citation: null
+  status: draft
+  note: Feature класу/підкласу. Feat — «риса».
+- id: char.level
+  en: Level
+  uk: Рівень
+  source: tbd
+  citation: null
+  status: draft
+- id: char.alignment
+  en: Alignment
+  uk: Світогляд
+  source: own
+  citation: null
+  status: draft
+- id: spell.spell
+  en: Spell
+  uk: Закляття
+  source: tbd
+  citation: null
+  status: draft
+- id: spell.cantrip
+  en: Cantrip
+  uk: Заговір
+  source: tbd
+  citation: null
+  status: draft
+  note: 'Варіанти: «фокус», «чарівна дрібничка». Звірити з офіційним PDF.'
+  avoid_code:
+  - (?<![а-яі])[Фф]окус(?:и|ів)?(?= \d| закля| рівн)
+- id: spell.spell_slot
+  en: Spell Slot
+  uk: Комірка закляття
+  source: own
+  citation: null
+  status: draft
+  avoid:
+  - (?<![а-яіїєґ])[Сс]лот(?:и|ів|у|ом)?(?![а-яіїєґ])
+- id: spell.spell_level
+  en: Spell Level
+  uk: Рівень закляття
+  source: own
+  citation: null
+  status: draft
+- id: spell.concentration
+  en: Concentration
+  uk: Концентрація
+  source: own
+  citation: null
+  status: draft
+- id: skill.athletics
+  en: Athletics
+  uk: Атлетика
+  source: tbd
+  citation: null
+  status: draft
+- id: skill.stealth
+  en: Stealth
+  uk: Скритність
+  source: tbd
+  citation: null
+  status: draft
+- id: skill.perception
+  en: Perception
+  uk: Спостережливість
+  source: tbd
+  citation: null
+  status: draft
+- id: skill.persuasion
+  en: Persuasion
+  uk: Переконання
+  source: own
+  citation: null
+  status: draft
+- id: skill.insight
+  en: Insight
+  uk: Проникливість
+  source: own
+  citation: null
+  status: draft
+- id: gm.dungeon_master
+  en: Dungeon Master
+  uk: Майстер підземелля
+  source: tbd
+  citation: null
+  status: draft
+- id: rules.spellcasting_ability
+  en: Spellcasting Ability
+  uk: Здібність чарування
+  avoid:
+  - '[Зз]датн\w* (?:до )?чарування'
+  - '[Зз]дібн\w* до чарування'
+  source: tbd
+  citation: null
+  status: draft
+- id: rules.expertise
+  en: Expertise
+  uk: Експертиза
+  avoid_code:
+  - '[Ее]кспертніст'
+  source: tbd
+  citation: null
+  status: draft
+- id: rules.bonus_action
+  en: Bonus Action
+  uk: Бонусна дія
+  source: tbd
+  citation: null
+  status: draft
+- id: rules.reaction
+  en: Reaction
+  uk: Реакція
+  source: tbd
+  citation: null
+  status: draft
+- id: rules.opportunity_attack
+  en: Opportunity Attack
+  uk: Атака нагоди
+  avoid:
+  - '[Аа]так\w* можливості'
+  source: tbd
+  citation: null
+  status: draft
+- id: rest.short
+  en: Short Rest
+  uk: Короткий відпочинок
+  source: tbd
+  citation: null
+  status: draft
+- id: rest.long
+  en: Long Rest
+  uk: Тривалий відпочинок
+  avoid:
+  - '[Дд]овг\w* відпоч'
+  source: tbd
+  citation: null
+  status: draft
+- id: condition.exhaustion
+  en: Exhaustion
+  uk: Виснаження
+  avoid_code:
+  - (?<![а-яіїєґ])[Вв]том[аиу](?![а-яіїєґ])
+  source: tbd
+  citation: null
+  status: draft
+- id: condition.charmed
+  en: Charmed
+  uk: Зачарований
+  avoid:
+  - '[Пп]ричарован'
+  source: tbd
+  citation: null
+  status: draft
+- id: condition.frightened
+  en: Frightened
+  uk: Переляканий
+  avoid:
+  - '[Нн]алякан(?:ий|а|і|им|ою|ого|ими|ої)\b'
+  source: tbd
+  citation: null
+  status: draft
+- id: condition.stunned
+  en: Stunned
+  uk: Приголомшений
+  avoid:
+  - '[Оо]глушен'
+  source: tbd
+  citation: null
+  status: draft
+- id: condition.deafened
+  en: Deafened
+  uk: Оглухлий
+  source: tbd
+  citation: null
+  status: draft
+- id: condition.grappled
+  en: Grappled
+  uk: Схоплений
+  source: tbd
+  citation: null
+  status: draft
+- id: condition.restrained
+  en: Restrained
+  uk: Стриманий
+  source: tbd
+  citation: null
+  status: draft
+- id: condition.prone
+  en: Prone
+  uk: Збитий з ніг
+  source: tbd
+  citation: null
+  status: draft
+- id: condition.incapacitated
+  en: Incapacitated
+  uk: Недієздатний
+  source: tbd
+  citation: null
+  status: draft
+- id: warlock.eldritch_blast
+  en: Eldritch Blast
+  uk: Містичний розряд
+  avoid:
+  - '[Мм]істичн\w* постріл'
+  - '[Пп]отойбічн\w* розряд'
+  source: tbd
+  citation: null
+  status: draft
+- id: warlock.invocations
+  en: Eldritch Invocations
+  uk: Містичні виклики
+  avoid:
+  - '[Тт]аємн\w* втаємничен'
+  source: tbd
+  citation: null
+  status: draft
+- id: warlock.pact_boon
+  en: Pact Boon
+  uk: Дар угоди
+  note: Pact of the Blade — «Угода клинка»; Pact Magic — «Магія угоди».
+  avoid:
+  - '[Дд]ар\w* пакту'
+  - '[Пп]акт\w* (?:клинка|ланцюга|фоліанта|талісмана)'
+  source: tbd
+  citation: null
+  status: draft
+- id: warlock.agonizing_blast
+  en: Agonizing Blast
+  uk: Болісний розряд
+  avoid:
+  - Мучительн
+  source: tbd
+  citation: null
+  status: draft
+- id: fighter.maneuvers
+  en: Maneuvers
+  uk: Маневри
+  avoid:
+  - '[Пп]рийом\w* майстра битви'
+  source: tbd
+  citation: null
+  status: draft
+- id: species.halfling
+  en: Halfling
+  uk: Напіврослик
+  avoid:
+  - (?<![Нн]а)(?<![а-я])[Пп]іврослик
+  source: tbd
+  citation: null
+  status: draft
+- id: species.half_elf
+  en: Half-Elf
+  uk: Півельф
+  avoid:
+  - '[Пп]ів-ельф'
+  source: tbd
+  citation: null
+  status: draft
+- id: species.half_orc
+  en: Half-Orc
+  uk: Піворк
+  avoid:
+  - '[Пп]ів-орк'
+  source: tbd
+  citation: null
+  status: draft
+- id: species.tiefling
+  en: Tiefling
+  uk: Тіфлінґ
+  avoid:
+  - '[Тт]іфлінг'
+  source: tbd
+  citation: null
+  status: draft
+- id: species.goliath
+  en: Goliath
+  uk: Ґоліат
+  avoid:
+  - '[Гг]оліаф'
+  source: tbd
+  citation: null
+  status: draft
+- id: species.genasi
+  en: Genasi
+  uk: Ґеназі
+  avoid:
+  - (?<![а-я])[Гг]енасі
+  source: tbd
+  citation: null
+  status: draft
+- id: species.underdark
+  en: Underdark
+  uk: Підзем’я
+  source: tbd
+  citation: null
+  status: draft

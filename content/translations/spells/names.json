@@ -52,12 +52,12 @@
  {
   "id": "591b15571e",
   "en": "Animate Dead",
-  "name_uk": "Оживити мертвих"
+  "name_uk": "Оживлення мертвих"
  },
  {
   "id": "91110ded9e",
   "en": "Animate Objects",
-  "name_uk": "Оживити предмети"
+  "name_uk": "Оживлення предметів"
  },
  {
   "id": "859f0fa960",
@@ -77,7 +77,7 @@
  {
   "id": "e8857c48fa",
   "en": "Arcane Eye",
-  "name_uk": "Магічне око"
+  "name_uk": "Таємне око"
  },
  {
   "id": "be9fa24db9",
@@ -92,7 +92,7 @@
  {
   "id": "15784ea827",
   "en": "Armor of Agathys",
-  "name_uk": "Обладунки агатіса"
+  "name_uk": "Броня Агатіса"
  },
  {
   "id": "21ec04f6f7",
@@ -112,7 +112,7 @@
  {
   "id": "1cf6b760a9",
   "en": "Augury",
-  "name_uk": "Ворожіння"
+  "name_uk": "Ворожба"
  },
  {
   "id": "ab19b43c2c",
@@ -127,7 +127,7 @@
  {
   "id": "c39fe974f9",
   "en": "Aura of Vitality",
-  "name_uk": "Аура живучості"
+  "name_uk": "Аура життєвості"
  },
  {
   "id": "d17c35cf59",
@@ -137,12 +137,12 @@
  {
   "id": "409432d4b3",
   "en": "Bane",
-  "name_uk": "Порча"
+  "name_uk": "Лихо"
  },
  {
   "id": "5e4dee0d26",
   "en": "Banishing Smite",
-  "name_uk": "Кара вигнанням"
+  "name_uk": "Кара вигнання"
  },
  {
   "id": "7ba56ef3c2",
@@ -202,12 +202,12 @@
  {
   "id": "6c7fe02750",
   "en": "Blight",
-  "name_uk": "Сохнення"
+  "name_uk": "В’янення"
  },
  {
   "id": "fc07bd9856",
   "en": "Blinding Smite",
-  "name_uk": "Засліплюючий удар"
+  "name_uk": "Сліпуча кара"
  },
  {
   "id": "4c02476f18",
@@ -242,7 +242,7 @@
  {
   "id": "3f43858ca8",
   "en": "Burning Hands",
-  "name_uk": "Палаючі долоні"
+  "name_uk": "Палючі долоні"
  },
  {
   "id": "4c3b96e93b",
@@ -252,7 +252,7 @@
  {
   "id": "3e40be51c8",
   "en": "Calm Emotions",
-  "name_uk": "Емоційний спокій"
+  "name_uk": "Заспокоєння емоцій"
  },
  {
   "id": "850f429fbf",
@@ -277,7 +277,7 @@
  {
   "id": "b1f1770d9a",
   "en": "Chain Lightning",
-  "name_uk": "Стрибуча блискавка"
+  "name_uk": "Ланцюгова блискавка"
  },
  {
   "id": "03cff36128",
@@ -287,7 +287,7 @@
  {
   "id": "a42f6c9876",
   "en": "Charm Monster",
-  "name_uk": "Зачарування монстра"
+  "name_uk": "Зачарування чудовиська"
  },
  {
   "id": "89616b38dd",
@@ -332,7 +332,7 @@
  {
   "id": "9a3b65dca7",
   "en": "Cloudkill",
-  "name_uk": "Вбивча хмара"
+  "name_uk": "Смертельна хмара"
  },
  {
   "id": "14021f46bd",
@@ -362,7 +362,7 @@
  {
   "id": "a056fd79a7",
   "en": "Comprehend Languages",
-  "name_uk": "Мовознавство"
+  "name_uk": "Розуміння мов"
  },
  {
   "id": "99ac4fc012",
@@ -377,7 +377,7 @@
  {
   "id": "68b8d436c0",
   "en": "Confusion",
-  "name_uk": "Спантеличення"
+  "name_uk": "Замішання"
  },
  {
   "id": "bc317693e6",
@@ -387,12 +387,12 @@
  {
   "id": "8874a22cb0",
   "en": "Conjure Barrage",
-  "name_uk": "Виклик шквалу ударів"
+  "name_uk": "Виклик залпу"
  },
  {
   "id": "99c69c6287",
   "en": "Conjure Celestial",
-  "name_uk": "Заклик до небожителя"
+  "name_uk": "Виклик небожителя"
  },
  {
   "id": "4af371c205",
@@ -402,7 +402,7 @@
  {
   "id": "f9610c9138",
   "en": "Conjure Fey",
-  "name_uk": "Закликання феї"
+  "name_uk": "Виклик феї"
  },
  {
   "id": "445d660b87",
@@ -412,7 +412,7 @@
  {
   "id": "5ccc25ea0d",
   "en": "Conjure Volley",
-  "name_uk": "Спектральний залп"
+  "name_uk": "Виклик шквалу"
  },
  {
   "id": "9798f35e89",
@@ -447,27 +447,27 @@
  {
   "id": "0be783bc96",
   "en": "Control Water",
-  "name_uk": "Контроль води"
+  "name_uk": "Керування водою"
  },
  {
   "id": "6af8311f56",
   "en": "Control Weather",
-  "name_uk": "Контроль погоди"
+  "name_uk": "Керування погодою"
  },
  {
   "id": "278f09f330",
   "en": "Control Winds",
-  "name_uk": "Контроль вітрів"
+  "name_uk": "Керування вітрами"
  },
  {
   "id": "773e7eb1aa",
   "en": "Cordon of Arrows",
-  "name_uk": "Захисні стріли"
+  "name_uk": "Кордон зі стріл"
  },
  {
   "id": "0788341763",
   "en": "Counterspell",
-  "name_uk": "Контрзаклинання"
+  "name_uk": "Контрзакляття"
  },
  {
   "id": "13a94ef365",
@@ -507,7 +507,7 @@
  {
   "id": "d2811e4a44",
   "en": "Crown of Madness",
-  "name_uk": "Корона безумства"
+  "name_uk": "Корона божевілля"
  },
  {
   "id": "baabef8778",
@@ -517,7 +517,7 @@
  {
   "id": "d3e198e4fe",
   "en": "Crusader’s Mantle",
-  "name_uk": "Плащ хрестоносця"
+  "name_uk": "Мантія хрестоносця"
  },
  {
   "id": "ac1d12ae2a",
@@ -527,7 +527,7 @@
  {
   "id": "2d12937b6f",
   "en": "Dancing Lights",
-  "name_uk": "Танцюючі вогники"
+  "name_uk": "Танцівні вогники"
  },
  {
   "id": "2aa775d5d4",
@@ -562,12 +562,12 @@
  {
   "id": "9988fbebd1",
   "en": "Death Ward",
-  "name_uk": "Захист від смерті"
+  "name_uk": "Оберіг від смерті"
  },
  {
   "id": "f5b8b5db6a",
   "en": "Delayed Blast Fireball",
-  "name_uk": "Відкладений вогняний шар"
+  "name_uk": "Відкладена вогняна куля"
  },
  {
   "id": "35fba2230c",
@@ -577,7 +577,7 @@
  {
   "id": "be6b965c95",
   "en": "Destructive Wave",
-  "name_uk": "Хвиля руйнації"
+  "name_uk": "Руйнівна хвиля"
  },
  {
   "id": "54d79f3362",
@@ -617,17 +617,17 @@
  {
   "id": "6446f4f361",
   "en": "Dispel Evil and Good",
-  "name_uk": "Розвіяти зло та добро"
+  "name_uk": "Розвіювання зла та добра"
  },
  {
   "id": "52a5f68b33",
   "en": "Dispel Magic",
-  "name_uk": "Розсіювання магії"
+  "name_uk": "Розвіювання магії"
  },
  {
   "id": "aa87804da7",
   "en": "Dissonant Whispers",
-  "name_uk": "Дисонантний шепіт"
+  "name_uk": "Дисонансний шепіт"
  },
  {
   "id": "1b8c691ecb",
@@ -637,7 +637,7 @@
  {
   "id": "ad8e212b43",
   "en": "Divination",
-  "name_uk": "Провидіння"
+  "name_uk": "Ворожіння"
  },
  {
   "id": "5c66b74f42",
@@ -647,22 +647,22 @@
  {
   "id": "68a8b6d8fb",
   "en": "Divine Word",
-  "name_uk": "Божествене слово"
+  "name_uk": "Божественне слово"
  },
  {
   "id": "16cd0c527f",
   "en": "Dominate Beast",
-  "name_uk": "Підкорення звіра"
+  "name_uk": "Панування над звіром"
  },
  {
   "id": "2ba87d9aad",
   "en": "Dominate Monster",
-  "name_uk": "Підкорення монстра"
+  "name_uk": "Панування над чудовиськом"
  },
  {
   "id": "e90c57c315",
   "en": "Dominate Person",
-  "name_uk": "Підкорення особи"
+  "name_uk": "Панування над особою"
  },
  {
   "id": "c00c9f934a",
@@ -747,7 +747,7 @@
  {
   "id": "e6084bbe10",
   "en": "Enhance Ability",
-  "name_uk": "Посилення здібностей"
+  "name_uk": "Посилення характеристики"
  },
  {
   "id": "d06f9b852c",
@@ -757,7 +757,7 @@
  {
   "id": "7fa03a64ff",
   "en": "Ensnaring Strike",
-  "name_uk": "Захоплюючий удар"
+  "name_uk": "Обплутувальний удар"
  },
  {
   "id": "cd5fc47831",
@@ -767,7 +767,7 @@
  {
   "id": "52431bcf79",
   "en": "Enthrall",
-  "name_uk": "Зачарування"
+  "name_uk": "Заворожування"
  },
  {
   "id": "6fdecd05f0",
@@ -797,7 +797,7 @@
  {
   "id": "64834945f9",
   "en": "Fabricate",
-  "name_uk": "Створення"
+  "name_uk": "Виготовлення"
  },
  {
   "id": "9037cdddac",
@@ -847,7 +847,7 @@
  {
   "id": "cebc8ee66b",
   "en": "Find Greater Steed",
-  "name_uk": "Виклик вищого скакуна"
+  "name_uk": "Знайти вищого скакуна"
  },
  {
   "id": "04e4dfd067",
@@ -912,12 +912,12 @@
  {
   "id": "1b766e35e3",
   "en": "Flaming Sphere",
-  "name_uk": "Вогняна сфера"
+  "name_uk": "Палаюча сфера"
  },
  {
   "id": "37a9f84b46",
   "en": "Flesh to Stone",
-  "name_uk": "Плоть в камень"
+  "name_uk": "Плоть у камінь"
  },
  {
   "id": "6f7fa5e106",
@@ -1002,7 +1002,7 @@
  {
   "id": "0b1e6bfce5",
   "en": "Geas",
-  "name_uk": "Геас"
+  "name_uk": "Ґеас"
  },
  {
   "id": "ff4eb8db7c",
@@ -1047,7 +1047,7 @@
  {
   "id": "1761f6b709",
   "en": "Grasping Vine",
-  "name_uk": "Хапаюча лоза"
+  "name_uk": "Чіпка лоза"
  },
  {
   "id": "cce0b81203",
@@ -1062,7 +1062,7 @@
  {
   "id": "2f843d02b0",
   "en": "Grease",
-  "name_uk": "Жир"
+  "name_uk": "Мастило"
  },
  {
   "id": "b54c2f071e",
@@ -1137,7 +1137,7 @@
  {
   "id": "27b44b7bcf",
   "en": "Haste",
-  "name_uk": "Поспіх"
+  "name_uk": "Прискорення"
  },
  {
   "id": "c166015199",
@@ -1147,7 +1147,7 @@
  {
   "id": "d8db23033d",
   "en": "Healing Spirit",
-  "name_uk": "Дух зцілення"
+  "name_uk": "Цілющий дух"
  },
  {
   "id": "39f9884dca",
@@ -1182,12 +1182,12 @@
  {
   "id": "ce33ec2b31",
   "en": "Hold Monster",
-  "name_uk": "Утримання монстра"
+  "name_uk": "Утримання чудовиська"
  },
  {
   "id": "784bf47127",
   "en": "Hold Person",
-  "name_uk": "Утримання істоти"
+  "name_uk": "Утримання особи"
  },
  {
   "id": "e5dd51c163",
@@ -1222,12 +1222,12 @@
  {
   "id": "52051e6cb4",
   "en": "Ice Storm",
-  "name_uk": "Льодовий шторм"
+  "name_uk": "Крижана буря"
  },
  {
   "id": "38af51b71a",
   "en": "Identify",
-  "name_uk": "Ідентифікація"
+  "name_uk": "Розпізнавання"
  },
  {
   "id": "04d7bf563e",
@@ -1272,7 +1272,7 @@
  {
   "id": "4c2baf5fd3",
   "en": "Infestation",
-  "name_uk": "Інфекція"
+  "name_uk": "Зараження"
  },
  {
   "id": "7696fc6d5f",
@@ -1282,7 +1282,7 @@
  {
   "id": "246c1d2692",
   "en": "Insect Plague",
-  "name_uk": "Нашестя комах"
+  "name_uk": "Комашина чума"
  },
  {
   "id": "18187cbd59",
@@ -1337,12 +1337,12 @@
  {
   "id": "b38148cb9f",
   "en": "Knock",
-  "name_uk": "Злам замків"
+  "name_uk": "Відмикання"
  },
  {
   "id": "6aedaaccef",
   "en": "Legend Lore",
-  "name_uk": "Легендарна повість"
+  "name_uk": "Знання легенд"
  },
  {
   "id": "81386d0f10",
@@ -1382,7 +1382,7 @@
  {
   "id": "be2d99460d",
   "en": "Lightning Bolt",
-  "name_uk": "Блискавичний удар"
+  "name_uk": "Удар блискавки"
  },
  {
   "id": "be045f12cb",
@@ -1397,17 +1397,17 @@
  {
   "id": "036c79903b",
   "en": "Locate Animals or Plants",
-  "name_uk": "Виявлення тварин та рослин"
+  "name_uk": "Пошук тварин або рослин"
  },
  {
   "id": "6c271b93b7",
   "en": "Locate Creature",
-  "name_uk": "Виявлення істоти"
+  "name_uk": "Пошук істоти"
  },
  {
   "id": "9e4b5aab15",
   "en": "Locate Object",
-  "name_uk": "Місцезнаходження об’єкта"
+  "name_uk": "Пошук предмета"
  },
  {
   "id": "aad55dc2df",
@@ -1492,7 +1492,7 @@
  {
   "id": "358866a45d",
   "en": "Mass Polymorph",
-  "name_uk": "Масове перетворення"
+  "name_uk": "Масове перевтілення"
  },
  {
   "id": "128932d636",
@@ -1557,7 +1557,7 @@
  {
   "id": "0b723faf49",
   "en": "Mind Sliver",
-  "name_uk": "Уламок розуму"
+  "name_uk": "Осколок розуму"
  },
  {
   "id": "bc06a9e2a5",
@@ -1577,7 +1577,7 @@
  {
   "id": "c503a8e08f",
   "en": "Mirror Image",
-  "name_uk": "Дзеркальні образи"
+  "name_uk": "Дзеркальне відображення"
  },
  {
   "id": "b4e46dcbe6",
@@ -1592,7 +1592,7 @@
  {
   "id": "f4fdbacd2d",
   "en": "Modify Memory",
-  "name_uk": "Зміна спогадів"
+  "name_uk": "Зміна пам’яті"
  },
  {
   "id": "9e09e98f23",
@@ -1647,7 +1647,7 @@
  {
   "id": "49ac5a2ff4",
   "en": "Nondetection",
-  "name_uk": "Непомітність"
+  "name_uk": "Невиявлення"
  },
  {
   "id": "be6e2635f1",
@@ -1657,12 +1657,12 @@
  {
   "id": "2b7855829d",
   "en": "Otiluke’s Freezing Sphere",
-  "name_uk": "Замерзаюча сфера Отілука"
+  "name_uk": "Крижана сфера Отілука"
  },
  {
   "id": "32d46185d2",
   "en": "Otiluke’s Resilient Sphere",
-  "name_uk": "Невразлива сфера Отілука"
+  "name_uk": "Стійка сфера Отілука"
  },
  {
   "id": "c8ea79435e",
@@ -1672,12 +1672,12 @@
  {
   "id": "a847ebcc78",
   "en": "Pass without Trace",
-  "name_uk": "Безслідне пересування"
+  "name_uk": "Пройти без сліду"
  },
  {
   "id": "e1b03b2546",
   "en": "Passwall",
-  "name_uk": "Прохід"
+  "name_uk": "Прохід у стіні"
  },
  {
   "id": "d8bc1d7487",
@@ -1687,7 +1687,7 @@
  {
   "id": "98cc64d9de",
   "en": "Phantasmal Killer",
-  "name_uk": "Убивця фантазій"
+  "name_uk": "Примарний убивця"
  },
  {
   "id": "a5cc1f9c8e",
@@ -1712,17 +1712,17 @@
  {
   "id": "77629f0985",
   "en": "Plant Growth",
-  "name_uk": "Зростання рослин"
+  "name_uk": "Ріст рослин"
  },
  {
   "id": "1ab090d136",
   "en": "Poison Spray",
-  "name_uk": "Отруйний спрей"
+  "name_uk": "Отруйні бризки"
  },
  {
   "id": "a2d4140ad8",
   "en": "Polymorph",
-  "name_uk": "Перетворення"
+  "name_uk": "Перевтілення"
  },
  {
   "id": "6b3b084d50",
@@ -1737,7 +1737,7 @@
  {
   "id": "69fd595cc3",
   "en": "Power Word Pain",
-  "name_uk": "Слово сили біль"
+  "name_uk": "Слово сили: біль"
  },
  {
   "id": "c82f2f7aac",
@@ -1757,7 +1757,7 @@
  {
   "id": "c017924f61",
   "en": "Primal Savagery",
-  "name_uk": "Первісна лють"
+  "name_uk": "Первісна лютість"
  },
  {
   "id": "d9d9d517d2",
@@ -1792,7 +1792,7 @@
  {
   "id": "d29d4dcbd9",
   "en": "Protection from Energy",
-  "name_uk": "Стихійний опір"
+  "name_uk": "Захист від енергії"
  },
  {
   "id": "32720a6252",
@@ -1887,7 +1887,7 @@
  {
   "id": "a19b05f051",
   "en": "Resurrection",
-  "name_uk": "Відродження"
+  "name_uk": "Воскресіння"
  },
  {
   "id": "03309bef3a",
@@ -1897,7 +1897,7 @@
  {
   "id": "4e712073e7",
   "en": "Revivify",
-  "name_uk": "Відродження"
+  "name_uk": "Повернення до життя"
  },
  {
   "id": "465c2ffb7c",
@@ -1907,7 +1907,7 @@
  {
   "id": "404d1747a7",
   "en": "Rope Trick",
-  "name_uk": "Трюк з мотузкою"
+  "name_uk": "Мотузковий трюк"
  },
  {
   "id": "0f239bcb12",
@@ -1917,7 +1917,7 @@
  {
   "id": "826239c2d8",
   "en": "Sanctuary",
-  "name_uk": "Прихисток"
+  "name_uk": "Святилище"
  },
  {
   "id": "18616d0021",
@@ -1932,17 +1932,17 @@
  {
   "id": "79e060e84e",
   "en": "Scorching Ray",
-  "name_uk": "Палаючий промінь"
+  "name_uk": "Пекучий промінь"
  },
  {
   "id": "3b57c8a0d7",
   "en": "Scrying",
-  "name_uk": "Видіння"
+  "name_uk": "Спостереження"
  },
  {
   "id": "d4341fc6d1",
   "en": "Searing Smite",
-  "name_uk": "Палаючий удар"
+  "name_uk": "Пекуча кара"
  },
  {
   "id": "f2076c7b3e",
@@ -1952,7 +1952,7 @@
  {
   "id": "23437e6137",
   "en": "Seeming",
-  "name_uk": "Оманливий образ"
+  "name_uk": "Удавана зовнішність"
  },
  {
   "id": "ceafde86d6",
@@ -1972,7 +1972,7 @@
  {
   "id": "b54e73af0f",
   "en": "Shadow of Moil",
-  "name_uk": "Тінь мойла"
+  "name_uk": "Тінь Мойла"
  },
  {
   "id": "42937cbdcb",
@@ -1982,12 +1982,12 @@
  {
   "id": "ea020c7ae3",
   "en": "Shapechange",
-  "name_uk": "Зміна форми"
+  "name_uk": "Зміна подоби"
  },
  {
   "id": "88717be583",
   "en": "Shatter",
-  "name_uk": "Розрив"
+  "name_uk": "Розтрощення"
  },
  {
   "id": "0827141931",
@@ -2047,7 +2047,7 @@
  {
   "id": "b05f741fbc",
   "en": "Sleet Storm",
-  "name_uk": "Сльотяний шторм"
+  "name_uk": "Буря з мокрим снігом"
  },
  {
   "id": "33dcec9ce4",
@@ -2082,7 +2082,7 @@
  {
   "id": "8e5d873b0a",
   "en": "Speak with Dead",
-  "name_uk": "Розмова з мерцями"
+  "name_uk": "Розмова з мертвими"
  },
  {
   "id": "838edfece1",
@@ -2092,17 +2092,17 @@
  {
   "id": "390165baf4",
   "en": "Spider Climb",
-  "name_uk": "Павуче пересування"
+  "name_uk": "Павуче лазіння"
  },
  {
   "id": "9b9696debc",
   "en": "Spike Growth",
-  "name_uk": "Шипастий ліс"
+  "name_uk": "Ріст шипів"
  },
  {
   "id": "6411139c3a",
   "en": "Spirit Guardians",
-  "name_uk": "Духи-охоронці"
+  "name_uk": "Духовні охоронці"
  },
  {
   "id": "3b68364112",
@@ -2117,7 +2117,7 @@
  {
   "id": "6f11fab7b6",
   "en": "Staggering Smite",
-  "name_uk": "Приголомшуючий удар"
+  "name_uk": "Приголомшлива кара"
  },
  {
   "id": "05c150504c",
@@ -2142,7 +2142,7 @@
  {
   "id": "73f295d88e",
   "en": "Storm Sphere",
-  "name_uk": "Штормова сфера"
+  "name_uk": "Грозова сфера"
  },
  {
   "id": "b79182eb9e",
@@ -2157,62 +2157,62 @@
  {
   "id": "431fde6e81",
   "en": "Summon Aberration",
-  "name_uk": "Виклик аберації"
+  "name_uk": "Скликання аберації"
  },
  {
   "id": "af847237d9",
   "en": "Summon Beast",
-  "name_uk": "Виклик звіра"
+  "name_uk": "Скликання звіра"
  },
  {
   "id": "79d037b60e",
   "en": "Summon Celestial",
-  "name_uk": "Виклик небожителя"
+  "name_uk": "Скликання небожителя"
  },
  {
   "id": "1fe1713ab1",
   "en": "Summon Construct",
-  "name_uk": "Виклик конструкта"
+  "name_uk": "Скликання конструкта"
  },
  {
   "id": "2b4dcd7970",
   "en": "Summon Draconic Spirit",
-  "name_uk": "Виклик драконячого духа"
+  "name_uk": "Скликання драконячого духа"
  },
  {
   "id": "fe5df614c3",
   "en": "Summon Elemental",
-  "name_uk": "Виклик елементаля"
+  "name_uk": "Скликання елементаля"
  },
  {
   "id": "d09d3c9324",
   "en": "Summon Fey",
-  "name_uk": "Виклик феї"
+  "name_uk": "Скликання феї"
  },
  {
   "id": "ec69482bdc",
   "en": "Summon Fiend",
-  "name_uk": "Виклик демона"
+  "name_uk": "Скликання диявола"
  },
  {
   "id": "42e3e4eb89",
   "en": "Summon Greater Demon",
-  "name_uk": "Виклик вищого демона"
+  "name_uk": "Скликання вищого демона"
  },
  {
   "id": "3ebfcb2004",
   "en": "Summon Lesser Demons",
-  "name_uk": "Виклик нижчих демонів"
+  "name_uk": "Скликання нижчих демонів"
  },
  {
   "id": "bb6aecd367",
   "en": "Summon Shadowspawn",
-  "name_uk": "Виклик духа тіні"
+  "name_uk": "Скликання тіньового породження"
  },
  {
   "id": "1f31758631",
   "en": "Summon Undead",
-  "name_uk": "Виклик нежиті"
+  "name_uk": "Скликання нежиті"
  },
  {
   "id": "c1ad990969",
@@ -2242,7 +2242,7 @@
  {
   "id": "bac157e510",
   "en": "Synaptic Static",
-  "name_uk": "Синаптичний імпульс"
+  "name_uk": "Синаптичний розряд"
  },
  {
   "id": "1420af8070",
@@ -2332,7 +2332,7 @@
  {
   "id": "5bca888b05",
   "en": "Thunderous Smite",
-  "name_uk": "Громовий удар"
+  "name_uk": "Громова кара"
  },
  {
   "id": "a0778e4c20",
@@ -2382,12 +2382,12 @@
  {
   "id": "d6eb1bf951",
   "en": "Tree Stride",
-  "name_uk": "Переміщення між деревами"
+  "name_uk": "Крок крізь дерева"
  },
  {
   "id": "13aee58a93",
   "en": "True Polymorph",
-  "name_uk": "Істинне перетворення"
+  "name_uk": "Істинне перевтілення"
  },
  {
   "id": "09219a1db9",
@@ -2432,7 +2432,7 @@
  {
   "id": "893bc5deaf",
   "en": "Wall of Fire",
-  "name_uk": "Вогняна стіна"
+  "name_uk": "Стіна вогню"
  },
  {
   "id": "2d5a436202",
@@ -2452,22 +2452,22 @@
  {
   "id": "40f006435f",
   "en": "Wall of Sand",
-  "name_uk": "Піщана стіна"
+  "name_uk": "Стіна піску"
  },
  {
   "id": "52af7d4988",
   "en": "Wall of Stone",
-  "name_uk": "Кам’яна стіна"
+  "name_uk": "Стіна каменю"
  },
  {
   "id": "3daaf7d57e",
   "en": "Wall of Thorns",
-  "name_uk": "Стіна з шипів"
+  "name_uk": "Стіна шипів"
  },
  {
   "id": "7766cebc6b",
   "en": "Wall of Water",
-  "name_uk": "Водяна стіна"
+  "name_uk": "Стіна води"
  },
  {
   "id": "2709943323",
@@ -2502,7 +2502,7 @@
  {
   "id": "a8323a2a9b",
   "en": "Web",
-  "name_uk": "Павутина"
+  "name_uk": "Павутиння"
  },
  {
   "id": "d53e619608",
@@ -2542,7 +2542,7 @@
  {
   "id": "24bc166897",
   "en": "Word of Recall",
-  "name_uk": "Святе повертаюче слово"
+  "name_uk": "Слово повернення"
  },
  {
   "id": "6c5be4cab8",
@@ -2552,7 +2552,7 @@
  {
   "id": "254df852bb",
   "en": "Wrathful Smite",
-  "name_uk": "Гнівний удар"
+  "name_uk": "Гнівна кара"
  },
  {
   "id": "a54b7d09c9",
@@ -2567,6 +2567,6 @@
  {
   "id": "067fe924d8",
   "en": "Zone of Truth",
-  "name_uk": "Зона правди"
+  "name_uk": "Зона істини"
  }
 ]

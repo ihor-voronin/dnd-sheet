@@ -727,7 +727,7 @@ export type ClassChoiceGroup = {
     text_uk?: string | null;
     prerequisite?: string | null;
     source?: string;
-    /** Чого бракує (рівня, дару пакту, закляття); null — доступно. */
+    /** Чого бракує (рівня, дару угоди, закляття); null — доступно. */
     locked?: string | null;
   }[];
 };
