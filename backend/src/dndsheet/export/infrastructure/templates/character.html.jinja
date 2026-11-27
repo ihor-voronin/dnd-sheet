@@ -129,7 +129,9 @@
   /* Висоти задані в мм: WeasyPrint не стискає сітку під залишок сторінки через flex. */
   .cols3 { height: 244mm; display: grid; grid-template-columns: 27mm 60mm minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 3mm; margin-top: 1mm; }
   .col { display: flex; flex-direction: column; }
-  .col > .grow { flex: 1; }
+  /* Рамки — за розміром вмісту; лише `.grow` забирає залишок колонки. */
+  .col > * { flex: 0 0 auto; }
+  .col > .grow { flex: 1 1 auto; }
   /* Щити характеристик компактні й ідуть щільно; решту колонки займають малі блоки. */
   .col.abil .ability { margin: 2.4mm 0 3.8mm; padding: 1.3mm 1mm 4.2mm; }
   .mini-box { border: 0.7pt solid #000; border-radius: 1.6mm; text-align: center; padding: 0.8mm 0.6mm 0.9mm; margin-top: 1.8mm; }
@@ -183,7 +185,10 @@
   table.grid .note { display: block; font-size: 6.6pt; font-style: italic; }
   table.grid td.mk { width: 3.6mm; font-size: 8.4pt; }
 
-  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.6mm 2mm; }
+  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 2mm; margin: 0; }
+  /* Лінія між групами (броня, зброя, інструменти, мови…), щоб око не плутало рядки. */
+  .kv dt, .kv dd { padding: 0.9mm 0 0.8mm; border-bottom: 0.4pt solid #000; }
+  .kv > :nth-last-child(-n+2) { border-bottom: 0; }
   .kv dt { font-family: var(--caps); font-weight: 700; font-size: 6.8pt; letter-spacing: 0.04em; text-transform: lowercase; }
   .kv dd { margin: 0; }
 

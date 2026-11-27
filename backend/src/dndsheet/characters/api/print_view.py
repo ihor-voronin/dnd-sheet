@@ -419,7 +419,7 @@ def build_print_view(
         "features": _features(sheet, display_name, feat_titles or {}),
         "species_traits": _species_traits(compendium, species_name, species_parent, species_cache),
         "background": _background(background),
-        "spellcasting": _spellcasting(sheet, display_name),
+        "spellcasting": _spellcasting(sheet, display_name, compendium),
         "inventory": _inventory(sheet, item_name),
         "notes": _notes(sheet["state"].get("notes") or {}),
     }
@@ -580,7 +580,15 @@ def _background(details: Mapping[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def _spellcasting(sheet: Mapping[str, Any], display_name: Callable[[str], str]) -> dict[str, Any] | None:
+def _book_spell_name(compendium: CompendiumService, name: str) -> str:
+    """Назва закляття як у книзі: доменні закляття приходять ключем («beacon of hope»)."""
+    found = compendium.entries(EntryQuery(category=Category.SPELL, q=name, limit=5)).items
+    return next((entry.name_en for entry in found if entry.name_en.casefold() == name.casefold()), name)
+
+
+def _spellcasting(
+    sheet: Mapping[str, Any], display_name: Callable[[str], str], compendium: CompendiumService
+) -> dict[str, Any] | None:
     casting = sheet.get("spellcasting") or {}
     spells = sheet.get("spells") or []
     classes = casting.get("classes") or []
@@ -599,10 +607,12 @@ def _spellcasting(sheet: Mapping[str, Any], display_name: Callable[[str], str]) 
     for spell in spells:
         level = int(spell.get("level") or 0)
         name_en = spell["name_en"]
-        if name_en == name_en.lower():
-            # Заговори виду записані ключем («thaumaturgy») — назва в книзі з великої.
-            name_en = " ".join(word[:1].upper() + word[1:] for word in name_en.split(" "))
         uk_name = uk_text.name_uk("spells", name_en)
+        if uk_name is None:
+            # Заговори виду й доменні закляття записані ключем («thaumaturgy»,
+            # «beacon of hope») — беремо назву з книги, за нею й переклад.
+            name_en = _book_spell_name(compendium, name_en)
+            uk_name = uk_text.name_uk("spells", name_en)
         tags = []
         if spell.get("concentration"):
             tags.append("конц.")

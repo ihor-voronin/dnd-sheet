@@ -34,8 +34,13 @@ def main(pdf: bool) -> None:
     renderer = app.state.renderers.get("pdf")
     out = ROOT / "logs" / "print-preview"
     out.mkdir(parents=True, exist_ok=True)
-    for case in app.state.golden_cases:
-        character = replace(case.character, id=case.key)
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from print_samples import SAMPLES  # noqa: PLC0415 — лише для цього скрипта
+
+    cases = [(case.key, replace(case.character, id=case.key)) for case in app.state.golden_cases]
+    cases += [(key, build(app.state.rules)) for key, build in SAMPLES.items()]
+    for key, character in cases:
+        case = SimpleNamespace(key=key)
         view = _print_view(request, character)
         html = renderer.character_html(view, RenderOptions())
         (out / f"{case.key}.html").write_text(html, encoding="utf-8")
