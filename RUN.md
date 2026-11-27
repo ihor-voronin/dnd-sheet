@@ -29,19 +29,28 @@ Details and who can unlock: [docs/deploy.md](docs/deploy.md), section "First run
 
 ### 1.1 Python environment
 
+Backend dependencies are managed by [uv](https://docs.astral.sh/uv/)
+(`winget install --id astral-sh.uv -e`). The versions are pinned in `uv.lock`:
+
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -e "backend[dev]"
+uv sync
 ```
 
-Installs FastAPI, Pydantic, Jinja2, uvicorn and the test tools (pytest, jsonschema,
-httpx, import-linter, pyyaml).
+Creates `.venv` (Python 3.11+; the image uses 3.12) with the backend installed
+editable, FastAPI, Pydantic, Jinja2, uvicorn and the dev group: pytest, pytest-cov,
+jsonschema, httpx2, import-linter, pyyaml. `uv run <command>` runs anything in it;
+`.\.venv\Scripts\python.exe` works too.
+
+If `.venv` also holds tools uv doesn't know about (OCR and ingest scripts), add
+`--inexact`: plain `uv sync` removes packages that aren't in the lock.
+
+After changing dependencies in `backend/pyproject.toml`: `uv lock` (the pre-commit
+hook fails if the lock is stale), and commit `uv.lock`.
 
 Check:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest backend -q
+uv run pytest backend -q
 ```
 
 Expected: all tests pass; 2 are skipped on Windows without GTK (PDF, see section 6).
@@ -60,7 +69,7 @@ npm run contract      # generates TypeScript types from contract/sheet-document.
 ### 1.3 (Optional) PDF rendering
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -e "backend[pdf]"
+uv sync --extra pdf
 ```
 
 On Windows this is **not enough**: WeasyPrint needs GTK (Pango). See section 6.
@@ -249,13 +258,28 @@ In the SPA, hover or focus a term to see the original English text.
 
 ```powershell
 python scripts\preflight.py                                            # no dependencies, stdlib only
-.\.venv\Scripts\python.exe -m pytest backend -q                        # backend tests
-.\.venv\Scripts\lint-imports.exe --config backend/pyproject.toml       # bounded-context contracts
+uv run pytest backend -q --cov --cov-config=backend/pyproject.toml  # backend tests, coverage ≥ 80%
+uv run lint-imports --config backend/pyproject.toml                  # bounded-context contracts
 
 cd frontend
 npm run typecheck                                                      # tsc --noEmit
 npm run lint                                                           # ESLint, 0 warnings
+npm run test:coverage                                                  # vitest, coverage ≥ 80%
 npm run build                                                          # tsc + vite build
+```
+
+Coverage of a branch's new code, as CI checks it on a PR (docs/ci.md § Coverage):
+
+```powershell
+uv run pytest backend -q --cov --cov-config=backend/pyproject.toml --cov-report=xml:coverage/backend.xml
+uvx diff-cover coverage/backend.xml frontend/coverage/cobertura-coverage.xml --compare-branch origin/main --fail-under 80
+```
+
+Frontend tests answer `fetch` from `frontend/src/test/tape.json.gz`. When an API
+response changes shape, re-record it (needs the unlocked corpus):
+
+```powershell
+uv run python scripts/record_frontend_tape.py
 ```
 
 `scripts/preflight.py` checks: syntax of every `.py`, the JSON contract, `SheetDocument`
@@ -266,7 +290,7 @@ doesn't let `__import__` through.
 The renderer conformance suite on its own:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest backend -k conformance -v
+uv run pytest backend -k conformance -v
 ```
 
 ---
@@ -364,7 +388,7 @@ or run on another port: `--port 8010` (and update the proxy in `frontend/vite.co
 
 ### `ModuleNotFoundError: No module named 'dndsheet'`
 
-`pip install -e "backend[dev]"` was skipped or the command uses another interpreter. Use
+`uv sync` was skipped or the command uses another interpreter. Use `uv run …` or
 `.\.venv\Scripts\python.exe`, not the global `python`.
 
 ### The compendium is empty / many tests fail after cloning
@@ -377,9 +401,7 @@ The corpus is encrypted — run `git-crypt unlock` (section 0).
 
 ```powershell
 Remove-Item -Recurse -Force .venv, frontend\node_modules, frontend\dist -ErrorAction SilentlyContinue
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -e "backend[dev]"
+uv sync
 cd frontend; npm install; npm run contract; npm run build
 ```
 

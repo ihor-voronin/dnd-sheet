@@ -17,17 +17,26 @@ RUN npm run build
 
 
 # ---------------------------------------------------------------------------
-# 2. Python dependencies separately: only what's installed goes into the final image —
-#    no backend/ sources and no .pyc (--no-compile: ~40 MB less; Python
-#    compiles modules in memory at startup, which takes half a second).
+# 2. Python dependencies with uv, from uv.lock: exactly the locked versions, and
+#    without the dev group — test tools never reach production. The package is
+#    installed non-editable, so the final image needs no backend/ sources. No .pyc
+#    (~40 MB less; Python compiles modules in memory at startup, half a second).
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS deps
 
-ENV PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+COPY --from=ghcr.io/astral-sh/uv:0.13 /uv /usr/local/bin/uv
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_LINK_MODE=copy \
+    UV_NO_CACHE=1
 
-COPY backend/ /src/backend/
-RUN pip install --no-compile --prefix=/install "/src/backend[pdf]"
+WORKDIR /src
+# Manifests first: the dependency layer stays cached until the lock changes.
+COPY pyproject.toml uv.lock ./
+COPY backend/pyproject.toml backend/pyproject.toml
+RUN uv sync --frozen --no-dev --extra pdf --no-install-workspace
+COPY backend/ backend/
+RUN uv sync --frozen --no-dev --extra pdf --no-editable
 
 
 # ---------------------------------------------------------------------------
@@ -37,8 +46,7 @@ FROM python:3.12-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PATH=/opt/venv/bin:$PATH \
     DNDSHEET_DATA_DIR=/app/var \
     DNDSHEET_CONTENT_DIR=/app/content \
     DNDSHEET_SPA_DIST=/app/frontend/dist
@@ -69,7 +77,7 @@ COPY content/index/ /app/content/index/
 # the book's original — i.e. silently in English, which nobody would notice.
 COPY content/translations/ /app/content/translations/
 
-COPY --from=deps /install /usr/local
+COPY --from=deps /opt/venv /opt/venv
 
 COPY --from=web /web/dist /app/frontend/dist
 
@@ -97,18 +105,26 @@ FROM runtime AS test
 
 USER root
 
+COPY --from=ghcr.io/astral-sh/uv:0.13 /uv /usr/local/bin/uv
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_LINK_MODE=copy \
+    UV_NO_CACHE=1
+
 # Tests read the backend sources (runtime no longer has them), the contract, the glossary,
 # the frontend (terminology) and the normalization scripts.
+COPY pyproject.toml uv.lock /app/
 COPY backend/ /app/backend/
 COPY contract/ /app/contract/
 COPY content/glossary.uk.yml /app/content/glossary.uk.yml
 COPY frontend/src/ /app/frontend/src/
 COPY scripts/ /app/scripts/
 
-RUN pip install "/app/backend[dev,pdf]"
+# The same locked environment plus the dev group (pytest, coverage, import-linter).
+RUN uv sync --frozen --extra pdf --no-editable
 
 ENV DNDSHEET_DATA_DIR=/tmp/dndsheet-test
 
 # Coverage: below 80% the run fails (backend/pyproject.toml); the XML report goes to
 # /coverage — CI mounts a folder there and checks the coverage of the PR's new lines.
-CMD ["sh", "-c", "mkdir -p /coverage && python -m pytest backend -q --cov --cov-config=backend/pyproject.toml --cov-report=term --cov-report=xml:/coverage/backend.xml && lint-imports --config backend/pyproject.toml"]
+CMD ["sh", "-c", "mkdir -p /coverage && python -m pytest backend -q --cov --cov-config=backend/pyproject.toml --cov-report=term --cov-report=xml:/coverage/backend.xml --junitxml=/coverage/backend-junit.xml && lint-imports --config backend/pyproject.toml"]
