@@ -56,7 +56,10 @@ import {
   sourceLabel,
 } from "../../labels";
 import { Term } from "../../components/Term";
-import { fetchClassFeatures, fetchEntry, searchItems } from "../../api";
+import { useQuery } from "@tanstack/react-query";
+
+import { fetchClassFeatures, fetchEntry, fetchFeats, searchItems } from "../../api";
+import { FeatPicker } from "../character/LevelUp";
 import type { ClassFeatureRow } from "../../api";
 import { RuleText } from "../character/panels";
 import {
@@ -231,13 +234,20 @@ export function SpeciesStep({
   options,
   busy,
   onSubmit,
-}: StepProps<{ species: SpeciesView[]; class_cantrips?: Record<string, EntryBrief[]> }>) {
+}: StepProps<{
+  species: SpeciesView[];
+  class_cantrips?: Record<string, EntryBrief[]>;
+  species_with_feat?: string[];
+  feat_abilities?: Record<string, string[]>;
+}>) {
   const initial = answers as unknown as SpeciesAnswers;
   const [name, setName] = useState(initial.name ?? "");
   const [speciesKey, setSpeciesKey] = useState(initial.species_key ?? "");
   const [subspeciesKey, setSubspeciesKey] = useState(initial.subspecies_key ?? "");
   const [choices, setChoices] = useState<string[]>(initial.ability_choices ?? []);
   const [spellChoices, setSpellChoices] = useState<string[]>(initial.spell_choices ?? []);
+  const [featId, setFeatId] = useState<string | null>(initial.species_feat ?? null);
+  const [featAbility, setFeatAbility] = useState<string | null>(initial.species_feat_ability ?? null);
   // Правила 2022: вид без фіксованих бонусів — гравець розставляє сам.
   const initialSpread = initial.ability_spread ?? {};
   const spreadAbilities = Object.keys(initialSpread);
@@ -273,6 +283,11 @@ export function SpeciesStep({
   const cantripPool = cantripChoice
     ? options.class_cantrips?.[cantripChoice.from_class] ?? []
     : [];
+  // Варіантна людина й власна лінія беруть рису на 1 рівні (PHB, p. 31; TCoE, p. 8).
+  const withFeat = new Set(options.species_with_feat ?? ["variant human", "custom lineage"]);
+  const grantsFeat = withFeat.has(speciesKey) || withFeat.has(subspeciesKey);
+  const feats = useQuery({ queryKey: ["feats"], queryFn: fetchFeats, enabled: grantsFeat });
+  const featAbilities = featId ? options.feat_abilities?.[featId] ?? [] : [];
   const grantedCantrips = effective?.shared_cantrips ?? [];
   const grantedSpells = effective?.granted_spells ?? [];
 
@@ -288,6 +303,8 @@ export function SpeciesStep({
     // Вільний розподіл належить виду: інший вид — інший вибір.
     setSpreadMode("two");
     setSpreadPicks(["str", "dex"]);
+    setFeatId(null);
+    setFeatAbility(null);
   }, [speciesKey]);
 
   function toggleChoice(ability: string) {
@@ -575,6 +592,44 @@ export function SpeciesStep({
         </section>
       ) : null}
 
+      {grantsFeat ? (
+        <section className="wizard-block">
+          <h3>
+            <Term k="feat">Риса</Term> виду
+          </h3>
+          <p className="hint">
+            {effective ? speciesLabel(effective.name_en) : ""} бере одну рису вже на 1 рівні.
+            Якщо риса дає вибір (навички, закляття, маневри), його буде запропоновано на листі в
+            «Уміння → Вибори класу й рис».
+          </p>
+          {feats.isPending ? <p className="meta">Читаємо риси…</p> : null}
+          <FeatPicker
+            feats={feats.data ?? []}
+            value={featId}
+            onChange={(id) => {
+              setFeatId(id);
+              setFeatAbility(options.feat_abilities?.[id]?.[0] ?? null);
+            }}
+          />
+          {featAbilities.length > 1 ? (
+            <label className="field">
+              <span>Риса дає +1 до характеристики — оберіть яку</span>
+              <select
+                className="select"
+                value={featAbility ?? ""}
+                onChange={(event) => setFeatAbility(event.target.value)}
+              >
+                {featAbilities.map((code) => (
+                  <option key={code} value={code}>
+                    {abilityLabel(code)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </section>
+      ) : null}
+
       <button
         type="button"
         className="button button--primary"
@@ -583,6 +638,7 @@ export function SpeciesStep({
           !name.trim() ||
           !speciesKey ||
           subspeciesMissing ||
+          (grantsFeat && !featId) ||
           !spreadReady ||
           Boolean(choice && choices.length !== choice.count) ||
           Boolean(cantripChoice && spellChoices.length !== cantripChoice.count)
@@ -595,6 +651,8 @@ export function SpeciesStep({
             ability_choices: choices,
             ability_spread: spreadPayload() ?? {},
             spell_choices: spellChoices,
+            species_feat: grantsFeat ? featId : null,
+            species_feat_ability: grantsFeat && featAbilities.length ? featAbility : null,
           })
         }
       >

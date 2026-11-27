@@ -21,6 +21,7 @@ from dndsheet.characters.domain.inventory import InventoryItem, ItemKind
 from dndsheet.characters.domain.ports import (
     CharacterRepository,
     DraftRepository,
+    FeatCatalog,
     RulesSource,
     SubclassCatalog,
 )
@@ -49,6 +50,8 @@ class WizardService:
     characters: CharacterRepository
     rules: RulesSource
     subclasses: SubclassCatalog
+    #: Риси довідника — для риси виду (варіантна людина, власна лінія).
+    feats: FeatCatalog | None = None
 
     # ------------------------------------------------------------------
     # чернетка
@@ -90,6 +93,7 @@ class WizardService:
 
     def _apply_step(self, draft: Draft, step: WizardStep, body: Mapping[str, Any]) -> None:
         if step is WizardStep.SPECIES:
+            feat_key = _optional_text(body, "species_feat")
             draft.apply_species(
                 name=_text(body, "name"),
                 species_key=_text(body, "species_key"),
@@ -97,6 +101,8 @@ class WizardService:
                 ability_choices=_abilities(body.get("ability_choices")),
                 spell_choices=_text_list(body.get("spell_choices")),
                 ability_spread=body.get("ability_spread"),
+                species_feat=feat_key,
+                species_feat_ability=self._feat_ability(feat_key, body.get("species_feat_ability")),
             )
         elif step is WizardStep.CLASS:
             class_key = _text(body, "class_key")
@@ -125,6 +131,25 @@ class WizardService:
             draft.apply_spells(spells=_spells(body.get("spells")))
         else:  # pragma: no cover - стосується лише розширення переліку
             raise ValidationError(f"крок {step!r} ще не підтримується")
+
+    def _feat_ability(self, feat_key: str | None, raw: Any) -> Ability | None:  # noqa: ANN401
+        """Риса має існувати; +1 — лише до характеристики, яку вона дозволяє."""
+        if not feat_key or self.feats is None:
+            return None
+        if not self.feats.has(feat_key):
+            raise ValidationError(f"невідома риса {feat_key!r}")
+        options = self.feats.ability_options(feat_key)
+        if not options:
+            return None
+        if raw in (None, ""):
+            return options[0]
+        try:
+            ability = Ability(str(raw).strip().casefold())
+        except ValueError as exc:
+            raise ValidationError(f"невідома характеристика {raw!r}") from exc
+        if ability not in options:
+            raise ValidationError(f"риса не підвищує {ability.value}")
+        return ability
 
     def _check_subclass(self, class_key: str, subclass_key: str | None) -> None:
         """Ключ підкласу мусить існувати в довіднику — якщо довідник його знає."""

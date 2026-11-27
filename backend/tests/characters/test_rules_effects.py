@@ -258,19 +258,51 @@ def test_martial_arts_lost_in_armor(rules, compendium) -> None:
     assert _attacks(monk, compendium)["Unarmed Strike"]["damage"].startswith("1 ")
 
 
-def test_hexblade_attacks_with_charisma_and_pact_weapon(rules, compendium) -> None:
+def test_hexblade_charisma_only_for_marked_weapons(rules, compendium) -> None:
+    """Хекс-воїн — одна обрана зброя; угода — позначена зброя (XGtE, p. 55; PHB, p. 107)."""
     warlock = make_character(
         rules,
         abilities=_scores(str=10, cha=18),
         classes=[CharacterClass("warlock", 5, subclass_key="the-hexblade")],
-        inventory=Inventory(items=(_weapon("Longsword"), _weapon("Greatsword"))),
+        inventory=Inventory(items=(_weapon("Longsword"), _weapon("Greatsword"), _weapon("Rapier"))),
     )
     attacks = _attacks(warlock, compendium)
-    assert attacks["Longsword"]["ability"] == "cha"
-    assert attacks["Greatsword"]["ability"] == "str", "дворучна без угоди — Сила"
-    warlock.set_class_choice("warlock:Pact Boon", ["Pact of the Blade"], ["Pact of the Blade"])
+    assert attacks["Longsword"]["ability"] == "str", "не обрана для Хекс-воїна — Сила"
+    warlock.update_item(0, {"hex_weapon": True})
     attacks = _attacks(warlock, compendium)
-    assert attacks["Greatsword"]["ability"] == "cha" and attacks["Greatsword"]["attack_bonus"] == 3 + 4
+    assert attacks["Longsword"]["ability"] == "cha"
+    # Позначка переходить: друга обрана зброя знімає першу.
+    warlock.update_item(2, {"hex_weapon": True})
+    assert not warlock.inventory.items[0].hex_weapon
+    assert _attacks(warlock, compendium)["Rapier"]["ability"] == "cha"
+    # Дворучна — лише як зброя угоди.
+    warlock.update_item(1, {"hex_weapon": True})
+    assert _attacks(warlock, compendium)["Greatsword"]["ability"] == "str"
+    warlock.set_class_choice("warlock:Pact Boon", ["Pact of the Blade"], ["Pact of the Blade"])
+    warlock.update_item(1, {"pact_weapon": True})
+    greatsword = _attacks(warlock, compendium)["Greatsword"]
+    assert greatsword["ability"] == "cha" and greatsword["attack_bonus"] == 3 + 4
+    assert "зброя угоди" in greatsword["notes"]
+
+
+def test_pact_weapon_gives_proficiency_only_when_marked(rules, compendium) -> None:
+    warlock = make_character(
+        rules,
+        abilities=_scores(str=16, cha=16),
+        classes=[CharacterClass("warlock", 3, subclass_key="the-fiend")],
+        inventory=Inventory(items=(_weapon("Greataxe"), _weapon("Longbow"))),
+    )
+    warlock.set_class_choice("warlock:Pact Boon", ["Pact of the Blade"], ["Pact of the Blade"])
+    assert _attacks(warlock, compendium)["Greataxe"]["attack_bonus"] == 3, "не позначена — без володіння"
+    warlock.update_item(0, {"pact_weapon": True})
+    assert _attacks(warlock, compendium)["Greataxe"]["attack_bonus"] == 3 + 2
+    # Лук — лише з Improved Pact Weapon.
+    warlock.update_item(1, {"pact_weapon": True})
+    assert not warlock.inventory.items[0].pact_weapon, "зброя угоди лише одна"
+    bow = _attacks(warlock, compendium)["Longbow"]
+    assert "Improved Pact Weapon" in bow["notes"] and bow["attack_bonus"] == 0
+    with pytest.raises(ValidationError):
+        InventoryItem(name_en="Rope", pact_weapon=True)
 
 
 def test_shillelagh_uses_wisdom_and_d8(rules, compendium) -> None:

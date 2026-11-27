@@ -557,8 +557,16 @@ def test_only_three_items_can_be_attuned(client: TestClient) -> None:
 
 def _create_variant_human(client: TestClient) -> str:
     draft_id = client.post("/api/v1/characters/wizard").json()["draft"]["id"]
+    species = {"name": "Ліна", "species_key": "human", "subspecies_key": "variant human", "ability_choices": ["str", "con"]}
+    # Без риси крок виду не проходить: варіантна людина бере її на 1 рівні.
+    missing = client.put(f"/api/v1/characters/wizard/{draft_id}/steps/species", json=species)
+    assert missing.status_code == 422 and "рису" in missing.json()["detail"]
+    unknown = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species", json={**species, "species_feat": "phb-2014/feat/nope"}
+    )
+    assert unknown.status_code == 422
     steps = [
-        ("species", {"name": "Ліна", "species_key": "human", "subspecies_key": "variant human", "ability_choices": ["str", "con"]}),
+        ("species", {**species, "species_feat": "phb-2014/feat/skilled"}),
         ("class", {"class_key": "fighter"}),
         ("abilities", {"method": "standard_array", "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8}}),
         (
@@ -582,18 +590,14 @@ def _create_variant_human(client: TestClient) -> str:
 
 
 def test_variant_human_species_feat_and_feat_choices(client: TestClient) -> None:
-    """Варіантна людина бере рису на листі; вибір риси діє на володіння (PHB, p. 31, 170)."""
+    """Варіантна людина бере рису у візарді; вибір риси — на листі (PHB, p. 31, 170)."""
     character_id = _create_variant_human(client)
     sheet = client.get(f"/api/v1/characters/{character_id}").json()["sheet"]
-    assert sheet["species_feat"] == {"chosen": None, "ability": None, "feat_abilities": sheet["species_feat"]["feat_abilities"]}
+    assert sheet["species_feat"]["chosen"] == "phb-2014/feat/skilled", "риса з візарда дійшла до листа"
     assert any(row["kind"] == "unarmed" for row in sheet["attacks"]), "удар без зброї — із сервера"
 
     wrong = client.post(f"/api/v1/characters/{character_id}/species-feat", json={"feat_key": "phb-2014/feat/nope"})
     assert wrong.status_code == 422
-    taken = client.post(f"/api/v1/characters/{character_id}/species-feat", json={"feat_key": "phb-2014/feat/skilled"})
-    assert taken.status_code == 200, taken.text
-    sheet = taken.json()["sheet"]
-    assert sheet["species_feat"]["chosen"] == "phb-2014/feat/skilled"
     group = next(item for item in sheet["class_choices"] if item["key"] == "feat:skilled:Skills or Tools")
     assert group["slots"] == 3 and group["origin"]["kind"] == "feat"
     stealth = next(option for option in group["options"] if option["name_en"] == "Stealth")

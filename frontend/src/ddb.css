@@ -3038,3 +3038,8 @@ body.board {
   font-size: 12px;
   white-space: nowrap;
 }
+
+/* Позначки зброї угоди й Хекс-воїна в розгорнутому предметі. */
+.item-detail__bonds {
+  margin: 0 0 8px;
+}

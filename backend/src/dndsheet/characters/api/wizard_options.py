@@ -33,7 +33,7 @@ from dndsheet.compendium.api.serializers import (
 )
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
-from dndsheet.shared.rules import requires_subspecies
+from dndsheet.shared.rules import SPECIES_WITH_FEAT, feat_ability_options, requires_subspecies
 
 #: Розділи книги, які є в тексті класу, але не є «вміннями»: без них крок
 #: «Клас» не показав би, що клас дає на 1 рівні з поясненням.
@@ -109,6 +109,13 @@ def _species_options(
     return {
         "species": species,
         "class_cantrips": class_cantrips,
+        # Варіантна людина й власна лінія: риса на 1 рівні (PHB, p. 31; TCoE, p. 8).
+        "species_with_feat": sorted(SPECIES_WITH_FEAT),
+        "feat_abilities": {
+            entry.id: [ability.value for ability in options]
+            for entry in service.feats()
+            if (options := feat_ability_options(entry.text_en or ""))
+        },
         "hint": (
             "Підраса успадковує числа батьківського виду: «Hill Dwarf» уже "
             "несе +2 CON і +1 WIS."

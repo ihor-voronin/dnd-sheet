@@ -149,7 +149,10 @@ def test_unresolved_species_requires_spread(draft: Draft) -> None:
         draft.apply_species(name="Хтось", species_key="custom lineage")
 
     draft.apply_species(
-        name="Хтось", species_key="custom lineage", ability_spread={"int": 2, "con": 1}
+        name="Хтось",
+        species_key="custom lineage",
+        ability_spread={"int": 2, "con": 1},
+        species_feat="phb-2014/feat/alert",
     )
     assert draft.ability_spread == {A.INT: 2, A.CON: 1}
     assert draft.ability_bonuses[A.INT] == 2
@@ -161,6 +164,7 @@ def test_spread_accepts_three_ones(draft: Draft) -> None:
         name="Хтось",
         species_key="custom lineage",
         ability_spread={"str": 1, "dex": 1, "con": 1},
+        species_feat="phb-2014/feat/alert",
     )
     assert draft.ability_bonuses[A.STR] == 1
     assert draft.ability_bonuses[A.DEX] == 1

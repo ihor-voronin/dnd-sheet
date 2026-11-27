@@ -310,6 +310,20 @@ export function ActionPanel({
           })()}
         </span>
       </div>
+      {(() => {
+        // Угода клинка й Хекс-воїн діють лише на позначену зброю — підказуємо, де її позначити.
+        const items = sheet.inventory.items;
+        const missing = [
+          sheet.weapon_bonds?.pact && !items.some((item) => item.pact_weapon) ? "зброю угоди" : "",
+          sheet.weapon_bonds?.hex && !items.some((item) => item.hex_weapon) ? "зброю Хекс-воїна" : "",
+        ].filter(Boolean);
+        return missing.length ? (
+          <p className="hint">
+            Позначте {missing.join(" і ")} в «Інвентарі»: розгорніть предмет або додайте новий через
+            «Свій предмет». Без позначки атака рахується як звичайна.
+          </p>
+        ) : null;
+      })()}
 
       <div className="action-filters" role="group" aria-label="Фільтр дій">
         {FILTERS.map((item) => (

@@ -128,6 +128,17 @@ def computed_sheet(
         "attacks": attacks or [],
         "spellcasting": spellcasting(computed.spellcasting),
         "armor_untrained": list(computed.armor_untrained),
+        # Які позначки зброї має сенс пропонувати в інвентарі.
+        "weapon_bonds": {
+            "pact": any(
+                value.casefold() == "pact of the blade"
+                for value in character.active_class_choices.get("warlock:Pact Boon", ())
+            ),
+            "hex": any(
+                entry.class_key == "warlock" and (entry.subclass_key or "").endswith("hexblade")
+                for entry in character.classes
+            ),
+        },
         "spells": spells(character, computed),
         "proficiencies": proficiencies(computed.proficiencies),
         "carrying": {
@@ -144,6 +155,8 @@ def computed_sheet(
                     "weight_lb": item.weight_lb,
                     "equipped": item.equipped,
                     "attuned": item.attuned,
+                    "pact_weapon": item.pact_weapon,
+                    "hex_weapon": item.hex_weapon,
                     "entry_id": item.entry_id,
                     "armor_base": item.armor_base,
                     "dex_cap": item.dex_cap,
@@ -368,6 +381,8 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
                 ability.value: amount for ability, amount in draft.ability_spread.items()
             },
             "spell_choices": list(draft.spell_choices),
+            "species_feat": draft.species_feat,
+            "species_feat_ability": draft.species_feat_ability.value if draft.species_feat_ability else None,
         }
     if step is WizardStep.CLASS:
         return {"class_key": draft.class_key, "subclass_key": draft.subclass_key}
@@ -401,6 +416,8 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
                     "weight_lb": item.weight_lb,
                     "equipped": item.equipped,
                     "attuned": item.attuned,
+                    "pact_weapon": item.pact_weapon,
+                    "hex_weapon": item.hex_weapon,
                     "entry_id": item.entry_id,
                     "armor_base": item.armor_base,
                     "dex_cap": item.dex_cap,

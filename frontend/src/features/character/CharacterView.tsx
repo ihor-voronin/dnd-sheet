@@ -451,6 +451,7 @@ export function CharacterView({
           onAdd={addItem}
           onUpdate={updateItem}
           onRemove={removeItem}
+          bonds={sheet.weapon_bonds}
         />
       );
     }

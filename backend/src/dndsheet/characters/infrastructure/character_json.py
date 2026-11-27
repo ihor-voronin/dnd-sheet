@@ -123,6 +123,8 @@ def inventory_to_record(inventory: Inventory) -> dict[str, Any]:
                 "dex_cap": item.dex_cap,
                 "notes": item.notes,
                 "damage": item.damage,
+                "pact_weapon": item.pact_weapon,
+                "hex_weapon": item.hex_weapon,
             }
             for item in inventory.items
         ],
@@ -147,6 +149,8 @@ def inventory_from_record(record: Mapping[str, Any] | None) -> Inventory:
                     dex_cap=raw.get("dex_cap"),
                     notes=raw.get("notes") or None,
                     damage=raw.get("damage") or None,
+                    pact_weapon=bool(raw.get("pact_weapon")),
+                    hex_weapon=bool(raw.get("hex_weapon")),
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:
@@ -433,6 +437,8 @@ def draft_to_record(draft: Draft) -> dict[str, Any]:
         "equipment_submitted": draft.equipment_submitted,
         "spells": spells_to_record(draft.spells),
         "spell_choices": list(draft.spell_choices),
+        "species_feat": draft.species_feat,
+        "species_feat_ability": draft.species_feat_ability.value if draft.species_feat_ability else None,
     }
 
 
@@ -471,6 +477,10 @@ def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
         equipment_submitted=bool(record.get("equipment_submitted")),
         spells=spells_from_record(record.get("spells")),
         spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
+        species_feat=record.get("species_feat") or None,
+        species_feat_ability=(
+            Ability(str(record["species_feat_ability"])) if record.get("species_feat_ability") else None
+        ),
     )
 
 

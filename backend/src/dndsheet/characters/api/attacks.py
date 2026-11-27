@@ -141,17 +141,23 @@ def _weapon_row(
         alternatives[Ability.DEX] = mods[Ability.DEX]
         min_die = rules.martial_arts
         notes.append(f"Бойові мистецтва (Martial Arts): Спритність, кістка {rules.martial_arts}")
-    # Зброя угоди: ближня (або лук/арбалет з Improved Pact Weapon) — володіння (PHB, p. 107).
+    # Зброя угоди — та, яку гравець позначив в інвентарі: ближня, а лук чи
+    # арбалет — лише з Improved Pact Weapon (PHB, p. 107; XGtE, p. 57).
     improved = "improved pact weapon" in rules.invocations
-    pact = rules.pact_blade and (not ranged or (improved and any(bow in name for bow in _PACT_RANGED)))
-    if pact and not proficient:
+    pact = rules.pact_blade and item.pact_weapon
+    if pact and ranged and not (improved and any(bow in name for bow in _PACT_RANGED)):
+        pact = False
+        notes.append("дальня зброя стає зброєю угоди лише з Покращеною зброєю угоди (Improved Pact Weapon)")
+    if pact:
         proficient = True
-        notes.append("володіння — як зброєю угоди (Pact Weapon)")
-    # Хекс-воїн: Харизма для зброї угоди й обраної одноручної зброї (XGtE, p. 55).
-    if rules.hexblade and proficient and (pact or "two-handed" not in properties):
+        notes.append("зброя угоди (Pact Weapon): володієте, атаки магічні")
+    # Хекс-воїн: Харизма для зброї угоди й однієї обраної зброї без two-handed (XGtE, p. 55).
+    hex_weapon = rules.hexblade and item.hex_weapon
+    if hex_weapon and "two-handed" in properties and not pact:
+        notes.append("Хекс-воїн (Hex Warrior) не діє на дворучну зброю, крім зброї угоди")
+    elif rules.hexblade and proficient and (pact or hex_weapon):
         alternatives[Ability.CHA] = mods[Ability.CHA]
-        if not pact:
-            notes.append("Хекс-воїн (Hex Warrior): Харизма — для зброї, обраної після тривалого відпочинку")
+        notes.append("Хекс-воїн (Hex Warrior): Харизма замість Сили чи Спритності")
     # Бойова готовність: Інтелект для магічної зброї (TCoE, p. 18).
     if rules.battle_smith and magic:
         alternatives[Ability.INT] = mods[Ability.INT]
@@ -186,8 +192,6 @@ def _weapon_row(
             view = _note(view, f"Пивець життя (Lifedrinker): +{max(1, mods[Ability.CHA])} некротичного урону")
         if "thirsting blade" in rules.invocations:
             view = _note(view, "Спраглий клинок (Thirsting Blade): дві атаки за дію")
-        if improved or lifedrinker:
-            view = _note(view, "лише якщо це зброя угоди")
     view = _fighting_style(view, properties, character)
     if computed.armor_untrained:
         view = _note(view, "завада: броня без володіння")

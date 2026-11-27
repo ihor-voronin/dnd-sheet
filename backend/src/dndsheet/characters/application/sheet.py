@@ -359,6 +359,8 @@ class SheetService:
             dex_cap=_optional_int(payload.get("dex_cap"), "межа Спритності"),
             notes=_optional_str(payload.get("notes")),
             damage=_optional_str(payload.get("damage")),
+            pact_weapon=bool(payload.get("pact_weapon", False)),
+            hex_weapon=bool(payload.get("hex_weapon", False)),
         )
 
     @staticmethod
@@ -382,6 +384,9 @@ class SheetService:
             fields["equipped"] = bool(payload.get("equipped"))
         if "attuned" in payload:
             fields["attuned"] = bool(payload.get("attuned"))
+        for flag in ("pact_weapon", "hex_weapon"):
+            if flag in payload:
+                fields[flag] = bool(payload.get(flag))
         if "entry_id" in payload:
             fields["entry_id"] = _optional_str(payload.get("entry_id"))
         if "armor_base" in payload:

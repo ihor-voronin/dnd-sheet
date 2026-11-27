@@ -50,6 +50,10 @@ class InventoryItem:
     #: Для зброї: власний урон гравця (повний рядок, як «1d8+3 slashing»).
     #: Порожньо — урон рахується з довідника й модифікатора здібності.
     damage: str | None = None
+    #: Зброя угоди (Pact of the Blade, PHB, p. 107): викликана чи звʼязана.
+    pact_weapon: bool = False
+    #: Зброя Хекс-воїна (Hex Warrior, XGtE, p. 55): обрана після тривалого відпочинку.
+    hex_weapon: bool = False
 
     def __post_init__(self) -> None:
         if not self.name_en.strip():
@@ -71,6 +75,8 @@ class InventoryItem:
             )
         if self.dex_cap is not None and self.dex_cap < 0:
             raise ValidationError(f"{self.name_en}: межа Спритності не може бути відʼємною")
+        if (self.pact_weapon or self.hex_weapon) and self.kind is not ItemKind.WEAPON:
+            raise ValidationError(f"{self.name_en}: зброєю угоди чи Хекс-воїна буває лише зброя")
         if self.damage is not None:
             if not str(self.damage).strip():
                 raise ValidationError(f"{self.name_en}: порожній урон зброї")
@@ -111,6 +117,10 @@ class Inventory:
             raise ValidationError(
                 f"одночасно можна настроїтися не більше ніж на {MAX_ATTUNED} предмети"
             )
+        if sum(1 for item in self.items if item.pact_weapon) > 1:
+            raise ValidationError("зброя угоди буває лише одна (PHB, p. 107)")
+        if sum(1 for item in self.items if item.hex_weapon) > 1:
+            raise ValidationError("Хекс-воїн обирає лише одну зброю (XGtE, p. 55)")
 
     def __len__(self) -> int:
         return len(self.items)
@@ -134,6 +144,7 @@ class Inventory:
                     else other
                     for other in current
                 ]
+            current = _release_bonds(current, item)
             current.append(item)
         return Inventory(items=tuple(current), money=self.money)
 
@@ -154,8 +165,18 @@ class Inventory:
                     item.is_shield and other.is_shield
                 ):
                     items[position] = other.equipped_copy(False)
+        items[index] = None  # type: ignore[call-overload] — місце звільняється для нової позначки
+        items = _release_bonds(items, item)
         items[index] = item
         return Inventory(items=tuple(items), money=self.money)
+
+    @property
+    def pact_weapon(self) -> InventoryItem | None:
+        return next((item for item in self.items if item.pact_weapon), None)
+
+    @property
+    def hex_weapon(self) -> InventoryItem | None:
+        return next((item for item in self.items if item.hex_weapon), None)
 
     def remove_at(self, index: int) -> "Inventory":
         self._check_index(index)
@@ -216,3 +237,17 @@ class Inventory:
     @property
     def attuned_count(self) -> int:
         return sum(1 for item in self.items if item.attuned)
+
+
+def _release_bonds(items: list, item: InventoryItem) -> list:
+    """Нова зброя угоди (чи Хекс-воїна) знімає позначку з попередньої — як споряджена броня."""
+    return [
+        other
+        if other is None
+        else _replace(
+            other,
+            pact_weapon=other.pact_weapon and not item.pact_weapon,
+            hex_weapon=other.hex_weapon and not item.hex_weapon,
+        )
+        for other in items
+    ]

@@ -302,6 +302,10 @@ export interface ItemBody {
   dex_cap?: number | null;
   notes?: string | null;
   damage?: string | null;
+  /** Зброя угоди (Pact of the Blade) — лише одна. */
+  pact_weapon?: boolean;
+  /** Зброя Хекс-воїна (Hex Warrior) — лише одна. */
+  hex_weapon?: boolean;
 }
 
 export function addCharacterItem(

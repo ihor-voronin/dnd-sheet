@@ -366,6 +366,8 @@ export interface SheetItem {
   dex_cap: number | null;
   notes: string | null;
   damage: string | null;
+  pact_weapon?: boolean;
+  hex_weapon?: boolean;
 }
 
 export interface SpeciesAnswers {
@@ -376,6 +378,9 @@ export interface SpeciesAnswers {
   /** Правила 2022: +2 і +1 або три +1 (для видів без фіксованих бонусів). */
   ability_spread: Record<string, number>;
   spell_choices: string[];
+  /** Риса виду (варіантна людина, власна лінія). */
+  species_feat?: string | null;
+  species_feat_ability?: string | null;
 }
 
 export interface ClassAnswers {
@@ -511,6 +516,8 @@ export interface SheetViewPayload {
   saving_throws: Record<string, { value: number; proficient: boolean; disadvantage?: boolean }>;
   /** Броня/щит без володіння: завада на СИЛ/СПР, чарувати не можна. */
   armor_untrained?: string[];
+  /** Чи пропонувати позначки зброї: угода клинка, хексблейд. */
+  weapon_bonds?: { pact: boolean; hex: boolean };
   skills: Record<string, { value: number; proficient: boolean; expertise?: boolean; disadvantage?: boolean }>;
   /** Експертиза: скільки дали рівні, що обрано, з чого можна обрати. */
   expertise?: { slots: number; chosen: string[]; options: string[] };

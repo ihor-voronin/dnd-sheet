@@ -533,6 +533,7 @@ def test_2022_spread_reaches_the_sheet(client: TestClient) -> None:
                 "name": "Безіменний",
                 "species_key": "custom lineage",
                 "ability_spread": {"int": 2, "con": 1},
+                "species_feat": "phb-2014/feat/alert",
             },
         ),
         ("class", {"class_key": "fighter"}),
@@ -585,6 +586,7 @@ def test_2022_spread_cannot_break_the_twenty_cap(client: TestClient) -> None:
             "name": "Хтось",
             "species_key": "custom lineage",
             "ability_spread": {"int": 2, "con": 1},
+            "species_feat": "phb-2014/feat/alert",
         },
     )
     client.put(

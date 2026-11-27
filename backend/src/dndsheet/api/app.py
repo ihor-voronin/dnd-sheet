@@ -71,6 +71,7 @@ def create_app() -> FastAPI:
         characters=characters,
         rules=rules,
         subclasses=CompendiumSubclassCatalog(compendium),
+        feats=CompendiumFeatCatalog(compendium),
     )
     app.state.sheet = SheetService(characters=characters)
     app.state.level_up = LevelUpService(

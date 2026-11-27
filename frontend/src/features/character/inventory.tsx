@@ -116,7 +116,12 @@ interface Draft {
   /** Підказка з довідника: що буде, якщо урон не вписувати вручну. */
   damageHint: string;
   entry_id: string | null;
+  pact_weapon: boolean;
+  hex_weapon: boolean;
 }
+
+/** Які позначки зброї має персонаж: угода клинка, хексблейд. */
+export type WeaponBonds = { pact: boolean; hex: boolean };
 
 const EMPTY: Draft = {
   name_en: "",
@@ -130,6 +135,8 @@ const EMPTY: Draft = {
   damage: "",
   damageHint: "",
   entry_id: null,
+  pact_weapon: false,
+  hex_weapon: false,
 };
 
 function draftFromItem(item: SheetItem): Draft {
@@ -145,6 +152,8 @@ function draftFromItem(item: SheetItem): Draft {
     damage: item.damage ?? "",
     damageHint: item.damage ?? "",
     entry_id: item.entry_id ?? null,
+    pact_weapon: Boolean(item.pact_weapon),
+    hex_weapon: Boolean(item.hex_weapon),
   };
 }
 
@@ -249,6 +258,8 @@ function bodyFromDraft(draft: Draft, withEntry: boolean): ItemBody {
     damage: draft.kind === "weapon" ? draft.damage.trim() || null : null,
     armor_base: draft.kind === "armor" ? draft.armorBase : null,
     dex_cap: draft.kind === "armor" ? draft.dexCap : null,
+    pact_weapon: draft.kind === "weapon" && draft.pact_weapon,
+    hex_weapon: draft.kind === "weapon" && draft.hex_weapon,
     ...(withEntry ? { entry_id: draft.entry_id } : {}),
   };
 }
@@ -622,7 +633,9 @@ export function InventoryPanel({
   onAdd,
   onUpdate,
   onRemove,
+  bonds = { pact: false, hex: false },
 }: {
+  bonds?: WeaponBonds;
   items: SheetItem[];
   money: Record<string, number>;
   carrying: { capacity: number; weight: number };
@@ -927,6 +940,34 @@ export function InventoryPanel({
               />
               <span>споряджено</span>
             </label>
+            {form.draft.kind === "weapon" && bonds.pact ? (
+              <label className="field inv-form__check">
+                <input
+                  type="checkbox"
+                  checked={form.draft.pact_weapon}
+                  onChange={(event) =>
+                    setForm({ ...form, draft: { ...form.draft, pact_weapon: event.target.checked } })
+                  }
+                />
+                <span title="Угода клинка (Pact of the Blade): володієте цією зброєю, атаки магічні">
+                  зброя угоди (Pact Weapon)
+                </span>
+              </label>
+            ) : null}
+            {form.draft.kind === "weapon" && bonds.hex ? (
+              <label className="field inv-form__check">
+                <input
+                  type="checkbox"
+                  checked={form.draft.hex_weapon}
+                  onChange={(event) =>
+                    setForm({ ...form, draft: { ...form.draft, hex_weapon: event.target.checked } })
+                  }
+                />
+                <span title="Хекс-воїн (Hex Warrior): атаки цією зброєю — Харизмою; обирається після тривалого відпочинку">
+                  зброя Хекс-воїна (Hex Warrior)
+                </span>
+              </label>
+            ) : null}
           </div>
           <div className="inv-form__actions">
             <button
@@ -956,6 +997,8 @@ export function InventoryPanel({
               data.attunement === true && item.attuned ? "настроєно" : "",
               data.attunement === true && !item.attuned ? "потрібне настроювання" : "",
               !data.attunement && item.attuned ? "настроєно" : "",
+              item.pact_weapon ? "зброя угоди" : "",
+              item.hex_weapon ? "Хекс-воїн" : "",
               item.damage,
               item.armor_base ? `КЗ ${item.armor_base}` : "",
               item.dex_cap !== null && item.armor_base ? `СПР ≤ ${item.dex_cap}` : "",
@@ -1074,6 +1117,34 @@ export function InventoryPanel({
 
                 {isOpen ? (
                   <div className="item-detail">
+                    {item.kind === "weapon" && (bonds.pact || bonds.hex || item.pact_weapon || item.hex_weapon) ? (
+                      <div className="chip-row item-detail__bonds">
+                        {bonds.pact || item.pact_weapon ? (
+                          <button
+                            type="button"
+                            className={`chip ${item.pact_weapon ? "chip--active" : ""}`}
+                            disabled={disabled}
+                            aria-pressed={Boolean(item.pact_weapon)}
+                            onClick={() => void onUpdate(index, { pact_weapon: !item.pact_weapon })}
+                            title="Угода клинка (Pact of the Blade): володієте цією зброєю, атаки магічні. Позначка з іншої зброї зніметься."
+                          >
+                            Зброя угоди (Pact Weapon)
+                          </button>
+                        ) : null}
+                        {bonds.hex || item.hex_weapon ? (
+                          <button
+                            type="button"
+                            className={`chip ${item.hex_weapon ? "chip--active" : ""}`}
+                            disabled={disabled}
+                            aria-pressed={Boolean(item.hex_weapon)}
+                            onClick={() => void onUpdate(index, { hex_weapon: !item.hex_weapon })}
+                            title="Хекс-воїн (Hex Warrior): атаки цією зброєю — Харизмою; обирається після тривалого відпочинку. Позначка з іншої зброї зніметься."
+                          >
+                            Хекс-воїн (Hex Warrior)
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
                     {statsRows.length ? (
                       <dl className="item-detail__stats">
                         {statsRows.map(([label, value]) => (

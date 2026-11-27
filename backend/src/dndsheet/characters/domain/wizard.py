@@ -43,6 +43,7 @@ from dndsheet.characters.domain.vitals import HitPointState
 from dndsheet.shared.errors import NotFoundError, ValidationError
 from dndsheet.shared.kernel import Ability, AbilityScore, Money
 from dndsheet.shared.rules import (
+    SPECIES_WITH_FEAT,
     BackgroundMechanics,
     ClassMechanics,
     SpeciesMechanics,
@@ -192,6 +193,10 @@ class Draft:
     spells: tuple[KnownSpell, ...] = ()
     #: Обрані заговори виду (високий ельф): імена, не id.
     spell_choices: tuple[str, ...] = ()
+    #: Риса виду на 1 рівні (варіантна людина, власна лінія): ключ риси.
+    species_feat: str | None = None
+    #: Характеристика, яку риса підвищила на 1 (Resilient, Actor…).
+    species_feat_ability: Ability | None = None
 
     # ------------------------------------------------------------------
     # похідні
@@ -233,7 +238,16 @@ class Draft:
         totals = ability_bonus_totals(self.species, self.ability_choices)
         for ability, amount in self.ability_spread.items():
             totals[ability] += amount
+        if self.species_feat and self.species_feat_ability is not None:
+            totals[self.species_feat_ability] += 1
         return totals
+
+    @property
+    def grants_species_feat(self) -> bool:
+        """Варіантна людина й власна лінія беруть рису на 1 рівні (PHB, p. 31; TCoE, p. 8)."""
+        return any(
+            (key or "").casefold() in SPECIES_WITH_FEAT for key in (self.species_key, self.subspecies_key)
+        )
 
     def ability_modifier(self, ability: Ability) -> int:
         """Модифікатор уже з бонусами виду — потрібен для ліміту підготовлених."""
@@ -254,6 +268,8 @@ class Draft:
         ability_choices: Iterable[Ability] = (),
         spell_choices: Iterable[str] = (),
         ability_spread: Mapping[Any, Any] | None = None,
+        species_feat: str | None = None,
+        species_feat_ability: Ability | None = None,
     ) -> None:
         species = self.rules.species_mechanics(species_key)
         if species is None:
@@ -284,6 +300,8 @@ class Draft:
         candidate.spell_choices = tuple(
             name.strip() for name in spell_choices if str(name).strip()
         )
+        candidate.species_feat = (species_feat or "").strip().casefold() or None
+        candidate.species_feat_ability = species_feat_ability if candidate.species_feat else None
         if (self.species_key, self.subspecies_key) != (
             candidate.species_key,
             candidate.subspecies_key,
@@ -486,6 +504,13 @@ class Draft:
             inventory=Inventory(items=self.items, money=self.money),
             spells=self.spells,
             spell_choices=self.spell_choices,
+            feats=(self.species_feat,) if self.species_feat else (),
+            feat_abilities=(
+                {self.species_feat: self.species_feat_ability}
+                if self.species_feat and self.species_feat_ability is not None
+                else {}
+            ),
+            species_feat=self.species_feat,
             hp=HitPointState(),
         )
 
@@ -531,6 +556,12 @@ class Draft:
                 f"{effective.name_en if effective is not None else 'вид'} має фіксовані "
                 f"бонуси — вільний розподіл (правила 2022) для нього не діє"
             )
+        if self.grants_species_feat and not self.species_feat:
+            raise ValidationError(
+                "варіантна людина й власна лінія беруть рису на 1 рівні — оберіть рису"
+            )
+        if self.species_feat and not self.grants_species_feat:
+            raise ValidationError("вид не дає риси на 1 рівні")
         allowed = (
             effective.cantrip_choice_count
             if effective is not None and effective.cantrip_choice_class
