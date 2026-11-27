@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# API-тести працюють від «локального гравця»: вхід перевіряють окремі тести
+# (`tests/identity`), які вмикають його явно. Корпус — з репозиторію, звідки б
+# не запускали pytest.
+os.environ.setdefault("DNDSHEET_AUTH", "off")
+os.environ.setdefault("DNDSHEET_CONTENT_DIR", str(REPO_ROOT / "content"))
 CONTRACT_DIR = REPO_ROOT / "contract"
 SCHEMA_PATH = CONTRACT_DIR / "sheet-document.schema.json"
 FIXTURES_DIR = CONTRACT_DIR / "fixtures"

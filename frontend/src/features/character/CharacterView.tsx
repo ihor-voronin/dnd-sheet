@@ -18,6 +18,8 @@ import {
   addCharacterItem,
   addCharacterSpell,
   exportUrl,
+  fetchCharacter,
+  fetchCharacterVersion,
   fetchRenderers,
   patchCharacter,
   prepareCharacterSpells,
@@ -71,6 +73,9 @@ import {
   SpellsKnownList,} from "./panels";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
+
+/** Як часто лист питає сервер, чи не змінили його з іншого пристрою. */
+const SYNC_INTERVAL_MS = 4000;
 
 const TABS: { id: string; label: string }[] = [
   { id: "actions", label: "Дії" },
@@ -174,7 +179,8 @@ export function CharacterView({
   // числа, а не ті, що були в кеші на момент відкриття.
   const adoptedVersion = useRef(initial.character.version);
   useEffect(() => {
-    if (initial.character.version <= adoptedVersion.current) return;
+    // Батько міг принести ту саму версію, що екран уже має після власної зміни.
+    if (initial.character.version <= Math.max(adoptedVersion.current, versionRef.current)) return;
     adoptedVersion.current = initial.character.version;
     versionRef.current = initial.character.version;
     setSheet(initial);
@@ -195,7 +201,22 @@ export function CharacterView({
       setSheet(result.sheet);
       return result.sheet;
     } catch (failure) {
-      setError(messageOf(failure));
+      const message = messageOf(failure);
+      // Конфлікт версій: хтось змінив лист раніше. Показуємо свіжу версію
+      // одразу, щоб повтор дії пішов уже від неї.
+      if (/версі|іншому пристрої/i.test(message)) {
+        try {
+          const fresh = await fetchCharacter(id);
+          versionRef.current = fresh.sheet.character.version;
+          adoptedVersion.current = Math.max(adoptedVersion.current, versionRef.current);
+          setSheet(fresh.sheet);
+          setError("Лист щойно змінили на іншому пристрої — показано свіжу версію. Повторіть дію.");
+          return null;
+        } catch {
+          // не вдалося перечитати — покажемо початкову помилку
+        }
+      }
+      setError(message);
       return null;
     } finally {
       setBusy(false);
@@ -287,6 +308,43 @@ export function CharacterView({
 
   // --- нотатки й зовнішність: автозбереження через паузу ---------------
   const [notesStatus, setNotesStatus] = useState<NoteStatus>("idle");
+
+  // --- синхронізація між пристроями -----------------------------------
+  // Лист живе в базі: його можуть змінити з телефона чи іншої вкладки. Раз на
+  // кілька секунд питаємо лише номер версії; новіша — перечитуємо лист. Поки
+  // екран сам зберігає зміну чи нотатки, не чіпаємо: інакше відповідь
+  // перезаписала б те, що гравець щойно ввів.
+  const [syncNote, setSyncNote] = useState<string | null>(null);
+  const quiet = useRef(true);
+  quiet.current = !busy && notesStatus !== "saving";
+  async function syncFromServer(): Promise<void> {
+    if (!quiet.current || document.hidden) return;
+    try {
+      const { version } = await fetchCharacterVersion(id);
+      if (version <= versionRef.current || !quiet.current) return;
+      const fresh = await fetchCharacter(id);
+      if (fresh.sheet.character.version <= versionRef.current || !quiet.current) return;
+      versionRef.current = fresh.sheet.character.version;
+      adoptedVersion.current = Math.max(adoptedVersion.current, versionRef.current);
+      setSheet(fresh.sheet);
+      setNotesDraft({ ...fresh.sheet.state.notes });
+      setSyncNote("Лист оновлено: його змінили на іншому пристрої.");
+    } catch {
+      // мережа зникла — спробуємо на наступному такті
+    }
+  }
+  useEffect(() => {
+    const timer = window.setInterval(() => void syncFromServer(), SYNC_INTERVAL_MS);
+    const onVisible = () => {
+      if (!document.hidden) void syncFromServer();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
   const [notesSavedAt, setNotesSavedAt] = useState<string | null>(null);
   const notesTimer = useRef<number | null>(null);
 
@@ -626,6 +684,20 @@ export function CharacterView({
             Вимоги мультикласу проігноровано: {waiverText}. Це правило дому — PHB вимагає
             13 у ключовій характеристиці класу.
           </span>
+        </p>
+      ) : null}
+
+      {syncNote ? (
+        <p className="sheet-rest-note" role="status">
+          <span>{syncNote}</span>
+          <button
+            type="button"
+            className="sheet-rest-note__close"
+            onClick={() => setSyncNote(null)}
+            aria-label="Закрити повідомлення про оновлення"
+          >
+            ×
+          </button>
         </p>
       ) : null}
 

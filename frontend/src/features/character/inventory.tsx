@@ -371,7 +371,8 @@ export function ItemCatalogBrowser({
   disabled = false,
   initialOpen = false,
 }: {
-  onAdd: (entry: ItemSearchResult) => Promise<boolean>;
+  /** Без `onAdd` каталог лише показує предмети (довідник): «Що це» замість «Додати». */
+  onAdd?: (entry: ItemSearchResult) => Promise<boolean>;
   onCustom?: () => void;
   disabled?: boolean;
   initialOpen?: boolean;
@@ -387,6 +388,7 @@ export function ItemCatalogBrowser({
   const [visible, setVisible] = useState(40);
   const [adding, setAdding] = useState<string | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -462,6 +464,7 @@ export function ItemCatalogBrowser({
   const shown = filtered.slice(0, visible);
 
   async function add(entry: ItemSearchResult) {
+    if (!onAdd) return;
     setAdding(entry.id);
     const ok = await onAdd(entry);
     setAdding(null);
@@ -609,14 +612,30 @@ export function ItemCatalogBrowser({
                         {catalogMeta(entry, titles) || "—"}
                       </span>
                     </span>
-                    <button
-                      type="button"
-                      className="button button--primary inv-catalog__add"
-                      disabled={disabled || busy}
-                      onClick={() => void add(entry)}
-                    >
-                      {busy ? "…" : added ? "Додано" : "Додати"}
-                    </button>
+                    {onAdd ? (
+                      <button
+                        type="button"
+                        className="button button--primary inv-catalog__add"
+                        disabled={disabled || busy}
+                        onClick={() => void add(entry)}
+                      >
+                        {busy ? "…" : added ? "Додано" : "Додати"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="button inv-catalog__add"
+                        aria-expanded={expanded === entry.id}
+                        onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}
+                      >
+                        {expanded === entry.id ? "Згорнути" : "Що це"}
+                      </button>
+                    )}
+                    {expanded === entry.id ? (
+                      <div className="inv-catalog__facts">
+                        <EntryFacts entry={entry} />
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}
@@ -1242,6 +1261,23 @@ export function InventoryPanel({
   );
 }
 
+/** Опис предмета з каталогу: ті самі «Що це дає», що й в інвентарі. */
+function EntryFacts({ entry }: { entry: ItemSearchResult }) {
+  const body = bodyFromEntry(entry);
+  return (
+    <ItemFacts
+      nameEn={entry.name_en}
+      entryId={entry.id}
+      kind={body.kind}
+      damage={body.damage ?? null}
+      armorBase={body.armor_base ?? null}
+      dexCap={body.dex_cap ?? null}
+      weightLb={body.weight_lb}
+      open
+    />
+  );
+}
+
 /** «Що це дає» — числа й опис речі, без панелі інвентаря.
  *
  * Потрібен там, де предмет показують у списку, а панелі ще немає: на кроці
@@ -1258,6 +1294,7 @@ export function ItemFacts({
   armorBase,
   dexCap,
   weightLb,
+  open = false,
 }: {
   nameEn: string;
   entryId?: string | null;
@@ -1266,6 +1303,8 @@ export function ItemFacts({
   armorBase?: number | null;
   dexCap?: number | null;
   weightLb?: number;
+  /** Розгорнуто одразу (довідник: гравець уже натиснув «Що це»). */
+  open?: boolean;
 }) {
   const [uk, setUk] = useState<Record<string, { name?: string; text?: string }>>({});
   const [entry, setEntry] = useState<CompendiumEntry | null>(null);
@@ -1341,7 +1380,7 @@ export function ItemFacts({
   })();
 
   return (
-    <details className="reckoning item-facts">
+    <details className="reckoning item-facts" open={open}>
       <summary>Що це дає</summary>
       {loading && !translated ? <p className="hint">Шукаємо опис…</p> : null}
       {stats.length ? (

@@ -9,11 +9,17 @@ import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 import {
   demoExportUrl,
+  fetchAuthConfig,
   fetchCharacter,
   fetchCharacters,
   fetchDemoSheet,
+  fetchMe,
   fetchRenderers,
+  logout,
 } from "./api";
+import { LoginPanel } from "./features/auth/Login";
+import { KnowledgeBase, isKbSection } from "./features/knowledge/KnowledgeBase";
+import type { KbSection } from "./features/knowledge/KnowledgeBase";
 import { CharacterView } from "./features/character/CharacterView";
 import { LevelUpWizard } from "./features/character/LevelUp";
 import { CreateWizard } from "./features/wizard/CreateWizard";
@@ -27,11 +33,17 @@ type Route =
   | { name: "home" }
   | { name: "create" }
   | { name: "character"; id: string; tab?: string }
-  | { name: "levelup"; id: string };
+  | { name: "levelup"; id: string }
+  | { name: "kb"; section?: KbSection; key?: string };
 
 function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "create") return { name: "create" };
+  if (hash === "kb" || hash.startsWith("kb/")) {
+    const [, section, ...rest] = hash.split("/");
+    const key = rest.length ? decodeURIComponent(rest.join("/")) : undefined;
+    return { name: "kb", section: isKbSection(section) ? section : undefined, key };
+  }
   if (hash.startsWith("character/")) {
     const rest = hash.slice("character/".length);
     if (rest.endsWith("/level-up")) {
@@ -59,6 +71,8 @@ function useRoute(): [Route, (next: Route) => void] {
         ? "#/"
         : next.name === "create"
           ? "#/create"
+          : next.name === "kb"
+            ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
           : next.name === "levelup"
             ? `#/character/${encodeURIComponent(next.id)}/level-up`
             : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
@@ -123,6 +137,26 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
       {error ? (
         <p className="status status--error">
           Не вдалося прочитати список: {error instanceof Error ? error.message : String(error)}
+        </p>
+      ) : null}
+      {data?.draft_id ? (
+        <p className="hint">
+          Є незавершене створення персонажа.{" "}
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => {
+              // Чернетка в базі: продовжити можна з будь-якого пристрою.
+              try {
+                window.localStorage.setItem("dndsheet.draft", data.draft_id!);
+              } catch {
+                // приватний режим — візард почне нову чернетку
+              }
+              navigate({ name: "create" });
+            }}
+          >
+            Продовжити
+          </button>
         </p>
       ) : null}
       {data && data.total === 0 ? (
@@ -237,9 +271,55 @@ function useTheme(): ["night" | "day", () => void] {
   return [theme, () => setTheme((current) => (current === "day" ? "night" : "day"))];
 }
 
+/** Хто зайшов: `undefined` — ще питаємо, `null` — гість. */
+function useCurrentUser() {
+  const me = useQuery({ queryKey: ["me"], queryFn: fetchMe, staleTime: 60_000 });
+  return me.isPending ? undefined : (me.data?.user ?? null);
+}
+
+function UserBar({ navigate }: { navigate: (next: Route) => void }) {
+  const queryClient = useQueryClient();
+  const user = useCurrentUser();
+  const config = useQuery({ queryKey: ["auth-config"], queryFn: fetchAuthConfig, staleTime: Infinity });
+  if (user === undefined) return null;
+  if (!user) {
+    return (
+      <button type="button" className="link-button" onClick={() => navigate({ name: "home" })}>
+        Увійти
+      </button>
+    );
+  }
+  return (
+    <span className="userbar">
+      <span className="meta">{user.name}</span>
+      {config.data?.auth_enabled ? (
+        <button
+          type="button"
+          className="link-button"
+          onClick={() => {
+            void logout().finally(() => {
+              try {
+                window.localStorage.removeItem("dndsheet.draft");
+              } catch {
+                // нічого
+              }
+              queryClient.clear();
+              navigate({ name: "home" });
+            });
+          }}
+        >
+          Вийти
+        </button>
+      ) : null}
+    </span>
+  );
+}
+
 function Shell() {
   const [route, navigate] = useRoute();
   const [theme, toggleTheme] = useTheme();
+  const user = useCurrentUser();
+  const needsUser = route.name === "create" || route.name === "character" || route.name === "levelup";
 
   // Лист персонажа має темну «дошку» на всю ширину; решта застосунку світла.
   // Клас ставимо і на <html>, інакше за межами body видно світлий canvas.
@@ -257,13 +337,58 @@ function Shell() {
     <main className={route.name === "character" ? "app app--board" : "app"}>
       <div className="topbar">
         <p className="badge">
-          Книга гравця 2014 · {route.name === "create" ? "створення персонажа" : route.name === "levelup" ? "підвищення рівня" : "лист персонажа"}
+          Книга гравця 2014 ·{" "}
+          {route.name === "create"
+            ? "створення персонажа"
+            : route.name === "levelup"
+              ? "підвищення рівня"
+              : route.name === "kb"
+                ? "довідник"
+                : route.name === "home"
+                  ? "мої персонажі"
+                  : "лист персонажа"}
         </p>
-        <button type="button" className="link-button theme-toggle" onClick={toggleTheme}>
-          {theme === "day" ? "Темна тема" : "Світла тема"}
-        </button>
+        <nav className="topnav" aria-label="Розділи">
+          <button
+            type="button"
+            className="link-button"
+            aria-current={route.name === "home" ? "page" : undefined}
+            onClick={() => navigate({ name: "home" })}
+          >
+            Мої персонажі
+          </button>
+          <button
+            type="button"
+            className="link-button"
+            aria-current={route.name === "kb" ? "page" : undefined}
+            onClick={() => navigate({ name: "kb" })}
+          >
+            Довідник
+          </button>
+          <UserBar navigate={navigate} />
+          <button type="button" className="link-button theme-toggle" onClick={toggleTheme}>
+            {theme === "day" ? "Темна тема" : "Світла тема"}
+          </button>
+        </nav>
       </div>
-      {route.name === "home" ? (
+      {route.name === "kb" ? (
+        <KnowledgeBase
+          section={route.section}
+          entryKey={route.key}
+          go={(section, key) => navigate({ name: "kb", section, key })}
+        />
+      ) : null}
+      {user === undefined && route.name !== "kb" ? <p className="status">Перевіряємо вхід…</p> : null}
+      {user === null && (route.name === "home" || needsUser) ? (
+        <LoginPanel
+          reason={
+            needsUser
+              ? "Створювати й відкривати персонажів можна після входу через Telegram. Довідник доступний і без входу."
+              : undefined
+          }
+        />
+      ) : null}
+      {user && route.name === "home" ? (
         <>
           <CharactersList navigate={navigate} />
           <section className="demo">
@@ -272,13 +397,13 @@ function Shell() {
           </section>
         </>
       ) : null}
-      {route.name === "create" ? (
+      {user && route.name === "create" ? (
         <CreateWizard onFinished={(characterId) => navigate({ name: "character", id: characterId })} />
       ) : null}
-      {route.name === "character" ? (
+      {user && route.name === "character" ? (
         <CharacterPage id={route.id} tab={route.tab} navigate={navigate} />
       ) : null}
-      {route.name === "levelup" ? <LevelUpPage id={route.id} navigate={navigate} /> : null}
+      {user && route.name === "levelup" ? <LevelUpPage id={route.id} navigate={navigate} /> : null}
     </main>
   );
 }

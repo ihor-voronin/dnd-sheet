@@ -113,6 +113,8 @@ export interface ClassView {
   /** Перший рівень, на якому клас чарує (паладин і рейнджер — 2); `null` — не чарує. */
   casts_from_level?: number | null;
   subclass: { title: string; level: number; options: SubclassView[] } | null;
+  /** Усі підкласи з довідника — для бази знань (`/api/v1/kb/classes`). */
+  subclasses_all?: { id: string; name_en: string; name_uk: string | null; source_id: string }[];
   features: { name_en: string; level: number; name_uk?: string }[];
   /** Опис класу з книги. */
   description?: string;

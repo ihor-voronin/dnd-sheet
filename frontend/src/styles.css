@@ -1253,3 +1253,145 @@ body {
 .levelup-warning {
   color: var(--brass);
 }
+
+/* --- навігація, вхід, довідник ------------------------------------------- */
+
+.topnav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+}
+
+.topnav [aria-current="page"] {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.userbar {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.login,
+.kb {
+  margin-top: 18px;
+  padding: 20px 22px 26px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.login h2,
+.kb__head h2 {
+  margin: 0 0 8px;
+}
+
+.login-telegram {
+  min-height: 48px;
+  margin: 12px 0;
+}
+
+.login-dev {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.login-dev label {
+  display: grid;
+  gap: 4px;
+}
+
+.kb__nav {
+  margin: 12px 0 16px;
+}
+
+.kb__sections {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.kb__section-card {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  border: 1px solid var(--field-line);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.kb__section-card:hover,
+.kb__item:hover {
+  background: color-mix(in srgb, var(--patina) 10%, transparent);
+}
+
+.kb__search {
+  width: 100%;
+  max-width: 420px;
+  margin: 4px 0;
+}
+
+.kb__levels {
+  margin-bottom: 8px;
+}
+
+.kb__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px;
+}
+
+.kb__item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 10px;
+  text-align: left;
+  border: 1px solid var(--field-line);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.kb__item--active {
+  border-color: var(--act-text, currentColor);
+}
+
+.kb__detail {
+  margin-bottom: 16px;
+}
+
+.kb__detail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kb__detail-head h3 {
+  margin: 0 0 8px;
+}
+
+.inv-catalog__row {
+  flex-wrap: wrap;
+}
+
+.inv-catalog__facts {
+  flex-basis: 100%;
+}

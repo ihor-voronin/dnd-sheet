@@ -54,6 +54,7 @@ source_modules = [
     "dndsheet.sheets.domain",
     "dndsheet.export.domain",
     "dndsheet.compendium.domain",
+    "dndsheet.identity.domain",
     "dndsheet.shared",
 ]
 forbidden_modules = [
@@ -69,6 +70,9 @@ forbidden_modules = [
     "dndsheet.compendium.application",
     "dndsheet.compendium.infrastructure",
     "dndsheet.compendium.api",
+    "dndsheet.identity.application",
+    "dndsheet.identity.infrastructure",
+    "dndsheet.identity.api",
     "fastapi",
     "sqlalchemy",
     "jinja2",
@@ -108,4 +112,13 @@ layers = [
     "dndsheet.compendium.api",
     "dndsheet.compendium.application",
     "dndsheet.compendium.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "identity: api -> application -> domain"
+type = "layers"
+layers = [
+    "dndsheet.identity.api",
+    "dndsheet.identity.application",
+    "dndsheet.identity.domain",
 ]

@@ -18,7 +18,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
-from fastapi import APIRouter, Body, HTTPException, Request, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 
 from dndsheet.characters.api.serializers import (
     character_brief,
@@ -59,6 +59,7 @@ from dndsheet.characters.domain.wizard import Draft, WizardStep
 from dndsheet.characters.infrastructure.compendium_rules import CompendiumRulesSource
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.export.application.registry import RendererRegistry
+from dndsheet.identity.api.router import require_user
 from dndsheet.export.domain.renderer import RenderOptions, RendererError, RendererUnavailable
 from dndsheet.sheets.application.build_document import build_sheet_document
 from dndsheet.shared.errors import ConflictError, DomainError, NotFoundError
@@ -70,7 +71,38 @@ from dndsheet.shared.rules import (
     natural_weapon_for,
 )
 
-router = APIRouter(prefix="/api/v1/characters", tags=["characters"])
+#: Без входу відкриті лише еталонні листи й довідкові тексти класів і підкласів.
+_PUBLIC_PREFIXES = (
+    "/api/v1/characters/golden",
+    "/api/v1/characters/wizard/class-features/",
+    "/api/v1/characters/wizard/subclass/",
+)
+
+
+def _guard(request: Request) -> None:
+    """Доступ: персонажі й чернетки — лише власнику; чужий id виглядає як відсутній.
+
+    Залежність рівня роутера виконується після вибору маршруту, тож
+    `path_params` уже містить `character_id` чи `draft_id`.
+    """
+    # Без входу (`DNDSHEET_AUTH=off`) гравець один — і все його.
+    if request.url.path.startswith(_PUBLIC_PREFIXES) or not request.app.state.auth_enabled:
+        return
+    user = require_user(request)
+    params = request.path_params
+    character_id = params.get("character_id")
+    if character_id is not None:
+        store = request.app.state.characters
+        if store.version(character_id) is not None and store.owner(character_id) != user.id:
+            raise HTTPException(status_code=404, detail=f"немає персонажа {character_id!r}")
+    draft_id = params.get("draft_id")
+    if draft_id is not None:
+        drafts = request.app.state.drafts
+        if drafts.get(draft_id) is not None and drafts.owner(draft_id) != user.id:
+            raise HTTPException(status_code=404, detail=f"немає чернетки {draft_id!r}")
+
+
+router = APIRouter(prefix="/api/v1/characters", tags=["characters"], dependencies=[Depends(_guard)])
 
 
 def build_cases(service: CompendiumService) -> tuple[GoldenCase, ...]:
@@ -329,6 +361,7 @@ def start_wizard(request: Request) -> dict:
         draft = _wizard(request).start()
     except DomainError as exc:
         raise _http_error(exc) from exc
+    request.app.state.drafts.set_owner(draft.id, require_user(request).id)
     step = draft.next_step() or WizardStep.SPECIES
     return _step_payload(request, draft, step)
 
@@ -493,6 +526,7 @@ def finish_draft(draft_id: str, request: Request) -> dict:
         character = _wizard(request).finish(draft_id)
     except DomainError as exc:
         raise _http_error(exc) from exc
+    request.app.state.characters.set_owner(character.id, require_user(request).id)
     return {"character_id": character.id, "sheet": _sheet_payload(request, character)}
 
 
@@ -503,9 +537,24 @@ def finish_draft(draft_id: str, request: Request) -> dict:
 
 @router.get("")
 def saved_characters(request: Request) -> dict:
-    characters = _wizard(request).saved_characters()
+    store = request.app.state.characters
+    user = require_user(request)
+    # Без входу — усі персонажі бази (тести й старі записи можуть не мати власника).
+    identifiers = store.ids_of(user.id) if request.app.state.auth_enabled else store.ids()
+    characters = [found for identifier in identifiers if (found := store.get(identifier)) is not None]
     items = [character_brief(character) for character in characters]
-    return {"items": items, "total": len(items)}
+    # Незавершена чернетка — щоб продовжити створення з іншого пристрою.
+    draft_id = request.app.state.drafts.latest_of(user.id)
+    return {"items": items, "total": len(items), "draft_id": draft_id}
+
+
+@router.get("/{character_id}/version")
+def character_version(character_id: str, request: Request) -> dict:
+    """Лише номер версії: лист опитує його кожні кілька секунд і перечитує себе, коли той змінився."""
+    version = request.app.state.characters.version(character_id)
+    if version is None:
+        raise HTTPException(status_code=404, detail=f"немає персонажа {character_id!r}")
+    return {"version": version}
 
 
 @router.get("/{character_id}")

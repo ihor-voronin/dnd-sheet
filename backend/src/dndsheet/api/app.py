@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
 
 from dndsheet.characters.api.attacks import attacks_for
+from dndsheet.characters.api.knowledge import router as knowledge_router
 from dndsheet.characters.api.router import build_cases, router as characters_router
 from dndsheet.characters.application.level_up import LevelUpService
 from dndsheet.characters.application.sheet import SheetService
@@ -19,14 +20,18 @@ from dndsheet.characters.infrastructure.compendium_rules import (
     CompendiumRulesSource,
     CompendiumSubclassCatalog,
 )
-from dndsheet.characters.infrastructure.json_store import (
-    JsonCharacterRepository,
-    JsonDraftRepository,
-    default_data_dir,
+from dndsheet.characters.infrastructure.json_store import default_data_dir
+from dndsheet.characters.infrastructure.sqlite_store import (
+    SqliteCharacterRepository,
+    SqliteDraftRepository,
+    SqliteStore,
 )
 from dndsheet.compendium.api.router import router as compendium_router
 from dndsheet.compendium.infrastructure.factory import build_service
 from dndsheet.export.application.registry import RendererRegistry
+from dndsheet.identity.api.router import LOCAL_USER, auth_enabled, router as auth_router
+from dndsheet.identity.application.auth import AuthService, LoginResult
+from dndsheet.identity.infrastructure.sqlite_identity import SqliteIdentityStore
 from dndsheet.export.domain.renderer import RenderOptions, RendererError, RendererUnavailable
 from dndsheet.export.infrastructure.markdown_renderer import MarkdownRenderer
 from dndsheet.export.infrastructure.pdf_renderer import PdfRenderer
@@ -61,13 +66,20 @@ def create_app() -> FastAPI:
     app.state.compendium = compendium
     rules = CompendiumRulesSource(compendium)
     app.state.rules = rules
-    # Чернетки й персонажі — файли в `var/` (етап 6 замінить на БД). Каталог
-    # можна перевизначити `DNDSHEET_DATA_DIR`, це ж роблять тести.
+    # Чернетки й персонажі — у базі SQLite `var/dndsheet.sqlite3` з власником;
+    # старі файли `var/characters/*.json` переносяться туди один раз і лишаються
+    # як резервна копія. Каталог можна перевизначити `DNDSHEET_DATA_DIR`.
     data_dir = default_data_dir()
-    characters = JsonCharacterRepository(data_dir / "characters", rules)
+    database = data_dir / "dndsheet.sqlite3"
+    store = SqliteStore(database)
+    store.import_json_once(data_dir / "characters", data_dir / "drafts")
+    characters = SqliteCharacterRepository(store, rules)
+    drafts = SqliteDraftRepository(store, rules)
     app.state.characters = characters
+    app.state.drafts = drafts
+    _configure_auth(app, database, store)
     app.state.wizard = WizardService(
-        drafts=JsonDraftRepository(data_dir / "drafts", rules),
+        drafts=drafts,
         characters=characters,
         rules=rules,
         subclasses=CompendiumSubclassCatalog(compendium),
@@ -93,7 +105,9 @@ def create_app() -> FastAPI:
     # порожній, і `/golden` віддає `items: []`, а не 500.
     app.state.golden_cases = build_cases(compendium)
 
+    app.include_router(auth_router)
     app.include_router(compendium_router)
+    app.include_router(knowledge_router)
     app.include_router(characters_router)
 
     @app.get("/healthz", tags=["ops"])
@@ -139,6 +153,38 @@ def create_app() -> FastAPI:
         app.mount("/", StaticFiles(directory=str(dist), html=True), name="spa")
 
     return app
+
+
+def _configure_auth(app: FastAPI, database: Path, store: SqliteStore) -> None:
+    """Вхід через Telegram (токен і імʼя бота — із середовища) і хто володіє старими персонажами.
+
+    Персонажі, перенесені з файлів, не мають власника. Їх отримує власник
+    застосунку: користувач із `DNDSHEET_OWNER_TELEGRAM_ID`, а якщо змінну не
+    задано — перший зареєстрований. Без входу (`DNDSHEET_AUTH=off`) усе
+    належить локальному гравцю.
+    """
+    identity = SqliteIdentityStore(database)
+    app.state.auth_enabled = auth_enabled()
+    app.state.telegram_bot = os.environ.get("DNDSHEET_TELEGRAM_BOT", "").strip().lstrip("@")
+    app.state.auth = AuthService(
+        users=identity,
+        sessions=identity,
+        bot_token=os.environ.get("DNDSHEET_TELEGRAM_BOT_TOKEN", "").strip(),
+        dev_login_enabled=os.environ.get("DNDSHEET_DEV_LOGIN", "").strip() in {"1", "true", "on", "yes"},
+    )
+    if not app.state.auth_enabled:
+        store.claim_unowned(LOCAL_USER.id)
+        return
+    owner_raw = os.environ.get("DNDSHEET_OWNER_TELEGRAM_ID", "").strip()
+
+    def on_login(result: LoginResult) -> None:
+        if owner_raw:
+            if str(result.user.telegram_id) == owner_raw:
+                store.claim_unowned(result.user.id)
+        elif result.created and identity.count() == 1:
+            store.claim_unowned(result.user.id)
+
+    app.state.on_login = on_login
 
 
 def _demo_document(app: FastAPI):

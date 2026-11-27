@@ -1,6 +1,9 @@
 import type { ClassChoiceGroup } from "./features/wizard/types";
 import type { SheetDocument } from "./contract/sheetDocument";
 import type {
+  BackgroundView,
+  ClassView,
+  SpeciesView,
   ClassSpell,
   DraftView,
   FeatEntry,
@@ -32,6 +35,43 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 function getJson<T>(url: string): Promise<T> {
   return request<T>(url, { method: "GET" });
+}
+
+// --- вхід -----------------------------------------------------------------
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  username: string | null;
+  photo_url: string | null;
+}
+
+export interface AuthConfig {
+  auth_enabled: boolean;
+  telegram_bot: string | null;
+  telegram_ready: boolean;
+  dev_login: boolean;
+}
+
+export function fetchAuthConfig(): Promise<AuthConfig> {
+  return getJson<AuthConfig>("/api/v1/auth/config");
+}
+
+export function fetchMe(): Promise<{ user: AuthUser | null }> {
+  return getJson<{ user: AuthUser | null }>("/api/v1/auth/me");
+}
+
+/** Дані з віджета Telegram як є: сервер сам перевіряє підпис. */
+export function loginTelegram(payload: Record<string, unknown>): Promise<{ user: AuthUser }> {
+  return request<{ user: AuthUser }>("/api/v1/auth/telegram", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function loginDev(name: string): Promise<{ user: AuthUser }> {
+  return request<{ user: AuthUser }>("/api/v1/auth/dev", { method: "POST", body: JSON.stringify({ name }) });
+}
+
+export function logout(): Promise<{ user: null }> {
+  return request<{ user: null }>("/api/v1/auth/logout", { method: "POST", body: "{}" });
 }
 
 // --- демо-документ (PDF-контракт) ----------------------------------------
@@ -76,6 +116,11 @@ export function finishDraft(draftId: string): Promise<FinishedCharacter> {
 
 export function fetchCharacter(id: string): Promise<{ sheet: SheetViewPayload }> {
   return getJson<{ sheet: SheetViewPayload }>(`/api/v1/characters/${id}`);
+}
+
+/** Лише номер версії листа — для опитування «чи не змінили його з іншого пристрою». */
+export function fetchCharacterVersion(id: string): Promise<{ version: number }> {
+  return getJson<{ version: number }>(`/api/v1/characters/${id}/version`);
 }
 
 export interface SheetMutation {
@@ -369,6 +414,8 @@ export function removeCharacterItem(
 export function fetchCharacters(): Promise<{
   items: { id: string; name: string; total_level: number }[];
   total: number;
+  /** Незавершена чернетка гравця — продовжити з будь-якого пристрою. */
+  draft_id?: string | null;
 }> {
   return getJson("/api/v1/characters");
 }
@@ -446,6 +493,42 @@ export interface CompendiumEntry {
   text_en?: string | null;
   text_uk?: string | null;
   data: Record<string, unknown>;
+}
+
+// --- база знань (без входу) ------------------------------------------------
+
+export function fetchKbSpecies(): Promise<{ items: SpeciesView[] }> {
+  return getJson("/api/v1/kb/species");
+}
+
+export function fetchKbClasses(): Promise<{ items: ClassView[] }> {
+  return getJson("/api/v1/kb/classes");
+}
+
+export function fetchKbBackgrounds(): Promise<{ items: BackgroundView[] }> {
+  return getJson("/api/v1/kb/backgrounds");
+}
+
+const categoryCache = new Map<string, Promise<ItemSearchResult[]>>();
+
+/** Усі записи категорії довідника (закляття, риси, опційні вміння) — для пошуку українською на клієнті. */
+export function fetchCategory(category: string): Promise<ItemSearchResult[]> {
+  const cached = categoryCache.get(category);
+  if (cached) return cached;
+  const loading = (async () => {
+    const all: ItemSearchResult[] = [];
+    for (let offset = 0; ; offset += CATALOG_PAGE) {
+      const page = await getJson<{ items: ItemSearchResult[]; total: number }>(
+        `/api/v1/compendium/entries?category=${encodeURIComponent(category)}&limit=${CATALOG_PAGE}&offset=${offset}`,
+      );
+      all.push(...page.items);
+      if (!page.items.length || all.length >= page.total) break;
+    }
+    return all;
+  })();
+  categoryCache.set(category, loading);
+  loading.catch(() => categoryCache.delete(category));
+  return loading;
 }
 
 export function fetchEntry(entryId: string): Promise<CompendiumEntry> {

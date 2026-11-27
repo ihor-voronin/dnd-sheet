@@ -740,7 +740,7 @@ export function SpeciesStep({
 }
 
 /** Картка виду: підраса, «що дає», «як виглядає» й особливості — згори. */
-function SpeciesSummary({ base, effective }: { base: SpeciesView; effective: SpeciesView }) {
+export function SpeciesSummary({ base, effective }: { base: SpeciesView; effective: SpeciesView }) {
   const isSub = effective.key !== base.key;
   const facts = speciesFacts(effective);
   const hasText = Boolean(base.description) || (base.traits?.length ?? 0) > 0;
@@ -789,7 +789,7 @@ function SpeciesSummary({ base, effective }: { base: SpeciesView; effective: Spe
   );
 }
 
-function TraitList({
+export function TraitList({
   title,
   traits,
 }: {
@@ -818,7 +818,7 @@ function TraitList({
 }
 
 /** Числа виду: розмір, швидкість, бонуси, навички, мови, опір. */
-function speciesFacts(item: SpeciesView): Fact[] {
+export function speciesFacts(item: SpeciesView): Fact[] {
   const facts: Fact[] = [
     [<Term k="size">Розмір</Term>, SIZE_LABELS[item.size] ?? item.size],
     [<Term k="speed">Швидкість</Term>, `${item.speed} фт (≈ ${Math.round(item.speed * 0.3)} м)`],
@@ -1149,7 +1149,7 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
 }
 
 /** Що дає передісторія — назва й значення. */
-function backgroundFacts(item: BackgroundView): Fact[] {
+export function backgroundFacts(item: BackgroundView): Fact[] {
   const facts: Fact[] = [];
   if (item.skill_proficiencies.length || item.skill_any) {
     const fixed = item.skill_proficiencies.map(skillLabel).join(", ");
@@ -1181,7 +1181,7 @@ function part_money(item: BackgroundView): string {
 }
 
 /** Що клас дає на 1 рівні — назва й значення, терміни з поясненням. */
-function classFacts(item: ClassView): Fact[] {
+export function classFacts(item: ClassView): Fact[] {
   const guide = classGuide(item.key);
   const facts: Fact[] = [];
   if (guide) {

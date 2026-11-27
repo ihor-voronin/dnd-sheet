@@ -9,8 +9,13 @@
 #   docker compose --profile dev up                      → http://127.0.0.1:5173,
 #       Vite і `uvicorn --reload` з кодом із диска: зміни видно за секунди, без перезбирання
 #
-# Дані (персонажі, чернетки візарда) живуть у ./var на хості — каталог
-# прокинутий у контейнер, тому персонажі не гинуть разом з образом.
+# Дані (персонажі, чернетки візарда, користувачі) живуть у ./var/dndsheet.sqlite3
+# на хості — каталог прокинутий у контейнер, тому персонажі не гинуть разом з образом.
+#
+# Вхід: через Telegram (DNDSHEET_TELEGRAM_BOT і DNDSHEET_TELEGRAM_BOT_TOKEN — у файлі
+# .env поруч, його немає в git). Поки бота не налаштовано, працює «вхід для розробки»
+# за іменем — тому порт відкритий лише на цьому компʼютері (127.0.0.1). Перш ніж
+# відкривати застосунок у мережу, приберіть DNDSHEET_DEV_LOGIN. Докладно — RUN.md.
 services:
   app:
     build:
@@ -23,8 +28,12 @@ services:
       DNDSHEET_DATA_DIR: /app/var
       DNDSHEET_CONTENT_DIR: /app/content
       DNDSHEET_SPA_DIST: /app/frontend/dist
+      DNDSHEET_DEV_LOGIN: ${DNDSHEET_DEV_LOGIN:-1}
+      DNDSHEET_TELEGRAM_BOT: ${DNDSHEET_TELEGRAM_BOT:-}
+      DNDSHEET_TELEGRAM_BOT_TOKEN: ${DNDSHEET_TELEGRAM_BOT_TOKEN:-}
+      DNDSHEET_OWNER_TELEGRAM_ID: ${DNDSHEET_OWNER_TELEGRAM_ID:-}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./var:/app/var
     restart: unless-stopped
@@ -67,11 +76,12 @@ services:
     environment:
       DNDSHEET_DATA_DIR: /app/var
       DNDSHEET_CONTENT_DIR: /app/content
+      DNDSHEET_DEV_LOGIN: "1"
       PYTHONPATH: /app/backend/src
     command: ["python", "-m", "uvicorn", "dndsheet.main:app", "--host", "0.0.0.0", "--port", "8000",
               "--reload", "--reload-dir", "/app/backend/src"]
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
     volumes:
       - ./var:/app/var
       - ./backend/src:/app/backend/src
@@ -87,7 +97,7 @@ services:
       VITE_API_TARGET: http://api-dev:8000
     command: ["sh", "-c", "npm ci && npx vite --host 0.0.0.0 --port 5173"]
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     volumes:
       - ./frontend:/web
       - dndsheet-web-modules:/web/node_modules
