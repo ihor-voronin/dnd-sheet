@@ -678,7 +678,11 @@ def test_custom_background_reaches_sheet(client: TestClient) -> None:
                         "description": "Ви виросли біля горна й знаєте ціну металу.",
                         "feature_name": "Звʼязки в гільдії",
                         "feature_text": "Вас приймуть у будь-якій кузні гільдії.",
-                        "equipment": "Кинджал, мотузка, 10 зм",
+                        "items": [
+                            {"name_en": "dagger", "quantity": 2},
+                            {"name_en": "rope", "quantity": 1},
+                        ],
+                        "equipment": "",
                         "money_gp": 10,
                     },
                 },
@@ -686,6 +690,14 @@ def test_custom_background_reaches_sheet(client: TestClient) -> None:
             ("equipment", {"items": [], "money": {"gp": 10}}),
         ],
     )
+    # Крок «Спорядження» має побачити обрані предмети як звичайне спорядження
+    # передісторії — з них він і наповнює інвентар.
+    equipment_step = client.get(
+        f"/api/v1/characters/wizard/{draft_id}/steps/equipment"
+    ).json()
+    rows = equipment_step["options"]["background"]["equipment"]
+    assert [row["text"] for row in rows] == ["dagger", "rope"]
+
     finish = client.post(f"/api/v1/characters/wizard/{draft_id}/finish")
     assert finish.status_code == 200, finish.text
     sheet = finish.json()["sheet"]
@@ -697,7 +709,62 @@ def test_custom_background_reaches_sheet(client: TestClient) -> None:
     assert "smith's tools" in details["tools"]
     assert "dwarvish" in details["languages"]
     assert "arcana" in details["skills"]
-    assert details["equipment"].startswith("Кинджал")
+    assert details["equipment"] == "dagger, rope"
+    assert details["money"] == {"gp": 10}
+
+
+def test_custom_backgrounds_are_not_shared_between_characters(
+    client: TestClient,
+) -> None:
+    """Два персонажі з різними власними передісторіями не плутають текст.
+
+    Раніше деталі кешувалися за назвою з довідника ("Custom Background"), і
+    другий персонаж бачив опис першого.
+    """
+    from dataclasses import replace
+
+    cases = getattr(client.app.state, "golden_cases", [])
+    if not cases:
+        pytest.skip("немає еталонних персонажів")
+    base = next(case for case in cases if case.key == "fighter-1").character
+    first = replace(
+        base,
+        id="custom-bg-first",
+        background_key="custom",
+        custom_background={
+            "name": "Перша гільдія",
+            "description": "Текст першої.",
+            "feature_name": "Риса перша",
+            "feature_text": "Що дає перша.",
+            "items": [{"name_en": "dagger", "quantity": 1}],
+            "equipment": "",
+            "money_gp": 3,
+        },
+    )
+    second = replace(
+        base,
+        id="custom-bg-second",
+        background_key="custom",
+        custom_background={
+            "name": "Друга гільдія",
+            "description": "Текст другої.",
+            "feature_name": "Риса друга",
+            "feature_text": "Що дає друга.",
+            "items": [{"name_en": "rope", "quantity": 2}],
+            "equipment": "",
+            "money_gp": 7,
+        },
+    )
+    client.app.state.characters.save(first)
+    client.app.state.characters.save(second)
+
+    one = client.get("/api/v1/characters/custom-bg-first").json()["sheet"]
+    two = client.get("/api/v1/characters/custom-bg-second").json()["sheet"]
+    assert one["background_details"]["name_en"] == "Перша гільдія"
+    assert one["background_details"]["equipment"] == "dagger"
+    assert two["background_details"]["name_en"] == "Друга гільдія"
+    assert two["background_details"]["equipment"] == "rope"
+    assert two["background_details"]["money"] == {"gp": 7}
 
 
 def test_custom_background_requires_name(client: TestClient) -> None:

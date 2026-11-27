@@ -1088,7 +1088,9 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
   const [customDescription, setCustomDescription] = useState(customInitial?.description ?? "");
   const [customFeatureName, setCustomFeatureName] = useState(customInitial?.feature_name ?? "");
   const [customFeatureText, setCustomFeatureText] = useState(customInitial?.feature_text ?? "");
-  const [customEquipment, setCustomEquipment] = useState(customInitial?.equipment ?? "");
+  const [customItems, setCustomItems] = useState<{ name_en: string; quantity: number }[]>(
+    customInitial?.items ?? [],
+  );
   const [customMoney, setCustomMoney] = useState(customInitial?.money_gp ?? 0);
   const [customSkills, setCustomSkills] = useState<string[]>(
     picks.filter((pick) => pick.source.kind === "background" && pick.kind === "skill").map((pick) => pick.value),
@@ -1323,14 +1325,6 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
             />
           </label>
           <label className="field">
-            <span>Спорядження (рядок, як у книзі)</span>
-            <input
-              value={customEquipment}
-              placeholder="напр. Кинджал, мотузка, 10 зм"
-              onChange={(event) => setCustomEquipment(event.target.value)}
-            />
-          </label>
-          <label className="field">
             <span>Гроші, зм</span>
             <input
               type="number"
@@ -1339,6 +1333,52 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
               onChange={(event) => setCustomMoney(Math.max(0, Number(event.target.value) || 0))}
             />
           </label>
+
+          <h4 className="species-card__h4">
+            Спорядження передісторії ({customItems.reduce((sum, item) => sum + item.quantity, 0)})
+          </h4>
+          <p className="hint">
+            Той самий каталог, що й на листі: фільтри за типом, магічністю й
+            книгою, пошук, у рядку — тип, ціна й вага. Обрані предмети додадуться
+            в інвентар.
+          </p>
+          <ItemCatalogBrowser
+            onAdd={async (entry) => {
+              setCustomItems((current) => {
+                const same = current.findIndex((item) => item.name_en === entry.name_en);
+                if (same >= 0) {
+                  return current.map((item, index) =>
+                    index === same ? { ...item, quantity: item.quantity + 1 } : item,
+                  );
+                }
+                return [...current, { name_en: entry.name_en, quantity: 1 }];
+              });
+              return true;
+            }}
+          />
+          {customItems.length ? (
+            <ul className="plain-list">
+              {customItems.map((item) => (
+                <li key={item.name_en}>
+                  {itemLabel(item.name_en)}
+                  {item.quantity > 1 ? <span className="meta"> ×{item.quantity}</span> : null}{" "}
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={() =>
+                      setCustomItems((current) =>
+                        current.filter((row) => row.name_en !== item.name_en),
+                      )
+                    }
+                  >
+                    прибрати
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="hint">Нічого не обрано — можна додати з каталогу вище.</p>
+          )}
 
           <h4 className="species-card__h4">
             Навички передісторії ({customSkills.length} з 2)
@@ -1409,7 +1449,8 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
                   description: customDescription.trim(),
                   feature_name: customFeatureName.trim(),
                   feature_text: customFeatureText.trim(),
-                  equipment: customEquipment.trim(),
+                  items: customItems,
+                  equipment: "",
                   money_gp: customMoney,
                 }
               : null,

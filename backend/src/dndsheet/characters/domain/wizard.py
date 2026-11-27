@@ -135,12 +135,25 @@ def _custom_background(raw: Mapping[str, Any] | None) -> dict[str, Any]:
         money = max(0, int(data.get("money_gp") or 0))
     except (TypeError, ValueError) as exc:
         raise ValidationError("гроші власної передісторії — ціле число") from exc
+    items: list[dict[str, Any]] = []
+    for raw_item in data.get("items") or []:
+        if not isinstance(raw_item, Mapping):
+            raise ValidationError("предмет власної передісторії — обʼєкт")
+        item_name = str(raw_item.get("name_en") or "").strip()
+        if not item_name:
+            continue
+        try:
+            quantity = max(1, min(99, int(raw_item.get("quantity") or 1)))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("кількість предмета — ціле число") from exc
+        items.append({"name_en": item_name[:120], "quantity": quantity})
     return {
         "name": name,
         "description": str(data.get("description") or "").strip(),
         "feature_name": str(data.get("feature_name") or "").strip(),
         "feature_text": str(data.get("feature_text") or "").strip(),
         "equipment": str(data.get("equipment") or "").strip(),
+        "items": items,
         "money_gp": money,
     }
 

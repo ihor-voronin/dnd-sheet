@@ -337,8 +337,18 @@ def _equipment_options(
             # Власна передісторія: рядок спорядження написав гравець —
             # розбираємо його тим самим парсером, що й рядки з книг.
             custom = draft.custom_background
-            rows, parsed_money = parse_equipment(str(custom.get("equipment") or ""))
-            money = parsed_money or {"gp": int(custom.get("money_gp") or 0)}
+            custom_items = [
+                row
+                for row in (custom.get("items") or [])
+                if str(row.get("name_en") or "").strip()
+            ]
+            if custom_items:
+                rows = [
+                    {"text": str(row["name_en"]), "choices": []} for row in custom_items
+                ]
+            else:
+                rows, _ = parse_equipment(str(custom.get("equipment") or ""))
+            money = {"gp": int(custom.get("money_gp") or 0)} if custom.get("money_gp") else {}
             options["background"] = {
                 "key": background.key,
                 "name_en": str(custom.get("name") or background.name_en),

@@ -38,6 +38,12 @@ def enrich_background(
     if background is None:
         payload["background_details"] = None
         return
+    if character.custom_background:
+        # Власні передісторії мають однакову назву в довіднику ("Custom
+        # Background"), тож кеш за назвою віддав би текст першого персонажа
+        # всім наступним. Їх збираємо щоразу — це лише рядки, без довідника.
+        payload["background_details"] = _details(service, character)
+        return
     store = cache if cache is not None else {}
     key = f"background:{background.name_en.casefold()}"
     if key not in store:
@@ -103,10 +109,20 @@ def _custom_details(
 ) -> dict[str, Any]:
     """Власна передісторія: текст гравця, володіння — як обрав."""
     background = character.background
-    equipment = str(custom.get("equipment") or "")
-    rows, money = parse_equipment(equipment)
-    if not money and custom.get("money_gp"):
-        money = {"gp": int(custom["money_gp"])}
+    custom_items = [
+        row for row in (custom.get("items") or []) if str(row.get("name_en") or "").strip()
+    ]
+    if custom_items:
+        # Предмети обрані з каталогу — рядок збираємо для листа, а рядки
+        # лишаємо структурою (як у книжкових передісторій).
+        equipment = ", ".join(str(row["name_en"]) for row in custom_items)
+        rows = [{"text": str(row["name_en"]), "choices": []} for row in custom_items]
+        money = {"gp": int(custom.get("money_gp") or 0)} if custom.get("money_gp") else {}
+    else:
+        equipment = str(custom.get("equipment") or "")
+        rows, money = parse_equipment(equipment)
+        if not money and custom.get("money_gp"):
+            money = {"gp": int(custom["money_gp"])}
     items = character.all_proficiencies().items
     mine = [
         item

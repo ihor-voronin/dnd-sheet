@@ -386,11 +386,18 @@ export interface AbilitiesAnswers {
   rolls: number[];
 }
 
+export interface CustomBackgroundItem {
+  name_en: string;
+  quantity: number;
+}
+
 export interface CustomBackgroundPayload {
   name: string;
   description: string;
   feature_name: string;
   feature_text: string;
+  /** Предмети обрані з каталогу (фільтри й властивості — як в інвентарі). */
+  items: CustomBackgroundItem[];
   equipment: string;
   money_gp: number;
 }

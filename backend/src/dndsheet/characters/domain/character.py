@@ -387,12 +387,21 @@ class Character:
     def set_custom_background(self, data: Mapping[str, Any]) -> None:
         """Власна передісторія: текст гравця + стандартні правила вибору."""
         self.background_key = "custom"
+        items = [
+            {
+                "name_en": str(item.get("name_en") or "").strip(),
+                "quantity": max(1, int(item.get("quantity") or 1)),
+            }
+            for item in (data.get("items") or [])
+            if str(item.get("name_en") or "").strip()
+        ]
         self.custom_background = {
             "name": str(data.get("name") or "").strip() or "Власна передісторія",
             "description": str(data.get("description") or "").strip(),
             "feature_name": str(data.get("feature_name") or "").strip(),
             "feature_text": str(data.get("feature_text") or "").strip(),
             "equipment": str(data.get("equipment") or "").strip(),
+            "items": items,
             "money_gp": max(0, int(data.get("money_gp") or 0)),
         }
         self.bump_version()
