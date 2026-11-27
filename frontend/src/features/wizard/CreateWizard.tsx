@@ -35,7 +35,7 @@ import type {
   StepView,
   DraftView,
 } from "./types";
-import { speciesLabel, termLabel } from "../character/uk";
+import { speciesLabel, termLabel, titleCaseKey } from "../character/uk";
 
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -362,7 +362,8 @@ function DraftSummary({ draft }: { draft: DraftView }) {
   const species = answers.species;
   const classAnswer = answers.class;
   const scores = answers.abilities?.scores ?? {};
-  const spread = species?.ability_spread ?? {};
+  // Бонуси виду рахує бекенд (фіксовані + вибрані + розподіл); старий бекенд — лише розподіл.
+  const bonuses: Partial<Record<string, number>> = draft.ability_bonuses ?? species?.ability_spread ?? {};
   const guide = classGuide(classAnswer?.class_key);
   const hasScores = SUMMARY_ABILITIES.some((code) => scores[code]);
   const items = answers.equipment?.items ?? [];
@@ -379,24 +380,24 @@ function DraftSummary({ draft }: { draft: DraftView }) {
       <dl className="facts facts--compact">
         <div className="facts__row">
           <dt>Вид</dt>
-          <dd>{species?.species_key ? speciesLabel(species.subspecies_key ?? species.species_key) : "—"}</dd>
+          <dd>{species?.species_key ? speciesLabel(titleCaseKey(species.subspecies_key ?? species.species_key)) : "—"}</dd>
         </div>
         <div className="facts__row">
           <dt>Клас</dt>
-          <dd>{classAnswer?.class_key ? termLabel(classAnswer.class_key) : "—"}</dd>
+          <dd>{classAnswer?.class_key ? termLabel(titleCaseKey(classAnswer.class_key)) : "—"}</dd>
         </div>
         <div className="facts__row">
           <dt>Передісторія</dt>
           <dd>
             {answers.background?.custom_background?.name ||
-              (answers.background?.background_key ? termLabel(answers.background.background_key) : "—")}
+              (answers.background?.background_key ? termLabel(titleCaseKey(answers.background.background_key)) : "—")}
           </dd>
         </div>
       </dl>
       {hasScores ? (
-        <ul className="summary__abilities" aria-label="Характеристики без бонусу виду">
+        <ul className="summary__abilities" aria-label="Характеристики з бонусами виду">
           {SUMMARY_ABILITIES.map((code) => {
-            const value = (scores[code] ?? 0) + (spread[code] ?? 0);
+            const value = (scores[code] ?? 0) + (scores[code] ? bonuses[code] ?? 0 : 0);
             const key = guide?.primary.includes(code);
             return (
               <li key={code} className={key ? "summary__ability--key" : undefined}>

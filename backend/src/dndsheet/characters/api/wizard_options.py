@@ -163,6 +163,16 @@ def _species_entry(
     return payload
 
 
+def _casts_from_level(definition: Any) -> int | None:
+    """Перший рівень класу, на якому є комірки, комірки угоди чи замовляння."""
+    if not definition.casts_spells:
+        return None
+    for level in range(1, 21):
+        if any(definition.slots_at(level)) or definition.pact_at(level)[0] or definition.cantrips_at(level):
+            return level
+    return None
+
+
 def _class_options(
     draft: Draft,
     service: CompendiumService,
@@ -175,6 +185,9 @@ def _class_options(
         payload["skill_options"] = [skill.value for skill in definition.skill_options()]
         payload["cantrips_at_level_1"] = definition.cantrips_at(1)
         payload["spells_known_at_level_1"] = definition.spells_known_at(1)
+        # Паладин і рейнджер чарують лише з 2 рівня: картка класу не має
+        # писати «чарує» про 1 рівень, якщо там ще немає ні комірок, ні замовлянь.
+        payload["casts_from_level"] = _casts_from_level(definition)
         # Список «усі вміння за рівнями» — теж українською: назви варіантів
         # («Extra Attack (2)», «Destroy Undead (CR 1)») перекладені в тому ж шарі.
         payload["features"] = [
@@ -273,7 +286,9 @@ def _background_options(
     """
     store = cache if cache is not None else {}
     backgrounds: list[dict[str, Any]] = []
-    for item in service.backgrounds():
+    # Спершу PHB (їх обирають найчастіше), далі решта книг — за назвою.
+    ordered = sorted(service.backgrounds(), key=lambda b: (b.source_id.casefold() != "phb", b.name_en.casefold()))
+    for item in ordered:
         # «Custom Background» з книги PHB — це лише заголовок розділу «своя
         # передісторія»: правил він не дає (риса «Choose a Feature»). Його
         # замінює наша форма нижче, інакше в списку два однакові пункти.
@@ -407,6 +422,14 @@ def _spells_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
         return {
             "casting": None,
             "hint": "Цей клас на 1 рівні не чарує — крок можна пропустити.",
+        }
+    starts = _casts_from_level(definition)
+    if starts is not None and starts > 1:
+        # Паладин і рейнджер (PHB, pp. 84, 91): чарування — з 2 рівня. Крок
+        # не має пропонувати ні комірок, ні підготовлених заклять на 1 рівні.
+        return {
+            "casting": None,
+            "hint": f"Клас чарує лише з {starts} рівня — закляття оберете, коли підвищите рівень.",
         }
     spells = service.class_spells(definition.key, max_level=1)
     cantrips = [entry_brief(entry) for entry in spells.spells if entry.data.get("level") == 0]

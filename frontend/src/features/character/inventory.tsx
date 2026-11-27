@@ -298,7 +298,7 @@ function catalogMeta(entry: ItemSearchResult, titles: Record<string, string>): s
   const data = dataOf(entry);
   return [
     RARITY_LABELS[String(data.rarity ?? "").toLowerCase()] ?? "",
-    data.damage ? String(data.damage) : "",
+    data.damage ? weaponDamage(String(data.damage)) : "",
     data.armor_class ? `КЗ ${data.armor_class}` : "",
     moneyLabel(data.cost),
     weightLabel(data.weight),
@@ -437,7 +437,7 @@ export function ItemCatalogBrowser({
   const filtered = useMemo(() => {
     const wanted = itemKey(query);
     const picked = new Set(types);
-    return entries.filter((entry) => {
+    const found = entries.filter((entry) => {
       const data = dataOf(entry);
       if (picked.size && !picked.has(typeOf(entry))) return false;
       if (source && entry.source_id !== source) return false;
@@ -448,6 +448,15 @@ export function ItemCatalogBrowser({
       );
       return haystack.includes(wanted);
     });
+    if (!wanted) return found;
+    // Точна назва першою, далі ті, що з запиту починаються: на «longsword»
+    // звичайний довгий меч не має стояти за «Draconic Longsword».
+    const rank = (entry: ItemSearchResult): number => {
+      const names = [itemKey(entry.name_en), itemKey(itemLabel(entry.name_en))];
+      if (names.some((name) => name === wanted || name.startsWith(`${wanted} (`))) return 0;
+      return names.some((name) => name.startsWith(wanted)) ? 1 : 2;
+    };
+    return [...found].sort((left, right) => rank(left) - rank(right));
   }, [entries, magical, query, source, types]);
 
   const shown = filtered.slice(0, visible);

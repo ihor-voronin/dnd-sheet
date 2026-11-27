@@ -209,6 +209,20 @@ export const TOOL_LABELS: Record<string, string> = {
   "poisoner's kit": "набір отруйника",
   "gaming set": "ігровий набір",
   "musical instrument": "музичний інструмент",
+  "dice set": "набір кісток",
+  "dragonchess set": "набір драконячих шахів",
+  "playing card set": "набір гральних карт",
+  "three-dragon ante set": "набір «Три дракони»",
+  "bagpipes": "волинка",
+  "drum": "барабан",
+  "dulcimer": "цимбали",
+  "flute": "флейта",
+  "lute": "лютня",
+  "lyre": "ліра",
+  "horn": "ріг",
+  "pan flute": "сопілка Пана",
+  "shawm": "шалмей",
+  "viol": "віола",
 };
 
 export const DAMAGE_TYPE_LABELS: Record<string, string> = {

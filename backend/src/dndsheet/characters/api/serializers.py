@@ -380,6 +380,8 @@ def draft_payload(draft: Draft) -> dict[str, Any]:
         ],
         "next_step": next_step.value if next_step else None,
         "ready_to_finish": ready_to_finish(draft),
+        # Фіксовані бонуси виду (і вибрані «+1 до будь-якої») — для підсумку.
+        "ability_bonuses": {ability.value: value for ability, value in draft.ability_bonuses.items() if value},
     }
 
 

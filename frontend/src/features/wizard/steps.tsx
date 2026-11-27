@@ -79,6 +79,7 @@ import {
   spellLabel,
   spellText,
   termLabel,
+  proficiencyText,
   ukSubclass,
   withEnglish,
 } from "../character/uk";
@@ -175,7 +176,9 @@ function SpellOption({
   const data = entry.data as Record<string, unknown>;
   const school = typeof data.school === "string" ? schoolLabel(data.school) : "";
   const tags: string[] = [];
-  if (data.concentration) tags.push("зосередження");
+  // Тривалість уже каже «концентрація, до 1 хв.» — другий ярлик був би дублем.
+  const duration = data.duration ? durationLabel(String(data.duration)) : "";
+  if (data.concentration && !/концентрац/i.test(duration)) tags.push("концентрація");
   if (data.ritual) tags.push("ритуал");
 
   useEffect(() => {
@@ -211,7 +214,7 @@ function SpellOption({
           {school ? ` · ${school}` : ""}
           {data.casting_time ? ` · ${castingTimeLabel(String(data.casting_time))}` : ""}
           {data.range ? ` · ${rangeLabel(String(data.range))}` : ""}
-          {data.duration ? ` · ${durationLabel(String(data.duration))}` : ""}
+          {duration ? ` · ${duration}` : ""}
           {tags.length ? ` · ${tags.join(", ")}` : ""}
         </span>
         {extra}
@@ -831,7 +834,7 @@ function speciesFacts(item: SpeciesView): Fact[] {
     facts.push([<Term k="skill">Навички</Term>, fixed + any]);
   }
   if (item.weapon_proficiencies.length) {
-    facts.push(["Зброя", item.weapon_proficiencies.map((weapon) => termLabel(weapon)).join(", ")]);
+    facts.push(["Зброя", item.weapon_proficiencies.map((weapon) => proficiencyText("weapon", weapon)).join(", ")]);
   }
   if (item.tool_proficiencies.length || item.tools_any) {
     const fixed = item.tool_proficiencies.map((tool) => termLabel(tool)).join(", ");
@@ -1114,6 +1117,7 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
                 <span className="choice-meta">
                   чарує від {abilityLabel(item.spellcasting.ability)}
                   {item.spellcasting.prepares ? " · готує" : " · знає"}
+                  {(item.casts_from_level ?? 1) > 1 ? ` · з ${item.casts_from_level} рівня` : ""}
                 </span>
               ) : (
                 <span className="choice-meta">без заклять на 1 рівні</span>
@@ -1232,6 +1236,7 @@ function classFacts(item: ClassView): Fact[] {
     facts.push([
       <Term k="spellcasting_ability">Чарування</Term>,
       <>
+        {(item.casts_from_level ?? 1) > 1 ? `з ${item.casts_from_level} рівня, ` : ""}
         від {abilityGenitiveLower(item.spellcasting.ability)}, {mode}
         {item.cantrips_at_level_1 ? `; заговорів на 1 рівні: ${item.cantrips_at_level_1}` : ""}
         {item.spells_known_at_level_1 ? `; заклять: ${item.spells_known_at_level_1}` : ""}
@@ -1262,7 +1267,7 @@ function abilityGenitiveLower(code: string): string {
 const ABILITY_ROLE: Record<string, string> = {
   str: "атаки й урон у ближньому бою, Атлетика, вантаж",
   dex: "КЗ без важкої броні, ініціатива, дальні й фехтувальні атаки, Скритність",
-  con: "хіти на кожному рівні, зосередження на закляттях",
+  con: "хіти на кожному рівні, концентрація на закляттях",
   int: "закляття мага, Магія, Історія, Розслідування",
   wis: "закляття жерця й друїда, Спостережливість, Проникливість",
   cha: "закляття барда, чаклуна, чародія й паладина; переконання й обман",
@@ -1557,6 +1562,10 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
   const [backgroundLanguages, setBackgroundLanguages] = useState<string[]>(
     picks.filter((pick) => pick.source.kind === "background" && pick.kind === "language").map((pick) => pick.value),
   );
+  // Інструменти «на вибір»: гірський дворф (інструмент ремісника), солдат (ігровий набір)…
+  const [speciesTools, setSpeciesTools] = useState<string[]>(
+    picks.filter((pick) => pick.source.kind === "species" && pick.kind === "tool").map((pick) => pick.value),
+  );
   // Власна передісторія: текст гравця + стандартні 2 навички / 1 інструмент.
   const customInitial = initial.custom_background ?? null;
   const [customName, setCustomName] = useState(customInitial?.name ?? "");
@@ -1602,12 +1611,15 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
     for (const language of speciesLanguages) {
       picked.push({ kind: "language", value: language, source: { kind: "species", key: speciesSkillsOption.key } });
     }
+    for (const tool of speciesTools) {
+      picked.push({ kind: "tool", value: tool, source: { kind: "species", key: speciesSkillsOption.key } });
+    }
   }
   if (background) {
     for (const skill of background.custom ? customSkills : []) {
       picked.push({ kind: "skill", value: skill, source: { kind: "background", key: background.key } });
     }
-    for (const tool of background.custom ? customTools : []) {
+    for (const tool of customTools) {
       picked.push({ kind: "tool", value: tool, source: { kind: "background", key: background.key } });
     }
     for (const language of backgroundLanguages) {
@@ -1828,6 +1840,28 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
           values={speciesLanguages}
           onChange={setSpeciesLanguages}
           limit={speciesSkillsOption.languages_any}
+        />
+      ) : null}
+
+      {speciesSkillsOption && speciesSkillsOption.tools_any > 0 ? (
+        <LanguagePicker
+          title={`Інструменти виду (${speciesTools.length} з ${speciesSkillsOption.tools_any})`}
+          values={speciesTools}
+          onChange={setSpeciesTools}
+          limit={speciesSkillsOption.tools_any}
+          placeholder="напр. інструменти коваля"
+          suggestions={TOOL_LABELS}
+        />
+      ) : null}
+
+      {background && !background.custom && background.tools_any > 0 ? (
+        <LanguagePicker
+          title={`Інструменти передісторії (${customTools.length} з ${background.tools_any})`}
+          values={customTools}
+          onChange={setCustomTools}
+          limit={background.tools_any}
+          placeholder="напр. ігровий набір"
+          suggestions={TOOL_LABELS}
         />
       ) : null}
 
@@ -2272,11 +2306,16 @@ export function EquipmentStep({
       bodies.push(...(await bodiesFor(row[classPick[index]] ?? row[0], `${CLASS_MARK}:${index}`)));
     }
     // Броню класу одразу вдягаємо — інакше КЗ на листі лишиться 10 + СПР.
+    // Щит теж: паладин і воїн зі «зброя і щит» інакше втрачають +2 КЗ.
     let armorWorn = items.some((item) => item.kind === "armor" && item.equipped);
+    let shieldWorn = items.some((item) => item.kind === "shield" && item.equipped);
     for (const body of bodies) {
       if (body.kind === "armor" && !armorWorn && body.name_en !== "Shield") {
         body.equipped = true;
         armorWorn = true;
+      } else if (body.kind === "shield" && !shieldWorn) {
+        body.equipped = true;
+        shieldWorn = true;
       }
     }
     setItems((current) => [...current, ...bodies]);
@@ -2289,6 +2328,11 @@ export function EquipmentStep({
     const marker = `${CLASS_MARK}:${rowIndex}`;
     if (!items.some((item) => (item.notes ?? "").startsWith(marker))) return;
     const bodies = await bodiesFor(classRows[rowIndex][optionIndex], marker);
+    const replaced = items.filter((item) => (item.notes ?? "").startsWith(marker));
+    for (const body of bodies) {
+      // Замінений рядок мав вдягнену броню чи щит — новий варіант теж вдягаємо.
+      if (replaced.some((item) => item.equipped && item.kind === body.kind)) body.equipped = true;
+    }
     setItems((current) => [
       ...current.filter((item) => !(item.notes ?? "").startsWith(marker)),
       ...bodies,
@@ -2547,7 +2591,8 @@ export function EquipmentStep({
           <ul className="plain-list">
             {items.map((item, index) => (
               <li key={`${item.name_en}-${index}`}>
-                {backgroundNames[item.name_en] ?? itemLabel(item.name_en)} ·{" "}
+                {backgroundNames[item.name_en] ?? itemLabel(item.name_en)}
+                {(item.quantity ?? 1) > 1 ? ` × ${item.quantity}` : ""} ·{" "}
                 {ITEM_KIND_LABELS[item.kind] ?? item.kind}
                 {item.armor_base ? ` · КЗ ${item.armor_base}${item.dex_cap !== null && item.dex_cap !== undefined ? ` (СПР ≤ ${item.dex_cap})` : ""}` : ""}
                 {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}
@@ -2684,7 +2729,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
         .{" "}
         {casting.prepares ? (
           <>
-            Клас <Term k="prepared_spells">готує закляття</Term>: щодня після довгого
+            Клас <Term k="prepared_spells">готує закляття</Term>: щодня після тривалого
             відпочинку можна обрати інший набір — сьогоднішній вибір не остаточний.
           </>
         ) : (

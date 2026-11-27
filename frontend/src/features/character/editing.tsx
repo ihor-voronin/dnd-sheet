@@ -222,39 +222,66 @@ export function NumberField({
   );
 }
 
+/** Запаси, які витрачають кількома одиницями за раз — навіть коли вони ще малі. */
+const POOL_RESOURCES = new Set(["paladin:lay-on-hands", "sorcerer:sorcery-points", "monk:ki"]);
+
+export function isPoolResource(key: string): boolean {
+  return POOL_RESOURCES.has(key);
+}
+
 export function Counter({
   used,
   total,
   title,
   onChange,
+  pool: poolHint,
 }: {
   used: number;
   total: number;
   title: string;
   onChange: (used: number) => void;
+  /** Запас (хіти Накладання рук, очки чарів): поле «скільки» навіть для малого запасу. */
+  pool?: boolean;
 }) {
+  // Великий запас (Накладання рук — до 100 хітів, очки кі, очки чарів) витрачають
+  // кількома одиницями за раз: поле «скільки» замість десятків кліків.
+  const pool = (poolHint ?? false) || total > 10;
+  const [amount, setAmount] = useState(1);
+  const step = pool ? Math.max(1, Math.floor(amount) || 1) : 1;
+  const left = total - used;
   return (
     <span className="counter">
       <span className="counter-value">
-        {total - used} / {total}
+        {left} / {total}
       </span>
+      {pool ? (
+        <input
+          type="number"
+          className="counter-amount"
+          min={1}
+          max={total}
+          value={amount}
+          aria-label={`${title}: скільки витратити чи повернути`}
+          onChange={(event) => setAmount(Number(event.target.value))}
+        />
+      ) : null}
       <button
         type="button"
         className="counter-btn counter-btn--use"
         disabled={used >= total}
-        onClick={() => onChange(used + 1)}
-        title={`${title}: витратити`}
+        onClick={() => onChange(Math.min(total, used + step))}
+        title={`${title}: витратити ${step}`}
       >
-        Використати
+        {pool ? `Витратити ${Math.min(step, left)}` : "Використати"}
       </button>
       <button
         type="button"
         className="counter-btn"
         disabled={used <= 0}
-        onClick={() => onChange(used - 1)}
-        title={`${title}: повернути`}
+        onClick={() => onChange(Math.max(0, used - step))}
+        title={`${title}: повернути ${step}`}
       >
-        Відновити
+        {pool ? `Відновити ${Math.min(step, used)}` : "Відновити"}
       </button>
     </span>
   );

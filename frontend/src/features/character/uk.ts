@@ -10,7 +10,7 @@
  * місце, де живе переклад вмісту; компоненти лише викликають хелпери.
  */
 
-import { DAMAGE_TYPE_LABELS } from "../../labels";
+import { DAMAGE_TYPE_LABELS, proficiencyValue } from "../../labels";
 import { ITEM_NAMES } from "./uk-items";
 import { SPELL_NAMES } from "./uk-spells";
 import { FEAT_NAMES } from "./uk-feats";
@@ -694,7 +694,11 @@ const ITEMS: Record<string, string> = {
   pouch: "Гаманець",
   backpack: "Рюкзак",
   "explorer's pack": "Набір дослідника",
-  "priest's pack": "Набір жреця",
+  "priest's pack": "Набір священника",
+  "burglar's pack": "Набір зломщика",
+  "diplomat's pack": "Набір дипломата",
+  "entertainer's pack": "Набір артиста",
+  "scholar's pack": "Набір учня",
   "dungeoneer's pack": "Набір підземельника",
   "traveler's clothes": "Дорожній одяг",
 };
@@ -782,7 +786,22 @@ export function ukTerm(nameEn: string): string | undefined {
 }
 
 /** Назва виду чи підраси українською (англійська — у дужках на екрані). */
-export function speciesLabel(nameEn: string): string {
+/** Ключі в листі й чернетці — малими літерами («mountain dwarf»); в дужках — як у книзі. */
+export function titleCaseKey(key: string): string {
+  if (key !== key.toLowerCase()) return key;
+  return key.replace(/(^|[\s(\/-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toUpperCase());
+}
+
+/** Володіння українською: «simple», «light armor» — зі словника, конкретна зброя («battleaxe») — як предмет. */
+export function proficiencyText(kind: string, value: string): string {
+  const label = proficiencyValue(kind, value);
+  if (label !== value || (kind !== "weapon" && kind !== "armor")) return label;
+  const uk = ukItem(value);
+  return uk ? uk.charAt(0).toLowerCase() + uk.slice(1) : value;
+}
+
+export function speciesLabel(rawName: string): string {
+  const nameEn = titleCaseKey(rawName);
   const uk = SPECIES_UK[norm(nameEn)] ?? TERMS[norm(nameEn)];
   if (!uk || norm(uk) === norm(nameEn)) return nameEn;
   // «Драконороджений (хроматичний) (Dragonborn (Chromatic))» — забагато

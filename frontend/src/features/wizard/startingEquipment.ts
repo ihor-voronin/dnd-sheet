@@ -111,7 +111,7 @@ export const STARTING_EQUIPMENT: Record<string, StartingRow[]> = {
   barbarian: [
     [one("велика сокира", { name: "Greataxe" }), one("будь-яка військова зброя ближнього бою", { any: "військова зброя ближнього бою" })],
     [one("дві ручні сокири", { name: "Handaxe", qty: 2 }), one("будь-яка проста зброя", { any: "проста зброя" })],
-    fixed("набір дослідника і 4 метальні списи", { pack: "explorer" }, { name: "Javelin", qty: 4 }),
+    fixed("набір дослідника і 4 сулиці", { pack: "explorer" }, { name: "Javelin", qty: 4 }),
   ],
   bard: [
     [one("рапіра", { name: "Rapier" }), one("довгий меч", { name: "Longsword" }), one("будь-яка проста зброя", { any: "проста зброя" })],
@@ -162,7 +162,7 @@ export const STARTING_EQUIPMENT: Record<string, StartingRow[]> = {
       one("військова зброя і щит", { any: "військова зброя" }, { name: "Shield" }),
       one("дві військові зброї", { any: "дві військові зброї" }),
     ],
-    [one("5 метальних списів", { name: "Javelin", qty: 5 }), one("будь-яка проста зброя ближнього бою", { any: "проста зброя ближнього бою" })],
+    [one("5 сулиць", { name: "Javelin", qty: 5 }), one("будь-яка проста зброя ближнього бою", { any: "проста зброя ближнього бою" })],
     [pack("priest"), pack("explorer")],
     fixed("кольчуга і священний символ", { name: "Chain mail" }, { name: "Amulet" }),
   ],

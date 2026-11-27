@@ -18,9 +18,9 @@ import {
   SKILL_LABELS,
   abilityLabel,
   modifierLabel,
-  proficiencyValue,
   skillLabel,
 } from "../../labels";
+import { proficiencyText } from "./uk";
 import type { SheetViewPayload } from "../wizard/types";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
@@ -210,7 +210,7 @@ export function ProficiencyGroups({
         <div key={group.kind} className="sheet-prof__group">
           <span className="sheet-prof__title">{group.title}</span>
           <span className="sheet-prof__values">
-            {group.values.map((value) => proficiencyValue(group.kind, value)).join(" · ")}
+            {group.values.map((value) => proficiencyText(group.kind, value)).join(" · ")}
           </span>
         </div>
       ))}

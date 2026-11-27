@@ -13,7 +13,7 @@ import { useState } from "react";
 
 import { damageTypeLabel, modifierLabel, rangeLabel, schoolLabel } from "../../labels";
 import type { SheetFeatureResource, SheetSpell, SheetViewPayload } from "../wizard/types";
-import { Counter } from "./editing";
+import { Counter, isPoolResource } from "./editing";
 import { RuleText } from "./panels";
 import {
   componentsLabel,
@@ -427,6 +427,7 @@ function ActionRowView({
             used={row.resource.used}
             total={row.resource.total}
             title={row.name}
+            pool={isPoolResource(row.resource.key)}
             onChange={(used) => onUseFeature(row.resource!.key, used)}
           />
         </div>

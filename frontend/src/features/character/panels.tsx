@@ -6,7 +6,7 @@
  * один колбек на зміну стану).
  */
 
-import { Counter } from "./editing";
+import { Counter, isPoolResource } from "./editing";
 import {
   ABILITY_SHORT,
   PROFICIENCY_LABELS,
@@ -601,6 +601,7 @@ export function FeatureResources({
             used={resource.used}
             total={resource.total}
             title={featureLabel(resource.name_en, resource.name_uk)}
+            pool={isPoolResource(resource.key)}
             onChange={(used) => {
               if (disabled) return;
               onChange(resource.key, used);

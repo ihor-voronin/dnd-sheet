@@ -973,9 +973,16 @@ body {
   margin-left: 8px;
 }
 
+/* Скільки витратити з великого запасу (Накладання рук). */
+.counter-amount {
+  width: 4.5em;
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
 .counter-btn {
   padding: 2px 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: 5px;
   background: var(--surface);
   color: inherit;

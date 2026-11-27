@@ -874,3 +874,48 @@ def test_warlock_patron_expands_spell_choices(client: TestClient) -> None:
     assert {"burning hands", "command"} <= {name.casefold() for name in options["expanded"]}
     names = {entry["name_en"].casefold() for entry in options["spells"]}
     assert {"burning hands", "command"} <= names, "розширений список патрона у виборі"
+
+
+PALADIN_STEPS: list[tuple[str, dict]] = [
+    ("species", {"name": "Торін", "species_key": "dwarf", "subspecies_key": "mountain dwarf"}),
+    ("class", {"class_key": "paladin"}),
+    (
+        "abilities",
+        {
+            "method": "standard_array",
+            "scores": {"str": 15, "dex": 10, "con": 13, "int": 8, "wis": 12, "cha": 14},
+        },
+    ),
+]
+
+
+def test_half_casters_start_casting_at_level_two(client: TestClient) -> None:
+    """Паладин і рейнджер чарують з 2 рівня (PHB, pp. 84, 91): крок «Закляття» порожній."""
+    draft_id = _start(client)["draft"]["id"]
+    classes = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/class").json()["options"]["classes"]
+    starts = {item["key"]: item.get("casts_from_level") for item in classes}
+    assert starts["paladin"] == 2 and starts["ranger"] == 2
+    assert starts["cleric"] == 1 and starts["warlock"] == 1
+    assert starts["fighter"] is None
+
+    payload = _walk(client, draft_id, PALADIN_STEPS)
+    # Гірський дворф: +2 СИЛ, +2 СТА — підсумок чернетки бачить бонуси виду.
+    assert payload["draft"]["ability_bonuses"] == {"str": 2, "con": 2}
+    spells = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/spells").json()
+    assert spells["options"]["casting"] is None
+    assert "2 рівня" in spells["options"]["hint"]
+
+
+def test_background_list_starts_with_players_handbook(client: TestClient) -> None:
+    draft_id = _start(client)["draft"]["id"]
+    backgrounds = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/background").json()["options"]["backgrounds"]
+    sources = [item["source_id"].casefold() for item in backgrounds if item["key"] != "custom"]
+    first_other = next(index for index, source in enumerate(sources) if source != "phb")
+    assert all(source != "phb" for source in sources[first_other:])
+
+
+def test_item_search_puts_exact_name_first(client: TestClient) -> None:
+    """«Shield» зі стартового набору не має ставати «Ruidium Shield» через абетку."""
+    for name in ("Shield", "Longsword", "Javelin"):
+        found = client.get("/api/v1/compendium/items", params={"q": name, "limit": 3}).json()["items"]
+        assert found[0]["name_en"] == name, [item["name_en"] for item in found]

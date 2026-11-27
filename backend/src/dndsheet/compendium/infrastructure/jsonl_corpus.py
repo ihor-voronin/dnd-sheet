@@ -21,6 +21,7 @@ from dndsheet.compendium.domain.entry import (
     CATEGORY_ORDER,
     Category,
     CompendiumEntry,
+    search_key,
 )
 from dndsheet.compendium.domain.query import EntryQuery, Page
 from dndsheet.shared.errors import ValidationError
@@ -176,6 +177,11 @@ class JsonlCompendiumRepository:
             candidates = corpus.entries
 
         matched = [entry for entry in candidates if query.matches(entry)]
+        if query.q:
+            # Спершу точна назва, далі назви, що з запиту починаються: на «Shield»
+            # звичайний щит не має губитися за «Animated Shield» за абеткою.
+            wanted = search_key(query.q)
+            matched.sort(key=lambda entry: _rank(search_key(entry.name_en), wanted))
         window = matched[query.offset : query.offset + query.limit]
         return Page(
             items=tuple(window),
@@ -215,3 +221,10 @@ class JsonlCompendiumRepository:
         if self._loaded is None:
             self._loaded = load_corpus(self.directory_path)
         return self._loaded
+
+
+def _rank(name: str, wanted: str) -> int:
+    """0 — точна назва, 1 — назва починається з запиту, 2 — решта (порядок стабільний)."""
+    if name == wanted:
+        return 0
+    return 1 if name.startswith(wanted) else 2

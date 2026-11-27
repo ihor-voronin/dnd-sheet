@@ -110,6 +110,8 @@ export interface ClassView {
   spellcasting: SpellcastingMechanics | null;
   cantrips_at_level_1: number;
   spells_known_at_level_1: number | null;
+  /** Перший рівень, на якому клас чарує (паладин і рейнджер — 2); `null` — не чарує. */
+  casts_from_level?: number | null;
   subclass: { title: string; level: number; options: SubclassView[] } | null;
   features: { name_en: string; level: number; name_uk?: string }[];
   /** Опис класу з книги. */
@@ -454,6 +456,8 @@ export interface DraftView {
   steps: StepStatus[];
   next_step: string | null;
   ready_to_finish: boolean;
+  /** Бонуси характеристик від виду й розподілу (без базових значень). */
+  ability_bonuses?: Partial<Record<string, number>>;
 }
 
 export interface StepView<TOptions = unknown> {
