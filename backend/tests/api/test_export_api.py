@@ -163,3 +163,33 @@ def test_demo_export_has_attacks_from_the_compendium(client: TestClient) -> None
     assert "Елара Світлотінь" in text
     assert "Атаки" in text
     assert "shortsword" in text
+
+
+def test_print_sheet_is_for_the_table(client: TestClient) -> None:
+    """Аркуш для гри: усе потрібне за столом і жодних суцільних текстів правил."""
+    character_id = _export_character(client)
+    response = client.get(f"/api/v1/characters/{character_id}/print")
+    assert response.status_code == 200
+    html = response.text
+    for label in ("рятівні кидки", "навички", "клас захисту", "атаки й заговори", "спорядження"):
+        assert label in html
+    assert "Атлетика" in html and "Спостережливість" in html
+    assert "Уміння й особливості — пояснення" not in html
+    # Шрифти вбудовані: аркуш однаково виглядає з диска, з сервера й у PDF.
+    assert "data:font/woff2;base64," in html
+
+
+def test_detailed_print_adds_explanations(client: TestClient) -> None:
+    character_id = _export_character(client)
+    html = client.get(f"/api/v1/characters/{character_id}/print", params={"detailed": "true"}).text
+    assert "Уміння й особливості — пояснення" in html
+
+
+def test_detailed_pdf_is_either_bytes_or_honest_503(client: TestClient) -> None:
+    character_id = _export_character(client)
+    response = client.get(f"/api/v1/characters/{character_id}/export/pdf", params={"detailed": "true"})
+    if response.status_code == 503:
+        assert "WeasyPrint" in response.json()["detail"]
+    else:
+        assert response.content.startswith(b"%PDF")
+        assert "filename*=UTF-8''" in response.headers["content-disposition"]

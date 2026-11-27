@@ -18,7 +18,10 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse
 
 from dndsheet.characters.api.serializers import (
     character_brief,
@@ -48,6 +51,7 @@ from dndsheet.characters.api.features import (
     subclass_intro,
 )
 from dndsheet.characters.api.level_up import level_up_payload, report_payload
+from dndsheet.characters.api.print_view import build_print_view
 from dndsheet.characters.api.spell_meta import enrich_spells
 from dndsheet.characters.api.wizard_options import build_options
 from dndsheet.characters.application.golden import GoldenCase, build_golden_cases
@@ -958,6 +962,7 @@ def character_export(
     render_format: str,
     request: Request,
     originals: bool = True,
+    detailed: bool = False,
 ) -> Response:
     """Лист гравця у PDF або Markdown — зі станом, а не з демо-персонажа.
 
@@ -968,6 +973,8 @@ def character_export(
         character = _wizard(request).character(character_id)
     except DomainError as exc:
         raise _http_error(exc) from exc
+    if render_format == "pdf":
+        return _character_pdf(request, character, RenderOptions(show_originals=originals), detailed=detailed)
     computed = DerivedStatsCalculator().compute(character)
     document = build_sheet_document(
         character,
@@ -978,3 +985,64 @@ def character_export(
     )
     document = _localize_labels(document, character)
     return _render(request, document, render_format, RenderOptions(show_originals=originals))
+
+
+# ---------------------------------------------------------------------------
+# друк: оформлений аркуш (PDF і HTML для друку з браузера)
+# ---------------------------------------------------------------------------
+
+
+def _print_view(request: Request, character) -> dict:  # noqa: ANN001 — Character
+    sheet = _sheet_payload(request, character)
+    species_key = (sheet["character"].get("species") or {}).get("key") or ""
+    mechanics = request.app.state.rules.species_mechanics(species_key) if species_key else None
+    return build_print_view(
+        sheet,
+        compendium=_compendium(request),
+        display_name=_display_name,
+        species_parent=getattr(mechanics, "subrace_of", None),
+        species_cache=getattr(request.app.state, "species_cache", {}),
+        feat_titles=_feat_titles(request),
+    )
+
+
+def _print_renderer(request: Request):  # noqa: ANN202 — PdfRenderer
+    try:
+        renderer = _registry(request).get("pdf")
+    except RendererError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if not hasattr(renderer, "render_character"):
+        raise HTTPException(status_code=503, detail="рендер аркуша не підключений")
+    return renderer
+
+
+def _character_pdf(request: Request, character, options: RenderOptions, *, detailed: bool = False) -> Response:  # noqa: ANN001
+    renderer = _print_renderer(request)
+    try:
+        result = renderer.render_character(_print_view(request, character), options, detailed=detailed)
+    except RendererUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except RendererError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    suffix = " — пояснення" if detailed else ""
+    name = quote(f"{character.name or 'character'}{suffix}.pdf")
+    return Response(
+        content=result.content,
+        media_type=result.media_type,
+        headers={"Content-Disposition": f"attachment; filename=\"character-sheet.pdf\"; filename*=UTF-8''{name}"},
+    )
+
+
+@router.get("/{character_id}/print", response_class=HTMLResponse)
+def character_print(
+    character_id: str, request: Request, originals: bool = True, detailed: bool = False
+) -> HTMLResponse:
+    """Той самий аркуш, що й PDF, як сторінка: друк із браузера (Ctrl+P) працює і без WeasyPrint."""
+    try:
+        character = _wizard(request).character(character_id)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    html = _print_renderer(request).character_html(
+        _print_view(request, character), RenderOptions(show_originals=originals), detailed=detailed
+    )
+    return HTMLResponse(html)

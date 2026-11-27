@@ -662,18 +662,38 @@ export function CharacterView({
               без англ.
             </a>
             {pdfReady ? (
-              <a
-                className="sheet-btn sheet-btn--link sheet-btn--primary"
-                href={exportUrl(id, "pdf")}
-                download
-              >
-                PDF (A4)
-              </a>
+              <>
+                <a
+                  className="sheet-btn sheet-btn--link sheet-btn--primary"
+                  href={exportUrl(id, "pdf")}
+                  download
+                  title="Аркуш для гри: головна, закляття, спорядження й нотатки"
+                >
+                  PDF для гри
+                </a>
+                <a
+                  className="sheet-btn sheet-btn--link"
+                  href={`${exportUrl(id, "pdf")}?detailed=true`}
+                  download
+                  title="Аркуш для гри й пояснення: тексти умінь, особливостей і заклять"
+                >
+                  з поясненнями
+                </a>
+              </>
             ) : (
               <span className="meta" title="На сервері немає WeasyPrint (extra `pdf` + GTK)">
                 без PDF
               </span>
             )}
+            <a
+              className="sheet-btn sheet-btn--link"
+              href={`/api/v1/characters/${encodeURIComponent(id)}/print`}
+              target="_blank"
+              rel="noopener"
+              title="Той самий аркуш у вкладці браузера — друк через Ctrl+P"
+            >
+              друк
+            </a>
           </div>
         </div>
       </header>
