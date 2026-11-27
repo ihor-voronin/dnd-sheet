@@ -2969,3 +2969,18 @@ body.board {
 .item-detail__bonds {
   margin: 0 0 8px;
 }
+
+/* Мультиклас: усередині рівня — підгрупа класу з його КС і атакою. */
+.spell-subgroup + .spell-subgroup {
+  margin-top: 8px;
+}
+
+.spell-subgroup__head {
+  margin: 4px 0 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--field-line);
+  color: var(--sheet-ink, inherit);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}

@@ -89,7 +89,9 @@ function PreparedClass({
   busy: boolean;
   onSave: (classKey: string, picks: Pick[]) => Promise<boolean>;
 }) {
-  const own = spells.filter((spell) => spell.class_key === casting.key);
+  // Лише закляття, обрані цим класом: доменні (підклас) мають той самий
+  // class_key, але завжди підготовлені й у ліміт не входять.
+  const own = spells.filter((spell) => spell.class_key === casting.key && spell.source === "class");
   const learned = own.filter((spell) => spell.level > 0 && !spell.custom);
   const cantrips = own.filter((spell) => spell.level === 0);
   const custom = own.filter((spell) => spell.custom);

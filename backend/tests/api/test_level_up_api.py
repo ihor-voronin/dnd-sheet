@@ -292,3 +292,32 @@ def test_ignored_requirements_are_marked_on_the_sheet(client: TestClient) -> Non
     waivers = payload["sheet"]["character"]["multiclass_waivers"]
     assert [item["class_key"] for item in waivers] == ["wizard"]
     assert waivers[0]["requirements"] == plan["requirements"]
+
+
+def test_multiclass_learns_spells_of_its_own_level(client: TestClient) -> None:
+    """Маг 4 / чаклун 5 / жрець 5: спільні комірки до 5 рівня, але кожен клас
+    вчить закляття як єдиний (PHB, p. 164) — чаклун 6 лише до 3 рівня."""
+    from dndsheet.characters.domain.character import Character
+    from dndsheet.characters.domain.class_level import CharacterClass
+    from dndsheet.shared.kernel import Ability, AbilityScore
+
+    app = client.app
+    scores = {"str": 8, "dex": 12, "con": 14, "int": 16, "wis": 14, "cha": 15}
+    character = Character(
+        id="level-up-multi",
+        name="Сайлас",
+        abilities={Ability(key): AbilityScore(value) for key, value in scores.items()},
+        rules=app.state.rules,
+        species_key="human",
+        background_key="sage",
+        classes=[
+            CharacterClass(class_key="wizard", level=4, subclass_key="phb-2014/subclass/school-of-evocation"),
+            CharacterClass(class_key="warlock", level=5, subclass_key="phb-2014/subclass/the-fiend"),
+            CharacterClass(class_key="cleric", level=5, subclass_key="phb-2014/subclass/life-domain"),
+        ],
+    )
+    app.state.characters.save(character)
+    plans = {plan["class_key"]: plan for plan in client.get("/api/v1/characters/level-up-multi/level-up").json()["plans"]}
+    assert plans["warlock"]["max_spell_level"] == 3
+    assert plans["wizard"]["max_spell_level"] == 3
+    assert plans["cleric"]["max_spell_level"] == 3

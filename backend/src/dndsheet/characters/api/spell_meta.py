@@ -72,7 +72,12 @@ def enrich_spells(
             store[key] = _meta_for(service, spell)
         meta = store[key]
         if meta:
-            spell.update(meta)
+            book_name = meta.get("book_name")
+            spell.update({name: value for name, value in meta.items() if name != "book_name"})
+            # Закляття домену й виду записані ключем («bless») — на листі назва як у книзі.
+            name = str(spell.get("name_en") or "")
+            if book_name and name == name.lower() and name.casefold() == book_name.casefold():
+                spell["name_en"] = book_name
 
 
 def _meta_for(
@@ -86,6 +91,7 @@ def _meta_for(
     damage = DAMAGE.search(text)
     save = SAVE.search(text)
     return {
+        "book_name": entry.name_en,
         "casting_time": _text(data.get("casting_time")),
         "range": _text(data.get("range")),
         "duration": _text(data.get("duration")),

@@ -129,7 +129,8 @@ def multiclass_14(rules) -> Character:  # noqa: ANN001
     """Маг 4 / чаклун 5 / жрець 5: комірки за рівнем заклинателя 9 і окремо — угода."""
     wizard = wizard_4(rules).spells
     warlock = warlock_5(rules).spells
-    cleric = cleric_5(rules).spells
+    # Жрець 5 з Мудрістю 15 готує 7 (2 + 5): без «Розвіювання магії».
+    cleric = tuple(spell for spell in cleric_5(rules).spells if spell.name_en != "Dispel Magic")
     return Character(
         id="sample-multiclass-14",
         name="Сайлас Триєдиний",

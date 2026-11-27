@@ -224,14 +224,10 @@
   .spell-table th:nth-child(4) { width: 12%; }
   .spell-table th:nth-child(5) { width: 14%; }
   .spell-table th:nth-child(6) { width: 11%; }
-  /* Мультиклас: у кожного класу своя складність і атака — показуємо, чиє закляття. */
-  .spell-table.multi th:nth-child(2) { width: 27%; }
-  .spell-table.multi th:nth-child(3) { width: 9%; }
-  .spell-table.multi th:nth-child(4) { width: 12%; }
-  .spell-table.multi th:nth-child(5) { width: 11%; }
-  .spell-table.multi th:nth-child(6) { width: 14%; }
-  .spell-table.multi th:nth-child(7) { width: 10%; }
-  td.cls-col { font-family: var(--caps); font-weight: 700; font-size: 6.8pt; text-transform: lowercase; }
+  /* Мультиклас: усередині рівня — підзаголовок класу з його складністю й атакою. */
+  tr.grp td { padding-top: 1.4mm; border-bottom: 0.7pt solid #000; font-family: var(--caps); font-size: 7.4pt; letter-spacing: 0.05em; text-transform: lowercase; }
+  tr.grp td b { font-weight: 700; }
+  .grp-meta { font-weight: 500; }
 
   /* --- спорядження й нотатки ------------------------------------------- */
   .coins { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2.4mm; margin-top: 1mm; }
@@ -473,16 +469,20 @@
   <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
     <span class="tag">{{ lv.title }}</span>
     {% set multi = sc.classes|length > 1 %}
-    <table class="grid spell-table{{ ' multi' if multi }}">
-      <thead><tr><th></th><th>назва</th>{% if multi %}<th>клас</th>{% endif %}<th>час</th><th>дистанція</th><th>тривалість</th><th>компоненти</th><th>школа</th></tr></thead>
+    <table class="grid spell-table">
+      <thead><tr><th></th><th>назва</th><th>час</th><th>дистанція</th><th>тривалість</th><th>компоненти</th><th>школа</th></tr></thead>
       <tbody>
-      {% for s in lv.spells %}
+      {% for g in lv.groups %}
+      {% if multi %}
+        <tr class="grp"><td colspan="7"><b>{{ g.title }}</b>{% if g.dc %} <span class="grp-meta">· складність {{ g.dc }} · атака {{ g.attack }}</span>{% endif %}</td></tr>
+      {% endif %}
+      {% for s in g.spells %}
         <tr>
           <td class="mk">{% if s.always %}◆{% elif lv.level and s.preparable %}{{ '■' if s.prepared else '☐' }}{% endif %}</td>
           <td class="nm"><b>{{ s.title }}</b>{% if s.en and o.show_originals %} <span class="en">{{ s.en }}</span>{% endif %}{% if s.tags %} <span class="flag">{{ s.tags }}</span>{% endif %}</td>
-          {% if multi %}<td class="cls-col">{{ s['class'] }}</td>{% endif %}
           <td>{{ s.time }}</td><td>{{ s.range }}</td><td>{{ s.duration }}</td><td>{{ s.components_short }}</td><td>{{ s.school }}</td>
         </tr>
+      {% endfor %}
       {% endfor %}
       </tbody>
     </table>
@@ -590,7 +590,7 @@
       {% for s in lv.spells %}
       <div class="entry{{ ' long' if s.blocks|length > 5 }}">
         <h4>{{ pair(s) }}</h4>
-        <div class="spell-meta">{{ s.school }} · {{ s.time }} · {{ s.range }} · {{ s.duration }} · {{ s.components }}</div>
+        <div class="spell-meta">{% if v.spellcasting.classes|length > 1 and s['class'] %}<b>{{ s['class'] }}</b> · {% endif %}{{ s.school }} · {{ s.time }} · {{ s.range }} · {{ s.duration }} · {{ s.components }}</div>
         {{ blocks(s.blocks) }}
         {% if s.higher %}<p><b>На вищих рівнях.</b> {% for b in s.higher %}{{ b.text }} {% endfor %}</p>{% endif %}
       </div>

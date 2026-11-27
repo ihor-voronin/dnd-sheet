@@ -286,14 +286,42 @@ const SPELL_SOURCE_TAGS: Record<string, string> = {
   feature: "від уміння класу",
 };
 
+type SheetSpell = SheetViewPayload["spells"][number];
+type CastingClassRow = SheetViewPayload["spellcasting"]["classes"][number];
+
+/** Підгрупи рівня в мультикласі: закляття кожного класу разом, далі — інші джерела. */
+function byClass(list: SheetSpell[], casting: CastingClassRow[]) {
+  const order = casting.map((item) => item.key);
+  const groups = new Map<string, SheetSpell[]>();
+  for (const spell of list) {
+    const key = spell.class_key ?? `src:${spell.source}`;
+    groups.set(key, [...(groups.get(key) ?? []), spell]);
+  }
+  const rank = (key: string) => (order.includes(key) ? order.indexOf(key) : order.length);
+  return Array.from(groups.entries())
+    .sort(([left], [right]) => rank(left) - rank(right))
+    .map(([key, items]) => {
+      const caster = casting.find((item) => item.key === key);
+      const title = caster
+        ? `${termLabel(caster.name_en)} · КС ${caster.save_dc} · атака ${caster.attack_bonus >= 0 ? "+" : ""}${caster.attack_bonus}`
+        : SPELL_SOURCE_TAGS[key.replace(/^src:/, "")] ?? "інші джерела";
+      return { key, title, items };
+    });
+}
+
 export function SpellsKnownList({
   spells,
   onRemove,
+  casting = [],
 }: {
   spells: SheetViewPayload["spells"];
   onRemove?: (spell: SheetViewPayload["spells"][number]) => void;
+  /** Класи, що чарують: у мультикласі закляття рівня групуються за класом —
+   * від класу залежать КС рятівного кидка й бонус атаки (PHB, p. 164). */
+  casting?: CastingClassRow[];
 }) {
   if (!spells.length) return <p className="hint">—</p>;
+  const multi = casting.length > 1;
 
   const sorted = [...spells].sort(
     (left, right) => left.level - right.level || left.name_en.localeCompare(right.name_en),
@@ -313,8 +341,11 @@ export function SpellsKnownList({
             <span>{level === 0 ? "Заговори" : `${level} рівень`}</span>
             <span className="spell-group__count">{list.length}</span>
           </h4>
+          {(multi ? byClass(list, casting) : [{ key: "all", title: "", items: list }]).map((sub) => (
+          <div key={sub.key} className="spell-subgroup">
+          {multi ? <h5 className="spell-subgroup__head">{sub.title}</h5> : null}
           <ul className="spell-group__list">
-            {list.map((spell) => {
+            {sub.items.map((spell) => {
               const meta = [
                 castingTimeLabel(spell.casting_time),
                 rangeLabel(spell.range),
@@ -414,6 +445,8 @@ export function SpellsKnownList({
               );
             })}
           </ul>
+          </div>
+          ))}
         </section>
       ))}
     </div>

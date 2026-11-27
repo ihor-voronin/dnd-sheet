@@ -496,7 +496,11 @@ export function CharacterView({
             <span className="short">натисніть, щоб читати</span>
           </h3>
           <AddSpellForm casting={casting} busy={busy} onAdd={addSpell} />
-          <SpellsKnownList spells={sheet.spells} onRemove={(spell) => void removeSpell(spell)} />
+          <SpellsKnownList
+            spells={sheet.spells}
+            casting={sheet.spellcasting.classes}
+            onRemove={(spell) => void removeSpell(spell)}
+          />
         </>
       );
     }

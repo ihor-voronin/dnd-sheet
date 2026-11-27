@@ -162,6 +162,18 @@ SPECIAL_NAMES = {
     "talons": "Пазурі",
 }
 
+#: Закляття не з класу: група на сторінці заклять мультикласу.
+OTHER_SOURCES = {
+    "src:species": "Від виду",
+    "src:subclass": "Від підкласу",
+    "src:feat": "Від риси",
+    "src:fighting-style": "Від бойового стилю",
+    "src:invocation": "Містичні виклики",
+    "src:pact-boon": "Дар угоди",
+    "src:secrets": "Магічні таємниці",
+    "src:feature": "Від уміння",
+}
+
 COINS = (("pp", "пм"), ("gp", "зм"), ("ep", "ем"), ("sp", "см"), ("cp", "мм"))
 
 #: Особливості виду, які аркуш уже показує числами (характеристики, швидкість, мови).
@@ -634,14 +646,47 @@ def _spellcasting(
                 "components_short": components_short(spell.get("components")),
                 "tags": " ".join(tags),
                 "class": _uk(display_name(spell.get("class_key", "").title())) if spell.get("class_key") else "",
+                "group": spell.get("class_key") or f"src:{spell.get('source') or 'other'}",
                 "blocks": rule_blocks(spell.get("description_uk") or spell.get("description")),
                 "higher": rule_blocks(re.sub(r"^\s*(?:\*\*)?(?:At Higher Levels|На вищих рівнях)\.(?:\*\*)?\s*", "", higher, flags=re.IGNORECASE)),
             }
         )
-    levels = [
-        {"level": level, "title": "Заговори" if level == 0 else f"{level} рівень", "spells": sorted(rows, key=lambda row: uk_sort_key(row["title"]))}
-        for level, rows in sorted(by_level.items())
-    ]
+    # У мультикласі закляття групуються за класом усередині рівня: від класу
+    # залежать складність рятівного кидка й бонус атаки (PHB, p. 164).
+    order = [entry.get("key") for entry in classes]
+    info = {
+        entry.get("key"): {
+            "title": _uk(display_name(entry.get("name_en") or "")),
+            "dc": entry.get("save_dc"),
+            "attack": signed(entry.get("attack_bonus")),
+        }
+        for entry in classes
+    }
+
+    def group_rank(key: str) -> tuple[int, str]:
+        return (order.index(key), "") if key in order else (len(order), key)
+
+    levels = []
+    for level, rows in sorted(by_level.items()):
+        rows = sorted(rows, key=lambda row: uk_sort_key(row["title"]))
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for row in rows:
+            groups.setdefault(row["group"], []).append(row)
+        levels.append(
+            {
+                "level": level,
+                "title": "Заговори" if level == 0 else f"{level} рівень",
+                "spells": rows,
+                "groups": [
+                    {
+                        "key": key,
+                        **(info.get(key) or {"title": OTHER_SOURCES.get(key, "Інші джерела"), "dc": None, "attack": None}),
+                        "spells": groups[key],
+                    }
+                    for key in sorted(groups, key=group_rank)
+                ],
+            }
+        )
     return {
         "classes": [
             {

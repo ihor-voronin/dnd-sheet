@@ -166,7 +166,13 @@ class LevelUpPlanner:
             pact_after=_pact(after),
             caster_level_before=before.spellcasting.caster_level,
             caster_level_after=after.spellcasting.caster_level,
-            max_spell_level=after.spellcasting.slots.highest_level,
+            # Закляття класу обирають так, ніби він єдиний (PHB, p. 164): чаклун 6
+            # у мультикласі вчить до 3 рівня, хоч спільні комірки вже 5-го. Число —
+            # з чарування класу (з урахуванням підкласу: лицар-чарівник, трюкач).
+            max_spell_level=next(
+                (casting.max_spell_level for casting in after.spellcasting.classes if casting.class_key == key),
+                0,
+            ),
             resources_before=tuple(
                 resource.key for resource in resources_for(character, before.ability_modifiers)
             ),
