@@ -36,3 +36,6 @@ docs
 .idea
 .vscode
 **/*.bak
+
+# --- доступи до хостингу (лише локально) ---
+deploy/local
