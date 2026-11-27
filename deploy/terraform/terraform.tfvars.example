@@ -1,4 +1,4 @@
-# Справжній файл — deploy/secrets/terraform/terraform.tfvars (зашифрований git-crypt).
+# The real file is deploy/secrets/terraform/terraform.tfvars (encrypted by git-crypt).
 server_ip       = "203.0.113.10"
 domain          = "dnd.example.com"
 cloudflare_zone = "example.com"

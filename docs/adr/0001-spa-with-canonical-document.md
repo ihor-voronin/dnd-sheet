@@ -1,20 +1,20 @@
-# ADR 0001 — SPA + канонічний SheetDocument
+# ADR 0001 — SPA + canonical SheetDocument
 
-Статус: прийнято.
+Status: accepted.
 
-## Контекст
+## Context
 
-Рендерів потрібно більше ніж один: веб-листок, PDF для друку, пізніше PNG для Discord і JSON для VTT.
-Проміжний варіант «server-rendered HTML як контракт» відпадає: HTML не є стабільним API, а кожен новий рендер змушував би парсити розмітку.
+More than one renderer is needed: the web sheet, a printable PDF, later PNG for Discord and JSON for VTTs.
+The middle ground "server-rendered HTML as the contract" is ruled out: HTML is not a stable API, and every new renderer would have to parse markup.
 
-## Рішення
+## Decision
 
-Джерело правди — доменний артефакт `SheetDocument` (версіонований JSON). Його споживають:
-React-застосунок (веб) і серверні адаптери за портом `SheetRenderer` (PDF, Markdown, пізніше PNG/VTT).
+The source of truth is the domain artifact `SheetDocument` (versioned JSON). It is consumed by
+the React app (web) and by server-side adapters behind the `SheetRenderer` port (PDF, Markdown, later PNG/VTT).
 
-## Наслідки
+## Consequences
 
-- `SheetDocument` живе в `sheets` domain, а не в API-шарі.
-- Зʼявляється обовʼязковий conformance-набір для кожного рендера.
-- Фронтенд — не «тонкий клієнт над ендпоінтами», а рендер документа; бізнес-логіки в ньому немає.
-- Ціна: два стеки, codegen, більше інфраструктури. Прийнято свідомо.
+- `SheetDocument` lives in the `sheets` domain, not in the API layer.
+- Every renderer must pass a conformance suite.
+- The frontend is not a "thin client over endpoints" but a renderer of the document; it holds no business logic.
+- The cost: two stacks, codegen, more infrastructure. Accepted deliberately.

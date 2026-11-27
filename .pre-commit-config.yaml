@@ -1,17 +1,17 @@
-# Перевірки перед комітом — за зразком GloPros, підлаштовані під dnd-sheet.
+# Pre-commit checks.
 #
-#   pre-commit install                 # один раз: ставить хуки pre-commit і commit-msg
-#   pre-commit run --all-files         # прогнати все вручну
-#   pre-commit run ruff-format --files backend/src/...   # один хук
+#   pre-commit install                 # once: installs the pre-commit and commit-msg hooks
+#   pre-commit run --all-files         # run everything by hand
+#   pre-commit run ruff-format --files backend/src/...   # a single hook
 #
-# Форматери (ruff-format, prettier, end-of-file-fixer…) виправляють файли самі
-# й зупиняють коміт: перегляньте зміни, `git add` і комітьте ще раз.
+# Formatters (ruff-format, prettier, end-of-file-fixer…) fix files themselves
+# and stop the commit: review the changes, `git add` and commit again.
 default_stages: ["pre-commit"]
 default_language_version:
   node: lts
 default_install_hook_types: ["pre-commit", "commit-msg"]
-# Зашифровані git-crypt файли (секрети й корпус книг) у робочій копії — відкритий текст;
-# форматери й лінтери їх не чіпають. Що вони справді зашифровані — перевіряє secrets-encrypted.
+# Files encrypted by git-crypt (secrets and the book corpus) are plaintext in the working copy;
+# formatters and linters leave them alone. secrets-encrypted checks they really are encrypted.
 exclude: |
   (?x)^(
     frontend/src/contract/.*|
@@ -34,7 +34,7 @@ repos:
       - id: trailing-whitespace
         exclude: \.md$
       - id: fix-byte-order-marker
-        # Windows PowerShell 5 читає .ps1 без BOM як cp1251 — BOM там потрібен.
+        # Windows PowerShell 5 reads a .ps1 without a BOM as cp1251 — the BOM is needed there.
         exclude: \.ps1$
       - id: check-json
       - id: check-yaml
@@ -52,12 +52,12 @@ repos:
       - id: ruff-format
         alias: format-ruff
 
-  # Секрети в коді: TruffleHog з образу Docker (бінарника під Windows немає в winget).
-  # Зашифровані git-crypt файли виключені вище: у робочій копії там секрети за задумом.
+  # Secrets in code: TruffleHog from a Docker image (winget has no Windows binary).
+  # Files encrypted by git-crypt are excluded above: they hold secrets in the working copy by design.
   - repo: local
     hooks:
       - id: trufflehog
-        name: trufflehog — секрети в змінених файлах
+        name: trufflehog — secrets in changed files
         language: docker_image
         entry: trufflesecurity/trufflehog:3.90.0 filesystem --fail --no-update --log-level=-1
 
@@ -80,14 +80,14 @@ repos:
   - repo: local
     hooks:
       - id: secrets-encrypted
-        name: git-crypt — секрети й корпус у git лише зашифровані
+        name: git-crypt — secrets and the corpus are committed only encrypted
         entry: python scripts/check_secrets_encrypted.py
         language: system
         always_run: true
         pass_filenames: false
 
-      # Prettier і плагін сортування імпортів — з frontend/node_modules (версії як у GloPros):
-      # node-середовище pre-commit на Windows не дає prettier знайти плагін за назвою.
+      # Prettier and the import-sorting plugin come from frontend/node_modules:
+      # pre-commit's node environment on Windows doesn't let prettier find the plugin by name.
       - id: prettier
         name: format files with prettier
         alias: format-prettier

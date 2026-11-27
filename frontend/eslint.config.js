@@ -1,9 +1,8 @@
-// ESLint — за зразком GloPros (frontend/eslint.config.js): ті самі базові набори
-// (@eslint/js, typescript-eslint, react, react-hooks), без Next, Jest та i18n.
+// ESLint: the base sets @eslint/js, typescript-eslint, react, react-hooks.
 //
-// Старі порушення лежать у eslint-suppressions.json (кількість на файл і правило):
-// файл не може набрати нових, а виправлені старі прибирає `npm run lint:prune`.
-// Суппресії діють лише для `error`, тож усі правила тут — error.
+// Old violations live in eslint-suppressions.json (a count per file and rule):
+// a file can't gain new ones, and `npm run lint:prune` removes the fixed old ones.
+// Suppressions only apply to `error`, so every rule here is an error.
 import js from "@eslint/js";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";

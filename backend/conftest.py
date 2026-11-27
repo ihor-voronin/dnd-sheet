@@ -1,4 +1,4 @@
-"""Спільні фікстури тестів: шляхи до контракту та фікстур."""
+"""Shared test fixtures: paths to the contract and fixtures."""
 
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-# API-тести працюють від «локального гравця»: вхід перевіряють окремі тести
-# (`tests/identity`), які вмикають його явно. Корпус — з репозиторію, звідки б
-# не запускали pytest.
+# API tests run as the "local player": sign-in is checked by separate tests
+# (`tests/identity`) that enable it explicitly. The corpus comes from the repository,
+# wherever pytest is run from.
 os.environ.setdefault("DNDSHEET_AUTH", "off")
 os.environ.setdefault("DNDSHEET_CONTENT_DIR", str(REPO_ROOT / "content"))
 CONTRACT_DIR = REPO_ROOT / "contract"
@@ -33,7 +33,7 @@ def schema() -> dict:
 @pytest.fixture(scope="session")
 def fixture_files() -> list[Path]:
     files = sorted(FIXTURES_DIR.glob("*.json"))
-    assert files, f"Немає фікстур у {FIXTURES_DIR}"
+    assert files, f"No fixtures in {FIXTURES_DIR}"
     return files
 
 

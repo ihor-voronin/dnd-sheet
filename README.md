@@ -1,191 +1,205 @@
-# dndsheet
+# dndsheet — D&D 5e (2014) character sheet in Ukrainian
 
-Сервіс для створення й експорту листків персонажа **D&D 5e (правила 2014)** українською.
-Персональний проєкт: спочатку локальний запуск, пізніше — власний сайт.
+A website where a player builds a hero by the 2014 Player's Handbook rules, keeps
+the sheet during play and prints it like a paper one. The site itself is in
+Ukrainian, with the original English names next to every term.
 
-## Як це влаштовано
+- **Site:** https://dnd.voronin.app — sign-in with Telegram; the compendium is open without signing in.
+- **Telegram:** [@DnD_Sheet_VoroninAppBot](https://t.me/DnD_Sheet_VoroninAppBot) — the same site
+  as a Mini App, signed in automatically.
+
+## Features
+
+**Compendium** (no sign-in) — 13 classes and 123 subclasses, 69 species and 64
+subraces, 94 backgrounds, 109 feats, 151 optional features, 519 spells and 1135
+items from 89 sources. The home page lists what each book contributes, with prices
+and links to D&D Beyond.
+
+**Character creation** — a six-step wizard: species → class → ability scores →
+background → equipment → spells. The server validates every step against the 2014
+rules (species bonuses, no duplicate skills, standard array and point buy, class
+and background starting equipment, cantrips and spells). The draft is stored on the
+server, so it can be finished on another device.
+
+**The sheet during play** — hit points, damage and healing, temporary HP, hit dice,
+death saves, spell slots and Pact Magic, class resources, short and long rests by
+the rules, weapon attacks, inventory from the compendium, spell preparation,
+features with their rules text, notes with autosave. Any number can be overridden
+by hand (and is marked as such). Two tabs or two devices can't overwrite each other:
+the sheet is versioned and refreshes itself.
+
+**Level-up and multiclassing** — a new level in any class with prerequisite checks,
+hit points, subclass, ASI or feat, new spells; for multiclass characters — slots by
+caster level, separate Pact Magic, spells grouped by class with their own DC and
+attack bonus.
+
+**Printing** — a PDF styled like a paper sheet (black and white, frames, room for a
+pencil): main page, spells, equipment, adventure log and extra pages with the full
+text of features and spells. Or the same page in the browser.
+
+**Sharing** — a read-only link (`/#/s/<token>`): the sheet can be viewed and printed
+without signing in, but not changed. A new link revokes the old one.
+
+**Phone and Telegram** — mobile layout for the sheet and the wizard; the Telegram
+Mini App uses Telegram's theme and Back button, lets Telegram download the PDF, and
+`t.me/<bot>?startapp=s_<token>` opens a shared sheet right inside the app.
+
+**Found a bug?** — `#/bugs`, linked from every page footer: two dozen common
+complaints with sarcastic answers, each pointing to the folder in this repository
+where the fix belongs (and a fork button).
+
+## How it works
 
 ```
-Character (агрегат) ──> DerivedStatsCalculator ──> ComputedSheet ──> SheetDocument (JSON, v1.0)
-                                                                        ├──> React-рендер (веб)
-                                                                        └──> адаптери за портом SheetRenderer (PDF, Markdown, …)
+Browser / Telegram Mini App
+  React SPA (Vite, TanStack Query)
+        │  JSON API, session via cookie or Bearer (Mini App)
+        ▼
+FastAPI  ── DDD bounded contexts, boundaries enforced by import-linter
+  ├─ compendium   compendium: JSONL book corpus + derived mechanics indexes
+  ├─ characters   Character aggregate, wizard, sheet, level-up, multiclass
+  │                 DerivedStatsCalculator → ComputedSheet (the server computes every number)
+  ├─ sheets       SheetDocument — the canonical sheet document (JSON Schema in contract/)
+  ├─ export       PDF (Jinja → HTML → WeasyPrint), Markdown — behind the SheetRenderer port
+  ├─ identity     Telegram sign-in (Login Widget and Mini App), sessions
+  └─ shared       kernel: abilities, dice, armor, money, rules tables
+        │
+        ▼
+SQLite (WAL) — versioned characters with owners, drafts, sessions, share links
 ```
 
-`SheetDocument` — доменний артефакт, а не DTO. Кожен підпис у ньому двомовний:
-`uk` показується, `en` — оригінал для тултіпа. Деталі рішень — у [`docs/plan.md`](docs/plan.md) і [`docs/adr/`](docs/adr/).
+Key decisions live in [`docs/adr/`](docs/adr/):
 
-## Статус: етап 4 (лист під час гри)
+- **The server owns the rules** ([0002](docs/adr/0002-server-authoritative-rules.md)):
+  the frontend computes nothing itself, it shows what the server returned.
+- **Content is data** ([0003](docs/adr/0003-content-is-data.md)): classes, species,
+  spells and items are corpus records, not code. Mechanics (hit dice, slots, bonuses)
+  are derived from them into `content/index/`.
+- **Glossary-driven translation** ([0004](docs/adr/0004-glossary-driven-translation.md)):
+  Ukrainian names and texts live in `content/translations/`, the rules are in
+  [`docs/translation-rules.md`](docs/translation-rules.md). Display format:
+  "Ukrainian (English)".
+- **One sheet document** ([0001](docs/adr/0001-spa-with-canonical-document.md)):
+  the screen and the printout are built from the same `SheetDocument`.
 
-Готово:
+## Running locally
 
-- [x] домен: `AbilityScore`, `DiceExpression`, `Armor`, `Money`, `Character`, `DerivedStatsCalculator`
-- [x] безпечний обчислювач формул (whitelisted AST, без `eval`)
-- [x] контракт `contract/sheet-document.schema.json` + 2 фікстури
-- [x] pydantic-модель `SheetDocument`
-- [x] порт `SheetRenderer` + реєстр + 2 адаптери (Markdown, PDF)
-- [x] conformance-тести на фікстурах
-- [x] DDD-гейти (`import-linter`): домен не тягне FastAPI/SQLAlchemy
-- [x] HTTP API: `/healthz`, `/api/v1/demo/sheet`, `/api/v1/demo/export/{format}`
-- [x] каркас SPA (React + TS + Vite) з тултіпами «?» → оригінал англійською
-- [x] глосарій v0 (`content/glossary.uk.yml`) — **чернетка, потребує звірки з офіційним PDF**
-- [x] **етап 1 — довідник як API**: `compendium` (домен + JSONL-корпус + індекси + сервіс + ендпоінти),
-      класові списки заклять зі «Spell Lists» книг — деталі в [`docs/api-compendium.md`](docs/api-compendium.md)
-- [x] **етап 2 — персонаж v2**: мультиклас, вид, передісторія, володіння з джерелами, хіти,
-      інвентар, закляття; `ModifierResolver`, `SpellSlotService` (мультикласові слоти + Pact Magic),
-      максимум хітів і пул хіт-дайсів; похідні індекси механік із дзеркала 5e.tools
-      (13 класів, 69 видів, 94 передісторії). Три еталонні персонажі зафіксовані тестами —
-      деталі в [`docs/domain-character.md`](docs/domain-character.md)
-- [x] **етап 3 — візард створення**: шість кроків (вид → клас → характеристики → передісторія →
-      спорядження → закляття), сервер перевіряє кожен крок, чернетка зберігається на диску
-      й відновлюється в браузері, назад — з будь-якого кроку; створений персонаж лягає у `var/`
-      і переживає перезапуск. Вибір на 1 рівні враховано: підклас у жреця/чаклуна/варлока,
-      підраси, вибір заговору високого ельфа, заговори й закляття видів, доменні/патронні
-      закляття. Деталі — [`docs/wizard.md`](docs/wizard.md)
-- [x] **етап 4 — лист під час гри**: вкладки, редагування на місці з позначкою «вручну»,
-      лічильники (хіти, слоти, Pact Magic, хіт-дайси, кидки смерті, натхнення, втома),
-      короткий/довгий відпочинок **за правилами** (тимчасові хіти живуть, половина кісток,
-      скидання класових ресурсів, `rest`-звіт на екрані), шкода й лікування,
-      кістки хітів із кидком або ручним записом, атаки зі зброї з довідника (з власним
-      уроном предмета), редагування інвентаря з пошуком у довіднику, доступні закляття
-      у вкладці «Дії» й повні картки відомих заклять (компоненти, опис, вищі рівні),
-      уміння класу й підкласу з текстом правил і лічильниками ресурсів, вкладка
-      передісторії (що вона дає, риса, опис, зовнішність), нотатки з автозбереженням
-      і експортом; стан зберігається у `var/` і переживає перезапуск.
-      Деталі — [`docs/sheet.md`](docs/sheet.md)
-- [x] **етап 5 — повний експорт**: `SheetDocument` збирається з реального персонажа
-      **разом зі станом** (хіти, слоти, виправлення, нотатки) і містить усі розділи екрана —
-      особу, бій, порятунки, навички, атаки, уміння, володіння, чарування, закляття,
-      інвентар, гроші, нотатки й застереження. Markdown і PDF (через HTML-шаблон) проходять
-      conformance на справжньому листі; кнопки експорту — на екрані персонажа.
-      Деталі — [`docs/export.md`](docs/export.md)
-
-### Перевірено локально (Python 3.13, Node 24)
-
-| Гейт | Результат |
-|---|---|
-| `pytest backend` | **524 passed, 2 skipped** (обидва PDF-тести скіпнуто: немає WeasyPrint/GTK) |
-| `lint-imports` | **5 contracts kept, 0 broken** |
-| `tsc --noEmit` | чисто |
-| `vite build` | 117 модулів, ~326 kB JS (~104 kB gzip) |
-| `python scripts/preflight.py` | OK: 122 .py, контракт, golden-числа, корпус за каноном, механіки 13/69/64/94 |
-| SPA end-to-end | FastAPI віддає `/`, рендериться `SheetDocument`, тултіп на фокусі показує оригінал («Strength») |
-| довідник end-to-end | `/api/v1/compendium/summary` → 3818 записів, 89 книг; `/classes/wizard/spells` → 215 заклять, `source: spell-lists`; `/mechanics` → 13 класів, 69 видів, 94 передісторії |
-| персонаж end-to-end | `/api/v1/characters/golden` → 3 листи: Воїн 1 (AC 18, HP 12), Варлок 1 (Pact Magic 1 слот, DC 13), Воїн 2 / Візард 3 (рівень заклинателя 3, слоти 4×1 + 2×2) |
-| візард end-to-end | створено Воїна 1 через UI (Людина, Солдат, набір, кольчуга): AC 16, HP 12, навички з джерелами; після перезавантаження сторінки чернетка повертається на той самий крок |
-| вибір на 1 рівні | жрець Life: доменні `bless`/`cure wounds` завжди підготовлені; варлок The Fiend: `burning hands`/`command` у виборі; високий ельф: обраний заговір візарда на листі |
-| лист end-to-end | Воїн 1 із довгим мечем: атака +5, `1d8+3 slashing`; хіти 4/12, довгий відпочинок → 12/12; КЗ 16 → 19 виправленням і назад; Pact Magic 1/1 → 0/1 → короткий відпочинок 1/1 |
-| експорт end-to-end | Варлок 1 зі станом (4/9 хітів, витрачений Pact Magic, виправлений КЗ): Markdown-файл 5.3 kB із усіма розділами, `Хіти: зараз 0` при 0 хітів, «PDF недоступний на цьому сервері» замість кнопки, яка відкриває 503 |
-
-Далі — етап 6: збереження в БД і акаунти (cookie-сесії, публічне посилання).
-Порядок етапів і еталон екранів — у [`docs/plan.md`](docs/plan.md) (§9, §13).
-
-## Найшвидший запуск: Docker
-
-Усе в одному контейнері — FastAPI, зібрана SPA і корпус довідника. PDF-експорт усередині
-образу справді працює: WeasyPrint разом із Pango/cairo і кириличними шрифтами вже в ньому.
+The simplest way is Docker: API, built SPA and corpus in one container, PDF works.
 
 ```powershell
-docker compose up -d --build
-# → http://127.0.0.1:8000
+docker compose up -d --build     # → http://127.0.0.1:8000
 ```
 
-Персонажі й чернетки лежать у `./var` на хості (каталог прокинутий у контейнер), тому
-перезбірка образу їх не зачіпає. Журнали — `docker compose logs -f app`, зупинка — `docker compose down`.
+The Telegram widget doesn't work on `localhost`, so locally a **development sign-in
+by name** is enabled (`DNDSHEET_DEV_LOGIN=1` in compose). Data lives in `./var`
+(SQLite); rebuilding the image doesn't touch it.
 
-## Швидкий старт (Windows / PowerShell)
-
-> Детальна інструкція — встановлення, запуск, тести, діагностика проблем: **[RUN.md](RUN.md)**.
-> Продакшн (https://dnd.voronin.app): Terraform, сервер і секрети — **[docs/deploy.md](docs/deploy.md)**;
-> CI, правила `main` і автодеплой — **[docs/ci.md](docs/ci.md)**.
+Without Docker (faster development with reload):
 
 ```powershell
-cd dnd-sheet
-
-# backend
 py -3 -m venv .venv
 .venv\Scripts\python -m pip install -e "backend[dev]"
+$env:DNDSHEET_DEV_LOGIN = "1"
+.venv\Scripts\python -m uvicorn dndsheet.main:app --reload     # API :8000
 
-# тести
-.venv\Scripts\python -m pytest backend
-
-# API
-.venv\Scripts\python -m uvicorn dndsheet.main:app --reload
-
-# frontend (окремий термінал)
-cd frontend
-npm install
-npm run dev
+cd frontend; npm install; npm run dev                          # SPA :5173, proxies to the API
 ```
 
-Відкрити: http://127.0.0.1:5173 (SPA, проксі на API :8000).
+PDF without Docker needs WeasyPrint with GTK (a separate runtime on Windows);
+otherwise PDF returns 503 and the PDF tests are skipped. Full details and
+troubleshooting: **[RUN.md](RUN.md)**.
 
-PDF-рендер потребує `weasyprint` + GTK:
-`.venv\Scripts\python -m pip install -e "backend[pdf]"`. Без нього PDF-тести скіпаються,
-а `/api/v1/demo/export/pdf` віддає 503 — це очікувано.
+**The book corpus is encrypted** (see below): after cloning without the git-crypt
+key the compendium is empty and part of the tests fail. Unlocking is described in
+[`docs/deploy.md`](docs/deploy.md), section "First run on a new machine".
 
-**На Windows** WeasyPrint додатково потребує GTK (Pango/cairo) — pip його не ставить.
-Варіанти: (а) поставити GTK-рантайм, (б) рендерити PDF у Docker/WSL (так само буде на хостингу),
-(в) замінити адаптер на Chromium-друк (важчий, але без нативних залежностей).
-Рішення — за тобою; порт `SheetRenderer` дозволяє замінити адаптер без змін у домені.
-
-## Гейти якості
-
-```powershell
-# швидко, БЕЗ встановлення залежностей (stdlib only):
-python scripts/preflight.py
-
-.venv\Scripts\python -m pytest backend            # тести
-.venv\Scripts\python -m pytest backend -k conformance
-.venv\Scripts\lint-imports --config backend/pyproject.toml   # архітектура
-cd frontend; npm run typecheck                                # типи
-cd frontend; npm run contract                                 # перегенерація типів із JSON Schema
-
-# корпус книг: одна категорія — один формат
-.venv\Scripts\python -m scripts.normalize --check   # або: make format-check
-.venv\Scripts\python -m scripts.normalize --write   # або: make format
-```
-
-`scripts/preflight.py` перевіряє синтаксис, JSON-контракт, інваріанти `SheetDocument`,
-чистоту домену (заміна import-linter), golden-числа персонажа (v2: бонуси виду, хіти,
-мультикласові слоти), безпеку обчислювача формул, формат обох корпусів книг
-(`content/compendium/` — довідник для листа персонажа, `content/bestiary/` — статблоки
-монстрів) і базові інваріанти похідних індексів механік (`content/index/*-mechanics.json`).
-
-Формат записів довідника описано в [`docs/format.md`](docs/format.md): однакові
-поля, однаковий набір і порядок ключів `data`, однаковий скелет `text_en` для
-кожної категорії. Специфікація — `contract/compendium-format.json`; там же
-блок `corpora` каже, яка категорія в якому корпусі живе (монстри — окремо,
-бо в листі персонажа вони не задіяні).
-
-## Структура
+## Development
 
 ```
-backend/src/dndsheet/
-  shared/          # kernel: Ability, Skill, AbilityScore, DiceExpression, Armor, Money
-                   # + rules: механіки класів/видів, таблиці слотів (VO, без I/O)
-  characters/      # агрегат Character v2, володіння, інвентар, закляття
-                   # + сервіси: DerivedStatsCalculator, ModifierResolver, SpellSlotService
-                   # + application/golden.py: еталонні персонажі
-                   # + application/rows.py: рядки листа для екрана й експорту
-                   # + application/sheet.py: зміни під час гри, відпочинок
-  sheets/          # SheetDocument, формули, лейбли, build_document (усі розділи листа)
-  export/          # порт SheetRenderer, реєстр (format + available), адаптери PDF/Markdown
-  compendium/      # довідник: JSONL-корпус, індекси заклять і механік, сервіс, API
-  identity/        # (порожньо, етап 6)
-  localization/    # (порожньо, після етапу 7)
-  api/             # FastAPI
-contract/          # JSON Schema + фікстури + формати корпусів і механік (єдине джерело типів)
-content/           # глосарій, реєстр джерел, корпуси записів, похідні індекси
-frontend/          # React SPA
-docs/              # план + ADR + описи етапів
+branch ──► commit (pre-commit) ──► PR into main ──► CI: pre-commit · backend · frontend
+                                                          │ green
+                             https://dnd.voronin.app ◄── squash-merge → deploy.yml
 ```
 
-## Правові застереження
+- **pre-commit** (`pre-commit install`, [RUN.md § 5.1](RUN.md)): ruff, prettier with
+  import sorting, ESLint, tsc, shellcheck, terraform fmt, TruffleHog, gitlint and a
+  check that secrets and the corpus go into git only encrypted.
+- **Tests:** `.venv\Scripts\python -m pytest backend` (900+ tests: rules, reference
+  characters, 20 levels of every class, multiclass, API, printing),
+  `.venv\Scripts\lint-imports --config backend/pyproject.toml` (context boundaries),
+  `cd frontend; npm run typecheck; npm run lint`.
+- **CI** ([`docs/ci.md`](docs/ci.md)) — GitHub Actions on every PR: the same hooks,
+  the full backend suite in a Docker image with the corpus unlocked, the frontend.
+  `main` accepts changes only through a PR with green checks, squash-merged.
+- **Auto-deploy** — after CI on `main` is green.
 
-- Проєкт — **персонального використання**, без розповсюдження.
-- Тексти правил не живуть у коді: усе в БД із полем `license` (`srd` / `proprietary`),
-  щоб публічний режим «тільки SRD» вмикався перемикачем.
-- D&D Beyond використовується лише як **ручний довідник** (звірка назв/полів).
-  Автоматизоване викачування їхнього контенту — проти їхніх умов, тому його в коді не буде.
-- Офіційний український PDF — джерело термінології; у глосарії зберігаються терміни
-  й посилання (книга + сторінка), а не текст.
+## Production
+
+A RackNerd VPS (Ubuntu 24.04), domain in Cloudflare. The server runs Docker: the
+app behind Caddy (HTTPS from Let's Encrypt), SQLite in `/opt/dndsheet/var` with a
+daily backup. Details, server access and database restore:
+[`docs/deploy.md`](docs/deploy.md).
+
+| What | With | When |
+| --- | --- | --- |
+| the app (image, compose, Caddy, `.env`) | `scripts/deploy_app.py` | CI after a merge into `main`; by hand — `deploy\terraform\deploy.ps1` |
+| infrastructure (DNS, Docker, firewall, swap, backups, key-only SSH) | Terraform (`deploy/terraform`) | rarely, by hand: `deploy.ps1 -Infra` |
+
+**Secrets and the corpus are in git, but encrypted with [git-crypt](https://github.com/AGWA/git-crypt):**
+`deploy/secrets/` (tokens, SSH key, `.env`, Terraform state) and
+`content/compendium`, `bestiary`, `index` (book texts). They are unlocked with the
+owner's GPG key or with the `GIT_CRYPT_KEY` GitHub Actions secret.
+
+## Repository layout
+
+```
+backend/src/dndsheet/   FastAPI app (contexts — see "How it works")
+backend/tests/          tests: domain, rules, API, contracts, printing
+frontend/src/           React SPA: features/{home,knowledge,wizard,character,auth,bugs}, telegram.ts
+contract/               sheet JSON Schema and corpus formats — the single source of types
+content/                glossary, source registry, translations (plain);
+                        compendium/, bestiary/, index/ (encrypted)
+scripts/                corpus ingest and normalization, translations, deploy, icons, hooks
+deploy/                 Terraform, server files, encrypted secrets
+.github/                CI, deploy, ruleset for main
+branding/               icon and bot avatar (generated by scripts/make_icons.py)
+docs/                   plan, ADRs, per-area descriptions (below)
+```
+
+## Documentation
+
+| Document | About |
+| --- | --- |
+| [RUN.md](RUN.md) | install, run, tests, pre-commit, troubleshooting |
+| [docs/plan.md](docs/plan.md) | project plan and stages |
+| [docs/adr/](docs/adr/) | architecture decisions |
+| [docs/domain-character.md](docs/domain-character.md) | the character: aggregate, derived numbers, reference characters |
+| [docs/wizard.md](docs/wizard.md) | the creation wizard |
+| [docs/sheet.md](docs/sheet.md) | the sheet during play |
+| [docs/level-up.md](docs/level-up.md) | level-up and multiclass |
+| [docs/spells.md](docs/spells.md) | spells outside of level-up |
+| [docs/export.md](docs/export.md) | printing and PDF |
+| [docs/api-compendium.md](docs/api-compendium.md) | compendium API |
+| [docs/format.md](docs/format.md) | corpus record format |
+| [docs/books.md](docs/books.md) | the 2014 book line and what each book provides |
+| [docs/translation-rules.md](docs/translation-rules.md), [docs/translation.md](docs/translation.md) | translation rules and status |
+| [docs/deploy.md](docs/deploy.md) | server, Terraform, secrets, Telegram, backups |
+| [docs/ci.md](docs/ci.md) | GitHub Actions, rules for `main`, auto-deploy |
+| [docs/next-steps.md](docs/next-steps.md) | what's next |
+
+Documentation, code comments in tooling and pipelines are in English; the site's
+content (UI texts, translations, glossary) is in Ukrainian.
+
+## Legal
+
+- An unofficial **non-commercial** fan project: free, no ads, not affiliated with
+  Wizards of the Coast or D&D Beyond. The Fan Content Policy notice is on the
+  site's home page.
+- Dungeons & Dragons, book and setting names, and the rules texts are property of
+  Wizards of the Coast. The translation is amateur, made for convenience at the table.
+- **Book texts are in this public repository only in encrypted form** (git-crypt).
+  Code, the glossary and translations of names and texts (`content/translations/`)
+  are in plain text.
+- D&D Beyond is used only as a manual reference (name checks, book prices and links;
+  covers are shown by linking to their site). There is no automated download of their
+  content in the code.

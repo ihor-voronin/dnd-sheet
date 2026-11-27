@@ -1,72 +1,73 @@
-# Візард створення персонажа (етап 3)
+# The character creation wizard
 
-Шість кроків, які ведуть від «нічого» до збереженого персонажа 1 рівня.
-Сервер — єдина інстанція, що вирішує, чи крок дійсний; екран лише показує
-вибір і надсилає відповідь. Чернетка зберігається на кожному кроці, тому
-закрита вкладка не втрачає роботи.
+Six steps from "nothing" to a saved level-1 character. The server is the only authority
+that decides whether a step is valid; the screen only shows the choices and sends the
+answer. The draft is saved on every step, so a closed tab loses no work, and it lives on
+the server, so it can be finished on another device.
 
 ```
-POST /wizard ──► чернетка (revision 0)
+POST /wizard ──► draft (revision 0)
    │
-   ├─ PUT /steps/species      вид, підраса, імʼя, бонуси на вибір
-   ├─ PUT /steps/class        клас, підклас (якщо він є на 1 рівні)
-   ├─ PUT /steps/abilities    набір / point buy / кидки / вручну
-   ├─ PUT /steps/background   передісторія, світогляд, навички, мови
-   ├─ PUT /steps/equipment    предмети й гроші (необовʼязково)
-   └─ PUT /steps/spells       заговори й закляття (лише заклинатель)
+   ├─ PUT /steps/species      species, subrace, name, chosen bonuses
+   ├─ PUT /steps/class        class, subclass (if it comes at level 1)
+   ├─ PUT /steps/abilities    standard array / point buy / rolls / manual
+   ├─ PUT /steps/background   background, alignment, skills, languages
+   ├─ PUT /steps/equipment    items and money (optional)
+   └─ PUT /steps/spells       cantrips and spells (casters only)
           │
-          └─ POST /finish ──► Character + лист, чернетка видаляється
+          └─ POST /finish ──► Character + sheet, the draft is removed
 ```
 
-## Кроки
+## Steps
 
-| # | Крок | Що перевіряє сервер |
+| # | Step | What the server checks |
 |---|---|---|
-| 1 | `species` | імʼя не порожнє; вид існує й не є підрасою; підраса належить виду; вибір бонусів — рівно `count` різних здібностей; вибір заговору — рівно `count` зі списку класу; види 2022 року відхиляються |
-| 2 | `class` | клас існує; підклас обовʼязковий, якщо `subclass_level == 1` (жрець, чаклун, варлок), заборонений раніше; ключ підкласу є в довіднику; варіант показує доменні/патронні закляття |
-| 3 | `abilities` | набір = мультимножині 15,14,13,12,10,8; point buy ≤ 27 очок і 8..15; кидки 3..18 і кожен використаний раз; ручне 3..20; разом із бонусом виду ≤ 20 |
-| 4 | `background` | передісторія існує; кожне володіння проходить правила свого джерела; навичок класу рівно `skill_limit`; навичок виду рівно `skill_any` |
-| 5 | `equipment` | інвентар валідний (одна броня, один щит, вага ≥ 0, гроші ≥ 0) |
-| 6 | `spells` | клас чарує; заговори ≤ ліміт; відомих ≤ ліміт; рівень закляття ≤ максимум для 1 рівня; підготовлених ≤ ліміт; список доповнюється розширеним списком патрона, а доменні закляття показані як «завжди підготовлені» |
+| 1 | `species` | the name isn't empty; the species exists and isn't a subrace; the subrace belongs to the species; the bonus choice is exactly `count` different abilities; the cantrip choice is exactly `count` from the class list |
+| 2 | `class` | the class exists; the subclass is required if `subclass_level == 1` (cleric, sorcerer, warlock) and forbidden earlier; the subclass key is in the compendium; the option shows domain/patron spells |
+| 3 | `abilities` | the array = the multiset 15,14,13,12,10,8; point buy ≤ 27 points and 8..15; rolls 3..18, each used once; manual 3..20; with the species bonus ≤ 20 |
+| 4 | `background` | the background exists; every proficiency passes its source's rules; exactly `skill_limit` class skills; exactly `skill_any` species skills |
+| 5 | `equipment` | the inventory is valid (one armor, one shield, weight ≥ 0, money ≥ 0) |
+| 6 | `spells` | the class casts; cantrips ≤ limit; known ≤ limit; spell level ≤ the level-1 maximum; prepared ≤ limit; the list is extended by the patron's expanded list, domain spells show as "always prepared" |
 
-Правила кроків живуть у домені (`characters/domain/wizard.py`), а не в
-HTTP-шарі: той самий код перевіряє і крок, і зібраний агрегат.
+Step rules live in the domain (`characters/domain/wizard.py`), not in the HTTP layer:
+the same code checks the step and the assembled aggregate.
 
-### Порядок і повернення
+### Order and going back
 
-Крок відкривається лише тоді, коли завершені всі попередні — інакше можна
-дійти до заклять, не маючи класу. Назад можна завжди; зміна виду, класу чи
-передісторії прибирає залежні відповіді:
+A step opens only when all previous ones are complete — otherwise you could reach spells
+without a class. Going back is always allowed; changing the species, class or background
+clears dependent answers:
 
-* вид → зникають володіння джерела `species` (мови, навички);
-* клас → зникають навички `class` і **всі закляття** (вони належать класу);
-* передісторія → володіння приходять із її правил, тож вибір лишається
-  недоторканим.
+* species → proficiencies from the `species` source disappear (languages, skills);
+* class → `class` skills and **all spells** disappear (they belong to the class);
+* background → proficiencies come from its rules, so the choices stay intact.
 
-Спорядження — єдиний необовʼязковий крок: його можна пропустити, і персонаж
-усе одно створиться з порожнім інвентарем.
+Equipment is the only optional step: it can be skipped and the character is still
+created with an empty inventory.
+
+The UI scrolls to the top on every step change; on a phone a sticky bar jumps between
+the step's sections, and under the "Next" button the screen says what's still missing.
 
 ## API
 
-Усі відповіді містять і `options` (що можна обрати), і `answers` (що вже
-обрано). `PUT` приймає **відповідь кроку в тій самій формі**, що віддає
-`answers`, тому клієнт не перекладає нічого між собою.
+Every response contains both `options` (what can be chosen) and `answers` (what is
+chosen). `PUT` takes **the step answer in the same shape** as `answers`, so the client
+translates nothing.
 
-| Метод | Шлях | Тіло | Відповідь |
+| Method | Path | Body | Response |
 |---|---|---|---|
-| `POST` | `/api/v1/characters/wizard` | — | перший крок із вибором |
-| `GET` | `/api/v1/characters/wizard/{id}` | — | `{draft}` без вибору кроку |
-| `GET` | `/api/v1/characters/wizard/{id}/steps/{step}` | — | крок: `draft`, `answers`, `options`, `locked`, `complete` |
-| `PUT` | `/api/v1/characters/wizard/{id}/steps/{step}` | відповідь кроку (+ `revision`) | оновлений крок |
+| `POST` | `/api/v1/characters/wizard` | — | the first step with choices |
+| `GET` | `/api/v1/characters/wizard/{id}` | — | `{draft}` without step choices |
+| `GET` | `/api/v1/characters/wizard/{id}/steps/{step}` | — | the step: `draft`, `answers`, `options`, `locked`, `complete` |
+| `PUT` | `/api/v1/characters/wizard/{id}/steps/{step}` | the step answer (+ `revision`) | the updated step |
 | `POST` | `/api/v1/characters/wizard/{id}/finish` | — | `{character_id, sheet}` |
-| `GET` | `/api/v1/characters` | — | список збережених (шапка) |
-| `GET` | `/api/v1/characters/{id}` | — | `{sheet}` — повний обчислений лист |
+| `GET` | `/api/v1/characters` | — | the saved list (with species, classes, HP, AC for the cards) |
+| `GET` | `/api/v1/characters/{id}` | — | `{sheet}` — the full computed sheet |
 
-Помилки: `404` — немає чернетки/персонажа/кроку; `409` — застаріла `revision`
-(хтось інший устиг змінити чернетку); `422` — крок не пройшов, у `detail`
-причина людською мовою.
+Errors: `404` — no such draft/character/step; `409` — a stale `revision` (someone else
+changed the draft); `422` — the step failed, `detail` gives the reason in plain language.
 
-### Приклади тіла
+### Example bodies
 
 ```json
 {"name": "Дарія Залізний Крок", "species_key": "human",
@@ -109,242 +110,193 @@ HTTP-шарі: той самий код перевіряє і крок, і зі�
              "class_key": "warlock", "entry_id": "phb-2014/spell/hex"}]}
 ```
 
-## Опції кроків: звідки числа
+## Step options: where the numbers come from
 
-`characters/api/wizard_options.py` — шар складання: він бере механіки з
-`RulesSource` і довідник із `CompendiumService`, а домен про них не знає.
+`characters/api/wizard_options.py` is the assembly layer: it takes mechanics from
+`RulesSource` and the compendium from `CompendiumService`; the domain knows about neither.
 
-* **види** — `CompendiumService.species_list()` + підраси кожного виду +
-  **особливості з книги** (`characters/api/species_traits.py`): опис і список
-  умінь («Hare-Trigger», «Rabbit Hop»). Механіки дають лише числа, тому без
-  цього Harengon виглядав як «без бонусів» і без жодної особливості;
-* **класи** — 13 класів з хіт-дайсом, порятунками, лімітом навичок і
-  підкласами (для рівня 1 — реальні записи, інакше лише назва й рівень);
-* **характеристики** — таблиця вартості point buy і бонуси виду;
-* **передісторія** — 94 передісторії, 9 світоглядів, навички класу й виду;
-* **спорядження** — список предметів шукається в довіднику
-  (`/api/v1/compendium/items?q=`), числа броні гравець вводить сам;
-* **закляття** — класовий список зі «Spell Lists» книг, до 1 рівня.
+* **species** — `CompendiumService.species_list()` + each species' subraces + **traits
+  from the book** (`characters/api/species_traits.py`): description and features
+  ("Hare-Trigger", "Rabbit Hop"). Mechanics provide only numbers, so without this the
+  Harengon looked like "no bonuses" and had no traits at all;
+* **classes** — 13 classes with hit die, saves, skill limit and subclasses (real records
+  for level 1, otherwise only the name and level);
+* **abilities** — the point buy cost table and species bonuses;
+* **background** — 94 backgrounds, 9 alignments, class and species skills;
+* **equipment** — items are looked up in the compendium (`/api/v1/compendium/items?q=`);
+* **spells** — the class list from the books' "Spell Lists", up to level 1.
 
-## Крок «Вид»: підраса, назви й особливості
+## The Species step: subrace, names and traits
 
-Три речі, які виправлено після першої версії:
+1. **No subrace — no next step.** It's required where it provides part of the numbers:
+   dwarf, elf, gnome, halfling (PHB, p. 20–24), genasi (EEPC), shifter (ERLW), aasimar
+   (EGtW), gith. The list is explicit — `SUBRACE_REQUIRED` in `shared/rules.py`: the
+   corpus doesn't mark "required", and "has subraces" isn't the same thing (the human has
+   `Variant Human`, which is optional). The server checks it
+   (`Draft._validate_species`); the screen just explains why "Next" is disabled.
+2. **Species description and traits from the book.** `species_traits.py` cuts the
+   description and features out of `text_en`. Corpus formats differ: a
+   `### Harengon Traits` heading; text without a heading ("Hill Dwarf" — two lines); a
+   single line (EEPC books); a section in a rules chapter (`GHOSTWISE HALFLINGS` in SCAG,
+   `#### Pallid Elf` in EGtW). 50 of 64 subraces have no record of their own, so the
+   lookup goes in three steps: the exact name → the name without the parent word
+   ("Lightfoot" for "Lightfoot Halfling") → a section in the parent's text or a rules
+   chapter.
 
-1. **Без підраси далі не пускає.** Вона обовʼязкова там, де дає частину
-   чисел: дворф, ельф, гном, піврослик (PHB, p. 20–24), genasi (EEPC),
-   shifter (ERLW), aasimar (EGtW), gith. Список явний — `SUBRACE_REQUIRED` у
-   `shared/rules.py`: корпус не позначає «обовʼязковість», а «є підраси» — не
-   те саме (у людини є `Variant Human`, і він необовʼязковий). Перевіряє
-   сервер (`Draft._validate_species`), екран лише не дає натиснути «Далі».
-2. **Опис виду й особливості з книги.** `species_traits.py` вирізає з
-   `text_en` опис і уміння. Формати в корпусі різні: заголовок
-   `### Harengon Traits`; текст без заголовка («Hill Dwarf» — два рядки);
-   суцільний рядок (книги EEPC); розділ у главі правил (`GHOSTWISE
-   HALFLINGS` у SCAG, `#### Pallid Elf` у EGtW). 50 із 64 підрас не мають
-   власного запису, тому пошук іде трьома кроками: точна назва → назва без
-   слова-батька («Lightfoot» для «Lightfoot Halfling») → розділ у тексті
-   батька або в главі правил.
+   Screen order, **top to bottom**: the chosen species (name and "Change species") →
+   subrace → "what the species gives" (numbers, including the subrace) → "what it looks
+   like" (the book's description) → traits (shared + what the subrace adds). The list of
+   69 species **collapses** once a species is chosen; "Change species" brings it back and
+   scrolls to it.
+3. **Names in Ukrainian with English in parentheses.** The `SPECIES_UK` dictionary in
+   `frontend/src/features/character/uk.ts` (69 species and 64 subraces), as for classes
+   and spells.
 
-   Порядок на екрані — **згори донизу**: обраний вид (назва й «Змінити
-   вид») → підраса → «що дає вид» (числа, разом із підрасою) → «як виглядає»
-   (опис книги) → особливості (спільні + те, що додає підраса). Список 69
-   видів **згортається**, щойно вид обрано: інакше гравець обирав вид у
-   середині списку і не бачив нічого, бо картка була під ним. «Змінити вид»
-   повертає список.
-3. **Назви українською з англійською в дужках.** Словник `SPECIES_UK` у
-   `frontend/src/features/character/uk.ts` (69 видів і 64 підраси), як і для
-   класів та заклять.
+Feature texts and descriptions are **in Ukrainian**, with the original name in
+parentheses («Темний зір (Darkvision)»). The translation isn't in the corpus: it's a
+separate layer in `content/translations/species/*.json`, keyed by the `sha1` of the
+original text (`characters/api/trait_uk.py`). So "Darkvision" in twenty species is
+translated once, and the corpus remains the source of rules. No translation — the
+original is shown, nothing invented. Next to the text — the numbers: skills, weapons,
+tools, languages, resistances, darkvision.
 
-Текст умінь і опис — **українською**, оригінальна назва в дужках («Темний зір
-(Darkvision)»). Переклад не лежить у корпусі: він окремим шаром у
-`content/translations/species/*.json`, ключ — `sha1` оригінального тексту
-(`characters/api/trait_uk.py`). Тому «Darkvision» у двадцяти видів перекладено
-один раз, а корпус лишається джерелом правил. Немає перекладу — показується
-оригінал, без вигадок. Поруч із текстом — числа: навички, зброя, інструменти,
-мови, опір, темний зір.
+Coverage today: **274 feature names, 524 texts, 105 descriptions** — every species and
+subrace (`tests/api/test_species_uk.py` fails if a gap appears). Subraces are parsed
+**with their parent**: half of them are described in the species text, and without
+`parent_name_en` their features aren't found.
 
-Покриття на сьогодні: **274 назви вмінь, 524 тексти, 105 описів** — усі види й
-підраси (`tests/api/test_species_uk.py` падає, якщо зʼявиться діра). Підраси
-розбираються **з батьком**: половина з них описана в тексті виду, і без
-`parent_name_en` їхні вміння не знаходяться — саме через це перший прохід
-перекладу пропустив 108 текстів («Некротичний саван» у падшого аазімара).
+Trait coverage (`test_species_traits.py`): **68 of 69 species** have a description or
+features (except "Gnoll" — in the corpus it's a monster, not a playable species) and
+**57 of 64 subraces**. Seven subraces are described in the corpus only as a table
+without text — for them the numbers and an honest note remain.
 
-Перевірка покриття (тести `test_species_traits.py`): **68 із 69 видів** мають
-опис або уміння (крім «Gnoll» — він у корпусі монстр, а не грабельний вид) і
-**57 із 64 підрас**. Сім підрас у корпусі описані лише таблицею без тексту
-(Asmodeus та ще пʼять tiefling-кровей, «Variant; Aquatic Elf Descent»,
-«Variant; Moon Elf or Sun Elf Descent») — для них лишаються числа й чесна
-примітка.
+**Free distribution (2022 rules).** Species with `ability_unresolved` (Harengon, Custom
+Lineage, Genasi, Shifter, Aasimar and others) have no fixed bonuses: the player chooses
+**+2 and +1** to two different abilities or **+1, +1 and +1** to three. The choice lives
+in `Character.ability_spread` (and in the draft), is checked by
+`shared.rules.ability_spread`, added to abilities in `ModifierResolver`, and the sheet
+shows where the number came from: "13 + 1 = 14". The cap of 20 applies here too. Without
+the choice the step doesn't complete.
 
-**Вільний розподіл (правила 2022).** У видів із `ability_unresolved`
-(Harengon, Custom Lineage, Genasi, Shifter, Aasimar та інші) немає фіксованих
-бонусів: гравець сам обирає **+2 і +1** до двох різних характеристик або
-**+1, +1 і +1** до трьох. Вибір живе в `Character.ability_spread`
-(і в чернетці), перевіряється `shared.rules.ability_spread`, додається до
-характеристик у `ModifierResolver` і на листі видно, звідки число:
-«13 + 1 = 14». Межа 20 діє й тут. Без вибору крок не завершується — сервер
-відмовляє з поясненням, а не створює персонажа без бонусів.
+## The Class step
 
-## Крок «Клас»
+The same approach as for species: the chosen class shows **as a card at the top**, the
+list of 13 classes collapses ("Change class" brings it back). The card has:
 
-Той самий підхід, що й у виду: обраний клас показується **карткою згори**,
-список 13 класів згортається («Змінити клас» його повертає). У картці:
+1. the name in Ukrainian with English in parentheses and the subclass if the class
+   chooses it at level 1 (cleric, warlock, sorcerer) — as chips, with the book in the
+   caption when names repeat;
+2. **what the class gives**: hit die, saves, "skills: 2 from the list (8) — …", armor,
+   weapons, tools, spellcasting (ability, prepares or knows, how many cantrips and
+   spells at level 1);
+3. **the class description** — in Ukrainian (`description_uk`);
+4. **level-1 features with descriptions** — names and texts in Ukrainian
+   (`name_uk`/`text_uk`), the original stays in the payload for reference;
+5. a collapsed list of **all** class features by level — each expands into its rules
+   text (`GET /api/v1/characters/wizard/class-features/{key}`, loaded only when opened:
+   for 13 classes that's a few hundred kilobytes);
+6. for a subclass — what it gives (always-prepared spells, an expanded list).
 
-1. назва українською з англійською в дужках і підклас, якщо клас обирає його
-   на 1 рівні (жрець, чаклун, чародій) — чипами, з книгою в підписі, коли
-   назви повторюються («Знання (Knowledge Domain) · phb-2014» і «· ps-amonkhet»);
-2. **що дає клас**: хіт-дайс, порятунки, «навички: 2 зі списку (8) — …» з
-   переліком навичок, броня, зброя, інструменти, чарування (від якої
-   характеристики, готує чи знає, скільки заговорів і заклять на 1 рівні);
-3. **опис класу** — українською, з оригіналом у книзі (`description_uk`);
-4. **уміння 1 рівня з описами** — «Хіти (Hit Points)», «Володіння
-   (Proficiencies)», «Спорядження (Equipment)», «Друге дихання (Second Wind)»
-   та інші: назви й тексти українською (`name_uk`/`text_uk`), оригінал
-   лишається в payload для звірки;
-5. згорнутий список **усіх** умінь класу за рівнями — кожне вміння
-   розгортається в текст правила (`GET /api/v1/characters/wizard/class-features/{key}`,
-   вантажиться лише коли список відкрили: у 13 класів це кілька сотень
-   кілобайт);
-6. для підкласу — що він дає (завжди підготовлені закляття, розширений список).
+The description and feature texts come from `characters/api/features.py`
+(`class_details`): the numbers domain doesn't know the book text, so the step takes it
+from the compendium. The artificer (TCE) has no class record in the corpus, so it gets
+numbers and an honest note.
 
-Опис і тексти вмінь приходить із `characters/api/features.py`
-(`class_details`): домен чисел не знає тексту книги, тому крок бере його з
-довідника. Тексти фільтруються до вмінь 1 рівня — підкласи й «Quick Build»
-теж заголовки в главі класу, але до вмінь 1 рівня не належать. В артифіцера
-(TCE) запису класу в корпусі немає, тому для нього лишаються числа й чесна
-примітка.
+Class feature translation is a separate layer (`characters/api/classes_uk.py`, files in
+`content/translations/classes/`), the same as for species: keyed by the `sha1` of the
+original; without a translation the English book text is shown. How it was made and how
+to extend it — `docs/translation.md`.
 
-Переклад класових умінь — окремий шар (`characters/api/classes_uk.py`,
-файли в `content/translations/classes/`), той самий, що у видів: ключ —
-`sha1` оригіналу, немає перекладу — показується англійський текст книги.
-Як він зроблений і як його поповнювати — `docs/translation.md`.
+## The Abilities, Background and Equipment steps
 
-## Кроки «Характеристики», «Передісторія», «Спорядження»
+**Abilities.** In the standard array (15, 14, 13, 12, 10, 8) every number lives in one
+ability: chosen values **don't show** in the other lists, and empty cells are "—" until
+all six are assigned. "Lay it out as the book suggests" fills the array by the class's
+primary abilities. On a phone each ability becomes a small card.
 
-**Характеристики.** У стандартному наборі (15, 14, 13, 12, 10, 8) кожне
-число живе в одній характеристиці: обрані значення **не показуються** в
-списках інших, а порожні клітинки — «—», доки всі шість не розставлені.
-Спершу всі шість порожні (раніше стояло 10 у всіх, і набір був недійсним).
+**Background.** A list in Ukrainian («Солдат (Soldier)»), with a card under it: the
+book's description, the feature with its text (`#### Feature: …`), numbers (skills,
+tools, languages, money) and **equipment from the `Equipment:` line**. The line is parsed
+into items (`background_info.parse_equipment`): a comma inside parentheses doesn't split
+an item, the book's options ("bone dice or deck of cards") stay a choice, "a pouch
+containing 10 gp" also gives money.
 
-**Передісторія.** Вибір — список українською («Солдат (Soldier)»), під ним
-картка: опис книги, риса з текстом (`#### Feature: …`), числа (навички,
-інструменти, мови, гроші) і **спорядження з рядка `Equipment:`**. Рядок
-розбирається в предмети (`background_info.parse_equipment`): кома всередині
-дужок не ріже предмет («a dagger, broken blade, or piece of a banner»),
-варіанти книги («bone dice or deck of cards») лишаються вибором, «a pouch
-containing 10 gp» дає ще й гроші.
+The last item in the list is **«Власна передісторія» (Custom Background)**: the player
+writes a name, description, the feature's name and text, chooses money, and **takes
+equipment from the same catalog as the inventory**. Proficiencies follow the standard
+rules (2 skills, 1 tool, 1 language). The text and items go into
+`Character.custom_background`; the sheet's Background tab shows it instead of the book.
 
-Останній пункт списку — **«Власна передісторія (Custom Background)»**:
-гравець пише назву, опис, назву й текст риси, обирає гроші, а **спорядження
-бере з того самого каталогу, що й інвентар** (фільтри за типом, магічністю,
-книгою, пошук; у рядку — тип, ціна й вага; обрані предмети можна прибрати).
-Володіння — за стандартними правилами (2 навички, 1 інструмент, 1 мова).
-Текст і предмети лягають у `Character.custom_background` (JSON персонажа),
-на листі вкладка «Передісторія» показує його замість книги, а обрані предмети
-додаються в інвентар на кроці «Спорядження» — з вагою, типом і властивостями
-з довідника. Заголовок розділу «Custom Background» із PHB (риса «Choose a
-Feature») зі списку прибрано — його замінює ця форма, інакше в списку два
-однакові пункти.
+Descriptions, names, feature texts and each equipment phrase are shown in Ukrainian from
+`content/translations/backgrounds/` (`backgrounds_uk.py`); the original stays next to it
+in the payload. Translating phrases doesn't break adding items: the compendium lookup uses
+the English text, the translation is only a label.
 
-Опис, назва й текст риси, а також кожна фраза спорядження показуються
-українською з `content/translations/backgrounds/` (`backgrounds_uk.py`), а
-оригінал лишається поруч у payload для звірки з книгою. Переклад фраз не
-ламає додавання предметів: пошук у довіднику йде за англійським текстом, а
-переклад — лише підпис на екрані.
+**Equipment.** Background items **are added automatically** (with a choice where the book
+offers one: changing the option replaces the added item). Then — **the compendium catalog
+with the same filters as on the sheet** (`ItemCatalogBrowser`) and "Own item" for what the
+compendium lacks. A `від передісторії` ("from the background") mark in the notes shows an
+item's origin and prevents adding it twice.
 
-**Спорядження.** Предмети передісторії **додаються самі** (з вибором там, де
-книга його пропонує: зміна варіанта замінює вже доданий предмет). Далі —
-**каталог із довідника з тими самими фільтрами, що на листі** (тип, магічність,
-книга, пошук; той самий компонент `ItemCatalogBrowser`), «Свій предмет» для
-того, чого в довіднику немає. Позначка `від передісторії` в нотатках показує,
-звідки предмет, і не дає додати його вдруге.
+Each inventory item is a framed row that expands into **"What it gives"** (`ItemFacts` in
+`character/inventory.tsx`): numbers from the compendium (damage with type, weapon
+properties, AC, price, weight) and the book description — in Ukrainian, or the English
+original with a toggle. Items with no description and nothing beyond type and weight show
+no "What it gives" at all.
 
-Кожен предмет в інвентарі розгортається в **«Що це дає»** (`ItemFacts` у
-`character/inventory.tsx`): числа з довідника (урон із типом, властивості
-зброї, КЗ, ціна, вага) і опис із книги — українською, а якщо перекладу ще
-немає, англійським оригіналом із перемикачем. Для власного предмета
-показуються його поля, бо запису в довіднику в нього немає. Назви предметів
-передісторії («знаки розрізнення», «гаманець із 10 зм») беруться з шару
-перекладу передісторій — у каталозі таких фраз немає.
+## The last step and creating the character
 
-Нотатки й власний урон зброї — частина предмета, тому вони зберігаються
-кроком і повертаються в `answers` (раніше губилися: після повторного входу в
-крок спорядження передісторії додавалося вдруге).
+The Spells step is the last one: its button says **«Створити персонажа»** ("Create
+character") and really finishes the creation (`CreateWizard.submit` has no next step, so
+it calls `finish`). If the server refuses (something isn't filled in), the reason is shown.
 
-## Останній крок і створення персонажа
+## Storage
 
-Крок «Закляття» — останній: його кнопка каже **«Створити персонажа»** і
-справді завершує створення (`CreateWizard.submit` не має наступного кроку,
-тому викликає `finish`). Раніше кнопка мовчки нічого не робила, бо
-наступного кроку не було, а фініш висів окремо в підвалі. Тепер кнопка в
-підвалі на останньому кроці не дублюється, а якщо сервер відмовить (щось не
-заповнено) — покаже причину.
+Drafts and characters live in SQLite (`var/dndsheet.sqlite3`), each with an owner; the
+data folder can be moved with `DNDSHEET_DATA_DIR` (the tests do this). What's stored is
+**state**, not derived values: classes, levels, base abilities, proficiency choices,
+items, spells, current HP. AC, max HP, slots and DC aren't stored — they're computed from
+the rules on every read, so a rules change leaves no "stale" numbers behind.
 
-## Зберігання
+In the browser, `localStorage["dndsheet.draft"]` keeps the draft `id`, so a page reload
+returns to the same step; the account's latest draft can also be resumed from the
+character list on another device. "Start over" drops the old draft and creates a new one.
 
-Файли, один на агрегат (до БД — етап 6):
+## Frontend
 
-```
-var/drafts/{draft_id}.json      чернетка  (schema: wizard-draft/1)
-var/characters/{id}.json        персонаж  (schema: character/1)
-```
+`frontend/src/features/wizard/` — `CreateWizard` (navigation, finish, scroll on step
+change), `steps.tsx` (the six forms), `StepJumpBar.tsx` (section jumps on a phone). Each
+step gets `answers` + `options` and returns a payload; it has no rules of its own, a
+server error is shown as is.
 
-Каталог можна перемістити змінною `DNDSHEET_DATA_DIR` (це ж роблять тести).
-Запис атомарний: тимчасовий файл + `os.replace`, щоб перерваний запис не
-лишив обрізаний JSON. `id` перевіряється (`[A-Za-z0-9_-]`), бо він же імʼя
-файлу.
+## Deliberately not done
 
-У файлі лежить **стан**, а не похідні: класи, рівні, базові характеристики,
-вибір володінь, предмети, закляття, поточні хіти. КЗ, максимум хітів, слоти
-й DC не зберігаються — вони рахуються з правил при кожному читанні, тому
-зміна правил не лишає в базі «старих» чисел.
+* **Level-up and multiclass in the wizard** — a separate screen ([`level-up.md`](level-up.md)).
+  The aggregate is multiclass-ready, but the draft holds exactly one level-1 class.
+* **A language catalog** — the mechanics have only "how many languages to choose", not a
+  list; languages are chosen from a fixed set and checked by count.
+* **Free "+1 to anything" outside the 2022 distribution** — a species either gives
+  +2/+1 or fixed bonuses.
+* **Subclass feats** — the feat text is in the compendium, but there are no numeric
+  effects at level 1 beyond what the class mechanics themselves give.
 
-Чернетка в браузері: `localStorage["dndsheet.draft"]` зберігає `id`, тому
-перезавантаження сторінки повертає на той самий крок. «Почати заново»
-прибирає стару чернетку й створює нову.
+## Tests
 
-## Фронтенд
-
-`frontend/src/features/wizard/` — `CreateWizard` (навігація, фініш),
-`steps.tsx` (шість форм). Кожен крок отримує `answers` + `options` і повертає
-payload; власних перевірок немає, помилка сервера показується як є.
-
-`frontend/src/features/character/CharacterView.tsx` — екран збереженого
-персонажа: панель бою, характеристики, навички з відмітками володіння,
-закляття, володіння з джерелами, інвентар.
-
-## Що свідомо не зроблено
-
-* **Підвищення рівня й мультиклас у візарді** — етап 7. Агрегат уже
-  мультикласовий, але чернетка тримає рівно один клас 1 рівня.
-* **Стартові набори спорядження з книг** — у корпусі це текст, не структура;
-  тому гравець додає предмети вручну, а числа броні вводить сам (етап 4 дасть
-  редагування й автоматичні дані предметів).
-* **Каталог мов** — у механіках є лише «скільки мов на вибір», а не перелік;
-  мова вводиться текстом і перевіряється за кількістю.
-* **Вільні «+1 до будь-чого» поза 2022-розподілом** — вид або дає +2/+1, або
-  фіксовані бонуси; довільного «+1 до будь-якої» поза цим правилом немає.
-* **Риси підкласу** — текст риси вже є в довіднику, але числових ефектів на
-  1 рівні немає, крім тих, що дає сама механіка класу.
-
-## Тести
-
-| Файл | Що тримає |
+| File | What it holds |
 |---|---|
-| `tests/characters/test_wizard.py` | кроки, порядок, навігація назад, ліміти, зміна класу/виду |
-| `tests/characters/test_wizard_service.py` | сценарій: кроки → фініш, ревізії, перезапуск |
-| `tests/characters/test_json_store.py` | агрегат → файл → агрегат без втрат |
-| `tests/api/test_wizard_api.py` | HTTP end-to-end на справжньому корпусі + перезапуск сервера |
+| `tests/characters/test_wizard.py` | steps, order, going back, limits, class/species changes |
+| `tests/characters/test_wizard_service.py` | the scenario: steps → finish, revisions, restart |
+| `tests/characters/test_json_store.py` | aggregate → file → aggregate without losses |
+| `tests/api/test_wizard_api.py` | HTTP end-to-end on the real corpus + server restart |
 
-## Вибір на 1 рівні у візарді
+## Level-1 choices in the wizard
 
-* **Крок виду** показує, що вид дає одразу: «Вид дає заговори: thaumaturgy»,
-  уроджені закляття з 1 рівня, а для високого ельфа — вибір заговору зі списку
-  візарда (16 заговорів із корпусу).
-* **Крок класу** для трьох класів із підкласом на 1 рівні показує ефект
-  вибору: «Завжди підготовлені: bless, cure wounds» (домен) або «Розширений
-  список: burning hands, command» (патрон).
-* **Крок заклять** має блок наданих заклять (не рахуються в лімітах класу) і
-  додає розширений список патрона до заклять, з яких можна обирати.
-* **Лист** показує всі закляття з джерелом: клас, вид чи підклас, і позначку
-  «завжди підготовлене».
+* **The species step** shows what the species gives right away: species cantrips, innate
+  level-1 spells, and for the high elf — a cantrip choice from the wizard list.
+* **The class step** for the three classes with a level-1 subclass shows the effect of
+  the choice: "Always prepared: bless, cure wounds" (domain) or "Expanded list: burning
+  hands, command" (patron).
+* **The spells step** has a block of granted spells (not counted against class limits)
+  and adds the patron's expanded list to the choosable spells.
+* **The sheet** shows every spell with its source: class, species or subclass, and an
+  "always prepared" mark.

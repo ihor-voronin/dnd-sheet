@@ -1,251 +1,251 @@
-# Бібліотека книг D&D 5e (2014) — інвентар для листка персонажа
+# The D&D 5e (2014) book library — an inventory for the character sheet
 
-Статус: **довідковий документ**. Фіксує перелік книг лінійки 2014 (2014–2024), те, що кожна дає листку персонажа, і **чи є вона у власній бібліотеці D&D Beyond** — а якщо немає, то чи є її текст на дзеркалі 5e.tools. Джерело істини для контенту — власний аудит книг, а не цей список.
+Status: **reference document**. It records the books of the 2014 line (2014–2024), what each gives the character sheet, and **whether it's in the owned D&D Beyond library** — and if not, whether its text is on the 5e.tools mirror. The source of truth for content is the book audit itself, not this list.
 
-Наявність звірено 25.11.2026 з [My Library (D&D Beyond)](https://www.dndbeyond.com/en/library?ownership=owned&ruleset=5e&type=sourcebooks): **33 сорсбуки + 15 пригод**. Окремо, **не на DDB**, у роботі є три книги з PDF: друкований *Bigby Presents: Glory of the Giants* (текст узято через OCR, §7.1), безкоштовний *Elemental Evil Player's Companion* (справжній текстовий шар, §7.3) і *Dragonlance: Shadow of the Dragon Queen* (російський переклад, §8). Тому в корпусі **52 книги**.
+Availability was checked on 25.11.2026 against [My Library (D&D Beyond)](https://www.dndbeyond.com/en/library?ownership=owned&ruleset=5e&type=sourcebooks): **33 sourcebooks + 15 adventures**. Separately, **not on DDB**, three books are worked from PDF: the printed *Bigby Presents: Glory of the Giants* (text taken via OCR, §7.1), the free *Elemental Evil Player's Companion* (a real text layer, §7.3) and *Dragonlance: Shadow of the Dragon Queen* (a Russian translation, §8). So the corpus holds **52 books**.
 
-Друге джерело — неофіційне дзеркало **[5e.tools](https://5e.tools/)**: ті самі книги у вигляді JSON, включно з тими, яких у бібліотеці немає. Станом на 26.11.2026 звідти завантажено **41 теку** (8 книг першої хвилі + 33 файли другої, §7.4) — разом це 22 види, 27 передісторій, 10 рис, 12 підкласів, 5 заклять, 279 предметів і 1337 статблоків, яких не було в корпусі. У `content/compendium/` вони ще не внесені, тому лічильники §8 їх не включають. Чого на дзеркалі немає — перелічено в §11.5.
+The second source is the unofficial **[5e.tools](https://5e.tools/)** mirror: the same books as JSON, including those that aren't in the library. As of 26.11.2026 **41 folders** have been downloaded from it (8 first-wave books + 33 second-wave files, §7.4) — together 22 species, 27 backgrounds, 10 feats, 12 subclasses, 5 spells, 279 items and 1337 stat blocks that weren't in the corpus. They're not in `content/compendium/` yet, so the §8 counters don't include them. What the mirror doesn't have is listed in §11.5.
 
-Позначки в таблицях: `✅` — є в бібліотеці D&D Beyond; `📄 PDF` — немає на DDB, але є власний примірник; `🌐` — немає на DDB, але текст завантажено з дзеркала 5e.tools; `❌` — немає ніде.
+Markers in the tables: `✅` — in the D&D Beyond library; `📄 PDF` — not on DDB, but an own copy exists; `🌐` — not on DDB, but the text was downloaded from the 5e.tools mirror; `❌` — nowhere.
 
-## 0. Призначення і застереження
+## 0. Purpose and caveats
 
-- Перелік потрібен, щоб **не загубити книгу** з playable-опціями і не тягнути зайвого в конвеєр перекладу.
-- `✅` — є в бібліотеці D&D Beyond; `📄 PDF` — немає на DDB, але текст узято з власного примірника; `🌐` — немає на DDB, але текст завантажено з дзеркала 5e.tools; `❌` — немає ніде.
-- Точні кількості в різних довідниках різняться: каталог покриття рахує **унікальні для книги** записи (наприклад, у SCAG 9 підкласів, але 3 з них передруковані в XGtE/TCoE — тому в каталозі буде 6). Тому цифри нижче — орієнтовні, з позначкою «~».
-- Лінійка 2014 завершена; **правила 2024 (PHB 2024, DMG 2024, MM 2025) — інша редакція** і в проєкт не входять.
-- Дзеркало 5e.tools містить **обидві лінійки одночасно** (XPHB 2024 на 77 рис і 16 передісторій, а також FRHoF, EFA, RHW, AU, PL, WoW). Тому з нього не можна брати «все, що є» — кожен запис фільтрується за `source` (§7.4).
-- Юридично: публікувати можна лише **SRD 5.1** (підмножина PHB, CC-BY). Решта книг — персональне використання, кожен запис несе `license: proprietary`.
+- The list exists so as **not to lose a book** with playable options and not to drag anything extra into the translation pipeline.
+- `✅` — in the D&D Beyond library; `📄 PDF` — not on DDB, but the text was taken from an own copy; `🌐` — not on DDB, but the text was downloaded from the 5e.tools mirror; `❌` — nowhere.
+- Exact counts differ between references: a coverage catalog counts records **unique to the book** (for example, SCAG has 9 subclasses, but 3 of them are reprinted in XGtE/TCoE — so the catalog shows 6). So the numbers below are approximate, marked "~".
+- The 2014 line is finished; **the 2024 rules (PHB 2024, DMG 2024, MM 2025) are a different edition** and are not part of the project.
+- The 5e.tools mirror holds **both lines at once** (XPHB 2024 with 77 feats and 16 backgrounds, plus FRHoF, EFA, RHW, AU, PL, WoW). So you can't take "everything there is" from it — every record is filtered by `source` (§7.4).
+- Legally: only **SRD 5.1** (a subset of the PHB, CC-BY) may be published. The other books are for personal use, and every record carries `license: proprietary`.
 
-## 1. Ядро
+## 1. Core
 
-| Книга | Рік | DDB | Що дає листку |
+| Book | Year | DDB | What it gives the sheet |
 |---|---|---|---|
-| **Player's Handbook (PHB)** | 2014 | ✅ | 12 класів, 40 підкласів, 9 рас, 13 передісторій (+5 варіантів = 18), 42 риси, ~360 заклять, спорядження, зброя й броня |
-| **Dungeon Master's Guide (DMG)** | 2014 | ✅ | ~270 магічних предметів; 2 підкласи для «злих» кампаній (Death Domain, Oathbreaker); правила подорожей і нагород |
-| **Monster Manual (MM)** | 2014 | ✅ | для листка — **лише бестії**: дикі форми друїда, `find familiar`, `find steed`, поліморф |
-| **Basic Rules / SRD 5.1** | 2014 | ✅ | безкоштовна підмножина PHB; **єдиний legally чистий шар** для майбутнього публічного режиму |
+| **Player's Handbook (PHB)** | 2014 | ✅ | 12 classes, 40 subclasses, 9 races, 13 backgrounds (+5 variants = 18), 42 feats, ~360 spells, gear, weapons and armor |
+| **Dungeon Master's Guide (DMG)** | 2014 | ✅ | ~270 magic items; 2 subclasses for "evil" campaigns (Death Domain, Oathbreaker); travel and reward rules |
+| **Monster Manual (MM)** | 2014 | ✅ | for the sheet — **beasts only**: druid wild shapes, `find familiar`, `find steed`, polymorph |
+| **Basic Rules / SRD 5.1** | 2014 | ✅ | a free subset of the PHB; **the only legally clean layer** for a future public mode |
 
-## 2. Великі збірки правил і опцій
+## 2. Big collections of rules and options
 
-| Книга | Рік | DDB | Класи/підкласи | Інше для листка |
+| Book | Year | DDB | Classes/subclasses | Other for the sheet |
 |---|---|---|---|---|
-| **Xanathar's Guide to Everything (XGtE)** | 2017 | ✅ | 29 підкласів | 95 заклять, 15 расових рис, інструменти, ~48 предметів |
-| **Tasha's Cauldron of Everything (TCoE)** | 2020 | ✅ | 26 підкласів | 21 закляття, 15 рис, **Optional Class Features** (заміни вмінь — окремий режим рушія), Custom Lineage, сайдкіки, групові патрони |
-| **Mordenkainen Presents: Monsters of the Multiverse (MotM)** | 2022 | ✅ | — | **33 раси/підраси у переглянутих версіях** — фактично «збірка рас»; плюс статблоки |
-| **Fizban's Treasury of Dragons (FToD)** | 2021 | ✅ | 2 (Drakewarden, Ascendant Dragon) | Драконороджені (chromatic/gem/metallic), 7 заклять, 3 риси, ~15 предметів |
-| **Bigby Presents: Glory of the Giants (BGG)** | 2023 | 📄 PDF | 1 (Path of the Giant) | 8 рис, 2 передісторії, **27 предметів**, таблиця Rune Spells. Куплено друковане видання; на DDB не куплено — текст узятий зі скану через OCR (§7.1) |
-| **The Book of Many Things (BMT)** | 2023 | ✅ | — | 3 закляття, 1 риса, 2 передісторії, ~58 предметів |
-| **Elemental Evil Player's Companion (EEPC)** | 2015 | 📄 PDF | — | 4 расові записи (Aarakocra, Deep Gnome, Genasi з 4 підрасами, Goliath) + **43 закляття**. Безкоштовний PDF, узято з текстового шару без OCR (§7.3); **нового контенту нуль** — усе вже є в MotM і PotA/XGtE |
+| **Xanathar's Guide to Everything (XGtE)** | 2017 | ✅ | 29 subclasses | 95 spells, 15 racial feats, tools, ~48 items |
+| **Tasha's Cauldron of Everything (TCoE)** | 2020 | ✅ | 26 subclasses | 21 spells, 15 feats, **Optional Class Features** (feature swaps — a separate engine mode), Custom Lineage, sidekicks, group patrons |
+| **Mordenkainen Presents: Monsters of the Multiverse (MotM)** | 2022 | ✅ | — | **33 races/subraces in revised versions** — effectively a "race collection"; plus stat blocks |
+| **Fizban's Treasury of Dragons (FToD)** | 2021 | ✅ | 2 (Drakewarden, Ascendant Dragon) | Dragonborn (chromatic/gem/metallic), 7 spells, 3 feats, ~15 items |
+| **Bigby Presents: Glory of the Giants (BGG)** | 2023 | 📄 PDF | 1 (Path of the Giant) | 8 feats, 2 backgrounds, **27 items**, the Rune Spells table. The printed edition was bought; not bought on DDB — the text was taken from a scan via OCR (§7.1) |
+| **The Book of Many Things (BMT)** | 2023 | ✅ | — | 3 spells, 1 feat, 2 backgrounds, ~58 items |
+| **Elemental Evil Player's Companion (EEPC)** | 2015 | 📄 PDF | — | 4 race entries (Aarakocra, Deep Gnome, Genasi with 4 subraces, Goliath) + **43 spells**. A free PDF, taken from the text layer without OCR (§7.3); **zero new content** — it's all already in MotM and PotA/XGtE |
 
-## 3. Сетингові книги з playable-опціями
+## 3. Setting books with playable options
 
-| Книга | Сетинг | DDB | Що дає |
+| Book | Setting | DDB | What it gives |
 |---|---|---|---|
-| **Sword Coast Adventurer's Guide (SCAG)** | Forgotten Realms | ✅ | 6 унікальних підкласів (Battlerager, Arcana, Banneret, Long Death, Crown, Undying), фехтувальні кантріпи (Booming Blade, Green-Flame Blade), 13 передісторій, варіанти напівельфів і тифлінгів |
-| **Volo's Guide to Monsters (VGtM)** | FR | ✅ | 12 «монстроподібних» рас: Aasimar, Firbolg, Goliath, Kenku, Lizardfolk, Tabaxi, Triton, Bugbear, Goblin, Hobgoblin, Kobold, Orc, Yuan-ti |
-| **Mordenkainen's Tome of Foes (MToF)** | FR/плани | ✅ | Підраси: Eladrin, Sea Elf, Shadar-kai, Duergar, Svirfneblin; Githyanki/Githzerai; варіанти тифлінгів; 1 риса |
-| **Guildmasters' Guide to Ravnica (GGR)** | Ravnica | ✅ | 5 рас (Centaur, Loxodon, Minotaur, Simic Hybrid, Vedalken), 2 підкласи (Order Domain, Circle of Spores), 10 передісторій гільдій |
-| **Eberron: Rising from the Last War (ERLW)** | Eberron | ✅ | **клас Artificer** (+3 підкласи), 4 раси (Changeling, Kalashtar, Shifter, Warforged), драконячі мітки, 1 передісторія |
-| **Explorer's Guide to Wildemount (EGtW)** | Wildemount | ✅ | 3 підкласи (Echo Knight, Chronurgy, Graviturgy), дунамічні закляття, підраси (Draconblood/Ravenite, Pallid, Lotusden), Hollow One |
-| **Mythic Odysseys of Theros (MOoT)** | Theros | ✅ | 4 раси (Centaur, Leonin, Minotaur, Satyr), 2 підкласи (Oath of Glory, Eloquence), Piety, супернатуральні дари |
-| **Van Richten's Guide to Ravenloft (VRGtR)** | Ravenloft | ✅ | 3 лінійки (Dhampir, Hexblood, Reborn), 2 підкласи (College of Spirits, The Undead), Dark Gifts |
-| **Strixhaven: A Curriculum of Chaos (SCC)** | Strixhaven | ✅ | Раса Owlin, 5 передісторій, 2 риси, 5 заклять |
-| **Spelljammer: Adventures in Space (SAiS)** | Spelljammer | ✅ | 6 рас (Astral Elf, Autognome, Giff, Hadozee, Plasmoid, Thri-kreen) |
-| **Dragonlance: Shadow of the Dragon Queen (SotDQ)** | Dragonlance | 📄 PDF | Раса Kender, підклас Lunar Sorcery, 9 рис (лицарі й маги), 2 передісторії, 9 предметів (§8). Текст — російський фанатський переклад |
-| **Planescape: Adventures in the Multiverse (PS:AitM)** | Planescape | 🌐 | 2 передісторії (Gate Warden, Planar Philosopher), **7 рис**, 2 закляття (warp sense, gate seal), 5 предметів. Дзеркало віддає це двома книгами: *Sigil and the Outlands* (опції) + *Morte's Planar Parade* (54 істоти); пригода «Turn of Fortune's Wheel» листку не потрібна (§7.4) |
-| **Acquisitions Incorporated (AI)** | FR | ✅ | Раса Verdan, 5 передісторій, 7 заклять, правила франшизи |
-| **The Wild Beyond the Witchlight (WBtW)** | Feywild | ✅ | 2 раси (Fairy, Harengon), 2 передісторії (Feylost, Witchlight Hand). *У DDB це «пригода», не сорсбук — але опції розблоковані* |
+| **Sword Coast Adventurer's Guide (SCAG)** | Forgotten Realms | ✅ | 6 unique subclasses (Battlerager, Arcana, Banneret, Long Death, Crown, Undying), blade cantrips (Booming Blade, Green-Flame Blade), 13 backgrounds, half-elf and tiefling variants |
+| **Volo's Guide to Monsters (VGtM)** | FR | ✅ | 12 "monstrous" races: Aasimar, Firbolg, Goliath, Kenku, Lizardfolk, Tabaxi, Triton, Bugbear, Goblin, Hobgoblin, Kobold, Orc, Yuan-ti |
+| **Mordenkainen's Tome of Foes (MToF)** | FR/planes | ✅ | Subraces: Eladrin, Sea Elf, Shadar-kai, Duergar, Svirfneblin; Githyanki/Githzerai; tiefling variants; 1 feat |
+| **Guildmasters' Guide to Ravnica (GGR)** | Ravnica | ✅ | 5 races (Centaur, Loxodon, Minotaur, Simic Hybrid, Vedalken), 2 subclasses (Order Domain, Circle of Spores), 10 guild backgrounds |
+| **Eberron: Rising from the Last War (ERLW)** | Eberron | ✅ | **the Artificer class** (+3 subclasses), 4 races (Changeling, Kalashtar, Shifter, Warforged), dragonmarks, 1 background |
+| **Explorer's Guide to Wildemount (EGtW)** | Wildemount | ✅ | 3 subclasses (Echo Knight, Chronurgy, Graviturgy), dunamancy spells, subraces (Draconblood/Ravenite, Pallid, Lotusden), Hollow One |
+| **Mythic Odysseys of Theros (MOoT)** | Theros | ✅ | 4 races (Centaur, Leonin, Minotaur, Satyr), 2 subclasses (Oath of Glory, Eloquence), Piety, supernatural gifts |
+| **Van Richten's Guide to Ravenloft (VRGtR)** | Ravenloft | ✅ | 3 lineages (Dhampir, Hexblood, Reborn), 2 subclasses (College of Spirits, The Undead), Dark Gifts |
+| **Strixhaven: A Curriculum of Chaos (SCC)** | Strixhaven | ✅ | The Owlin race, 5 backgrounds, 2 feats, 5 spells |
+| **Spelljammer: Adventures in Space (SAiS)** | Spelljammer | ✅ | 6 races (Astral Elf, Autognome, Giff, Hadozee, Plasmoid, Thri-kreen) |
+| **Dragonlance: Shadow of the Dragon Queen (SotDQ)** | Dragonlance | 📄 PDF | The Kender race, the Lunar Sorcery subclass, 9 feats (knights and mages), 2 backgrounds, 9 items (§8). The text is a Russian fan translation |
+| **Planescape: Adventures in the Multiverse (PS:AitM)** | Planescape | 🌐 | 2 backgrounds (Gate Warden, Planar Philosopher), **7 feats**, 2 spells (warp sense, gate seal), 5 items. The mirror serves it as two books: *Sigil and the Outlands* (options) + *Morte's Planar Parade* (54 creatures); the adventure "Turn of Fortune's Wheel" isn't needed by the sheet (§7.4) |
+| **Acquisitions Incorporated (AI)** | FR | ✅ | The Verdan race, 5 backgrounds, 7 spells, franchise rules |
+| **The Wild Beyond the Witchlight (WBtW)** | Feywild | ✅ | 2 races (Fairy, Harengon), 2 backgrounds (Feylost, Witchlight Hand). *On DDB this is an "adventure", not a sourcebook — but the options are unlocked* |
 
-## 4. Пригоди, які теж дали щось для листка
+## 4. Adventures that also gave the sheet something
 
-| Книга | DDB | Що дає |
+| Book | DDB | What it gives |
 |---|---|---|
-| **Curse of Strahd (CoS)** | 🌐 | Передісторія **Haunted One** + 14 предметів (Sunsword, Icon of Ravenloft…), 97 статблоків, Dark Gifts |
-| **Tomb of Annihilation (ToA)** | 🌐 | 2 передісторії (Anthropologist, Archaeologist), 26 предметів, 89 статблоків |
-| **Storm King's Thunder (SKT)** | ✅ | ~17 магічних предметів |
-| **Princes of the Apocalypse (PotA)** | ✅ | предмети |
-| **Out of the Abyss (OotA)** | 🌐 | 103 статблоки (демон-лорди, дуергари, спорові слуги), 16 предметів (Dawnbringer, Piwafwi…); передісторій і рис немає |
-| **Tyranny of Dragons (ToD)** | ✅ | предмети |
-| **Waterdeep: Dragon Heist (WDH)** | ✅ | предмети |
-| **Waterdeep: Dungeon of the Mad Mage (WDMM)** | ✅ | предмети |
-| **Baldur's Gate: Descent into Avernus (BG:DiA)** | 🌐 | **14 передісторій** (13 «Baldur's Gate X» + Faceless), 13 предметів, 53 статблоки, 7 чарів, 4 інфернальні машини + 9 покращень (дод. B) |
-| **Ghosts of Saltmarsh (GoS)** | 🌐 | **4 передісторії** (Fisher, Marine, Shipwright, Smuggler), 6 предметів (дод. B), 9 підрозділів правил кораблів (дод. A), 57 статблоків (дод. C) |
-| **Candlekeep Mysteries (CM)** | ✅ | предмети |
-| **Lost Laboratory of Kwalish (LLoK)** | ✅ | 3 закляття, 8 предметів |
-| **Tales from the Yawning Portal (TftYP)** | ✅ | предмети |
-| **Infernal Machine Rebuild (IMR)** | 🌐 | 26 статблоків (дод. B: Thessalhydra, Thessalkraken, Neo-Otyugh…), 11 предметів і отрут (дод. C: Thessaltoxin, Ruinblade, Infernal Machine of Lum the Mad) |
+| **Curse of Strahd (CoS)** | 🌐 | The **Haunted One** background + 14 items (Sunsword, Icon of Ravenloft…), 97 stat blocks, Dark Gifts |
+| **Tomb of Annihilation (ToA)** | 🌐 | 2 backgrounds (Anthropologist, Archaeologist), 26 items, 89 stat blocks |
+| **Storm King's Thunder (SKT)** | ✅ | ~17 magic items |
+| **Princes of the Apocalypse (PotA)** | ✅ | items |
+| **Out of the Abyss (OotA)** | 🌐 | 103 stat blocks (demon lords, duergar, spore servants), 16 items (Dawnbringer, Piwafwi…); no backgrounds or feats |
+| **Tyranny of Dragons (ToD)** | ✅ | items |
+| **Waterdeep: Dragon Heist (WDH)** | ✅ | items |
+| **Waterdeep: Dungeon of the Mad Mage (WDMM)** | ✅ | items |
+| **Baldur's Gate: Descent into Avernus (BG:DiA)** | 🌐 | **14 backgrounds** (13 "Baldur's Gate X" + Faceless), 13 items, 53 stat blocks, 7 charms, 4 infernal war machines + 9 upgrades (App. B) |
+| **Ghosts of Saltmarsh (GoS)** | 🌐 | **4 backgrounds** (Fisher, Marine, Shipwright, Smuggler), 6 items (App. B), 9 subsections of ship rules (App. A), 57 stat blocks (App. C) |
+| **Candlekeep Mysteries (CM)** | ✅ | items |
+| **Lost Laboratory of Kwalish (LLoK)** | ✅ | 3 spells, 8 items |
+| **Tales from the Yawning Portal (TftYP)** | ✅ | items |
+| **Infernal Machine Rebuild (IMR)** | 🌐 | 26 stat blocks (App. B: Thessalhydra, Thessalkraken, Neo-Otyugh…), 11 items and poisons (App. C: Thessaltoxin, Ruinblade, Infernal Machine of Lum the Mad) |
 
-Решта пригод — Keys from the Golden Vault, Journeys through the Radiant Citadel, Phandelver and Below, Vecna: Eve of Ruin, Quests from the Infinite Staircase, Chains of Asmodeus, Rime of the Frostmaiden і ще десяток дрібних — **тепер завантажені з дзеркала** (§7.4) і дають разом 137 предметів, 3 закляття й 539 статблоків. Розбирати їх останніми: для листка це майже виключно предмети.
+The remaining adventures — Keys from the Golden Vault, Journeys through the Radiant Citadel, Phandelver and Below, Vecna: Eve of Ruin, Quests from the Infinite Staircase, Chains of Asmodeus, Rime of the Frostmaiden and a dozen small ones — **are now downloaded from the mirror** (§7.4) and together give 137 items, 3 spells and 539 stat blocks. Parse them last: for the sheet it's almost exclusively items.
 
-## 5. Безкоштовне, Adventurers League і DMs Guild (офіційне, але поза ядром)
+## 5. Free content, Adventurers League and DMs Guild (official, but outside the core)
 
-| Позиція | DDB | Що дає |
+| Item | DDB | What it gives |
 |---|---|---|
-| **Plane Shift** (Amonkhet, Ixalan, Kaladesh, Zendikar, Dominaria, Innistrad) | 🌐 | безкоштовні PDF: раси, підкласи, іноді риси. На DDB не представлені, але **всі шість завантажено** з дзеркала (`ps-amonkhet`…`ps-dominaria`): 20 видів (+24 підраси), 5 передісторій, 3 риси, 12 підкласів |
-| **The Tortle Package** | ✅ | раса Tortle |
-| **One Grung Above** | ✅ | раса Grung |
-| **Locathah Rising** | 🌐 | раса Locathah — **завантажено** (`lr`, 1 вид + 6 статблоків); на DDB лише окремою пригодою |
-| **Wayfinder's Guide to Eberron** | ✅ | попередник ERLW (раси, 1 риса) — застаріле, але в наявності |
-| **State of Hillsfar** / **Mulmaster Bonds and Backgrounds** / **Curse of Strahd: Optional Backgrounds** | ❌ | AL-матеріали: 7 / 5 / 6 передісторій. **Перевірено: на дзеркалі їх немає** (§11.5) |
-| **Minsc and Boo's Journal of Villainy** | 🌐 | **перевірено:** на дзеркалі є (`MaBJoV`), але дає лише 56 статблоків і 2 предмети — жодного підкласу (DMs Guild) |
-| **Adventure with Muk** (2019, безкоштовне) | 🌐 | вид Goblin (Dankwood) + 11 статблоків; **завантажено** (`awm`) |
-| **Legends of Runeterra: Dark Tides of Bilgewater** | ❌ | предмети (кросовер) |
+| **Plane Shift** (Amonkhet, Ixalan, Kaladesh, Zendikar, Dominaria, Innistrad) | 🌐 | free PDFs: races, subclasses, sometimes feats. Not on DDB, but **all six were downloaded** from the mirror (`ps-amonkhet`…`ps-dominaria`): 20 species (+24 subraces), 5 backgrounds, 3 feats, 12 subclasses |
+| **The Tortle Package** | ✅ | the Tortle race |
+| **One Grung Above** | ✅ | the Grung race |
+| **Locathah Rising** | 🌐 | the Locathah race — **downloaded** (`lr`, 1 species + 6 stat blocks); on DDB only as a separate adventure |
+| **Wayfinder's Guide to Eberron** | ✅ | the ERLW predecessor (races, 1 feat) — outdated, but available |
+| **State of Hillsfar** / **Mulmaster Bonds and Backgrounds** / **Curse of Strahd: Optional Backgrounds** | ❌ | AL material: 7 / 5 / 6 backgrounds. **Checked: they're not on the mirror** (§11.5) |
+| **Minsc and Boo's Journal of Villainy** | 🌐 | **checked:** it's on the mirror (`MaBJoV`), but gives only 56 stat blocks and 2 items — no subclasses (DMs Guild) |
+| **Adventure with Muk** (2019, free) | 🌐 | the Goblin (Dankwood) species + 11 stat blocks; **downloaded** (`awm`) |
+| **Legends of Runeterra: Dark Tides of Bilgewater** | ❌ | items (crossover) |
 
-## 6. Що НЕ беремо
+## 6. What we DON'T take
 
-- **Unearthed Arcana** (✅ у бібліотеці, безкоштовне) — плейтест, замінений офіційними версіями; окремі випадки — тільки як homebrew.
-- **2024 rules (PHB 2024, DMG 2024, MM 2025)** — інша редакція, у нас `edition: 2014`.
-- **Книги без player content**: більшість адвенчур, монстр-компендіуми, сетингові довідники без опцій, Starter/Essentials Sets.
-- **Blood Hunter** — не WotC (Critical Role/DMs Guild); піде як homebrew-контент, не як офіційний.
+- **Unearthed Arcana** (✅ in the library, free) — playtest material superseded by official versions; individual cases only as homebrew.
+- **2024 rules (PHB 2024, DMG 2024, MM 2025)** — a different edition; we're `edition: 2014`.
+- **Books without player content**: most adventures, monster compendiums, setting guides without options, Starter/Essentials Sets.
+- **Blood Hunter** — not WotC (Critical Role/DMs Guild); would come in as homebrew, not as official content.
 
-## 7. Пріоритет для конвеєра і доступність
+## 7. Pipeline priority and availability
 
-| Черга | Книги | Наявність | Навіщо |
+| Queue | Books | Availability | Why |
 |---|---|---|---|
-| **1** | PHB, XGtE, TCoE, SCAG, DMG, FToD, EGtW, AI, BMT | **9/9** ✅ | 90% реальних персонажів: класи, підкласи, закляття, предмети |
-| **1.5** | VGtM, MToF, MotM, GGR, ERLW, MOoT, VRGtR, SCC, SAiS, WBtW, **BGG (PDF)** | **11/11** ✅ | екзотичні раси й сетингові підкласи |
-| **1.5 🌐** | SotDQ, PS:AitM | **2/2** — джерело є | SotDQ з PDF (§8), PS:AitM із дзеркала (§7.4): єдиний підклас поза бібліотекою (Lunar Sorcery) + 7 рис |
-| **2** | MM, Monstrous Compendium 1/2/4, Fiendish Folio, MToF, Misplaced Monsters, Vecna Dossier | **8/8** ✅ | дикі форми, фамільяри, `find steed` |
-| **3** | адвенчури з предметами й передісторіями | **15/15** ✅ | добірка за §4 |
-| **4 🌐** | BG:DiA, GoS, ToA, CoS, PS:AitM | **5/5** — завантажено з дзеркала, не розібрано | 14+4+2+1+2 = 23 передісторії, яких немає більше ніде |
+| **1** | PHB, XGtE, TCoE, SCAG, DMG, FToD, EGtW, AI, BMT | **9/9** ✅ | 90% of real characters: classes, subclasses, spells, items |
+| **1.5** | VGtM, MToF, MotM, GGR, ERLW, MOoT, VRGtR, SCC, SAiS, WBtW, **BGG (PDF)** | **11/11** ✅ | exotic races and setting subclasses |
+| **1.5 🌐** | SotDQ, PS:AitM | **2/2** — source available | SotDQ from PDF (§8), PS:AitM from the mirror (§7.4): the only subclass outside the library (Lunar Sorcery) + 7 feats |
+| **2** | MM, Monstrous Compendium 1/2/4, Fiendish Folio, MToF, Misplaced Monsters, Vecna Dossier | **8/8** ✅ | wild shapes, familiars, `find steed` |
+| **3** | adventures with items and backgrounds | **15/15** ✅ | the selection from §4 |
+| **4 🌐** | BG:DiA, GoS, ToA, CoS, PS:AitM | **5/5** — downloaded from the mirror, not parsed | 14+4+2+1+2 = 23 backgrounds that exist nowhere else |
 
-**EEPC** на DDB окремою книгою не постачається, але є безкоштовним PDF: узято з текстового шару (§7.3). Його Aarakocra/Genasi/Goliath/Svirfneblin уже є в MotM, закляття — у PotA і XGtE, тому втрат не було й до того; тепер є ще й власне джерело з тими самими текстами.
+**EEPC** isn't sold on DDB as a separate book, but it's a free PDF: taken from the text layer (§7.3). Its Aarakocra/Genasi/Goliath/Svirfneblin are already in MotM, the spells in PotA and XGtE, so nothing was lost even before; now there's also a primary source with the same texts.
 
-**Обсяг перекладу:** ~**2.5–3 млн символів** на корпус із 52 книг. 41 тека з дзеркала (§7.4) додасть ще стільки, скільки дасть їхня playable-частина — цифра стане відома після розбору, бо JSON містить і пригодницький текст, який листку не потрібен.
+**Translation volume:** ~**2.5–3 million characters** for the corpus of 52 books. The 41 mirror folders (§7.4) will add as much as their playable part gives — the figure will be known after parsing, because the JSON also contains adventure text that the sheet doesn't need.
 
-### 7.1 Як узято BGG без покупки на DDB
+### 7.1 How BGG was taken without buying it on DDB
 
-Книга є в друкованому вигляді, тому текст узято зі скану (200 сторінок, 300 dpi, **без текстового шару**) власним конвеєром `scripts/pdf/`:
+The book exists in print, so the text was taken from a scan (200 pages, 300 dpi, **no text layer**) with our own pipeline in `scripts/pdf/`:
 
-1. `pdf2md.py` — витягує вбудоване зображення кожної сторінки без перекодування, розпізнає текст (RapidOCR, PP-OCR) і складає сторінки в markdown; порядок читання відновлює рекурсивний XY-cut (`xycut.py`), тож двоколонкові розвороти, бічні врізки й таблиці не перемішуються.
-2. `despace.py` — повертає пробіли, які OCR загубив у щільному наборі (`characterstothe…` → `characters to the…`), користуючись словником із уже наявного корпусу.
-3. `polish.py` — зшиває розірвані слова (`max imum` → `maximum`), виправляє однолітерні помилки (`attuncs` → `attunes`) і прибирає підписи ілюстраторів.
-4. `build_gotg.py` — збирає записи: підклас, передісторії й риси вичитані вручну з тексту сторінок; 27 предметів нарізані за назвами й розібрані на `item_type`/`rarity`/`attunement`.
+1. `pdf2md.py` — extracts each page's embedded image without re-encoding, recognizes the text (RapidOCR, PP-OCR) and assembles the pages into markdown; the reading order is restored by a recursive XY-cut (`xycut.py`), so two-column spreads, sidebars and tables don't get mixed up.
+2. `despace.py` — restores the spaces OCR lost in dense typesetting (`characterstothe…` → `characters to the…`), using a dictionary built from the existing corpus.
+3. `polish.py` — joins broken words (`max imum` → `maximum`), fixes single-letter errors (`attuncs` → `attunes`) and removes illustrator credits.
+4. `build_gotg.py` — assembles the records: the subclass, backgrounds and feats were proofread by hand from the page text; the 27 items are split by name and parsed into `item_type`/`rarity`/`attunement`.
 
-Сирі сторінки лежать у `content/raw/gotg-pdf/{images,ocr,pages}/`, тому будь-який запис можна звірити з зображенням сторінки.
+The raw pages are in `content/raw/gotg-pdf/{images,ocr,pages}/`, so any record can be checked against the page image.
 
-### 7.2 Чим перевірено
+### 7.2 How it was verified
 
-Один OCR — це одна думка, тому кожен запис звірено з незалежним джерелом:
+One OCR is one opinion, so every record was checked against an independent source:
 
-| Що | Проти чого | Результат |
+| What | Against what | Result |
 |---|---|---|
-| **27 предметів** | список предметів книги на [dungeonsports.com](https://www.dungeonsports.com/pricing-by-book/bigby-presents-glory-of-the-giants-item-pricings/) (32 позиції: 26 предметів + 4 фігурки велетенських статуеток) | збіг 1:1; саме так знайшлися два предмети, яких не було в довідниках — **Lucent Destroyer** і **Mistral Mantle** |
-| **Назви й рідкість** | [kobold.wiki](https://kobold.wiki/wondrous-items:wyrmreaver-gauntlets), [dnd5e.wikidot.com](https://dnd5e.wikidot.com/wondrous-items:lash-of-immolation) | «Lash of Immolation» і «Wyrmreaver Gauntlets» — саме так, як у нас (у сторонніх таблицях ці назви з помилками) |
-| **1 підклас, 2 передісторії, 8 рис** | опис книги на [D&D Beyond Marketplace](https://www.dndbeyond.com/marketplace/sourcebooks/bigby-presents-glory-of-the-giants) | «1 new barbarian subclass, 2 backgrounds, 8 feats» — збігається |
-| **Усі тексти (43 записи)** | **другий незалежний OCR** тієї самої книги (скан Internet Archive, 200 сторінок з текстовим шаром) | 37/41 записів повністю пояснюються книгою; 4 — де OCR-джерела гірше за нас; 2 — авторські (таблиця Rune Spells і правило Bonus Feats), перевірені окремо |
-| **Таблиця Rune Spells** | таблиця зі скану | 13 із 13 пар «руна → закляття» збігаються |
-| **Суперечні числа** | зображення сторінки | Elemental Cleaver: у другому OCR «40 ft», на сторінці **60 ft** — у нас 60 |
+| **27 items** | the book's item list on [dungeonsports.com](https://www.dungeonsports.com/pricing-by-book/bigby-presents-glory-of-the-giants-item-pricings/) (32 entries: 26 items + 4 giant figurines) | a 1:1 match; this is exactly how two items missing from the references were found — **Lucent Destroyer** and **Mistral Mantle** |
+| **Names and rarity** | [kobold.wiki](https://kobold.wiki/wondrous-items:wyrmreaver-gauntlets), [dnd5e.wikidot.com](https://dnd5e.wikidot.com/wondrous-items:lash-of-immolation) | "Lash of Immolation" and "Wyrmreaver Gauntlets" — exactly as we have them (third-party tables misspell these names) |
+| **1 subclass, 2 backgrounds, 8 feats** | the book's description on [D&D Beyond Marketplace](https://www.dndbeyond.com/marketplace/sourcebooks/bigby-presents-glory-of-the-giants) | "1 new barbarian subclass, 2 backgrounds, 8 feats" — matches |
+| **All texts (43 records)** | **a second independent OCR** of the same book (an Internet Archive scan, 200 pages with a text layer) | 37/41 records are fully explained by the book; 4 — where the OCR source is worse than ours; 2 — authored by us (the Rune Spells table and the Bonus Feats rule), verified separately |
+| **The Rune Spells table** | the table in the scan | 13 of 13 "rune → spell" pairs match |
+| **Conflicting numbers** | the page image | Elemental Cleaver: the second OCR says "40 ft", the page says **60 ft** — we have 60 |
 
-Перевірка відтворювана: `scripts/pdf/validate_ref.py` (покриття кожного запису), `compare_items.py` (покриття по предметах), `check_rules.py` (таблиця й правило), `sweep_headings.py` (чи не пропущено жодного заголовка). Скани для звірки — `logs/gotg_ref_text.pdf` (другий OCR) і `content/raw/gotg-pdf/images/` (наш).
+The check is reproducible: `scripts/pdf/validate_ref.py` (coverage of every record), `compare_items.py` (coverage per item), `check_rules.py` (the table and the rule), `sweep_headings.py` (whether any heading was missed). Scans for comparison — `logs/gotg_ref_text.pdf` (the second OCR) and `content/raw/gotg-pdf/images/` (ours).
 
-**Що ця звірка змінила в корпусі:** розділ Rune Carver спочатку був реконструйований за уривками — замінено на точний текст книги; у 8 предметів (Crown of the Wrath Bringer, Delver's Claws, Helm of Perfect Potential, Longbow of the Healing Hearth, Prehistoric Figurines, Shield of the Blazing Dreadnought, Orb of Skoraeus, Glowrune Pigment) колонки були переплутані — перезібрано; Adze of Annam і Wayfarer's Boots «з'їдали» сусідній текст (бічну врізку Giant-Crafted Items і предмет Thunderbuss) — обрізано; у правила «Chapter 1» виправлено фразу на книжкову.
+**What this check changed in the corpus:** the Rune Carver section was originally reconstructed from fragments — replaced with the exact book text; in 8 items (Crown of the Wrath Bringer, Delver's Claws, Helm of Perfect Potential, Longbow of the Healing Hearth, Prehistoric Figurines, Shield of the Blazing Dreadnought, Orb of Skoraeus, Glowrune Pigment) the columns were mixed up — rebuilt; Adze of Annam and Wayfarer's Boots "swallowed" neighboring text (the Giant-Crafted Items sidebar and the Thunderbuss item) — trimmed; in the "Chapter 1" rules a phrase was corrected to match the book.
 
-**Межа скоупу:** розділ «Big Heroes, Big Stories» (с. 15–17: Heroes of the Giants, Birthplaces and Hometowns, таблиці Giant Trinkets / Elemental Marks / Underground Quirks / Tall Tales, Primordial Nexus, Sequestered Caverns) у записи **не** переведений — це таблиці натхнення для передісторії, а не правила й не опції; його OCR-текст є в `pages/`.
+**Scope limit:** the "Big Heroes, Big Stories" section (pp. 15–17: Heroes of the Giants, Birthplaces and Hometowns, the Giant Trinkets / Elemental Marks / Underground Quirks / Tall Tales tables, Primordial Nexus, Sequestered Caverns) was **not** turned into records — these are inspiration tables for backstory, neither rules nor options; its OCR text is in `pages/`.
 
-### 7.3 EEPC: безкоштовний PDF зі справжнім текстом
+### 7.3 EEPC: a free PDF with real text
 
-`Elemental Evil Player's Companion` — 25 сторінок, і на відміну від BGG у ньому **є текстовий шар** (85 тис. символів). Тому OCR не потрібен: `scripts/pdf/build_eepc.py` читає текст сторінок напряму.
+`Elemental Evil Player's Companion` is 25 pages, and unlike BGG it **has a text layer** (85k characters). So no OCR is needed: `scripts/pdf/build_eepc.py` reads the page text directly.
 
-Що довелося розв'язати в розборі (це вже не про розпізнавання, а про структуру):
+What had to be solved during parsing (this is no longer about recognition but about structure):
 
-* **Заголовків у текстовому шарі немає** — ні великих літер, ні позначок стилю. Тому назви закляттів беруться з самого списку закляттів книги (розділ «Spell Lists»), а не ззовні: рядок, що збігається з назвою зі списку і за яким іде рядок «Nth-level школа», вважається початком опису.
-* **Блок статистики закляття переноситься на наступний рядок** («Casting Time: 1 reaction, which you take when you take … acid, cold, fire, lightning, or thunder damage»). Тому значення полів склеюються, доки не з'являться всі чотири поля.
-* **Останнє закляття (Whirlwind) упирається в задню обкладинку** з рекламою Neverwinter MMORPG — тіло опису обривається на маркетингових рядках, інакше цей текст потрапляє в запис.
-* М'який перенос (U+00AD) усередині слів прибирається, інакше «Abi-Dalzim's» не шукається.
+* **The text layer has no headings** — no capitals, no style markers. So spell names are taken from the book's own spell list (the "Spell Lists" section), not from outside: a line matching a name from the list and followed by an "Nth-level school" line is treated as the start of a description.
+* **A spell's stat block wraps onto the next line** ("Casting Time: 1 reaction, which you take when you take … acid, cold, fire, lightning, or thunder damage"). So field values are joined until all four fields appear.
+* **The last spell (Whirlwind) runs into the back cover** with an ad for the Neverwinter MMORPG — the description body is cut at the marketing lines, otherwise that text gets into the record.
+* Soft hyphens (U+00AD) inside words are removed, otherwise "Abi-Dalzim's" can't be found.
 
-**Результат:** 8 записів видів (4 расові записи: Aarakocra, Deep Gnome як підраса гнома, Genasi з 4 підрасами, Goliath) + 43 закляття (8 кантріпів + 35 рівневих) + 2 правила. Зовнішня звірка: 43 закляття збігаються з [переліком Elemental Evil](http://memoriasdelabismo.blogspot.com/2015/03/elemental-evil-lista-de-hechizos.html), 25 сторінок і чотири расові опції — з [описом видання](https://www.escapistmagazine.com/download-the-dd-5e-elemental-evil-players-companion-for-free/).
+**Result:** 8 species records (4 race entries: Aarakocra, Deep Gnome as a gnome subrace, Genasi with 4 subraces, Goliath) + 43 spells (8 cantrips + 35 leveled) + 2 rules. External check: the 43 spells match the [Elemental Evil list](http://memoriasdelabismo.blogspot.com/2015/03/elemental-evil-lista-de-hechizos.html), the 25 pages and four race options match the [description of the release](https://www.escapistmagazine.com/download-the-dd-5e-elemental-evil-players-companion-for-free/).
 
-**Чому це нічого не додає до листка:** усі 43 закляття вже є в `pota` і `xgte`, усі раси — у `motm`, `mtof`, `vgtm`, `egtw`. EEPC цінний як **першоджерело**: `validate_eepc.py` звіряє наші записи з передруками (розбіжності 0.85–0.97 — це виправлення errata, а не помилки розбору) і перевіряє структурно: 0 проблем, 0 викидів за довжиною.
+**Why it adds nothing to the sheet:** all 43 spells are already in `pota` and `xgte`, all races in `motm`, `mtof`, `vgtm`, `egtw`. EEPC is valuable as a **primary source**: `validate_eepc.py` compares our records with the reprints (similarity of 0.85–0.97 — these are errata fixes, not parsing errors) and checks them structurally: 0 problems, 0 length outliers.
 
-### 7.4 Дзеркало 5e.tools: JSON замість PDF
+### 7.4 The 5e.tools mirror: JSON instead of PDF
 
-[5e.tools](https://5e.tools/) — неофіційне дзеркало 5e, де ті самі книги розібрані на вузли й лежать як JSON. Для нас це **друге джерело** поруч із D&D Beyond, і воно закриває саме ті книги, яких у бібліотеці немає.
+[5e.tools](https://5e.tools/) is an unofficial 5e mirror where the same books are broken down into nodes and stored as JSON. For us it's a **second source** next to D&D Beyond, and it covers exactly the books that aren't in the library.
 
-**Доступ.** HTML-сторінки без скриптів нічого не віддають (у браузері `adventure.html#bgdia` висить на «Loading…»), тому читати треба `data/…json` — і тільки з браузерним `User-Agent` та `Referer: https://5e.tools/…`, інакше **403**. У цьому середовищі TLS проходить через `urllib`, а `curl` падає з `SEC_E_NO_CREDENTIALS`, тому завантажувач — `scripts/ingest/fetch_5etools.py`:
+**Access.** HTML pages without scripts give nothing (in a browser `adventure.html#bgdia` hangs on "Loading…"), so you have to read `data/…json` — and only with a browser `User-Agent` and `Referer: https://5e.tools/…`, otherwise you get **403**. In this environment TLS works through `urllib`, while `curl` fails with `SEC_E_NO_CREDENTIALS`, so the downloader is `scripts/ingest/fetch_5etools.py`:
 
 ```
 python scripts/ingest/fetch_5etools.py adventure/adventure-toa.json content/raw/toa/adventure-toa.json
 ```
 
-**Будова — два шари.**
+**Structure — two layers.**
 
-1. *Індекси*: `data/books.json` (**68 книг**), `data/adventures.json` (**104 пригоди**) — id, назва, група, дата.
-2. *Текст книги*: `data/book/book-<id>.json` або `data/adventure/adventure-<id>.json` — дерево розділів (`section` → `entries` → текст, `inset`, `table`, `list`), а всередині — теги `{@creature …}`, `{@item …}`, `{@spell …}`, `{@area …|}`, `{@dc 15}`.
+1. *Indexes*: `data/books.json` (**68 books**), `data/adventures.json` (**104 adventures**) — id, name, group, date.
+2. *Book text*: `data/book/book-<id>.json` or `data/adventure/adventure-<id>.json` — a tree of sections (`section` → `entries` → text, `inset`, `table`, `list`), with tags inside: `{@creature …}`, `{@item …}`, `{@spell …}`, `{@area …|}`, `{@dc 15}`.
 
-**Головна пастка:** файл книги **не містить** ні статблоків, ні предметів, ні рис — там лише посилання:
+**The main pitfall:** a book file **contains** no stat blocks, items or feats — only references:
 
 ```json
 {"type": "statblock", "name": "Giant Crab", "tag": "creature", "source": "GoS"}
 ```
 
-Сам текст лежить у тематичних корпусах: `data/bestiary/bestiary-<id>.json`, `data/items.json`, `data/feats.json`, `data/backgrounds.json`, `data/races.json`, `data/spells/spells-<id>.json`. Тому «порахувати, що дає книга» = порахувати посилання й доєднати до них текст із корпусу.
+The text itself lives in topical corpora: `data/bestiary/bestiary-<id>.json`, `data/items.json`, `data/feats.json`, `data/backgrounds.json`, `data/races.json`, `data/spells/spells-<id>.json`. So "count what a book gives" = count the references and join the text from the corpus to them.
 
-**Що завантажено й розібрано (26.11.2026)** — `content/raw/<тека>/`, **41 тека**: файл книги плюс файл статблоків, якщо дзеркало тримає його окремо. Усі 41 розібрано в корпус — `content/compendium/<тека>/` і `content/bestiary/<тека>/` — скриптом `scripts/ingest/mirror5e.py`; реєстр джерел доповнює `scripts/ingest/sync_sources.py` (назва, рік і тип — з каталогу дзеркала, категорії й кількості — з розібраних записів).
+**What was downloaded and parsed (26.11.2026)** — `content/raw/<folder>/`, **41 folders**: the book file plus the stat block file if the mirror keeps it separately. All 41 are parsed into the corpus — `content/compendium/<folder>/` and `content/bestiary/<folder>/` — by `scripts/ingest/mirror5e.py`; the source registry is extended by `scripts/ingest/sync_sources.py` (name, year and type from the mirror's catalog, categories and counts from the parsed records).
 
-| Група | Тек | Види | Передіст. | Риси | Підкл. | Закл. | Предм. | Статбл. | Записів |
+| Group | Folders | Species | Backgr. | Feats | Subcl. | Spells | Items | Stat bl. | Records |
 |---|---|---|---|---|---|---|---|---|---|
-| перша хвиля: BGDIA, ToA, GoS, CoS, OotA, IMR, SatO, MPP | 8 | — | 22 | 7 | — | 2 | 94 | 479 | 604 |
-| **Plane Shift ×6** (PS-A…PS-X) | 6 | **45** (види + підраси) | 5 | 3 | **6** | — | 50 | 168 | 277 |
-| дрібні: AWM, AL, MaBJoV, MGELFT, BAM, LR | 6 | 2 | — | — | — | — | 1 | 151 | 154 |
-| пригоди з предметами (IDRotF, PaBTSO, CoA, QftIS, KftGV, HotDQ, XMtS, JttRC, VEoR, RoT…) | 21 | — | — | — | — | 3 | 137 | 539 | 679 |
-| **разом** | **41** | **47** | **27** | **10** | **6** | **5** | **282** | **1337** | **1714** |
+| first wave: BGDIA, ToA, GoS, CoS, OotA, IMR, SatO, MPP | 8 | — | 22 | 7 | — | 2 | 94 | 479 | 604 |
+| **Plane Shift ×6** (PS-A…PS-X) | 6 | **45** (species + subraces) | 5 | 3 | **6** | — | 50 | 168 | 277 |
+| small: AWM, AL, MaBJoV, MGELFT, BAM, LR | 6 | 2 | — | — | — | — | 1 | 151 | 154 |
+| adventures with items (IDRotF, PaBTSO, CoA, QftIS, KftGV, HotDQ, XMtS, JttRC, VEoR, RoT…) | 21 | — | — | — | — | 3 | 137 | 539 | 679 |
+| **total** | **41** | **47** | **27** | **10** | **6** | **5** | **282** | **1337** | **1714** |
 
-Кількості — з того, що реально лягло в корпус, а не з посилань у тексті книги: у ToA, наприклад, 7 посилань на предмети, а записів предметів — 27. Довідкові корпуси в `_index/`: `books` (68 книг), `adventures` (104), `backgrounds` (175 записів), `feats` (317), `races` (177 + 98 підрас), `items` (2607) + `items-base` (230), `spells` (19 файлів, 1038 заклять), `classes` (23 класи), `optionalfeatures` (233), `magicvariants` (230), `rewards` (315), `bestiary/index` (110 джерел) і `bestiary/` — 7 базових файлів, без яких не розкривається `_copy` (див. пастки).
+Counts come from what actually landed in the corpus, not from references in the book text: ToA, for example, has 7 item references but 27 item records. Reference corpora in `_index/`: `books` (68 books), `adventures` (104), `backgrounds` (175 records), `feats` (317), `races` (177 + 98 subraces), `items` (2607) + `items-base` (230), `spells` (19 files, 1038 spells), `classes` (23 classes), `optionalfeatures` (233), `magicvariants` (230), `rewards` (315), `bestiary/index` (110 sources) and `bestiary/` — 7 base files without which `_copy` can't be resolved (see the pitfalls).
 
-**Друга знахідка — підкласи.** Дзеркало тримає підкласи ВСІХ книг, зокрема тих, що в нас давно в корпусі, але без підкласів: DDB-сторінки їх не віддавали, тому на 52 книги було **2** підкласи. `mirror5e.py --subclasses` дозаповнив їх для 8 книг: **PHB 40, XGE 31, TCE 30, SCAG 6, EGW 3, DMG 2, FTD 2, VRGtR 2 — разом 116**. Тепер у корпусі 124 підкласи, і білдер персонажа може піднімати рівень.
+**The second find — subclasses.** The mirror keeps the subclasses of ALL books, including those long in our corpus but without subclasses: DDB pages didn't serve them, so across 52 books there were **2** subclasses. `mirror5e.py --subclasses` filled them in for 8 books: **PHB 40, XGE 31, TCE 30, SCAG 6, EGW 3, DMG 2, FTD 2, VRGtR 2 — 116 in total**. The corpus now has 124 subclasses, and the character builder can level up.
 
-**Третя знахідка — опційні вміння.** Це invocations, maneuvers, metamagic, fighting styles, infusions, runes, arcane shots, pact boons: те, що персонаж вибирає **всередині** вміння класу, а не як рису. Дзеркало тримає всі 233 одним покажчиком (`_index/mirror-optionalfeatures.json`), а не в теці книги — бо те саме вміння буває в кількох книгах і класах. Спершу для них не було категорії в контракті; тепер є (`optionalfeature`), і `mirror5e.py --optionalfeatures` додав **151 запис** до трьох книг: **PHB 82 (32 інвокації, 17 стихійних дисциплін, 16 маневрів, 8 метамагії, 16 бойових стилів, 3 пакти), TCE 47 (16 інфузій артифіцера, 8 інвокацій, 7 маневрів, 6 рун, 11 бойових стилів, 2 метамагії, 1 пакт), XGE 22 (14 інвокацій, 8 аркан-стріл)**. Решту 82 записів дзеркала не взято свідомо: це лінійка 2024 (`XPHB` 58, `WoW` 12, `AU` 8, `EFA` 4).
+**The third find — optional features.** These are invocations, maneuvers, metamagic, fighting styles, infusions, runes, arcane shots, pact boons: what a character chooses **inside** a class feature, not as a feat. The mirror keeps all 233 in one index (`_index/mirror-optionalfeatures.json`), not in a book folder — because the same feature appears in several books and classes. At first the contract had no category for them; now it does (`optionalfeature`), and `mirror5e.py --optionalfeatures` added **151 records** to three books: **PHB 82 (32 invocations, 17 elemental disciplines, 16 maneuvers, 8 metamagic, 16 fighting styles, 3 pacts), TCE 47 (16 artificer infusions, 8 invocations, 7 maneuvers, 6 runes, 11 fighting styles, 2 metamagic, 1 pact), XGE 22 (14 invocations, 8 arcane shots)**. The mirror's other 82 records were deliberately left out: they're the 2024 line (`XPHB` 58, `WoW` 12, `AU` 8, `EFA` 4).
 
-Разом дзеркало дало **1714 записів** (27 передісторій, 10 рис, 47 видів, 6 підкласів, 5 заклять, 282 предмети, 1337 статблоків) плюс 116 підкласів і 151 опційне вміння до наявних книг. Корпус виріс із **5558** до **7423 записів** (3818 довідник + 3605 бестіарій); у реєстрі 93 джерела, з них 92 мають записи (у `al` сутностей немає).
+In total the mirror gave **1714 records** (27 backgrounds, 10 feats, 47 species, 6 subclasses, 5 spells, 282 items, 1337 stat blocks) plus 116 subclasses and 151 optional features for existing books. The corpus grew from **5558** to **7423 records** (3818 compendium + 3605 bestiary); the registry has 93 sources, 92 of them with records (`al` has no entities).
 
-**Чого на дзеркалі немає або що свідомо не беремо.** Лишились тільки:
+**What the mirror doesn't have or what we deliberately don't take.** Only these remain:
 
-* **AAG** (Astral Adventurer's Guide) — 20 «предметів» у дзеркалі, але це кораблі й хелми (`Spelljamming Helm`, `Nautiloid`, `Bombard`), тобто транспорт, а не спорядження листка; сама книга в нас є з DDB (`sais`).
-* **HAT-LMI** (Honor Among Thieves: Legendary Magic Items) і **EET** — записи в `items.json` є (5 і 1 предмет), але окремого файлу книги дзеркало не має; брати нічого, крім самих записів.
-* **UATheMysticClass** — підкласи містика з Unearthed Arcana; сам UA у нас розібраний як `rule` (§8).
-* бестіарні й пригоди без playable-контенту: DIP, SLW, OoW, RtG, ToFW, KKW, HoL, GotSF, DoSI, HAT-TG, AATM, NRH-*, AitFR-ISF/DN/FCD — лише статблоки й текст пригоди, листку нічого не дають.
+* **AAG** (Astral Adventurer's Guide) — 20 "items" in the mirror, but they're ships and helms (`Spelljamming Helm`, `Nautiloid`, `Bombard`), i.e. vehicles, not sheet gear; the book itself we have from DDB (`sais`).
+* **HAT-LMI** (Honor Among Thieves: Legendary Magic Items) and **EET** — there are records in `items.json` (5 and 1 item), but the mirror has no separate book file; there's nothing to take beyond the records themselves.
+* **UATheMysticClass** — mystic subclasses from Unearthed Arcana; UA itself is parsed by us as `rule` (§8).
+* bestiaries and adventures without playable content: DIP, SLW, OoW, RtG, ToFW, KKW, HoL, GotSF, DoSI, HAT-TG, AATM, NRH-*, AitFR-ISF/DN/FCD — only stat blocks and adventure text, nothing for the sheet.
 
-**Пастки:**
+**Pitfalls:**
 
-* **id не збігаються з нашими**: `FTD`→`ftod`, `MPMM`→`motm`, `DSotDQ`→`sotdq`, `AIS`→`sais`, `PS-Z`…`PS-D` — це `ps-zendikar`…`ps-dominaria`, а в записах корпусів ті самі книги звуться `PSZ`…`PSD`. Звіряти за `id` + `name`, а не за назвою каталогу, інакше «104 пригоди проти 52 книг» дає фальшиві прогалини.
-* **Дзеркало змішує лінійки**: `XPHB` (2024: 77 рис, 16 передісторій), `FRHoF`, `EFA`, `RHW`, `AU`, `PL`, `WoW` — інша редакція; кожен запис фільтрується за `source`.
-* **Це неофіційне дзеркало**, тому `license` у нас лишається `proprietary`, а книгу треба звірити з офіційним описом (як зроблено для BGG у §7.2).
-* **Посилання ≠ текст**: у GoS частина істот іде тегом у тексті, а не `statblock`-вузлом, тому «скільки монстрів у книзі» з посилань не видно — тільки з `bestiary-<id>.json`.
-* **Посилання ≠ кількість записів**: у файлі ToA 7 посилань на предмети, а в `items.json` з `source: ToA` — 26 записів (решта — варіанти й таблиці). Тому лічильники тут із корпусів, а не з книги.
-* **`items.json` розгортає варіанти**: `Wand of the War Mage` у дзеркалі — три записи (`+1`, `+2`, `+3`), а в нашому корпусі з DDB — один «+1, +2, or +3». Через це наївний диф показує «260 предметів DMG бракує», хоча це та сама позиція в іншій формі.
-* **Дужки в назвах — не шум**: `Goblin (Dankwood)` і `Goblin` — різні види з різних книг; порівняння з відкиданням дужок дає фальшиві збіги.
-* **`_copy` — це посилання, а не текст.** «Ammit» у Plane Shift: Amonkhet — не статблок, а `{"_copy": {"name": "Giant Crocodile", "source": "MM"}}` із заміною слова; так само 566 посилань на Monster Manual, 14 на Volo's, по кілька на CoS, PaBTSO, BAM, VRGR, MPMM, SKT, LLK. Без базових файлів з 24 статблоків Amonkhet лишалось 3. Тому в `content/raw/_index/bestiary/` лежать `bestiary-mm/vgm/mtf/mpmm/vrgr/skt/llk.json` (їх тягне `fetch_5etools.py`), а `mirror5e.resolve_copy` розкриває ланцюжок і застосовує `_mod` (`replaceTxt` із `flags: i`, `appendArr`, `replaceArr`, `removeArr`).
-* **Регістр у назвах нестабільний**: у Monster Manual істота зветься `Kuo-Toa`, а посилаються на `kuo-toa`; покажчик для `_copy` тому складається з назвою в `casefold`.
-* **Два синтаксиси тегів**: `{@item …}` і `{#itemEntry Grenade|DMG}`; тег може стояти всередині іншого тега (`{@item X|CoA|… {@note …}}`), тому `inline()` робить до чотирьох проходів, поки рядок не перестане мінятися.
-* **Третя частина тега — не завжди показ**: `{@item name|source|показ}` — показ, а `{@adventure Chain Lightning|IDRotF|17|Chain Lightning}` — четверта; `{@quickref Cover||3||three-quarters cover}` — остання. Без цього в текст потрапляло «See 21 for different kinds of magen».
-* **`hp.special` замість `hp.average`**: AWM тримає хіти рядком (`{"special": "58"}`), ToA — з припискою («127 (17d8 + 51) reduced to 107…»), а Meeseeks (RMBRE) — «—(immune to damage)», тобто числа немає взагалі. Перше число береться, а випадок без числа записується в `notes`, і тест його пропускає.
-* **Підклас у дзеркалі двічі**: те саме вміння є з `classSource: PHB` (редакція 2014) і з `classSource: XPHB` (2024, інший текст умінь). Беремо лише 2014 — інакше в корпус потрапляють уміння 3-го рівня замість 1-го.
-* **Таблиця всередині пункту списку**: у Sword of Zariel чотири таблиці лежать усередині одного пункту `list-hang`; якщо стискати пункт у рядок, таблиці злипаються в один рядок із `|`.
-* **50 «предметів» PS-Ixalan — це арт-об'єкти** з таблиць скарбів (`type: $A`, без опису). Вони внесені як `item_type: art object` із ціною, але листку не потрібні — це скарб, не спорядження.
+* **The ids don't match ours**: `FTD`→`ftod`, `MPMM`→`motm`, `DSotDQ`→`sotdq`, `AIS`→`sais`, `PS-Z`…`PS-D` are `ps-zendikar`…`ps-dominaria`, while in the corpus records the same books are called `PSZ`…`PSD`. Compare by `id` + `name`, not by catalog name, otherwise "104 adventures vs 52 books" produces false gaps.
+* **The mirror mixes lines**: `XPHB` (2024: 77 feats, 16 backgrounds), `FRHoF`, `EFA`, `RHW`, `AU`, `PL`, `WoW` are a different edition; every record is filtered by `source`.
+* **It's an unofficial mirror**, so our `license` stays `proprietary`, and the book has to be checked against an official description (as was done for BGG in §7.2).
+* **A reference ≠ text**: in GoS some creatures appear as a tag in the text rather than a `statblock` node, so "how many monsters the book has" can't be seen from references — only from `bestiary-<id>.json`.
+* **A reference ≠ the number of records**: the ToA file has 7 item references, while `items.json` has 26 records with `source: ToA` (the rest are variants and tables). So the counters here come from the corpora, not from the book.
+* **`items.json` expands variants**: `Wand of the War Mage` in the mirror is three records (`+1`, `+2`, `+3`), while our DDB corpus has one "+1, +2, or +3". Because of this a naive diff shows "260 DMG items missing", though it's the same entry in a different form.
+* **Parentheses in names aren't noise**: `Goblin (Dankwood)` and `Goblin` are different species from different books; comparing with the parentheses stripped gives false matches.
+* **`_copy` is a reference, not text.** "Ammit" in Plane Shift: Amonkhet isn't a stat block but `{"_copy": {"name": "Giant Crocodile", "source": "MM"}}` with a word replacement; likewise 566 references to the Monster Manual, 14 to Volo's, a few each to CoS, PaBTSO, BAM, VRGR, MPMM, SKT, LLK. Without the base files only 3 of Amonkhet's 24 stat blocks were left. So `content/raw/_index/bestiary/` holds `bestiary-mm/vgm/mtf/mpmm/vrgr/skt/llk.json` (fetched by `fetch_5etools.py`), and `mirror5e.resolve_copy` resolves the chain and applies `_mod` (`replaceTxt` with `flags: i`, `appendArr`, `replaceArr`, `removeArr`).
+* **Case in names is unstable**: in the Monster Manual the creature is called `Kuo-Toa`, but references use `kuo-toa`; so the `_copy` index is built with `casefold` names.
+* **Two tag syntaxes**: `{@item …}` and `{#itemEntry Grenade|DMG}`; a tag can sit inside another tag (`{@item X|CoA|… {@note …}}`), so `inline()` makes up to four passes until the string stops changing.
+* **The third part of a tag isn't always the display text**: in `{@item name|source|display}` it is, but in `{@adventure Chain Lightning|IDRotF|17|Chain Lightning}` it's the fourth; in `{@quickref Cover||3||three-quarters cover}` — the last one. Without this the text got "See 21 for different kinds of magen".
+* **`hp.special` instead of `hp.average`**: AWM keeps hit points as a string (`{"special": "58"}`), ToA with a note ("127 (17d8 + 51) reduced to 107…"), and Meeseeks (RMBRE) as "—(immune to damage)", i.e. no number at all. The first number is taken, and the no-number case is written to `notes`, which the test skips.
+* **A subclass appears twice in the mirror**: the same feature exists with `classSource: PHB` (the 2014 edition) and with `classSource: XPHB` (2024, different feature text). We take only 2014 — otherwise level-3 features get into the corpus instead of level-1 ones.
+* **A table inside a list item**: in Sword of Zariel four tables sit inside one `list-hang` item; if the item is squashed into a string, the tables merge into one line with `|`.
+* **The 50 "items" of PS-Ixalan are art objects** from treasure tables (`type: $A`, no description). They're recorded as `item_type: art object` with a price, but the sheet doesn't need them — it's treasure, not gear.
 
 
-## 8. Стан конвеєра
+## 8. Pipeline status
 
-Заповнюється за фактичним вмістом `content/`. «Стор.» — сторінок книги на диску, «Довідник» — записів у `content/compendium/<книга>/` (те, з чого збирається лист персонажа), «Бест.» — статблоків у `content/bestiary/<книга>/`. Монстри живуть окремим корпусом: разом це 7423 записи, але листок читає лише довідник. Обидва корпуси проходять валідацію проти JSON Schema. Переклад і вичитка ще не почати (див. §13).
+Filled in from the actual contents of `content/`. "Pages" — book pages on disk, "Compendium" — records in `content/compendium/<book>/` (what the character sheet is built from), "Best." — stat blocks in `content/bestiary/<book>/`. Monsters live in a separate corpus: together that's 7423 records, but the sheet reads only the compendium. Both corpora are validated against a JSON Schema. Translation and proofreading haven't started yet (see §13).
 
-Усі **52 книги** (33 сорсбуки + 15 пригод з бібліотеки + безкоштовний Rick and Morty + BGG, EEPC і SotDQ з PDF) завантажені повністю: **678 сторінок з DDB + 225 сторінок з PDF**, **5558 записів (3290 довідник + 2268 бестіарій)**, 0 помилок валідації. Таблиця нижче — саме ці 52 книги; окремо від них у корпусі лежить **41 тека з дзеркала** (1714 записів, §7.4). Кожен запис — у канонічному форматі своєї категорії (див. [format.md](format.md)): однакові поля, однакові ключі `data` в однаковому порядку, однаковий скелет тексту.
+All **52 books** (33 sourcebooks + 15 adventures from the library + the free Rick and Morty + BGG, EEPC and SotDQ from PDF) are fully downloaded: **678 pages from DDB + 225 pages from PDF**, **5558 records (3290 compendium + 2268 bestiary)**, 0 validation errors. The table below covers exactly these 52 books; separately the corpus holds **41 folders from the mirror** (1714 records, §7.4). Every record is in the canonical format of its category (see [format.md](format.md)): the same fields, the same `data` keys in the same order, the same text skeleton.
 
-**Окремо — 41 тека, розібрана з дзеркала** (§7.4): 1714 записів, з них 1337 статблоків. Вони не входять у таблицю нижче (вона про 52 книги бібліотеки) і додані до загальних чисел. Крім того, до книг бібліотеки дзеркало доложило **116 підкласів** і **151 опційне вміння** (`--subclasses`, `--optionalfeatures`). Разом — **7423 записи** у двох корпусах.
+**Separately — the 41 folders parsed from the mirror** (§7.4): 1714 records, 1337 of them stat blocks. They aren't in the table below (it's about the 52 library books) and are added to the overall numbers. On top of that, the mirror added **116 subclasses** and **151 optional features** to the library books (`--subclasses`, `--optionalfeatures`). In total — **7423 records** in two corpora.
 
-| Книга | Стор. | Довідник | Бест. | Предм. | Закл. | Правила | Види | Риси | Передіст. | Класи / підкл. / опц. |
+| Book | Pages | Compendium | Best. | Items | Spells | Rules | Species | Feats | Backgr. | Classes / subcl. / opt. |
 |---|---|---|---|---|---|---|---|---|---|---|
 | PHB | 39 | 802 | 31 | 215 | 361 | 19 | 18 | 42 | 13 | 12 / 40 / 82 |
-| DMG | 24 | 301 | 2 | 274 | — | 25 | — | — | — | 2 підкл. |
+| DMG | 24 | 301 | 2 | 274 | — | 25 | — | — | — | 2 subcl. |
 | MM | 30 | 30 | 428 | — | — | 30 | — | — | — | — |
 | Basic Rules | 46 | 769 | 316 | 420 | 304 | 23 | 16 | — | 6 | — |
 | Sage Advice | 1 | 13 | — | — | — | 13 | — | — | — | — |
-| XGtE | 14 | 224 | — | 48 | 95 | 13 | — | 15 | — | 31 підкл. / 22 |
-| TCoE | 22 | 182 | 17 | 47 | 21 | 10 | — | 15 | — | 12 + 30 підкл. / 47 |
-| SCAG | 8 | 26 | — | — | — | 8 | — | — | 12 | 6 підкл. |
-| FToD | 12 | 37 | 73 | 13 | 7 | 12 | 3 | — | — | 2 підкл. |
-| EGtW | 24 | 101 | 29 | 48 | 15 | 24 | 9 | — | 2 | 3 підкл. |
+| XGtE | 14 | 224 | — | 48 | 95 | 13 | — | 15 | — | 31 subcl. / 22 |
+| TCoE | 22 | 182 | 17 | 47 | 21 | 10 | — | 15 | — | 12 + 30 subcl. / 47 |
+| SCAG | 8 | 26 | — | — | — | 8 | — | — | 12 | 6 subcl. |
+| FToD | 12 | 37 | 73 | 13 | 7 | 12 | 3 | — | — | 2 subcl. |
+| EGtW | 24 | 101 | 29 | 48 | 15 | 24 | 9 | — | 2 | 3 subcl. |
 | AI | 16 | 30 | 21 | 7 | 7 | 15 | 1 | — | — | — |
 | VGtM | 8 | 21 | 123 | — | — | 8 | 13 | — | — | — |
 | MToF | 9 | 15 | 139 | — | — | 9 | 6 | — | — | — |
@@ -253,7 +253,7 @@ python scripts/ingest/fetch_5etools.py adventure/adventure-toa.json content/raw/
 | GGR | 20 | 36 | 78 | — | — | 20 | 6 | — | 10 | — |
 | ERLW | 16 | 51 | 36 | 25 | 1 | 16 | 8 | — | 1 | — |
 | MOoT | 9 | 28 | 49 | 13 | — | 9 | 5 | — | 1 | — |
-| VRGtR | 33 | 41 | 36 | 1 | — | 33 | 3 | — | 2 | 2 підкл. |
+| VRGtR | 33 | 41 | 36 | 1 | — | 33 | 3 | — | 2 | 2 subcl. |
 | SCC | 20 | 28 | 45 | — | — | 19 | 1 | 3 | 5 | — |
 | SAiS | 22 | 31 | 73 | 1 | — | 22 | 6 | — | 2 | — |
 | BMT | 23 | 31 | 29 | 6 | — | 23 | — | — | 2 | — |
@@ -286,200 +286,200 @@ python scripts/ingest/fetch_5etools.py adventure/adventure-toa.json content/raw/
 | Vecna Dossier | 1 | 1 | 1 | — | — | 1 | — | — | — | — |
 | Humblewood | 18 | 56 | 45 | 7 | — | 17 | 22 | 7 | 3 | — |
 | **BGG (PDF, OCR)** | 200 | 43 | — | 27 | — | 5 | — | 8 | 2 | — |
-| **EEPC (PDF, текст)** | 25 | 53 | — | — | 43 | 2 | 8 | — | — | — |
+| **EEPC (PDF, text)** | 25 | 53 | — | — | 43 | 2 | 8 | — | — | — |
 | **SotDQ (PDF, ru)** | 205 | 27 | 22 | 9 | — | 5 | 1 | 9 | 2 | — |
-| **Разом (52 книги)** | **1108** | **3441** | **2268** | **1280** | **900** | **636** | **167** | **99** | **66** | **24 класи / 118 підкл. / 151 опц.** |
+| **Total (52 books)** | **1108** | **3441** | **2268** | **1280** | **900** | **636** | **167** | **99** | **66** | **24 classes / 118 subcl. / 151 opt.** |
 
-SotDQ внесено з PDF російського фанатського перекладу (205 с., справжній текстовий шар, без OCR): 27 записів довідника + 22 статблоки. Текст записів — як у книзі, російською; структуровані значення data перекладено в канонічний словник корпусу. Розділи пригоди (2-7) не розбиралися: для листка вони не потрібні, а текст лишається в content/raw/sotdq/pages/.
+SotDQ was added from the PDF of a Russian fan translation (205 pp., a real text layer, no OCR): 27 compendium records + 22 stat blocks. The record text is as in the book, in Russian; the structured `data` values were translated into the corpus's canonical vocabulary. The adventure chapters (2–7) weren't parsed: the sheet doesn't need them, and the text stays in `content/raw/sotdq/pages/`.
 
-Що стоїть за числами:
+What's behind the numbers:
 
-* **Монстри — окремий корпус** `content/bestiary/`, а не частина компендіуму: лист персонажа їх не читає, а 2268 статблоків роздували б те, з чого листок збирається. Формат запису той самий (схема й контракт спільні), тому читач теж спільний; межу тримають `corpora` у `contract/compendium-format.json` і тест, який падає, якщо монстр повернеться в компендіум.
-* **Монстрів стало 2268, а не 1596, і це не «нові книги», а розбір тих самих сторінок.** У Basic Rules, Mordenkainen's Tome, Volo's, Monstrous Compendium і додатках назва статблока стоїть звичайним абзацом (`Aboleth`), а не заголовком markdown; старий розпізнавач бачив лише заголовки, тому 24 сторінки Basic Rules злипалися в 24 записи «Monster Stat Blocks», у кожному — десятки істот. Тепер статблок починається там, де короткий рядок-назва стоїть перед рядком типу істоти. Заодно виправлено: вертикальну таблицю характеристик (у частини книг `STR` і `16 (+3)` — окремі абзаци), «Skills` + `History` без пробілу, тип істоти без вирівнювання (`Small fey`) і XP із пробілом у числі (`(20 ,000 XP)`).
-* **Монстри й лор більше не змішані.** На сторінках MToF/VGtM статблоки займають ~3/4 тексту, решта — лор про групу істот. Раніше сторінка вважалася «тільки сутностями» і лор зникав; тепер сторінковий запис лишається з тим текстом, що не став сутністю (без дублювання статблоків).
-* **Предмети — це два різні шари в одній категорії.** Магічні предмети (рядок рідкості «Wondrous item, rare») і звичайне спорядження з таблиць PHB (зброя, броня, крам, інструменти). У записі їх різнить `data.item_type` (`wondrous item`, `weapon`, `armor`, `gear`, `tool`, `mount`, `trade_good`, …) і `data.magical`.
-* **Класи — 24 записи рівня сторінки** (було 27: записи «Classes» — це сторінки-розділи, вони переїхали в `rule`). **Підкласи добрано з дзеркала** (§7.4): 118 записів у 52 книгах, кожен — вступ плюс уміння за рівнями («## Dread Ambusher · *3rd-level Ranger feature*»). **Опційні вміння — теж із дзеркала**: 151 запис у PHB, XGE і TCE (§7.4), категорія `optionalfeature` з полями `feature_type` (група) і `prerequisite` (рівень, пакт, потрібне закляття). Уміння самих класів (не підкласів) іще не розібрані як окремі записи — вони лежали й лежать текстом у записах класу.
-* **Sage Advice** — це не 12 рис, а 13 `rule`: кожен запис — питання-відповідь про рису (текст починається заголовком-питанням), тому категорія «риси» була неправильною.
-* **Unearthed Arcana** — 26 сторінок суцільно тексту (playtest-статті), тому всі записи в категорії `rule`.
-* **Humblewood** — третя сторона; у реєстрі позначена `license: third_party`, вмикати її в застосунку треба окремим прапорцем.
+* **Monsters are a separate corpus** `content/bestiary/`, not part of the compendium: the character sheet doesn't read them, and 2268 stat blocks would bloat what the sheet is built from. The record format is the same (shared schema and contract), so the reader is shared too; the boundary is held by `corpora` in `contract/compendium-format.json` and a test that fails if a monster comes back into the compendium.
+* **There are 2268 monsters, not 1596, and that's not "new books" but parsing of the same pages.** In the Basic Rules, Mordenkainen's Tome, Volo's, Monstrous Compendium and supplements the stat block name is a plain paragraph (`Aboleth`), not a markdown heading; the old recognizer only saw headings, so the 24 Basic Rules pages merged into 24 "Monster Stat Blocks" records, each with dozens of creatures. Now a stat block starts where a short name line comes before a creature type line. Also fixed along the way: the vertical ability table (in some books `STR` and `16 (+3)` are separate paragraphs), `Skills` + `History` without a space, a creature type without capitalization (`Small fey`) and XP with a space inside the number (`(20 ,000 XP)`).
+* **Monsters and lore are no longer mixed.** On MToF/VGtM pages stat blocks take ~3/4 of the text, the rest is lore about a group of creatures. Previously the page was treated as "entities only" and the lore disappeared; now the page record keeps the text that didn't become an entity (without duplicating stat blocks).
+* **Items are two different layers in one category.** Magic items (the "Wondrous item, rare" line) and ordinary gear from the PHB tables (weapons, armor, adventuring gear, tools). In a record they're distinguished by `data.item_type` (`wondrous item`, `weapon`, `armor`, `gear`, `tool`, `mount`, `trade_good`, …) and `data.magical`.
+* **Classes — 24 page-level records** (there were 27: the "Classes" records are section pages, they moved to `rule`). **Subclasses were filled in from the mirror** (§7.4): 118 records across 52 books, each an introduction plus features by level ("## Dread Ambusher · *3rd-level Ranger feature*"). **Optional features also come from the mirror**: 151 records in PHB, XGE and TCE (§7.4), the `optionalfeature` category with the fields `feature_type` (group) and `prerequisite` (level, pact, required spell). The features of the classes themselves (not subclasses) aren't parsed as separate records yet — they were and still are text inside the class records.
+* **Sage Advice** isn't 12 feats but 13 `rule` records: each is a question and answer about a feat (the text starts with a question heading), so the "feats" category was wrong.
+* **Unearthed Arcana** — 26 pages of solid text (playtest articles), so all records are in the `rule` category.
+* **Humblewood** is third-party; in the registry it's marked `license: third_party`, and enabling it in the app needs a separate flag.
 
-## 9. Що є в бібліотеці D&D Beyond, але відсутнє в §1–5
+## 9. What's in the D&D Beyond library but missing from §1–5
 
-| Позиція | Тип | Що це | Рішення |
+| Item | Type | What it is | Decision |
 |---|---|---|---|
-| **Sage Advice Compendium (2014)** | правила | офіційні роз'яснення й еррата | **увійшло** (13 записів): не контент, а джерело трактувань для рушія |
-| **Domains of Delight: A Feywild Accessory** | аксесуар (free) | фейвайлд-домени, монстри | **увійшло** |
-| **Humblewood Campaign Setting** | **третя сторона** (Hit Point Press) | сетинг із власними расами | **увійшло** з `license: third_party`; вмикати окремим прапорцем |
-| **Misplaced Monsters: Volume One** | free | монстри | **увійшло** (6 монстрів) |
-| **Monstrous Compendium Vol. 1 / 2 / 4** | free | монстри (Spelljammer, Dragonlance, Eldraine) | **увійшло** (39 монстрів) |
-| **Mordenkainen's Fiendish Folio Vol. 1** | free | монстри | **увійшло** (16) |
-| **The Vecna Dossier** | free | статблок Векни | **увійшло** |
-| **Unearthed Arcana** | playtest | 26 статей | **увійшло** як `rule` |
-| **The Tortle Package / One Grung Above** | аксесуар | раси Tortle і Grung | **увійшло** |
-| **Wayfinder's Guide to Eberron** | сорсбук | попередник ERLW | **увійшло** (застаріле, 3 види) |
-| **Critical Role: Call of the Netherdeep** | пригода | предмети | **увійшло** |
-| **Frozen Sick, Lightning Keep, Prisoner 13, Rrakkma, Lost Mine of Phandelver** | безкоштовні пригоди | дрібні предмети, стартовий набір | **увійшло** |
-| **Dungeons & Dragons vs. Rick and Morty** | безкоштовний бокс | спрощені правила (6 сторінок) | **увійшло** як `rule` |
+| **Sage Advice Compendium (2014)** | rules | official clarifications and errata | **included** (13 records): not content, but a source of rulings for the engine |
+| **Domains of Delight: A Feywild Accessory** | accessory (free) | Feywild domains, monsters | **included** |
+| **Humblewood Campaign Setting** | **third-party** (Hit Point Press) | a setting with its own races | **included** with `license: third_party`; enabled by a separate flag |
+| **Misplaced Monsters: Volume One** | free | monsters | **included** (6 monsters) |
+| **Monstrous Compendium Vol. 1 / 2 / 4** | free | monsters (Spelljammer, Dragonlance, Eldraine) | **included** (39 monsters) |
+| **Mordenkainen's Fiendish Folio Vol. 1** | free | monsters | **included** (16) |
+| **The Vecna Dossier** | free | Vecna's stat block | **included** |
+| **Unearthed Arcana** | playtest | 26 articles | **included** as `rule` |
+| **The Tortle Package / One Grung Above** | accessory | the Tortle and Grung races | **included** |
+| **Wayfinder's Guide to Eberron** | sourcebook | the ERLW predecessor | **included** (outdated, 3 species) |
+| **Critical Role: Call of the Netherdeep** | adventure | items | **included** |
+| **Frozen Sick, Lightning Keep, Prisoner 13, Rrakkma, Lost Mine of Phandelver** | free adventures | small items, the starter set | **included** |
+| **Dungeons & Dragons vs. Rick and Morty** | free box | simplified rules (6 pages) | **included** as `rule` |
 
-### 9.1 Безкоштовне, яке вже не взяти (перевірено 25.11.2026)
+### 9.1 Free content that can no longer be claimed (checked 25.11.2026)
 
-Каталог D&D Beyond показує ці позиції як безкоштовні, і вони навіть виглядають «у бібліотеці» у фільтрі `ownership=all`. Насправді контенту в акаунті немає: кожна відкриває або claim-сторінку з написом **«This promotion is no longer available»**, або сторінку маркетплейсу з ціною. Завантажити нічого.
+The D&D Beyond catalog shows these items as free, and they even appear to be "in the library" under the `ownership=all` filter. In reality the account has no content for them: each opens either a claim page saying **"This promotion is no longer available"** or a marketplace page with a price. Nothing to download.
 
-| Позиція | Куди веде | Що це було |
+| Item | Where it leads | What it was |
 |---|---|---|
-| Baldur's Gate Gazetteer | `/claim/source/baldurs-gate-gazetteer` — промо завершено | газетир Воріт Балдура (предмети, передісторії) |
-| Descent into the Lost Caverns of Tsojcanth | `/claim/source/descent-into-tsojcanth` — промо завершено | пригода-промо |
-| Giants of the Star Forge | `/claim/source/giants-of-the-star-forge` — «no longer available» | пригода-промо до Glory of the Giants |
-| Monstrous Compendium Vol. 3: Minecraft Creatures | `/claim/source/minecraft-creatures-monstrous-compendium` — «no longer available» | монстри Minecraft |
-| The Radiant Citadel | `/claim/source/the-radiant-citadel` — промо завершено | пролог до Journeys through the Radiant Citadel |
-| Spelljammer Academy | лишається на `/sources/dnd/sja`, але сторінки книги віддають заглушку | вступна пригода Spelljammer |
-| Intro to Stormwreck Isle | маркетплейс, «Quickplay Adventure Pack» | стартовий набір |
-| Legendary Magic Items | маркетплейс (Honor Among Thieves) | добірка легендарних предметів |
-| Thieves' Gallery | маркетплейс | галерея НПС |
+| Baldur's Gate Gazetteer | `/claim/source/baldurs-gate-gazetteer` — promo ended | a gazetteer of Baldur's Gate (items, backgrounds) |
+| Descent into the Lost Caverns of Tsojcanth | `/claim/source/descent-into-tsojcanth` — promo ended | a promo adventure |
+| Giants of the Star Forge | `/claim/source/giants-of-the-star-forge` — "no longer available" | a promo adventure for Glory of the Giants |
+| Monstrous Compendium Vol. 3: Minecraft Creatures | `/claim/source/minecraft-creatures-monstrous-compendium` — "no longer available" | Minecraft monsters |
+| The Radiant Citadel | `/claim/source/the-radiant-citadel` — promo ended | a prologue to Journeys through the Radiant Citadel |
+| Spelljammer Academy | stays at `/sources/dnd/sja`, but the book pages serve a placeholder | an introductory Spelljammer adventure |
+| Intro to Stormwreck Isle | marketplace, "Quickplay Adventure Pack" | a starter set |
+| Legendary Magic Items | marketplace (Honor Among Thieves) | a selection of legendary items |
+| Thieves' Gallery | marketplace | an NPC gallery |
 
-Практичний висновок: **усе безкоштовне, що взагалі доступне цьому акаунту, уже в корпусі**. Якщо ці позиції колись знадобляться — їх можна купити або дочекатися нової промо-хвилі, але кодом їх не дістати.
+Practical conclusion: **everything free that's available to this account at all is already in the corpus**. If these items are ever needed, they can be bought or you can wait for a new promo wave, but they can't be fetched with code.
 
-## 10. Прогалини і як їх закривати
+## 10. Gaps and how to close them
 
-| Прогалина | Що втрачаємо | Вплив | Дія |
+| Gap | What we lose | Impact | Action |
 |---|---|---|---|
-| **Glory of the Giants** | ~~Path of the Giant, 8 рис, 2 передісторії, 27 предметів~~ | **закрито** ✅ | узято з купленого PDF через OCR (§7.1), 43 записи в корпусі |
-| **Dragonlance: SotDQ** | ~~Kender, Lunar Sorcery, 9 рис, 2 передісторії~~ | **закрито** 📄 | узято з PDF рос. перекладу (§8), 49 записів у корпусі; для перекладу українською знадобиться англійське першоджерело |
-| **Planescape: AitM** | ~~7 рис, 2 передісторії, 2 закляття, 5 предметів~~ | **закрито джерелом** ✅ | `SatO` + `MPP` завантажено й розібрано (§7.4): 7 рис, 2 передісторії, 2 закляття, 5 предметів. Загальних глав про Сіґіл не буде — їх немає ні в SatO, ні в MPP |
-| ~~**EEPC**~~ | ~~Aarakocra, Genasi, Goliath, Svirfneblin~~ | **нульовий** ✅ | закрито: безкоштовний PDF узято (§7.3). Нового контенту справді немає — усе вже було в MotM і PotA/XGtE |
-| **Curse of Strahd** | ~~Haunted One~~ | **закрито джерелом** ✅ | `CoS` розібрано — 14 предметів і 97 статблоків. Застереження лишається: сам текст Haunted One у дзеркалі належить `RHW` (лінійка 2024), тобто це передрук, і 2014-версію треба звірити з книгою |
-| **Tomb of Annihilation** | ~~Anthropologist, Archaeologist~~ | **закрито джерелом** ✅ | `ToA` розібрано з дзеркала: 2 передісторії, 27 предметів, 89 статблоків. PDF не потрібен — його текстовий шар зіпсований кернінгом |
-| **Ghosts of Saltmarsh** | ~~4 передісторії, правила кораблів~~ | **закрито джерелом** ✅ | `GoS` розібрано: 4 передісторії, 6 предметів, 57 статблоків. 9 підрозділів правил кораблів не внесені: це правила, а не записи листка |
-| **BG:DiA** | ~~14 передісторій, 13 предметів, інфернальні машини~~ | **закрито джерелом** ✅ | `BGDIA` розібрано: 14 передісторій, 13 предметів, 53 статблоки — купувати не потрібно. Інфернальні машини (4 + 9 покращень) — правила, не внесені |
-| **Plane Shift ×6** | ~~раси й підкласи~~ | **закрито джерелом** ✅ | усі шість розібрано (`ps-zendikar`…`ps-dominaria`): 45 видів (види + підраси), 5 передісторій, 3 риси, 6 підкласів, 168 статблоків |
-| **Locathah Rising** | ~~Locathah~~ | **закрито джерелом** ✅ | `LR` розібрано: вид Locathah + 6 статблоків |
-| **Minsc and Boo's Journal of Villainy** | ~~підкласи FR~~ | **низький** ✅ | перевірено на дзеркалі: книга є (`MaBJoV`), але дає **лише 56 статблоків** — жодного підкласу, риси чи виду; пункт про підкласи був помилковим |
+| **Glory of the Giants** | ~~Path of the Giant, 8 feats, 2 backgrounds, 27 items~~ | **closed** ✅ | taken from the bought PDF via OCR (§7.1), 43 records in the corpus |
+| **Dragonlance: SotDQ** | ~~Kender, Lunar Sorcery, 9 feats, 2 backgrounds~~ | **closed** 📄 | taken from the PDF of the Russian translation (§8), 49 records in the corpus; translating into Ukrainian will need the English original |
+| **Planescape: AitM** | ~~7 feats, 2 backgrounds, 2 spells, 5 items~~ | **closed by source** ✅ | `SatO` + `MPP` downloaded and parsed (§7.4): 7 feats, 2 backgrounds, 2 spells, 5 items. There will be no general chapters about Sigil — they're in neither SatO nor MPP |
+| ~~**EEPC**~~ | ~~Aarakocra, Genasi, Goliath, Svirfneblin~~ | **zero** ✅ | closed: the free PDF was taken (§7.3). There really is no new content — it was all already in MotM and PotA/XGtE |
+| **Curse of Strahd** | ~~Haunted One~~ | **closed by source** ✅ | `CoS` parsed — 14 items and 97 stat blocks. One caveat remains: the Haunted One text itself in the mirror belongs to `RHW` (the 2024 line), i.e. it's a reprint, and the 2014 version needs checking against the book |
+| **Tomb of Annihilation** | ~~Anthropologist, Archaeologist~~ | **closed by source** ✅ | `ToA` parsed from the mirror: 2 backgrounds, 27 items, 89 stat blocks. No PDF needed — its text layer is broken by kerning |
+| **Ghosts of Saltmarsh** | ~~4 backgrounds, ship rules~~ | **closed by source** ✅ | `GoS` parsed: 4 backgrounds, 6 items, 57 stat blocks. The 9 subsections of ship rules weren't added: they're rules, not sheet records |
+| **BG:DiA** | ~~14 backgrounds, 13 items, infernal war machines~~ | **closed by source** ✅ | `BGDIA` parsed: 14 backgrounds, 13 items, 53 stat blocks — no need to buy it. Infernal war machines (4 + 9 upgrades) are rules, not added |
+| **Plane Shift ×6** | ~~races and subclasses~~ | **closed by source** ✅ | all six parsed (`ps-zendikar`…`ps-dominaria`): 45 species (species + subraces), 5 backgrounds, 3 feats, 6 subclasses, 168 stat blocks |
+| **Locathah Rising** | ~~Locathah~~ | **closed by source** ✅ | `LR` parsed: the Locathah species + 6 stat blocks |
+| **Minsc and Boo's Journal of Villainy** | ~~FR subclasses~~ | **low** ✅ | checked on the mirror: the book is there (`MaBJoV`), but gives **only 56 stat blocks** — no subclass, feat or species; the subclass item was a mistake |
 
-**Підсумок:** ґепів за джерелами більше немає — усі 41 тека дзеркала розібрані (§7.4), підкласи добрано для 8 книг, опційні вміння — для 3, закляття й види внесені. Поза корпусом лишилось тільки те, чого немає ні на DDB, ні на дзеркалі: AL-модулі (State of Hillsfar, Mulmaster Bonds, CoS: Optional Backgrounds), Runeterra, Blood Hunter і третя сторона (§11.3).
+**Summary:** there are no more source gaps — all 41 mirror folders are parsed (§7.4), subclasses were filled in for 8 books, optional features for 3, spells and species added. Outside the corpus there's only what's on neither DDB nor the mirror: AL modules (State of Hillsfar, Mulmaster Bonds, CoS: Optional Backgrounds), Runeterra, Blood Hunter and third-party content (§11.3).
 
-Опційні вміння були єдиною прогалиною не про джерела, а про модель: у дзеркалі їх 233, а в контракті не було категорії `optionalfeature`, тому вони лежали лише текстом у записах класів. Тепер категорія є, 151 запис узято, а 82 лишились поза корпусом свідомо — це лінійка 2024 (`XPHB`, `WoW`, `AU`, `EFA`), а корпус описано як 2014.
+Optional features were the only gap not about sources but about the model: the mirror has 233 of them, but the contract had no `optionalfeature` category, so they existed only as text in the class records. Now the category exists, 151 records were taken, and 82 were deliberately left out of the corpus — they're the 2024 line (`XPHB`, `WoW`, `AU`, `EFA`), while the corpus is defined as 2014.
 
-## 11. Повний диф каталогу D&D Beyond (2014)
+## 11. The full diff of the D&D Beyond catalog (2014)
 
-Каталог DDB для `ruleset=5e`: **100 позицій**. Справді в бібліотеці — **48 книг**; ще 10 позицій фільтр показує як «свої», але 9 із них — прострочені промо без контенту (§9.1), тож у корпусі їх немає. Нижче — **усі 42 некуплені книги** з тим, що кожна дає листку. Позначка ✅ означає, що книгу вже взято з дзеркала 5e.tools і розібрано в корпус (§7.4), навіть якщо на DDB її не куплено.
+The DDB catalog for `ruleset=5e`: **100 items**. Actually in the library — **48 books**; the filter shows 10 more items as "owned", but 9 of them are expired promos without content (§9.1), so they aren't in the corpus. Below are **all 42 books not bought**, with what each gives the sheet. The ✅ marker means the book has already been taken from the 5e.tools mirror and parsed into the corpus (§7.4), even if it wasn't bought on DDB.
 
-**Як перевірено.** Не за довідниками, а за самим D&D Beyond:
+**How it was checked.** Not from references, but from D&D Beyond itself:
 
-* зміст кожної книги (блок `compendium-toc-full`) — доступний навіть для некуплених, тому видно назви розділів;
-* сторінки-покажчики DDB `Backgrounds`, `Feats`, `Species` віддають кожен запис **разом із книгою-джерелом** — звідти взяті точні назви й кількості.
+* the table of contents of each book (the `compendium-toc-full` block) — available even for books not bought, so the chapter names are visible;
+* the DDB index pages `Backgrounds`, `Feats`, `Species` list every record **together with its source book** — the exact names and counts come from there.
 
-Монстри й карти в оцінці не враховуються: вони листку не потрібні (крім диких форм, а бестіаріїв у нас уже досить).
+Monsters and maps aren't counted: the sheet doesn't need them (except wild shapes, and we already have enough bestiaries).
 
-### 11.1 Офіційні книги з playable-контентом поза бібліотекою
+### 11.1 Official books with playable content outside the library
 
-Усі книги з цієї таблиці (крім DoSI) уже доступні й **розібрані**: 41 теку взято з дзеркала 5e.tools (§7.4), SotDQ — з PDF (§8). Кількості в таблиці пораховані з даних дзеркала (`items.json`, `bestiary/`), а не взяті з довідників, тому вони подекуди більші за «7 предметів з App. C»: у корпус дзеркала входять ще й варіанти та предмети з тексту пригоди.
+All books in this table (except DoSI) are already available and **parsed**: 41 folders were taken from the 5e.tools mirror (§7.4), SotDQ from PDF (§8). The counts in the table were computed from the mirror's data (`items.json`, `bestiary/`), not taken from references, so they're sometimes larger than "7 items from App. C": the mirror's corpus also includes variants and items from the adventure text.
 
-| Книга | Види | Підкласи | Риси | Передісторії | Предмети / інше | Стан |
+| Book | Species | Subclasses | Feats | Backgrounds | Items / other | Status |
 |---|---|---|---|---|---|---|
-| ~~**Bigby Presents: Glory of the Giants** (gotg)~~ | — | Path of the Giant (варвар) | **8**: Ember of the Fire Giant, Fury of the Frost Giant, Guile of the Cloud Giant, Keenness of the Stone Giant, Rune Shaper, Soul of the Storm Giant, Strike of the Giants, Vigor of the Hill Giant | **2**: Giant Foundling, Rune Carver | 27 предметів (Ch. 5: Giant Treasures) | **закрито** ✅ — з PDF, §7.1 |
-| **Dragonlance: Shadow of the Dragon Queen** (sotdq) | **Kender** | **Lunar Sorcery** (чаклун) | **9**: Adept of the White/Red/Black Robes, Initiate of High Sorcery, Knight of the Crown/Rose/Sword, Squire of Solamnia, Divinely Favored | **2**: Knight of Solamnia, Mage of High Sorcery | 9 предметів (App. A: Gear and Magic Items) | **закрито** 📄 — з PDF рос. перекладу, 49 записів (§8) |
-| **Planescape: Adventures in the Multiverse** (paitm) | — | — | **7**: Agent of Order, Baleful Scion, Cohort of Chaos, Outlands Envoy, Planar Wanderer, Righteous Heritor, Scion of the Outer Planes | **2**: Gate Warden, Planar Philosopher | 2 закляття (warp sense, gate seal), 5 предметів; + 54 істоти у *Morte's Planar Parade* | ✅ розібрано (`SatO` + `MPP`) |
-| **Plane Shift ×6** (ps-zendikar…ps-dominaria) | **20** видів (+24 підраси): Aven, Khenra, Naga, Minotaur (Amonkhet), Aetherborn, Vedalken, Kor, Merfolk, Vampire, Siren, Goblin (Zendikar), Orc (Ixalan)… | — | **3**: Quicksmithing, Servo Crafting, Vampiric Exultation | **5**: Initiate (+Dissenter), Vizier (+Dissenter), Inquisitor | 50 предметів (скарби Іксалану), 12 підкласів (10 з Амонкхету, 2 з Каладешу) | ✅ розібрано |
-| **Baldur's Gate: Descent into Avernus** (bgdia) | — | — | — | **14**: 13 варіантів PHB («Baldur's Gate Acolyte» … «Baldur's Gate Urchin») + Faceless | 13 предметів, 7 чарів, 4 інфернальні машини + 9 покращень, 53 статблоки | ✅ розібрано |
-| **Ghosts of Saltmarsh** (gos) | — | — | — | **4**: Fisher, Marine, Shipwright, Smuggler | 6 предметів (App. B), 9 підрозділів правил кораблів (App. A), 57 статблоків (App. C) | ✅ розібрано |
-| **Locathah Rising** (lr) | **Locathah** | — | — | — | 6 статблоків | ✅ розібрано |
-| **Tomb of Annihilation** (toa) | — | — | — | **2**: Anthropologist, Archaeologist | 26 предметів, 89 статблоків | ✅ розібрано з дзеркала (PDF зіпсований, §10) |
-| **Curse of Strahd** (cos) | — | — | — | **Haunted One** (+ Dark Gifts) — у дзеркалі запис належить `RHW` (2024), тому текст є лише в передруку | 14 предметів, 97 статблоків | ✅ розібрано |
-| **Infernal Machine Rebuild** (imr) | — | — | — | — | 11 предметів і отрут, 26 статблоків | ✅ розібрано |
-| **Icewind Dale: Rime of the Frostmaiden** (idrotf) | — | — | — | — | 31 предмет, 2 закляття, 83 статблоки | ✅ розібрано |
-| **Out of the Abyss** (oota) | — | — | — | — | 16 предметів, 103 статблоки | ✅ розібрано |
-| **Quests from the Infinite Staircase** (qftis) | — | — | — | — | App. A: Magic Items and Technology — 10 предметів, 49 статблоків | ✅ розібрано |
-| **Phandelver and Below: The Shattered Obelisk** (pbtso) | — | — | — | — | 23 предмети, 56 статблоків | ✅ розібрано |
-| **Vecna: Eve of Ruin** (veor) | — | — | — | — | 3 предмети, 69 статблоків | ✅ розібрано |
-| **Keys from the Golden Vault** (kftgv) | — | — | — | — | 8 предметів, 57 статблоків | ✅ розібрано |
-| **Journeys through the Radiant Citadel** (jttrc) | — | — | — | — | 5 предметів, 71 статблок | ✅ розібрано |
-| **Chains of Asmodeus** (coa) | — | — | — | — | 24 предмети, 61 статблок | ✅ розібрано |
-| **Dragons of Stormwreck Isle** (dosi) | — | — | — | — | — | не беремо: лише статблоки, жодного предмета |
+| ~~**Bigby Presents: Glory of the Giants** (gotg)~~ | — | Path of the Giant (barbarian) | **8**: Ember of the Fire Giant, Fury of the Frost Giant, Guile of the Cloud Giant, Keenness of the Stone Giant, Rune Shaper, Soul of the Storm Giant, Strike of the Giants, Vigor of the Hill Giant | **2**: Giant Foundling, Rune Carver | 27 items (Ch. 5: Giant Treasures) | **closed** ✅ — from PDF, §7.1 |
+| **Dragonlance: Shadow of the Dragon Queen** (sotdq) | **Kender** | **Lunar Sorcery** (sorcerer) | **9**: Adept of the White/Red/Black Robes, Initiate of High Sorcery, Knight of the Crown/Rose/Sword, Squire of Solamnia, Divinely Favored | **2**: Knight of Solamnia, Mage of High Sorcery | 9 items (App. A: Gear and Magic Items) | **closed** 📄 — from the PDF of the Russian translation, 49 records (§8) |
+| **Planescape: Adventures in the Multiverse** (paitm) | — | — | **7**: Agent of Order, Baleful Scion, Cohort of Chaos, Outlands Envoy, Planar Wanderer, Righteous Heritor, Scion of the Outer Planes | **2**: Gate Warden, Planar Philosopher | 2 spells (warp sense, gate seal), 5 items; + 54 creatures in *Morte's Planar Parade* | ✅ parsed (`SatO` + `MPP`) |
+| **Plane Shift ×6** (ps-zendikar…ps-dominaria) | **20** species (+24 subraces): Aven, Khenra, Naga, Minotaur (Amonkhet), Aetherborn, Vedalken, Kor, Merfolk, Vampire, Siren, Goblin (Zendikar), Orc (Ixalan)… | — | **3**: Quicksmithing, Servo Crafting, Vampiric Exultation | **5**: Initiate (+Dissenter), Vizier (+Dissenter), Inquisitor | 50 items (Ixalan treasures), 12 subclasses (10 from Amonkhet, 2 from Kaladesh) | ✅ parsed |
+| **Baldur's Gate: Descent into Avernus** (bgdia) | — | — | — | **14**: 13 PHB variants ("Baldur's Gate Acolyte" … "Baldur's Gate Urchin") + Faceless | 13 items, 7 charms, 4 infernal war machines + 9 upgrades, 53 stat blocks | ✅ parsed |
+| **Ghosts of Saltmarsh** (gos) | — | — | — | **4**: Fisher, Marine, Shipwright, Smuggler | 6 items (App. B), 9 subsections of ship rules (App. A), 57 stat blocks (App. C) | ✅ parsed |
+| **Locathah Rising** (lr) | **Locathah** | — | — | — | 6 stat blocks | ✅ parsed |
+| **Tomb of Annihilation** (toa) | — | — | — | **2**: Anthropologist, Archaeologist | 26 items, 89 stat blocks | ✅ parsed from the mirror (the PDF is broken, §10) |
+| **Curse of Strahd** (cos) | — | — | — | **Haunted One** (+ Dark Gifts) — in the mirror the record belongs to `RHW` (2024), so the text exists only as a reprint | 14 items, 97 stat blocks | ✅ parsed |
+| **Infernal Machine Rebuild** (imr) | — | — | — | — | 11 items and poisons, 26 stat blocks | ✅ parsed |
+| **Icewind Dale: Rime of the Frostmaiden** (idrotf) | — | — | — | — | 31 items, 2 spells, 83 stat blocks | ✅ parsed |
+| **Out of the Abyss** (oota) | — | — | — | — | 16 items, 103 stat blocks | ✅ parsed |
+| **Quests from the Infinite Staircase** (qftis) | — | — | — | — | App. A: Magic Items and Technology — 10 items, 49 stat blocks | ✅ parsed |
+| **Phandelver and Below: The Shattered Obelisk** (pbtso) | — | — | — | — | 23 items, 56 stat blocks | ✅ parsed |
+| **Vecna: Eve of Ruin** (veor) | — | — | — | — | 3 items, 69 stat blocks | ✅ parsed |
+| **Keys from the Golden Vault** (kftgv) | — | — | — | — | 8 items, 57 stat blocks | ✅ parsed |
+| **Journeys through the Radiant Citadel** (jttrc) | — | — | — | — | 5 items, 71 stat blocks | ✅ parsed |
+| **Chains of Asmodeus** (coa) | — | — | — | — | 24 items, 61 stat blocks | ✅ parsed |
+| **Dragons of Stormwreck Isle** (dosi) | — | — | — | — | — | not taken: stat blocks only, not a single item |
 
-**Закляття:** донедавна тут стояло, що жодна з офіційних некуплених книг не додає заклять. **Це виявилося не так:** *Sigil and the Outlands* (частина PS:AitM) додає два — `warp sense` (2-й рівень, віщування) і `gate seal` (4-й, відмова); у корпусі їх не було. Після розбору дзеркала знайшлось ще три: два в *Rime of the Frostmaiden* (`IDRotF`) і один у `AitFR-AVT`. Усі п'ять тепер у корпусі — `content/compendium/sato/spell.jsonl`, `idrotf/spell.jsonl`, `aitfr-avt/spell.jsonl`. Більше нових заклять є лише в книгах третіх сторін (§11.3) і в лінійці 2024+.
+**Spells:** until recently this said that none of the official books not bought adds spells. **That turned out to be wrong:** *Sigil and the Outlands* (part of PS:AitM) adds two — `warp sense` (2nd level, divination) and `gate seal` (4th, abjuration); they weren't in the corpus. After parsing the mirror three more were found: two in *Rime of the Frostmaiden* (`IDRotF`) and one in `AitFR-AVT`. All five are now in the corpus — `content/compendium/sato/spell.jsonl`, `idrotf/spell.jsonl`, `aitfr-avt/spell.jsonl`. More new spells exist only in third-party books (§11.3) and in the 2024+ line.
 
-**Види:** поза бібліотекою їх три джерела — **Plane Shift ×6** (20 видів: Aven, Khenra, Naga, Minotaur (Amonkhet), Aetherborn, Vedalken, Kor, Merfolk, Vampire, Siren, Goblin (Zendikar), Orc (Ixalan)…), **Locathah** (Locathah Rising) і **Goblin (Dankwood)** (*Adventure with Muk*). Kender уже в корпусі з SotDQ. Усі інші раси й підраси лінійки 2014 (включно з MotM на 33 записи) — у корпусі.
+**Species:** outside the library there are three sources — **Plane Shift ×6** (20 species: Aven, Khenra, Naga, Minotaur (Amonkhet), Aetherborn, Vedalken, Kor, Merfolk, Vampire, Siren, Goblin (Zendikar), Orc (Ixalan)…), **Locathah** (Locathah Rising) and **Goblin (Dankwood)** (*Adventure with Muk*). Kender is already in the corpus from SotDQ. All other races and subraces of the 2014 line (including MotM's 33 records) are in the corpus.
 
-### 11.2 ❌ Офіційні без playable-контенту
+### 11.2 ❌ Official books without playable content
 
-Тільки монстри, карти, сайдкіки або пригодницький текст — листку нічого не дають:
+Only monsters, maps, sidekicks or adventure text — nothing for the sheet:
 
-| Книга | Що там є |
+| Book | What's in it |
 |---|---|
-| Dragon of Icespire Peak (doip) | пригода + сайдкіки |
-| Storm Lord's Wrath (slw), Sleeping Dragon's Wake (sdw), Divine Contention (dc) | трилогія пригод + сайдкіки |
-| Hunt for the Thessalhydra (hftt) | пригода-промо (Stranger Things) |
-| Adventure Atlas: The Mortuary (aatm) | карти й монстри |
-| Vecna: Nest of the Eldritch Eye (vnee) | пригода-промо |
-| Heroes' Feast: Saving the Children's Menu (hfscm) | пригода-промо |
-| Tales from the Shadows (tfts) | збірка пригод; playable-опцій не видно |
+| Dragon of Icespire Peak (doip) | an adventure + sidekicks |
+| Storm Lord's Wrath (slw), Sleeping Dragon's Wake (sdw), Divine Contention (dc) | an adventure trilogy + sidekicks |
+| Hunt for the Thessalhydra (hftt) | a promo adventure (Stranger Things) |
+| Adventure Atlas: The Mortuary (aatm) | maps and monsters |
+| Vecna: Nest of the Eldritch Eye (vnee) | a promo adventure |
+| Heroes' Feast: Saving the Children's Menu (hfscm) | a promo adventure |
+| Tales from the Shadows (tfts) | an adventure anthology; no playable options visible |
 
-### 11.3 ❌ Третя сторона: що дає playable-контент
+### 11.3 ❌ Third-party books with playable content
 
-Ці книги не WotC, тому в застосунку вони можуть бути лише окремим прапорцем (як Humblewood). Але контент у них справжній — і за покажчиком DDB видно, скільки саме:
+These books aren't WotC, so in the app they can only be a separate flag (like Humblewood). But their content is real — and the DDB index shows exactly how much:
 
-| Книга | Види | Що ще |
+| Book | Species | What else |
 |---|---|---|
-| **The Illrigger Revised** (tir) | — | **цілий клас Illrigger** із підкласами (MCDM) |
-| **Grim Hollow: Player Pack** (ghpp) | 2 | підкласи, риси, закляття, предмети |
-| **Tal'Dorei Campaign Setting Reborn** (tcsr) | — | Ch. 4: Character Options — підкласи, риси, закляття |
-| **Book of Ebon Tides** (boet) | **10** | предмети, закляття, «Umbral People and Heroes» |
-| **Obojima: Tales from the Tall Grass** (ottg) | 3 | Player Options, предмети, закляття |
-| **Heliana's Guide to Monster Hunting: Part 1** (hgtmh1) | 5 | Species, Classes and Feats, предмети, закляття |
-| **Heliana's Guide to Monster Hunting: Part 2** (hgtmh2) | 5 | Species, Classes, предмети, закляття |
+| **The Illrigger Revised** (tir) | — | **a whole Illrigger class** with subclasses (MCDM) |
+| **Grim Hollow: Player Pack** (ghpp) | 2 | subclasses, feats, spells, items |
+| **Tal'Dorei Campaign Setting Reborn** (tcsr) | — | Ch. 4: Character Options — subclasses, feats, spells |
+| **Book of Ebon Tides** (boet) | **10** | items, spells, "Umbral People and Heroes" |
+| **Obojima: Tales from the Tall Grass** (ottg) | 3 | Player Options, items, spells |
+| **Heliana's Guide to Monster Hunting: Part 1** (hgtmh1) | 5 | Species, Classes and Feats, items, spells |
+| **Heliana's Guide to Monster Hunting: Part 2** (hgtmh2) | 5 | Species, Classes, items, spells |
 | **The Griffon's Saddlebag: Book Two** (gsb2) | 2 | Part 1 Magic Items, Part 2 Character Options |
-| **Dungeons of Drakkenheim** (dodr) | — | App. F: Character Backgrounds, App. D: закляття й предмети |
-| **Ruins of Symbaroum: Setting Handbook** (ssh) | «Folks» | нові правила, передісторії |
-| **The Lord of the Rings Roleplaying** (lotrr) | 6 | Ch. 3: Adventurers (класи), окрема система |
-| **Humblewood Tales** (hwt) | — | предмети (App. C) і закляття (App. D); рас немає |
+| **Dungeons of Drakkenheim** (dodr) | — | App. F: Character Backgrounds, App. D: spells and items |
+| **Ruins of Symbaroum: Setting Handbook** (ssh) | "Folks" | new rules, backgrounds |
+| **The Lord of the Rings Roleplaying** (lotrr) | 6 | Ch. 3: Adventurers (classes), a separate system |
+| **Humblewood Tales** (hwt) | — | items (App. C) and spells (App. D); no races |
 
-### 11.4 ❌ Третя сторона без playable-контенту
+### 11.4 ❌ Third-party books without playable content
 
-Бестіарії та збірки сутичок: Flee, Mortals! (fm), Tome of Beasts 1 (tob1), Where Evil Lives (wel), Lairs of Etharis (loe).
+Bestiaries and encounter collections: Flee, Mortals! (fm), Tome of Beasts 1 (tob1), Where Evil Lives (wel), Lairs of Etharis (loe).
 
-### 11.5 Чого на DDB немає взагалі
+### 11.5 What DDB doesn't have at all
 
-- **Elemental Evil Player's Companion** — окремою книгою на DDB не постачається (раси є в MotM, закляття — у PotA), але сам PDF безкоштовний і вже в корпусі (§7.3).
-- **Plane Shift ×6** — безкоштовні PDF із сайту WotC; **усі шість розібрано** з дзеркала (§7.4) — `ps-zendikar`…`ps-dominaria`.
-- **Locathah Rising** — на дзеркалі є (`LR`), **розібрано**; на DDB лише окремою пригодою (і в бібліотеці її немає).
-- **Adventure with Muk** (`AWM`) — **розібрано**; дає Goblin (Dankwood) і 11 статблоків.
-- **Minsc and Boo's Journal of Villainy** — перевірено 26.11.2026 і розібрано: на дзеркалі **є** (`MaBJoV`), але це 56 статблоків; **жодного підкласу, риси чи виду** там немає, тому колишнє «підкласи FR» — помилка.
-- **State of Hillsfar**, **Mulmaster Bonds and Backgrounds**, **Curse of Strahd: Optional Backgrounds** — AL-модулі; перевірено двічі (до і після розбору): **на дзеркалі їх немає**. Книга `AL` — це лише `Faction Guide` (2 розділи, жодного посилання на передісторії), а у `backgrounds.json` немає жодного запису з `source: AL`. Взяти можна тільки з DMs Guild.
-- **Legends of Runeterra: Dark Tides of Bilgewater** — PDF; на дзеркалі книги немає.
-- **Blood Hunter** — DMs Guild (не WotC), на дзеркалі немає.
-- **Haunted One** — у покажчику DDB приписана до «Ravenloft: The Horrors Within» (2026, лінійка 2024), але сам `CoS` на дзеркалі містить її в 2014-версії (§11.1).
+- **Elemental Evil Player's Companion** — not sold on DDB as a separate book (the races are in MotM, the spells in PotA), but the PDF itself is free and already in the corpus (§7.3).
+- **Plane Shift ×6** — free PDFs from the WotC site; **all six are parsed** from the mirror (§7.4) — `ps-zendikar`…`ps-dominaria`.
+- **Locathah Rising** — on the mirror (`LR`), **parsed**; on DDB only as a separate adventure (and it's not in the library).
+- **Adventure with Muk** (`AWM`) — **parsed**; gives Goblin (Dankwood) and 11 stat blocks.
+- **Minsc and Boo's Journal of Villainy** — checked on 26.11.2026 and parsed: it **is** on the mirror (`MaBJoV`), but it's 56 stat blocks; there's **no subclass, feat or species** in it, so the former "FR subclasses" was a mistake.
+- **State of Hillsfar**, **Mulmaster Bonds and Backgrounds**, **Curse of Strahd: Optional Backgrounds** — AL modules; checked twice (before and after parsing): **they're not on the mirror**. The `AL` book is just the `Faction Guide` (2 chapters, not a single reference to backgrounds), and `backgrounds.json` has no record with `source: AL`. They can only be taken from DMs Guild.
+- **Legends of Runeterra: Dark Tides of Bilgewater** — a PDF; the book isn't on the mirror.
+- **Blood Hunter** — DMs Guild (not WotC), not on the mirror.
+- **Haunted One** — the DDB index attributes it to "Ravenloft: The Horrors Within" (2026, the 2024 line), but `CoS` itself on the mirror contains it in the 2014 version (§11.1).
 
-## 12. Джерела
+## 12. Sources
 
-- Власна бібліотека: <https://www.dndbeyond.com/en/library?ownership=owned&ruleset=5e&type=sourcebooks> (звірено 25.11.2026).
-- Каталог DDB без фільтра власності — саме він показує некуплене: `ownership=all&ruleset=5e`.
-- Покажчики DDB із прив'язкою до книги-джерела: `/backgrounds`, `/feats`, `/species` — кожен рядок містить назву книги, тому кількості в §11 не з довідників, а з даних DDB.
-- Зміст книг (`compendium-toc-full`) читається навіть для некуплених книг — звідти назви розділів («Ch. 1: Character Creation», «App. A: Gear and Magic Items»).
-- Каталог покриття книг одним з білдерів: <https://play5e.net/sourcebooks> — звірка «книга → категорії контенту».
-- Перелік видань: <https://en.wikipedia.org/wiki/List_of_Dungeons_%26_Dragons_rulebooks>.
-- Кількості й склад звірені зі змістом книг; розбіжності з каталогами — через передруки опцій у пізніших книгах (SCAG → XGtE/TCoE, MOoT → TCoE тощо).
-- **Дзеркало 5e.tools** (неофіційне): індекси `https://5e.tools/data/books.json` і `adventures.json`, книги — `data/book/book-<id>.json`, пригоди — `data/adventure/adventure-<id>.json`. Довідкові корпуси, з яких рахуються кількості: `data/{items,items-base,feats,backgrounds,races,optionalfeatures,magicvariants,rewards}.json`, `data/spells/spells-<src>.json`, `data/class/class-<name>.json`, `data/bestiary/bestiary-<src>.json` (індекс — `data/bestiary/index.json`). Вимоги доступу й пастки — §7.4.
-- Скрипти роботи з дзеркалом (усе відтворювано):
-  * `fetch_5etools.py` — одна пара URL → файл (плюс `_index/bestiary/` для базових статблоків);
-  * `fetch_5etools_batch.py` — 41 тека книг, які ще дають листку; `fetch_5etools_bestiary.py` — статблоки до вже взятих книг;
-  * `mirror5e.py` — **розбір дзеркала**: дерево `entries` → текст книги, `_copy` → повний запис, конвертери для `monster`/`species`/`background`/`feat`/`optionalfeature`/`subclass`/`spell`/`item`; `--all`, `--folder <тека>`, `--subclasses`, `--optionalfeatures`;
-  * `sync_sources.py` — реєстр `content/sources.yml` із каталогу дзеркала й розібраних записів (`--write`, `--force`);
-  * `survey_5etools.py` — зріз по довідкових корпусах; `survey_5etools_book.py` — що дає одна книга; `diff_5etools.py` — диф «дзеркало ↔ корпус» за назвами.
+- The owned library: <https://www.dndbeyond.com/en/library?ownership=owned&ruleset=5e&type=sourcebooks> (checked 25.11.2026).
+- The DDB catalog without the ownership filter — this is what shows the books not bought: `ownership=all&ruleset=5e`.
+- DDB indexes tied to the source book: `/backgrounds`, `/feats`, `/species` — every row contains the book name, so the counts in §11 come from DDB data, not references.
+- Book tables of contents (`compendium-toc-full`) can be read even for books not bought — that's where the chapter names come from ("Ch. 1: Character Creation", "App. A: Gear and Magic Items").
+- One builder's book coverage catalog: <https://play5e.net/sourcebooks> — a "book → content categories" cross-check.
+- The list of releases: <https://en.wikipedia.org/wiki/List_of_Dungeons_%26_Dragons_rulebooks>.
+- Counts and contents were checked against the books' tables of contents; differences from catalogs come from options reprinted in later books (SCAG → XGtE/TCoE, MOoT → TCoE, etc.).
+- **The 5e.tools mirror** (unofficial): indexes `https://5e.tools/data/books.json` and `adventures.json`, books — `data/book/book-<id>.json`, adventures — `data/adventure/adventure-<id>.json`. Reference corpora the counts are computed from: `data/{items,items-base,feats,backgrounds,races,optionalfeatures,magicvariants,rewards}.json`, `data/spells/spells-<src>.json`, `data/class/class-<name>.json`, `data/bestiary/bestiary-<src>.json` (index — `data/bestiary/index.json`). Access requirements and pitfalls — §7.4.
+- Scripts for working with the mirror (everything is reproducible):
+  * `fetch_5etools.py` — one URL pair → a file (plus `_index/bestiary/` for base stat blocks);
+  * `fetch_5etools_batch.py` — the 41 book folders that still give the sheet something; `fetch_5etools_bestiary.py` — stat blocks for books already taken;
+  * `mirror5e.py` — **parsing the mirror**: the `entries` tree → book text, `_copy` → the full record, converters for `monster`/`species`/`background`/`feat`/`optionalfeature`/`subclass`/`spell`/`item`; `--all`, `--folder <folder>`, `--subclasses`, `--optionalfeatures`;
+  * `sync_sources.py` — the `content/sources.yml` registry from the mirror's catalog and the parsed records (`--write`, `--force`);
+  * `survey_5etools.py` — a cross-section of the reference corpora; `survey_5etools_book.py` — what one book gives; `diff_5etools.py` — a "mirror ↔ corpus" diff by name.
 
-## 13. Далі
+## 13. Next
 
-| Крок | Стан | Що лишилось |
+| Step | Status | What's left |
 |---|---|---|
-| Зібрати всі книги бібліотеки | **готово** | 48/48 книг бібліотеки + 1 безкоштовна поза нею = 49 книг, 678 сторінок; плюс BGG з PDF (200 сторінок скану → OCR), EEPC з PDF (25 сторінок тексту) і SotDQ з PDF (205 сторінок) = **52 книги** |
-| Завантажити книги з дзеркала 5e.tools | **готово** | **41 тека** (§7.4): 8 книг першої хвилі + 33 файли другої. На дзеркалі лишилось тільки те, що листку не дає: кораблі `AAG`, `HAT-LMI`/`EET` без файлу книги, бестіарні-пригоди |
-| Звірити корпус із дзеркалом | **готово** | `diff_5etools.py`: 5285 записів дзеркала проти 5542 назв корпусу; з 233 опційних умінь збіглося 207, а 26 «бракує» — це назви, які є лише в лінійці 2024 (`WoW`, `AU`, `EFA`, `XPHB`) |
-| Розібрати книги з дзеркала | **готово** | 41 тека → 1714 записів: 27 передісторій, 10 рис, 47 видів, 6 підкласів, 5 заклять, 282 предмети, 1337 статблоків. Плюс 116 підкласів і 151 опційне вміння до 8+3 книг корпусу (§7.4) |
-| Розібрати предмети | **готово** | 1280 записів: магічні з усіх книг (у т.ч. 27 з BGG) + звичайне спорядження з таблиць |
-| Розібрати передісторії | **готово** | 93 з PHB, SCAG, GGR, SCC, SAiS, BMT, WBtW, VRGtR, EGtW, ERLW, AI, ToD, Wayfinder, Humblewood + 27 з дзеркала (BGDIA, GoS, ToA, Planescape, Plane Shift) |
-| Розібрати види | **готово** | 214 (види + підраси): 167 з корпусу, включно з MotM (33), Humblewood (22) і EEPC (8), плюс 47 з дзеркала (Plane Shift, Locathah, Dankwood) |
-| Розібрати монстрів | **готово** | 3605 статблоків: 2268 з DDB/PDF (перевірено, що жоден абзац книги не загубився) + 1337 з дзеркала |
-| Один формат для всіх записів категорії | **готово** | `contract/compendium-format.json` + `python -m scripts.normalize --check`, тест `backend/tests/contract/test_compendium_format.py` |
-| Класи → підкласи → опційні вміння | **готово** | 124 підкласи з уміннями за рівнями і 151 опційне вміння з передумовами (§7.4). Лишились уміння самих класів (не підкласів) як окремі записи |
-| Переклад українською | **розпочато для листка** | екран персонажа перекладає вміст із `frontend/src/features/character/uk.ts` (уміння, закляття, передісторії, предмети, властивості зброї; англійська назва — в дужках). Решта корпусу ще не перекладена: немає запису в словнику — показуємо оригінал. Повний конвеєр на 7423 записи — попереду |
-| Глосарій термінів | каркас | офіційний переклад WotC там, де є; власний — решта; оригінал у підказці |
-| Докупити книги з опціями | **не потрібно** | усі книжки з playable-контентом або в корпусі, або розібрані з дзеркала (§10). Єдине, що лишається поза — третя сторона (§11.3) і AL-модулі |
+| Collect all library books | **done** | 48/48 library books + 1 free outside it = 49 books, 678 pages; plus BGG from PDF (200 scanned pages → OCR), EEPC from PDF (25 pages of text) and SotDQ from PDF (205 pages) = **52 books** |
+| Download books from the 5e.tools mirror | **done** | **41 folders** (§7.4): 8 first-wave books + 33 second-wave files. What's left on the mirror gives the sheet nothing: `AAG` ships, `HAT-LMI`/`EET` without a book file, bestiary adventures |
+| Reconcile the corpus with the mirror | **done** | `diff_5etools.py`: 5285 mirror records against 5542 corpus names; of 233 optional features 207 matched, and the 26 "missing" are names that exist only in the 2024 line (`WoW`, `AU`, `EFA`, `XPHB`) |
+| Parse the mirror's books | **done** | 41 folders → 1714 records: 27 backgrounds, 10 feats, 47 species, 6 subclasses, 5 spells, 282 items, 1337 stat blocks. Plus 116 subclasses and 151 optional features for 8+3 corpus books (§7.4) |
+| Parse items | **done** | 1280 records: magic items from all books (including 27 from BGG) + ordinary gear from the tables |
+| Parse backgrounds | **done** | 93 from PHB, SCAG, GGR, SCC, SAiS, BMT, WBtW, VRGtR, EGtW, ERLW, AI, ToD, Wayfinder, Humblewood + 27 from the mirror (BGDIA, GoS, ToA, Planescape, Plane Shift) |
+| Parse species | **done** | 214 (species + subraces): 167 from the corpus, including MotM (33), Humblewood (22) and EEPC (8), plus 47 from the mirror (Plane Shift, Locathah, Dankwood) |
+| Parse monsters | **done** | 3605 stat blocks: 2268 from DDB/PDF (verified that no paragraph of a book was lost) + 1337 from the mirror |
+| One format for all records of a category | **done** | `contract/compendium-format.json` + `python -m scripts.normalize --check`, test `backend/tests/contract/test_compendium_format.py` |
+| Classes → subclasses → optional features | **done** | 124 subclasses with features by level and 151 optional features with prerequisites (§7.4). What's left: the features of the classes themselves (not subclasses) as separate records |
+| Ukrainian translation | **started for the sheet** | the character screen translates content from `frontend/src/features/character/uk.ts` (features, spells, backgrounds, items, weapon properties; the English name in parentheses). The rest of the corpus isn't translated yet: with no dictionary entry the original is shown. A full pipeline for 7423 records is ahead |
+| Term glossary | skeleton | the official WotC translation where it exists; our own for the rest; the original in a tooltip |
+| Buy more books with options | **not needed** | all books with playable content are either in the corpus or parsed from the mirror (§10). The only things outside are third-party content (§11.3) and AL modules |

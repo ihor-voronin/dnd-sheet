@@ -1,16 +1,16 @@
-# Інфраструктура dnd-sheet на VPS RackNerd (запускається вручну й рідко).
+# dnd-sheet infrastructure on a RackNerd VPS (run by hand and rarely).
 #
-# RackNerd не має API для Terraform, тож сам сервер Terraform не створює — він
-# доводить уже наявний VPS до потрібного стану по SSH:
-#   1. bootstrap — Docker, файрвол, swap, щоденний бекап бази, вхід лише ключем;
-#   2. dns.tf    — запис A домену в Cloudflare.
+# RackNerd has no API for Terraform, so Terraform doesn't create the server itself — it
+# brings the existing VPS to the desired state over SSH:
+#   1. bootstrap — Docker, firewall, swap, a daily database backup, key-only sign-in;
+#   2. dns.tf    — the domain's A record in Cloudflare.
 #
-# Застосунок (образ, compose, Caddyfile, .env) деплоїть scripts/deploy_app.py —
-# з цього компʼютера або з GitHub Actions після злиття в main. Колись це теж був
-# Terraform, але тоді CI мусив би комітити стан назад у захищену гілку.
+# The app (image, compose, Caddyfile, .env) is deployed by scripts/deploy_app.py —
+# from this computer or from GitHub Actions after a merge into main. It used to be
+# Terraform too, but then CI would have to commit the state back into a protected branch.
 
 locals {
-  # Скрипт їде на Linux: прибираємо \r, якщо git на Windows його додав.
+  # The script runs on Linux: strip \r in case git on Windows added it.
   bootstrap = replace(file("${path.module}/files/bootstrap.sh"), "\r\n", "\n")
   site_url  = "https://${var.domain}/"
 }

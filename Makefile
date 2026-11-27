@@ -1,4 +1,4 @@
-# Цілі для Linux/CI. На Windows зручніше дивитись README (команди в PowerShell).
+# Targets for Linux/CI. On Windows see the README (PowerShell commands).
 
 PY ?= python
 VENV ?= .venv
@@ -8,19 +8,19 @@ export PATH := $(BIN):$(PATH)
 .PHONY: help install test arch contract dev web-dev web-build docker-build docker-up docker-down clean
 
 help:
-	@echo "install    - створити venv і встановити backend[dev]"
+	@echo "install    - create a venv and install backend[dev]"
 	@echo "test       - pytest"
-	@echo "arch       - import-linter (DDD-гейти)"
-	@echo "contract   - перегенерувати TS-типи з JSON Schema"
-	@echo "format     - привести обидва корпуси (content/compendium, content/bestiary) до contract/compendium-format.json"
-	@echo "format-check - перевірити, що корпуси за каноном"
+	@echo "arch       - import-linter (DDD gates)"
+	@echo "contract   - regenerate TS types from the JSON Schema"
+	@echo "format     - bring both corpora (content/compendium, content/bestiary) to contract/compendium-format.json"
+	@echo "format-check - check that the corpora follow the canon"
 	@echo "dev        - uvicorn --reload"
 	@echo "web-dev    - vite dev"
 	@echo "web-build  - tsc + vite build"
-	@echo "docker-build - зібрати образ (API + SPA + довідник)"
-	@echo "docker-up  - підняти контейнер на http://127.0.0.1:8000"
-	@echo "docker-down - зупинити контейнер"
-	@echo "clean      - прибрати кеші"
+	@echo "docker-build - build the image (API + SPA + compendium)"
+	@echo "docker-up  - start the container on http://127.0.0.1:8000"
+	@echo "docker-down - stop the container"
+	@echo "clean      - remove caches"
 
 install:
 	$(PY) -m venv $(VENV)

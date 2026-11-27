@@ -1,122 +1,119 @@
-# Експорт листа (етап 5)
+# Sheet export
 
-Екран показує лист гравцеві, PDF — за стіл. Тому експорт будується не з
-демо-персонажа й не з екрана, а з того самого документа, що й екран, і несе
-**стан**: скільки хітів зараз, які слоти витрачені, що вписано вручну.
+The screen shows the sheet to the player, the printout goes to the table. So the export
+isn't built from a demo character or from the screen, but from the same character, and it
+carries the **state**: current hit points, spent slots, numbers entered by hand.
 
 ```
 Character + SheetState ──DerivedStatsCalculator──> ComputedSheet
         │                                              │
         └──────────────┬───────────────────────────────┘
                        ▼
-              SheetDocument (6 розділів, JSON за контрактом)
-                       ├── MarkdownRenderer  → .md  (чат, редактор)
-                       ├── PdfRenderer       → .pdf (друк A4)
-                       └── React-рендер      (екран)
+     ┌─────────────────┴──────────────────────────┐
+     ▼                                            ▼
+SheetDocument (JSON by the contract)        print view (characters/api/print_view.py)
+  ├── MarkdownRenderer → .md (API only)       └── character.html.jinja → WeasyPrint → .pdf
+  └── React rendering (screen)                    └── the same HTML at /print (browser printing)
 ```
 
-Один документ — три виходи. Якщо розділ зник із документа, він зникне всюди
-одразу; «на екрані є, а в PDF немає» неможливо за конструкцією.
+The **printed sheet** (PDF and the `/print` page) has its own view model shaped for paper:
+a main page (abilities, saves, skills, combat, attacks, resources, features), spells,
+equipment and notes, an adventure log page and, by default, extra pages with the full text
+of features and spells. Black and white, frames, room for a pencil; fonts are embedded
+(see `templates/fonts/README.md`). Markdown is still available from the API but has no
+button in the UI.
 
-## Що потрапляє в документ
+## What goes into the document
 
-| Розділ | Звідки | Приклад |
+| Section | From | Example |
 |---|---|---|
-| **Особа** | вид, підклас, передісторія, світогляд | `Fighter 2 / Wizard 3`, `Human`, `Soldier` |
-| **Характеристики** | `ComputedSheet.abilities` (база + бонуси виду) | `Сила 13`, `Мод. Сила +1` |
-| **Бій** | КЗ, ініціатива, швидкість, максимум хітів + **стан** | `Хіти: зараз 17`, `Максимум 33`, `Тимчасові 3`, `Натхнення: так`, `Кидання смерті: успіхи 1 / провали 0` |
-| **Рятівні кидки / Навички** | володіння + виправлення | `Скритність 5` (з позначкою «вручну», якщо виправлено) |
-| **Атаки** | зброя з інвентаря + дані довідника | `longsword: +5 · 1d8+3 slashing`, підказка «Сила · versatile (1d10)» |
-| **Уміння й риси** | класові вміння на поточному рівні | `Second Wind: Fighter 1` |
-| **Володіння** | зібрані з класу, виду, передісторії, вибору гравця | `броня: легка, середня, важка, щити · клас fighter` |
-| **Чарування** | DC, бонус атаки, слоти за рівнями + Pact Magic | `Слоти 1 рівня 2/4`, `Pact Magic, 1 рівень 0/1` |
-| **Відомі закляття** | вибір гравця + надані видом і підкласом | `Hex: 1 рівня · підготовлене` |
-| **Інвентар** | предмети, «споряджено», КЗ броні, вага | `chain mail: броня · КЗ 16 · 55 фнт · споряджено` |
-| **Гроші й вага** | гаманець і вантажопідйомність | `Вага: 58 з 195 фнт` |
-| **Нотатки** | пʼять розділів вільного тексту | `Зовнішність: шрам на щоці` |
-| **Застереження** | `ComputedSheet.warnings` | `поточні хіти (99) більші за максимум (10)` |
+| **Identity** | species, subclass, background, alignment | `Fighter 2 / Wizard 3`, `Human`, `Soldier` |
+| **Abilities** | `ComputedSheet.abilities` (base + species bonuses) | `Strength 13`, `Mod +1` |
+| **Combat** | AC, initiative, speed, max HP + **state** | current HP, max, temporary, inspiration, death saves |
+| **Saving throws / Skills** | proficiencies + overrides | `Stealth 5` (marked "manual" when overridden) |
+| **Attacks** | weapons from the inventory + compendium data | `longsword: +5 · 1d8+3 slashing`, hint "Strength · versatile (1d10)" |
+| **Features and feats** | class features at the current level | `Second Wind: Fighter 1` |
+| **Proficiencies** | gathered from class, species, background, player choices | armor, weapons, tools, languages |
+| **Spellcasting** | DC, attack bonus, slots by level + Pact Magic | `Level 1 slots 2/4`, `Pact Magic, level 1 0/1` |
+| **Known spells** | player choices + those granted by species and subclass | `Hex: level 1 · prepared` |
+| **Inventory** | items, "equipped", armor AC, weight | `chain mail: armor · AC 16 · 55 lb · equipped` |
+| **Money and weight** | purse and carrying capacity | `Weight: 58 of 195 lb` |
+| **Notes** | five free-text sections | `Appearance: a scar on the cheek` |
+| **Warnings** | `ComputedSheet.warnings` | `current HP (99) above maximum (10)` |
 
-Порожніх розділів не буває: немає заклять — немає сторінки «Закляття»;
-немає нотаток — немає сторінки «Нотатки». Заголовок без вмісту — це шум на
-папері.
+There are no empty sections: no spells — no "Spells" page; no notes — no "Notes" page.
+A heading without content is noise on paper.
 
-## Походження числа (`origin`)
+## Where a number comes from (`origin`)
 
-Кожне поле документа каже, звідки взялося число:
+Every field of the document says where its number came from:
 
-| `origin` | Що це | Позначка в PDF | Позначка в Markdown |
+| `origin` | What it is | Mark in PDF | Mark in Markdown |
 |---|---|---|---|
-| `computed` | порахував домен (КЗ, порятунки, максимум хітів, слоти) | `•` | — |
-| `input` | стан: гравець змінює за столом (хіти, втома, нотатки) | — | — |
-| `override` | гравець вписав своє число замість обчисленого | `✎` | _(вручну)_ |
+| `computed` | computed by the domain (AC, saves, max HP, slots) | `•` | — |
+| `input` | state: the player changes it at the table (HP, exhaustion, notes) | — | — |
+| `override` | the player entered their own number instead of the computed one | `✎` | _(manual)_ |
 
-«Обчислено» позначається знаком, а не словом біля кожного рядка: інакше на
-аркуші з 80 полів половина тексту — службова. «Вручну» позначається завжди:
-це єдине місце, де лист розходиться з правилами, і гравець має це бачити.
+"Computed" is marked with a symbol, not a word next to each line: otherwise half the
+text on an 80-field sheet would be bookkeeping. "Manual" is always marked: it's the only
+place where the sheet diverges from the rules, and the player must see it.
 
 ## API
 
-| Метод | Шлях | Що віддає |
+| Method | Path | Returns |
 |---|---|---|
-| `GET` | `/api/v1/characters/{id}/export/markdown` | `text/markdown`, вкладення `character-sheet.md` |
-| `GET` | `/api/v1/characters/{id}/export/pdf` | `application/pdf` (або `503`, якщо немає WeasyPrint) |
-| `GET` | `/api/v1/characters/{id}/export/{fmt}?originals=false` | те саме без англійських підписів |
+| `GET` | `/api/v1/characters/{id}/export/pdf` | `application/pdf` (or `503` without WeasyPrint) |
+| `GET` | `/api/v1/characters/{id}/print` | the same sheet as HTML for browser printing |
+| `GET` | `/api/v1/characters/{id}/export/markdown` | `text/markdown`, attachment `character-sheet.md` |
+| `GET` | `/api/v1/characters/{id}/export/{fmt}?originals=false` | the same without English labels |
+| `GET` | `/api/v1/shared/{token}/export/pdf`, `/api/v1/shared/{token}/print` | printing a shared read-only sheet |
 | `GET` | `/api/v1/renderers` | `{"formats": [...], "available": [...]}` |
-| `GET` | `/api/v1/demo/export/{fmt}` | демо-лист тим самим рендером |
-| `GET` | `/api/v1/characters/golden/{key}/export/{fmt}` | еталонний лист |
+| `GET` | `/api/v1/demo/export/{fmt}` | the demo sheet with the same renderer |
+| `GET` | `/api/v1/characters/golden/{key}/export/{fmt}` | a reference sheet |
 
-`formats` — зареєстровані рендери, `available` — ті, що справді працюють у
-цьому середовищі. Різниця принципова: PDF без WeasyPrint зареєстрований, але
-`render()` кине `RendererUnavailable` → `503`. Екран показує кнопку PDF лише
-тоді, коли формат є в `available`, і пише «PDF недоступний на цьому сервері»
-замість посилання, яке відкриває JSON із помилкою.
+`formats` are the registered renderers, `available` — those that actually work in this
+environment. The difference matters: PDF without WeasyPrint is registered, but `render()`
+raises `RendererUnavailable` → `503`. The UI shows the PDF button only when the format is
+in `available`.
 
-Невідомий формат — `404`, чужий/неіснуючий персонаж — `404`, зіпсований
-`id` — `422`.
+An unknown format is `404`, someone else's or a missing character is `404`, a malformed
+`id` is `422`.
 
-## Свідомо не зроблено
+## Deliberately not done
 
-* **Англомовний експорт.** Документ збирається українською — це мова
-  застосунку. `RenderOptions.lang` (uk/en) існував із етапу 1, але його ніхто
-  не читав: рендер не перекладає, він малює. Мертву опцію прибрано, щоб вона
-  не обіцяла того, чого немає. Переклад — це конвеєр `localization` + глосарій,
-  а не прапорець у рендері.
-* **Таблична верстка.** Атаки, закляття й інвентар — це «плитки» полів, а не
-  справжні таблиці з колонками. Документ описує поля й секції; таблиця як
-  елемент документа — окрема робота в етапі 8 (разом із кастомними секціями).
-* **Текст умінь і рис.** У документі назва й рівень, без опису з книги —
-  опис приходить на етапі 7.
-* **Скорочення довгих списків.** Усі 18 навичок і всі володіння друкуються
-  повністю: краще два аркуші, ніж лист, на якому бракує рядка.
+* **English export.** The document is built in Ukrainian — the app's language.
+  `RenderOptions.lang` (uk/en) existed since stage 1, but nothing read it: a renderer
+  doesn't translate, it draws. The dead option was removed so it wouldn't promise what
+  doesn't exist. Translation is the glossary pipeline, not a renderer flag.
+* **Trimming long lists.** All 18 skills and all proficiencies are printed in full: two
+  pages are better than a sheet missing a line.
 
-## Виправлено дорогою (знайдені помилки)
+## Fixed along the way
 
-1. **Нуль хітів показувався як максимум.** `HitPointState.current` був `int`
-   зі значенням `0` за замовчуванням, а калькулятор писав
-   `current if current else maximum`. Непритомний персонаж із трьома провалами
-   кидків смерті виглядав цілком здоровим — і на екрані, і в друці. Тепер
-   `current: int | None`, де `None` — «гравець ще не чіпав хіти», а `0` — це
-   нуль. Старі файли (`character/1`) читаються як «не задано»: у тій схемі 0
-   не міг означати справжній нуль, бо лист його не показував. Формат став
-   `character/2`, міграція покрита тестами.
-2. **`RenderOptions.lang`** — прибрано (див. «Свідомо не зроблено»).
-3. **Дублювання списків.** Закляття, вміння й володіння збиралися окремо в
-   серіалізаторі екрана і в побудові документа — тобто могли розійтися.
-   Тепер обидва беруть рядки з `characters/application/rows.py`.
-4. **Позначка обчисленого поля в PDF** збігалася з позначкою виправлення
-   (`•` для обох), а підпис унизу стверджував, що `•` — «обчислюється
-   автоматично». Виправлення тепер `✎`, підпис відповідає.
+1. **Zero HP showed as the maximum.** `HitPointState.current` was an `int` defaulting to
+   `0`, and the calculator wrote `current if current else maximum`. An unconscious
+   character with three failed death saves looked perfectly healthy — on screen and on
+   paper. Now `current: int | None`, where `None` means "the player hasn't touched HP yet"
+   and `0` is zero. Old files (`character/1`) read as "not set": in that schema 0 couldn't
+   mean a real zero, because the sheet never showed it. The format became `character/2`;
+   the migration is covered by tests.
+2. **`RenderOptions.lang`** — removed (see "Deliberately not done").
+3. **Duplicated lists.** Spells, features and proficiencies were gathered separately in
+   the screen serializer and in the document builder — so they could diverge. Now both take
+   rows from `characters/application/rows.py`.
+4. **The computed-field mark in PDF** matched the override mark (`•` for both), while the
+   caption claimed `•` means "computed automatically". Overrides are now `✎`, and the
+   caption matches.
 
-## Тести
+## Tests
 
-| Файл | Що тримає |
+| File | What it holds |
 |---|---|
-| `tests/sheets/test_build_document.py` | структура (усі розділи, без порожніх), стан у документі, 0 хітів, `override` міняє `origin`, слоти «залишилось/усього», нотатки, застереження, документ проходить JSON Schema |
-| `tests/conformance/test_character_document.py` | справжній лист → Markdown і HTML (те, з чого збирається PDF): кожен розділ, підпис і значення на місці; `%PDF` — лише там, де є WeasyPrint |
-| `tests/api/test_export_api.py` | HTTP-експорт персонажа зі станом, `originals=false`, `404` на формат і персонажа, демо з атаками |
-| `tests/characters/test_json_store.py` | міграція `character/1` → `character/2` (0 = «не задано», справжній 0 зберігається) |
+| `tests/sheets/test_build_document.py` | structure (all sections, none empty), state in the document, 0 HP, `override` changes `origin`, slots "remaining/total", notes, warnings, the document passes the JSON Schema |
+| `tests/characters/test_print_view.py` | the print view: sections, spells grouped by class in multiclass, item names |
+| `tests/conformance/test_character_document.py` | a real sheet → Markdown and HTML (what the PDF is made of): every section, label and value in place; `%PDF` only where WeasyPrint exists |
+| `tests/api/test_export_api.py` | HTTP export of a character with state, printing, `originals=false`, `404` for format and character |
+| `tests/characters/test_json_store.py` | migration `character/1` → `character/2` (0 = "not set", a real 0 is kept) |
 
-Conformance на PDF у цьому середовищі **скіпається**: WeasyPrint на Windows
-потребує GTK, і його тут немає. Замість зеленого тесту, що нічого не
-перевіряє, перевіряється HTML-шаблон — тобто весь вміст PDF, крім самої
-конвертації.
+On Windows without GTK the PDF conformance test is **skipped**; in Docker and in CI it
+runs (the image has WeasyPrint).

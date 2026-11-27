@@ -1,2 +1,2 @@
-# Ці файли виконуються на Linux-сервері: лише LF, інакше bash спіткнеться об \r.
+# These files run on the Linux server: LF only, otherwise bash trips over \r.
 * text eol=lf

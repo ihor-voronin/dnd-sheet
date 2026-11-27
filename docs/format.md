@@ -1,54 +1,54 @@
-# Формат записів довідника
+# Compendium record format
 
-Один запис — одна сутність однієї категорії, і **всі записи однієї категорії
-мають однаковий формат**. Це не стилістична дрібниця: корпус збирають чотири
-різні конвеєри (HTML зі сторінок D&D Beyond, OCR сканованого PDF, текстовий шар
-PDF, рукописні записи в білдерах), і до впровадження цього контракту «всі
-закляття» на ділі мали три різні формати, «всі монстри» — 55 наборів ключів
-`data`, а «всі риси» — два різні початки тексту.
+One record is one entity of one category, and **all records of a category have the same
+format**. This isn't a stylistic detail: the corpus is assembled by four different
+pipelines (HTML from D&D Beyond pages, OCR of a scanned PDF, a PDF text layer, records
+written by hand in builders), and before this contract existed "all spells" actually had
+three different formats, "all monsters" — 55 sets of `data` keys, and "all feats" — two
+different text openings.
 
-Корпусів два, і межа між ними — частина того самого контракту:
+There are two corpora, and the boundary between them is part of the same contract:
 
-| Корпус | Тека | Що всередині | Читає лист персонажа |
+| Corpus | Folder | Contents | Read by the character sheet |
 |---|---|---|---|
-| `compendium` | `content/compendium/` | класи, підкласи, види, передісторії, риси, опційні вміння, закляття, предмети, правила | так |
-| `bestiary` | `content/bestiary/` | статблоки монстрів | **ні** |
+| `compendium` | `content/compendium/` | classes, subclasses, species, backgrounds, feats, optional features, spells, items, rules | yes |
+| `bestiary` | `content/bestiary/` | monster stat blocks | **no** |
 
-Формат запису в обох однаковий (та сама схема, ті самі перевірки), тому один
-читач обслуговує обидва корпуси. Різниця лише в тому, що монстри не беруть
-участі в збиранні листа: їхній обсяг (3605 записів) перевищує решту сутностей
-разом, і тримати їх у потоці листка означало б щоразу просіювати непотріб.
+The record format is the same in both (same schema, same checks), so one reader serves
+both corpora. The only difference is that monsters don't take part in building the sheet:
+their volume exceeds all other entities combined, and keeping them in the sheet's data
+flow would mean sifting through noise every time.
 
-Джерело істини — `contract/compendium-format.json`. Код — `scripts/normalize/`.
-Тест — `backend/tests/contract/test_compendium_format.py`.
+The source of truth is `contract/compendium-format.json`. Code — `scripts/normalize/`.
+Test — `backend/tests/contract/test_compendium_format.py`.
 
-## 1. Що саме однакове
+## 1. What exactly is uniform
 
-1. **Поля запису** (`entry_keys`, у цьому порядку):
+1. **Record fields** (`entry_keys`, in this order):
 
    ```
    id, schema, source_id, category, name_en, name_uk, edition, license,
    url, page, text_en, text_uk, data, status, fetched_at, notes
    ```
 
-2. **Ключі `data`** — фіксований набір і фіксований порядок для категорії.
-   Невідоме значення — `null`, прапорець — `false`, порожній список — `null`.
-   Ключа, якого немає в контракті, в записі бути не може.
+2. **`data` keys** — a fixed set in a fixed order per category. An unknown value is
+   `null`, a flag is `false`, an empty list is `null`. A key that isn't in the contract
+   can't be in a record.
 
-3. **Скелет `text_en`** — один із трьох:
+3. **The `text_en` skeleton** — one of three:
 
-   | Скелет | Як виглядає | Категорії |
+   | Skeleton | What it looks like | Categories |
    |---|---|---|
-   | `spell-block` | перший рядок — `8th-level necromancy` або `Conjuration cantrip`, далі порожній рядок і тіло | `spell` |
-   | `prose` | одразу тіло, без заголовка | `species`, `background`, `feat`, `optionalfeature`, `subclass`, `item`, `monster` |
-   | `section` | перший рядок — `# <назва>`, далі порожній рядок і тіло | `class`, `rule` |
+   | `spell-block` | first line — `8th-level necromancy` or `Conjuration cantrip`, then an empty line and the body | `spell` |
+   | `prose` | the body straight away, no heading | `species`, `background`, `feat`, `optionalfeature`, `subclass`, `item`, `monster` |
+   | `section` | first line — `# <name>`, then an empty line and the body | `class`, `rule` |
 
-   Плюс спільна гігієна: без м'яких переносів (`U+00AD`), без BOM, без
-   хвостових пробілів, без трьох і більше порожніх рядків підряд.
+   Plus shared hygiene: no soft hyphens (`U+00AD`), no BOM, no trailing whitespace, no
+   three or more empty lines in a row.
 
-## 2. Категорії
+## 2. Categories
 
-| Категорія | Ключі `data` (у цьому порядку) | Текст |
+| Category | `data` keys (in this order) | Text |
 |---|---|---|
 | `spell` | `level`, `school`, `ritual`, `concentration`, `casting_time`, `range`, `components`, `duration`, `classes`, `at_higher_levels` | `spell-block` |
 | `species` | `ability_increases`, `size`, `speed`, `subrace_of` | `prose` |
@@ -58,137 +58,135 @@ PDF, рукописні записи в білдерах), і до впрова�
 | `class` | — | `section` |
 | `subclass` | `class`, `level` | `prose` |
 | `item` | `item_type`, `rarity`, `magical`, `attunement`, `base_item`, `group`, `cost`, `weight`, `armor_class`, `damage`, `properties`, `stealth`, `strength` | `prose` |
-| `monster` | `size`, `creature_type`, `subtype`, `alignment`, `armor_class`, `hit_points`, `hit_dice`, `speed`, `abilities`, `challenge_rating`, `xp`, `saving_throws`, `skills`, `damage_vulnerabilities`, `damage_resistances`, `damage_immunities`, `condition_immunities`, `senses`, `languages` | `prose` (корпус `bestiary`) |
+| `monster` | `size`, `creature_type`, `subtype`, `alignment`, `armor_class`, `hit_points`, `hit_dice`, `speed`, `abilities`, `challenge_rating`, `xp`, `saving_throws`, `skills`, `damage_vulnerabilities`, `damage_resistances`, `damage_immunities`, `condition_immunities`, `senses`, `languages` | `prose` (`bestiary` corpus) |
 | `rule` | — | `section` |
 
-Особливі типи значень:
+Special value types:
 
-* `abilities` — завжди шість ключів `str, dex, con, int, wis, cha`, значення —
-  ціле число або `null`;
-* `ability_increases` — шість ключів `strength, dexterity, constitution,
-  intelligence, wisdom, charisma`, ціле число або `null`;
-* `lower` — список у нижньому регістрі, відсортований (`classes`,
-  `feature_type`): у дзеркала група опційного вміння — це код
-  (`EI`, `FS:R`), а в записі вона зветься `eldritch invocation`,
-  `fighting style (ranger)`;
-* `str_lower` — рядок у нижньому регістрі (`size`, `creature_type`,
-  `alignment`, `rarity`): у книгах трапляється і `Small fey`, і `small fey`.
+* `abilities` — always six keys `str, dex, con, int, wis, cha`, the value is an integer
+  or `null`;
+* `ability_increases` — six keys `strength, dexterity, constitution, intelligence,
+  wisdom, charisma`, an integer or `null`;
+* `lower` — a lowercase, sorted list (`classes`, `feature_type`): in the mirror the
+  optional feature group is a code (`EI`, `FS:R`), while in the record it's
+  `eldritch invocation`, `fighting style (ranger)`;
+* `str_lower` — a lowercase string (`size`, `creature_type`, `alignment`, `rarity`):
+  books contain both `Small fey` and `small fey`.
 
-`data` категорій `class` і `rule` — завжди `{}`: правила й класи — це текст, а
-структуровані поля (населення міста, склад команди, автори книги) до контракту
-не входять; вони лишаються в `text_en`.
+`data` for `class` and `rule` is always `{}`: rules and classes are text, and structured
+fields (a town's population, a crew roster, book authors) aren't part of the contract;
+they stay in `text_en`.
 
-Якій категорії в якому корпусі лежати — описано в `corpora` того самого файлу:
-`compendium` — усі категорії, крім `monster`, `bestiary` — лише `monster`.
-Категорія без корпусу або в двох корпусах — помилка специфікації, її ловить
-`_validate_spec`, і preflight падає ще до перевірки записів.
+Which corpus each category belongs to is described in `corpora` in the same file:
+`compendium` — every category except `monster`, `bestiary` — only `monster`. A category
+with no corpus or in two corpora is a specification error; `_validate_spec` catches it and
+preflight fails before checking any records.
 
-## 3. Механічні виправлення категорії
+## 3. Mechanical category fixes
 
-Формат категорії неможливий, якщо в ній лежить чужий тип запису. Тому
-нормалізатор виправляє очевидні випадки (`refine` у контракті):
+A category's format is impossible if it contains a record of another type. So the
+normalizer fixes the obvious cases (`refine` in the contract):
 
-| Ознака | Було | Стало |
+| Sign | Was | Becomes |
 |---|---|---|
-| текст починається заголовком `Chapter …`, `Appendix …`, `Part …` або назвою-списком (`Spells`, `Equipment`, `Monsters`, `Bestiary`, `Backgrounds`, `Races`, `Classes`, `Feats`, `Items`, `Magic Items`, `Spell Lists`) | будь-яка сутність | `rule` |
-| сутність починається з чужого заголовка (Sage Advice: `#### If you have the Charger feat…`) | `feat` | `rule` |
-| текст починається рядком рівня закляття (`4th-level conjuration`) | `monster` | `spell` |
-| у статблоці немає рядка типу істоти (`Large aberration, lawful evil`) | `monster` | `rule` |
-| `id` повторюється після виправлення категорії | два записи з одним `id` | лишається повніший (більше заповнених полів `data`), другий згадується в `notes` |
+| the text starts with a `Chapter …`, `Appendix …`, `Part …` heading or a list-title (`Spells`, `Equipment`, `Monsters`, `Bestiary`, `Backgrounds`, `Races`, `Classes`, `Feats`, `Items`, `Magic Items`, `Spell Lists`) | any entity | `rule` |
+| the entity starts with a foreign heading (Sage Advice: `#### If you have the Charger feat…`) | `feat` | `rule` |
+| the text starts with a spell level line (`4th-level conjuration`) | `monster` | `spell` |
+| the stat block has no creature type line (`Large aberration, lawful evil`) | `monster` | `rule` |
+| an `id` repeats after the category fix | two records with one `id` | the fuller one stays (more filled `data` fields), the other is mentioned in `notes` |
 
-## 4. Як користуватися
+## 4. How to use it
 
 ```powershell
-# перевірити весь корпус (код виходу 1, якщо є розбіжності)
+# check the whole corpus (exit code 1 on differences)
 python -m scripts.normalize --check
 
-# перевірити одну книгу, з прикладами
+# check one book, with examples
 python -m scripts.normalize --check --source eepc --limit 10
 
-# привести корпус до канону
+# bring the corpus to canon
 python -m scripts.normalize --write
 
-# матриця «книга × категорія»
+# "book × category" matrix
 python -m scripts.normalize --stats
 ```
 
-Усі команди працюють одразу з обома корпусами: `--check` обходить книги,
-знайдені в `content/compendium/` і `content/bestiary/`, `--stats` показує
-спільну матрицю, а `--write` не лише нормалізує записи, а й переносить їх у
-корпус, який приписала категорії специфікація.
+All commands work on both corpora at once: `--check` walks the books found in
+`content/compendium/` and `content/bestiary/`, `--stats` shows a shared matrix, and
+`--write` not only normalizes records but also moves them into the corpus the
+specification assigns to their category.
 
-У Makefile — `make format` і `make format-check`. У тестах формат перевіряє
-`backend/tests/contract/test_compendium_format.py` (структура, `data`,
-скелет тексту, унікальність `id`, мінімум полів для закляття й статблока,
-і окремо — що `monster` не повернувся в компендіум, а в бестіарії немає
-нічого, крім нього).
+The Makefile has `make format` and `make format-check`. In tests the format is checked by
+`backend/tests/contract/test_compendium_format.py` (structure, `data`, text skeleton,
+`id` uniqueness, minimum fields for spells and stat blocks, and separately — that no
+`monster` came back into the compendium and the bestiary holds nothing else).
 
-Конвеєри застосовують контракт самі:
+The pipelines apply the contract themselves:
 
-* `scripts/ingest/records.py` — після розбору сторінок;
-* `scripts/pdf/build_eepc.py`, `scripts/pdf/build_gotg.py` — після збірки книги.
+* `scripts/ingest/records.py` — after parsing pages;
+* `scripts/pdf/build_eepc.py`, `scripts/pdf/build_gotg.py` — after building a book.
 
-Тобто «перевести все у формат» — це `--write` один раз; далі кожен новий
-запуск конвеєра вже пише канон.
+So "convert everything to the format" is a one-time `--write`; every later pipeline run
+already writes canon.
 
-### Перебудова корпусу без втрат
+### Rebuilding the corpus without losses
 
-Формат не допоможе, якщо перерозбір загубив текст. Тому для повної перебудови
-HTML-книг є дві команди:
+The format doesn't help if a re-parse lost text. So a full rebuild of HTML books has two
+commands:
 
 ```powershell
-# перерозібрати всі книги з content/raw/*.html; книгу, яка стала коротшою,
-# буде відкочено до попереднього стану
+# re-parse all books from content/raw/*.html; a book that became shorter
+# is rolled back to its previous state
 python scripts/ingest/reparse.py --show-text-loss
 
-# перевірити, що жоден абзац попереднього корпусу не зник
-python scripts/ingest/verify_text.py --against <копія попереднього корпусу>
+# check that no paragraph of the previous corpus disappeared
+python scripts/ingest/verify_text.py --against <copy of the previous corpus>
 ```
 
-`reparse` і `verify_text` працюють із книгою як із цілим, тобто по обох
-корпусах: знімок робиться з `content/compendium/` і `content/bestiary/`, і
-якщо після розбору книга стала коротшою, відкочуються обидві її теки. Для
-`verify_text` можна передати `--against` двічі (окремо компендіум і бестіарій)
-або один раз — теку, у якій вони лежать поруч.
+`reparse` and `verify_text` treat a book as a whole, i.e. across both corpora: the
+snapshot is taken from `content/compendium/` and `content/bestiary/`, and if the book
+became shorter after parsing, both of its folders are rolled back. `verify_text` accepts
+`--against` twice (compendium and bestiary separately) or once — a folder that contains
+both.
 
-`verify_text` розрізняє **втрату** і **виправлення**: якщо абзац не знайдено,
-але той самий запис існує і схожий на нього ≥90%, це виправлення (наприклад,
-OCR-артефакт «fol lowing» → «following»), а не втрата. Саме так було звірено
-перехід на 5393 записи: 0 втрат, 2 виправлені абзаци.
+`verify_text` distinguishes a **loss** from a **fix**: if a paragraph isn't found but
+the same record exists and is ≥90% similar, it's a fix (for example the OCR artifact
+"fol lowing" → "following"), not a loss. That's how the move to 5393 records was
+verified: 0 losses, 2 fixed paragraphs.
 
-## 5. Що це змінило в корпусі
+## 5. What this changed in the corpus
 
-| | До контракту | Після |
+| | Before the contract | After |
 |---|---|---|
-| Записів | 4639 | 5393 (3147 довідник + 2246 бестіарій) |
-| Наборів ключів `data` у монстрів | 55 | 1 |
-| Наборів ключів `data` у предметів | 10 | 1 |
-| Записів із порожнім `data` в категоріях-сутностях | 10 | 0 |
-| Заклять без рядка рівня в `text_en` | 51 | 0 |
-| Рис із рядком `Prerequisite:` у тексті | 34 | 0 |
-| Записів, яким виправлено категорію | 28 | — |
-| Повторюваних `id` | 2 (26 записів) | 0 |
+| Records | 4639 | 5393 (3147 compendium + 2246 bestiary) |
+| Monster `data` key sets | 55 | 1 |
+| Item `data` key sets | 10 | 1 |
+| Records with empty `data` in entity categories | 10 | 0 |
+| Spells without a level line in `text_en` | 51 | 0 |
+| Feats with a `Prerequisite:` line in the text | 34 | 0 |
+| Records with a corrected category | 28 | — |
+| Repeated `id`s | 2 (26 records) | 0 |
 
-Монстрів побільшало з 1596 до 2246 не через нові книги, а тому що статблоки
-Basic Rules, MToF, VGtM, Monstrous Compendium і додатків починаються звичайним
-абзацом-назвою, а не заголовком markdown: раніше ці сторінки злипалися в один
-запис на сторінку. Тепер вони всі живуть у бестіарії — компендіум містить 3147
-записів, і саме їх читає лист персонажа.
+The number of monsters grew from 1596 to 2246 not because of new books, but because the
+stat blocks of the Basic Rules, MToF, VGtM, Monstrous Compendium and supplements start
+with a plain title paragraph rather than a markdown heading: previously these pages
+merged into one record per page. Now they all live in the bestiary; the compendium is what
+the character sheet reads.
 
-## 6. Як додати категорію або ключ
+## 6. How to add a category or a key
 
-1. Додати опис у `contract/compendium-format.json` (`categories.<назва>` з
-   `text` і `data`; для нового типу значення — ще й обробник у
-   `_KIND_COERCERS`) і вказати корпус у `corpora`.
-2. Додати назву до `categories.enum` у `contract/compendium-entry.schema.json`
-   — інакше JSON Schema відкине записи нової категорії.
-3. Якщо категорію пише конвеєр дзеркала, дописати її ще й у
-   `scripts/ingest/sync_sources.py` (`CATEGORY_ORDER` і `PLURALS`) — звідти
-   беруться `categories:` і `note:` у реєстрі джерел.
-4. `python -m scripts.normalize --check` покаже, скільки записів це зачепить.
+1. Add the description to `contract/compendium-format.json` (`categories.<name>` with
+   `text` and `data`; for a new value type also a handler in `_KIND_COERCERS`) and set
+   its corpus in `corpora`.
+2. Add the name to `categories.enum` in `contract/compendium-entry.schema.json` —
+   otherwise the JSON Schema rejects records of the new category.
+3. If the mirror pipeline writes the category, add it to
+   `scripts/ingest/sync_sources.py` too (`CATEGORY_ORDER` and `PLURALS`) — that's where
+   `categories:` and `note:` in the source registry come from.
+4. `python -m scripts.normalize --check` shows how many records this affects.
 5. `python -m scripts.normalize --write`.
 6. `python -m pytest backend/tests/contract/test_compendium_format.py`.
 
-Якщо змінюється `category` наявного запису, нормалізатор переписує і `id`
-(`<source_id>/<category>/<slug>`), а якщо `id` почне повторюватися — лишає
-повніший запис і пише в `notes`, який саме запис прибрано.
+If an existing record's `category` changes, the normalizer rewrites its `id` too
+(`<source_id>/<category>/<slug>`), and if the `id` starts to repeat it keeps the fuller
+record and writes in `notes` which record was removed.

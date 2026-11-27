@@ -1,25 +1,25 @@
 # syntax=docker/dockerfile:1
 
 # ---------------------------------------------------------------------------
-# 1. Збірка SPA: node лише на етапі build, у фінальний образ не потрапляє
+# 1. Build the SPA: node only in the build stage, it doesn't reach the final image
 # ---------------------------------------------------------------------------
 FROM node:22-alpine AS web
 
 WORKDIR /web
 
-# Спершу лише маніфести — шар із залежностями кешується, поки не змінився lock
+# Manifests first — the dependency layer stays cached until the lock changes
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 COPY frontend/ ./
-# tsc --noEmit && vite build (див. frontend/package.json)
+# tsc --noEmit && vite build (see frontend/package.json)
 RUN npm run build
 
 
 # ---------------------------------------------------------------------------
-# 2. Python-залежності окремо: у фінальний образ іде лише встановлене —
-#    без вихідників backend/ і без .pyc (--no-compile: ~40 МБ менше; Python
-#    компілює модулі в памʼяті при старті, це пів секунди).
+# 2. Python dependencies separately: only what's installed goes into the final image —
+#    no backend/ sources and no .pyc (--no-compile: ~40 MB less; Python
+#    compiles modules in memory at startup, which takes half a second).
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS deps
 
@@ -31,7 +31,7 @@ RUN pip install --no-compile --prefix=/install "/src/backend[pdf]"
 
 
 # ---------------------------------------------------------------------------
-# 3. Виконання: python + FastAPI + зібрана SPA + корпус довідника
+# 3. Runtime: python + FastAPI + the built SPA + the compendium corpus
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
@@ -43,9 +43,9 @@ ENV PYTHONUNBUFFERED=1 \
     DNDSHEET_CONTENT_DIR=/app/content \
     DNDSHEET_SPA_DIST=/app/frontend/dist
 
-# Бібліотеки для WeasyPrint (PDF) і шрифти з кирилицею для нього ж.
-# WeasyPrint 53+ малює сам (без cairo й gdk-pixbuf): потрібні лише ті, що він
-# відкриває через dlopen — gobject/pango, pangoft2, fontconfig, harfbuzz (+subset).
+# Libraries for WeasyPrint (PDF) and Cyrillic fonts for it.
+# WeasyPrint 53+ draws by itself (no cairo or gdk-pixbuf): only the libraries it
+# opens via dlopen are needed — gobject/pango, pangoft2, fontconfig, harfbuzz (+subset).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libpango-1.0-0 \
@@ -58,15 +58,15 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# Корпус довідника: без нього сервіс піднімається, але лист будувати ні з чого.
-# content/raw (джерельні книги) у образ не кладемо — він потрібен лише ingest.
+# The compendium corpus: without it the service starts, but there's nothing to build a sheet from.
+# content/raw (the source books) doesn't go into the image — only ingest needs it.
 COPY content/sources.yml /app/content/sources.yml
 COPY content/books_market.json /app/content/books_market.json
 COPY content/compendium/ /app/content/compendium/
 COPY content/bestiary/ /app/content/bestiary/
 COPY content/index/ /app/content/index/
-# Переклади (українські назви й тексти). Без них сервіс працює, але показує
-# оригінал книги — тобто мовчки англійською, чого ніхто не помітить.
+# Translations (Ukrainian names and texts). Without them the service works but shows
+# the book's original — i.e. silently in English, which nobody would notice.
 COPY content/translations/ /app/content/translations/
 
 COPY --from=deps /install /usr/local
@@ -84,21 +84,21 @@ EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=6 \
     CMD python -c "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).status == 200 else 1)"
 
-# 0.0.0.0 обовʼязково: інакше порт назовні контейнера не видно
+# 0.0.0.0 is required: otherwise the port isn't visible outside the container
 CMD ["python", "-m", "uvicorn", "dndsheet.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 
 # ---------------------------------------------------------------------------
-# 4. Тести: той самий образ + корпус + dev-залежності.
+# 4. Tests: the same image + the corpus + dev dependencies.
 #    docker compose --profile test run --rm test
-#    (у застосунку `app` ціль — `runtime`, тож цей етап у нього не потрапляє)
+#    (the `app` service targets `runtime`, so this stage doesn't reach it)
 # ---------------------------------------------------------------------------
 FROM runtime AS test
 
 USER root
 
-# Тести читають вихідники backend (у runtime їх уже немає), контракт, глосарій,
-# фронтенд (термінологія) і скрипти нормалізації.
+# Tests read the backend sources (runtime no longer has them), the contract, the glossary,
+# the frontend (terminology) and the normalization scripts.
 COPY backend/ /app/backend/
 COPY contract/ /app/contract/
 COPY content/glossary.uk.yml /app/content/glossary.uk.yml

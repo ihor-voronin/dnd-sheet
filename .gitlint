@@ -1,5 +1,5 @@
-# Повідомлення комітів (хук commit-msg). За зразком GloPros, без їхніх Jira-ключів
-# і правил гілок: заголовок — що змінилось, тіло — чому й що саме, списком.
+# Commit messages (the commit-msg hook): the title says what changed,
+# the body says why and what exactly, as a list.
 [general]
 ignore = body-is-missing
 

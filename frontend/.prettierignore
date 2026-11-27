@@ -1,4 +1,4 @@
-# Згенеровано з contract/sheet-document.schema.json (npm run contract) — не форматувати руками.
+# Generated from contract/sheet-document.schema.json (npm run contract) — don't format by hand.
 src/contract/
 dist/
 node_modules/

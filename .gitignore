@@ -17,27 +17,27 @@ node_modules/
 frontend/dist/
 *.tsbuildinfo
 
-# --- Дані/секрети ---
+# --- Data/secrets ---
 .env
-# Тимчасові файли деплою (стиснутий образ). Доступи — у deploy/secrets (git-crypt).
+# Temporary deploy files (the compressed image). Credentials live in deploy/secrets (git-crypt).
 deploy/local/
-# Terraform: плагіни й локальні змінні (адреса сервера).
+# Terraform: plugins and local variables (the server address).
 deploy/terraform/.terraform/
-# Стан Terraform — лише зашифрований у deploy/secrets/terraform; копії, які Terraform
-# кладе поруч (state rm, backup), відкриті — у git їм не можна.
+# The Terraform state is kept only encrypted in deploy/secrets/terraform; the copies Terraform
+# puts next to it (state rm, backup) are plaintext and must not reach git.
 deploy/terraform/*.tfstate*
 deploy/terraform/terraform.tfvars
 *.local
 *.sqlite3
 .tmp/
 
-# --- База знань: сирі тексти книг (copyright) і сесія ---
-# Корпус (content/compendium, bestiary, index) — у git, але зашифрований git-crypt:
-# правила в їхніх .gitattributes. Сирі тексти книг і сесія — лише локально.
+# --- Knowledge base: raw book texts (copyright) and the session ---
+# The corpus (content/compendium, bestiary, index) is in git, but encrypted by git-crypt:
+# the rules are in their .gitattributes. Raw book texts and the session stay local.
 content/raw/
 content/.session/
 
-# --- Згенеровані артефакти ---
+# --- Generated artifacts ---
 artifacts/
 *.pdf
 !docs/**/*.pdf
@@ -53,18 +53,18 @@ ingest-status*.txt
 .vscode/
 !_vscode/
 
-# --- Бекапи/чернетки ---
+# --- Backups/drafts ---
 *.bak
 *.bak.*
 
 
 
 
-# --- Тимчасові теки тестів (пісочниця не дає писати в %TEMP%) ---
+# --- Temporary test folders (the sandbox doesn't allow writing to %TEMP%) ---
 backend/tests/**/_tmp_*/
 
-# --- Дані застосунку: чернетки візарда й збережені персонажі ---
+# --- App data: wizard drafts and saved characters ---
 var/
 
-# Terraform: блокування стану на час запуску (тимчасовий файл).
+# Terraform: the state lock during a run (a temporary file).
 deploy/secrets/terraform/.terraform.tfstate.lock.info

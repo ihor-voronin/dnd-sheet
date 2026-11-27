@@ -1,5 +1,4 @@
-# Ruff для всього репозиторію (backend, scripts) — як у GloPros (src/pyproject.toml):
-# ті самі набори правил і винятки, без Django-специфіки.
+# Ruff for the whole repository (backend, scripts).
 line-length = 119
 target-version = "py311"
 extend-exclude = ["backend/tests/**/_tmp_*"]
@@ -25,14 +24,14 @@ ignore = [
     "PLR0911", # Too many return statements
     "PLR0912", # Too many branches
     "PLR0913", # Too many arguments to function call
-    "PLR0917", # Too many positional arguments (та сама родина, що й PLR0913)
+    "PLR0917", # Too many positional arguments (same family as PLR0913)
     "PLR0915", # Too many statements
     "PLR2004", # Magic value used in comparison
     "PLW0603", # Using the global statement
     "PLW2901", # `for` loop variable overwritten by assignment target
-    "RUF001",  # String contains ambiguous symbol (кирилиця)
-    "RUF002",  # Docstring contains ambiguous symbol (кирилиця)
-    "RUF003",  # Comment contains ambiguous symbol (кирилиця)
+    "RUF001",  # String contains ambiguous symbol (Cyrillic)
+    "RUF002",  # Docstring contains ambiguous symbol (Cyrillic)
+    "RUF003",  # Comment contains ambiguous symbol (Cyrillic)
     "RUF005",  # Collection literal concatenation
     "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
     "SIM105",  # Use `contextlib.suppress(Exception)`
@@ -42,7 +41,7 @@ ignore = [
 ]
 
 [lint.per-file-ignores]
-# Скрипти й тести друкують у консоль за задумом.
+# Scripts and tests print to the console by design.
 "scripts/**" = ["T20"]
 "backend/tests/**" = ["T20"]
 

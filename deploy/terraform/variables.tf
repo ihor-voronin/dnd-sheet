@@ -1,38 +1,38 @@
 variable "server_ip" {
-  description = "IP-адреса VPS."
+  description = "The VPS IP address."
   type        = string
 }
 
 variable "ssh_user" {
-  description = "Користувач SSH (на RackNerd — root)."
+  description = "The SSH user (root on RackNerd)."
   type        = string
   default     = "root"
 }
 
 variable "ssh_port" {
-  description = "Порт SSH."
+  description = "The SSH port."
   type        = number
   default     = 22
 }
 
 variable "ssh_private_key_path" {
-  description = "Приватний ключ для деплою (зашифрований git-crypt, deploy/secrets/ssh)."
+  description = "The private deploy key (encrypted by git-crypt, deploy/secrets/ssh)."
   type        = string
   default     = "../secrets/ssh/id_ed25519"
 }
 
 variable "domain" {
-  description = "Адреса сайту (запис A в Cloudflare веде на сервер; Caddy сам отримує сертифікат HTTPS)."
+  description = "The site domain (the Cloudflare A record points to the server; Caddy obtains the HTTPS certificate itself)."
   type        = string
 }
 
 variable "cloudflare_zone" {
-  description = "Зона в Cloudflare, де живе домен (напр. voronin.app). Токен — у змінній CLOUDFLARE_API_TOKEN (deploy.ps1 бере її з deploy/secrets/cloudflare.env)."
+  description = "The Cloudflare zone that holds the domain (e.g. voronin.app). The token is in the CLOUDFLARE_API_TOKEN variable (deploy.ps1 takes it from deploy/secrets/cloudflare.env)."
   type        = string
 }
 
 variable "disable_password_login" {
-  description = "Після налаштування вхід по SSH лише ключем (пароль root більше не пускає)."
+  description = "After setup, SSH sign-in is key-only (the root password no longer works)."
   type        = bool
   default     = true
 }

@@ -1,6 +1,6 @@
-# Шрифти аркуша для друку
+# Print sheet fonts
 
-Alegreya, Alegreya Sans і Alegreya Sans SC (Juan Pablo del Peral, Huerta Tipográfica) —
-ліцензія SIL Open Font License 1.1 (https://openfontlicense.org). Файли взято з пакетів
-`@fontsource/alegreya*` (кирилиця й латиниця). Шаблон `character.html.jinja` вбудовує їх
-як data-URI, тож PDF і сторінка друку виглядають однаково.
+Alegreya, Alegreya Sans and Alegreya Sans SC (Juan Pablo del Peral, Huerta Tipográfica) —
+licensed under the SIL Open Font License 1.1 (https://openfontlicense.org). The files come from
+the `@fontsource/alegreya*` packages (Cyrillic and Latin). The `character.html.jinja` template
+embeds them as data URIs, so the PDF and the print page look the same.
