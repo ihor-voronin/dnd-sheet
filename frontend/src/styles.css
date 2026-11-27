@@ -2140,3 +2140,138 @@ input[type="radio"] {
 .share-panel__telegram > .meta {
   margin: 0 0 6px;
 }
+
+/* --- «Знайшли помилку?» --------------------------------------------------- */
+
+.bugs {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 8px 0 24px;
+}
+
+.bugs__title {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-size: 2rem;
+}
+
+.bugs__lead {
+  margin: 0 0 20px;
+  color: var(--graphite);
+  font-size: var(--t-md);
+  line-height: 1.5;
+}
+
+.bugs__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bug {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--leaf);
+}
+
+.bug[open] {
+  border-color: var(--brass);
+}
+
+.bug__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+.bug__title::-webkit-details-marker {
+  display: none;
+}
+
+/* Маркер — червона «печатка», що повертається, коли пункт відкрито. */
+.bug__title::before {
+  content: "";
+  flex: none;
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 8px solid var(--act);
+  transition: transform 0.15s ease;
+}
+
+.bug[open] > .bug__title::before {
+  transform: rotate(90deg);
+}
+
+.bug__body {
+  padding: 0 14px 14px 32px;
+}
+
+.bug__answer {
+  margin: 0 0 10px;
+  font-size: var(--t-md);
+  line-height: 1.55;
+}
+
+.bug__links {
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+
+.bug__links code {
+  font-size: var(--t-sm);
+}
+
+.bug__actions {
+  margin: 0;
+}
+
+.bug--serious {
+  border-style: dashed;
+}
+
+.bugs__howto {
+  margin-top: 28px;
+  padding: 16px 18px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+}
+
+.bugs__h2 {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-size: 1.3rem;
+}
+
+.bugs__howto ol {
+  margin: 0 0 10px;
+  padding-left: 22px;
+  line-height: 1.6;
+}
+
+/* Футер на кожній сторінці: тихий, але «Знайшли помилку?» видно. */
+.site-footer {
+  margin-top: 40px;
+  padding: 16px 4px 8px;
+  border-top: 1px solid var(--line-soft);
+  font-size: var(--t-sm);
+  text-align: center;
+}
+
+.site-footer__bug {
+  font-weight: 700;
+}
+
+.bugs__note,
+.bug__where,
+.site-footer__note {
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}

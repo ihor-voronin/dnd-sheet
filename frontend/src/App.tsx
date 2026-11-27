@@ -13,6 +13,7 @@ import {
   logout,
 } from "./api";
 import { LoginPanel } from "./features/auth/Login";
+import { BugReport } from "./features/bugs/BugReport";
 import { CharacterView } from "./features/character/CharacterView";
 import { LevelUpWizard } from "./features/character/LevelUp";
 import { CharacterCard } from "./features/home/CharacterCard";
@@ -41,13 +42,15 @@ type Route =
   | { name: "character"; id: string; tab?: string }
   | { name: "levelup"; id: string }
   | { name: "shared"; token: string }
-  | { name: "kb"; section?: KbSection; key?: string };
+  | { name: "kb"; section?: KbSection; key?: string }
+  | { name: "bugs" };
 
 function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "create") return { name: "create" };
   // Посилання «лише читати»: #/s/<токен> — відкривається без входу.
   if (hash.startsWith("s/")) return { name: "shared", token: decodeURIComponent(hash.slice(2)) };
+  if (hash === "bugs") return { name: "bugs" };
   if (hash === "kb" || hash.startsWith("kb/")) {
     const [, section, ...rest] = hash.split("/");
     const key = rest.length ? decodeURIComponent(rest.join("/")) : undefined;
@@ -87,15 +90,17 @@ function useRoute(): [Route, (next: Route) => void] {
     const target =
       next.name === "home"
         ? "#/"
-        : next.name === "create"
-          ? "#/create"
-          : next.name === "kb"
-            ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
-            : next.name === "levelup"
-              ? `#/character/${encodeURIComponent(next.id)}/level-up`
-              : next.name === "shared"
-                ? `#/s/${encodeURIComponent(next.token)}`
-                : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
+        : next.name === "bugs"
+          ? "#/bugs"
+          : next.name === "create"
+            ? "#/create"
+            : next.name === "kb"
+              ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
+              : next.name === "levelup"
+                ? `#/character/${encodeURIComponent(next.id)}/level-up`
+                : next.name === "shared"
+                  ? `#/s/${encodeURIComponent(next.token)}`
+                  : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
     if (window.location.hash === target) setRoute(next);
     else window.location.hash = target;
   }, []);
@@ -357,7 +362,9 @@ function Shell() {
                   ? "лист персонажа · перегляд"
                   : route.name === "home"
                     ? "головна"
-                    : "лист персонажа"}
+                    : route.name === "bugs"
+                      ? "знайшли помилку"
+                      : "лист персонажа"}
         </a>
         <nav className="topnav" aria-label="Розділи">
           <button
@@ -448,6 +455,19 @@ function Shell() {
       {user && route.name === "character" ? <CharacterPage id={route.id} tab={route.tab} navigate={navigate} /> : null}
       {user && route.name === "levelup" ? <LevelUpPage id={route.id} navigate={navigate} /> : null}
       {route.name === "shared" ? <SharedPage token={route.token} /> : null}
+      {route.name === "bugs" ? <BugReport /> : null}
+      <footer className="site-footer">
+        <a href="#/bugs" className="site-footer__bug">
+          Знайшли помилку?
+        </a>
+        <span className="site-footer__note">
+          {" "}
+          · неофіційний некомерційний фанатський проєкт ·{" "}
+          <a href="https://github.com/ihor-voronin/dnd-sheet" target="_blank" rel="noopener noreferrer">
+            код на GitHub
+          </a>
+        </span>
+      </footer>
     </main>
   );
 }
