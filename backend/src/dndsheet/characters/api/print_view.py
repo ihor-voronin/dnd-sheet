@@ -387,6 +387,7 @@ def build_print_view(
             }
             for skill in SKILL_ORDER
         ],
+        "ability_groups": _ability_groups(sheet),
         "passives": [
             ("Спостережливість", sheet["passive_perception"]),
             ("Проникливість", sheet["passive_insight"]),
@@ -424,6 +425,40 @@ def build_print_view(
         "notes": _notes(sheet["state"].get("notes") or {}),
     }
     return view
+
+
+def _ability_groups(sheet: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Характеристика з її рятівним кидком і навичками — як на аркуші 2024 року.
+
+    За столом шукають «Спритність → Скритність», а не навичку в довгому списку.
+    """
+    groups = []
+    for ability in ABILITY_ORDER:
+        skills = sorted(
+            (skill for skill in Skill if SKILL_ABILITY[skill] is ability),
+            key=lambda skill: uk_sort_key(DEMO_SKILLS[skill][0]),
+        )
+        save = sheet["saving_throws"][ability.value]
+        groups.append(
+            {
+                "name": DEMO_ABILITIES[ability][0],
+                "short": ABILITY_SHORT[ability],
+                "score": sheet["abilities"][ability.value]["total"],
+                "mod": signed(sheet["abilities"][ability.value]["modifier"]),
+                "save": {"value": signed(save["value"]), "proficient": save["proficient"]},
+                "skills": [
+                    {
+                        "name": DEMO_SKILLS[skill][0],
+                        "value": signed(sheet["skills"][skill.value]["value"]),
+                        "proficient": sheet["skills"][skill.value]["proficient"],
+                        "expertise": sheet["skills"][skill.value].get("expertise", False),
+                        "disadvantage": sheet["skills"][skill.value].get("disadvantage", False),
+                    }
+                    for skill in skills
+                ],
+            }
+        )
+    return groups
 
 
 def _uk(label: str) -> str:

@@ -171,7 +171,8 @@ def test_print_sheet_is_for_the_table(client: TestClient) -> None:
     response = client.get(f"/api/v1/characters/{character_id}/print")
     assert response.status_code == 200
     html = response.text
-    for label in ("рятівні кидки", "навички", "клас захисту", "атаки й заговори", "спорядження"):
+    # Навички — під своєю характеристикою (картки), а не окремим довгим списком.
+    for label in ("Рятівний кидок", "клас захисту", "атаки й заговори", "нотатки в бою", "спорядження"):
         assert label in html
     assert "Атлетика" in html and "Спостережливість" in html
     assert "Уміння й особливості — пояснення" not in html
