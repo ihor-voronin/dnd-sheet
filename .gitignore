@@ -21,6 +21,9 @@ frontend/dist/
 .env
 # Доступи до хостингу лише на цьому компʼютері (не шифровані, не для git).
 deploy/local/
+# Terraform: плагіни й локальні змінні (адреса сервера).
+deploy/terraform/.terraform/
+deploy/terraform/terraform.tfvars
 *.local
 *.sqlite3
 .tmp/

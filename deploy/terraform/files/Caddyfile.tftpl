@@ -1,0 +1,6 @@
+# Згенеровано Terraform. Без домену — звичайний HTTP на IP; з доменом Caddy сам
+# отримає сертифікат і переведе сайт на HTTPS.
+${site_address} {
+	encode gzip
+	reverse_proxy app:8000
+}

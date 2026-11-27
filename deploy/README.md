@@ -42,6 +42,66 @@ git-crypt add-gpg-user --trusted <відбиток ключа>
 так просто не вийде: той, хто вже мав ключ, міг зберегти старі секрети —
 тоді секрети треба замінити (новий токен у @BotFather тощо).
 
+## Деплой на VPS (Terraform)
+
+Сервер — VPS на RackNerd. API для Terraform у RackNerd немає, тож Terraform
+не створює сервер, а доводить наявний до потрібного стану по SSH
+([`terraform/main.tf`](terraform/main.tf)):
+
+1. **bootstrap** — Docker з офіційного репозиторію, файрвол (22, 80, 443),
+   swap 2 ГБ, щоденний бекап бази в `/opt/dndsheet/backups` (14 днів),
+   вхід по SSH лише ключем;
+2. **image** — образ збирається на цьому компʼютері (корпус довідника не в git)
+   і їде на сервер через `docker save` / `docker load`;
+3. **app** — `compose.yml` з Caddy, `.env` з `secrets/prod.env`, запуск і
+   перевірка `/healthz`.
+
+Кожен крок повторюється лише тоді, коли змінилося те, від чого він залежить:
+новий образ, конфіг, `.env` чи скрипт сервера.
+
+Локально, поза git (`deploy/local/`): доступи до панелі й сервера
+(`racknerd.env`), ключ деплою (`ssh/id_ed25519`), стан Terraform і тимчасовий
+`image.tar`. Адреса сервера — у `terraform/terraform.tfvars` (теж поза git;
+приклад — `terraform.tfvars.example`).
+
+### Перший запуск
+
+1. Додати ключ деплою на сервер — один раз, з паролем root:
+
+   ```powershell
+   Get-Content deploy\local\ssh\id_ed25519.pub | ssh root@<IP> "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+   ```
+
+2. Перевірити, що ключ пускає без пароля:
+
+   ```powershell
+   ssh -i deploy\local\ssh\id_ed25519 root@<IP> "cat /etc/os-release | head -2"
+   ```
+
+3. Деплой (Terraform покаже план і спитає `yes`):
+
+   ```powershell
+   .\deploy\terraform\deploy.ps1
+   ```
+
+Після першого деплою вхід паролем вимкнено — пароль root і панелі краще
+змінити, бо вони передавалися відкрито.
+
+### Далі
+
+```powershell
+.\deploy\terraform\deploy.ps1            # зібрати образ і оновити сервер
+.\deploy\terraform\deploy.ps1 -NoBuild   # лише конфіг або .env
+.\deploy\terraform\deploy.ps1 -Plan      # подивитися, що зміниться
+```
+
+Без домену сайт працює по HTTP на IP. Вхід через Telegram потребує домену з
+HTTPS, а вхід «за іменем» на сервері вимкнений (`DNDSHEET_DEV_LOGIN=0`) —
+тож поки що на сайті доступні довідник і посилання «поділитися». Коли буде
+домен: `domain = "..."` у `terraform.tfvars`, запис A на IP сервера,
+`/setdomain` у @BotFather, токен бота в `secrets/prod.env` — і `deploy.ps1`;
+Caddy сам отримає сертифікат.
+
 ## Перед комітом
 
 ```powershell
