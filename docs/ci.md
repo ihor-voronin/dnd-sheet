@@ -1,64 +1,68 @@
-# CI/CD: GitHub Actions, правила main, автодеплой
+# CI/CD: GitHub Actions, rules for main, auto-deploy
 
-Репозиторій публічний — для нього GitHub Actions, правила гілок і середовища
-з підтвердженням безкоштовні й без ліміту хвилин. Cloudflare і git-crypt теж
-безкоштовні. Платний лише VPS.
+The repository is public, so GitHub Actions, branch rules and environments with
+approvals are free and have no minute limit. Cloudflare and git-crypt are free too.
+Only the VPS costs money.
 
-## Як іде зміна
+## How a change flows
 
 ```
-гілка ──► PR у main ──► CI: pre-commit · backend · frontend ──► squash-merge
-                                                                    │
-                          https://dnd.voronin.app ◄── deploy.yml ◄──┘ (CI на main зелений)
+branch ──► PR into main ──► CI: pre-commit · backend · frontend ──► squash-merge
+                                                                        │
+                          https://dnd.voronin.app ◄── deploy.yml ◄──────┘ (CI on main is green)
 ```
 
-1. Робота — у гілці; локально коміти перевіряє pre-commit (RUN.md § 5.1).
-2. PR у `main`: CI проганяє три перевірки. Злиття — лише коли всі зелені.
-3. Squash-merge: у `main` один коміт на PR, його повідомлення — заголовок PR.
-4. Push у `main` знову запускає CI; коли він зелений, `deploy.yml` деплоїть сайт.
+1. Work happens in a branch; locally pre-commit checks each commit (RUN.md § 5.1).
+2. PR into `main`: CI runs three checks. Merging is allowed only when all are green.
+3. Squash-merge: one commit per PR in `main`; its message is the PR title.
+4. The push to `main` runs CI again; when it's green, `deploy.yml` deploys the site.
 
-## Пайплайни
+## Pipelines
 
-### `.github/workflows/ci.yml` — PR у main і push у main
+### `.github/workflows/ci.yml` — PRs into main and pushes to main
 
-| Перевірка | Що робить | Секрети |
+| Check | What it does | Secrets |
 | --- | --- | --- |
-| **pre-commit** | заголовок PR (≤ 100 символів, без WIP); ті самі хуки, що й локально, на змінених файлах (у push — на всіх): ruff, prettier, eslint, tsc, shellcheck, terraform fmt, trufflehog, gitlint-правила, «секрети й корпус лише зашифровані» | немає |
-| **backend** | розблоковує корпус (git-crypt), збирає тестовий Docker-образ (`Dockerfile`, ціль `test`) і запускає всі тести бекенду + контракти імпортів — той самий образ, що й у продакшні, плюс dev-залежності | `GIT_CRYPT_KEY` |
-| **frontend** | `npm ci`, типи, ESLint (0 попереджень), збірка | немає |
+| **pre-commit** | PR title (≤ 100 characters, no WIP); the same hooks as locally, on changed files (all files on push): ruff, prettier, eslint, tsc, shellcheck, terraform fmt, trufflehog, "secrets and corpus are encrypted" | none |
+| **backend** | unlocks the corpus (git-crypt), builds the test Docker image (`Dockerfile`, target `test`) and runs all backend tests + import contracts — the production image plus dev dependencies | `GIT_CRYPT_KEY` |
+| **frontend** | `npm ci`, types, ESLint (0 warnings), build | none |
 
-Без корпусу тести бекенду не мають сенсу (90 падають, 369 пропускаються), тому
-корпус лежить у git зашифрованим, а CI розблоковує його ключем.
+Backend tests are meaningless without the corpus (90 fail, 369 are skipped), so the
+corpus is stored in git encrypted and CI unlocks it with the key.
 
-### `.github/workflows/deploy.yml` — після зеленого CI на main
+### `.github/workflows/deploy.yml` — after green CI on main
 
-- запускається подією `workflow_run` (CI на `main`, push, успіх) або вручну
-  (Actions → Deploy → Run workflow, лише з `main`);
-- розблоковує секрети й корпус, збирає образ (кеш шарів GitHub Actions),
-  запускає `scripts/deploy_app.py` — той самий скрипт, що й `deploy.ps1`;
-- середовище `production` з посиланням на сайт; деплої не перекривають один одного.
+- triggered by `workflow_run` (CI on `main`, push, success) or by hand
+  (Actions → Deploy → Run workflow, only from `main`);
+- unlocks secrets and the corpus, builds the image (GitHub Actions layer cache),
+  runs `scripts/deploy_app.py` — the same script `deploy.ps1` uses;
+- `production` environment with a link to the site; deploys never overlap.
 
-Terraform у CI не запускається: інфраструктура змінюється рідко й вручну
+Terraform doesn't run in CI: infrastructure changes rarely and by hand
 (`deploy.ps1 -Infra`, docs/deploy.md).
 
-## Правила гілки main
+There is no automatic rollback: if the new version doesn't become healthy the deploy
+fails, but the container has already been replaced. Roll back by reverting the PR (the
+next deploy restores the old version) or by re-running an earlier successful Deploy run.
 
-Описані в [`.github/rulesets/main.json`](../.github/rulesets/main.json):
+## Rules for main
 
-| Правило | Навіщо |
+Defined in [`.github/rulesets/main.json`](../.github/rulesets/main.json):
+
+| Rule | Why |
 | --- | --- |
-| лише через PR | у main не потрапляє неперевірений код |
-| обовʼязкові перевірки `pre-commit`, `backend`, `frontend` | злиття тільки на зеленому CI |
-| гілка має бути актуальною з main | перевірки проходили на тому, що й зіллється |
-| усі коментарі в PR розвʼязані | нічого не загубилося |
-| лише squash-merge, лінійна історія | один коміт на зміну, без merge-комітів |
-| заборонено force-push і видалення main | історію не переписати |
-| 0 обовʼязкових схвалень | власний PR схвалити не можна; з другим учасником — 1 |
+| changes only through a PR | no unchecked code reaches main |
+| required checks `pre-commit`, `backend`, `frontend` | merge only on green CI |
+| branch must be up to date with main | checks ran on exactly what gets merged |
+| all PR conversations resolved | nothing gets lost |
+| squash-merge only, linear history | one commit per change, no merge commits |
+| no force-push or deletion of main | history can't be rewritten |
+| 0 required approvals | you can't approve your own PR; with a second contributor — 1 |
 
-## Налаштувати (один раз, у GitHub)
+## One-time setup in GitHub
 
-1. **Секрет `GIT_CRYPT_KEY`** — Settings → Secrets and variables → Actions →
-   New repository secret. Значення — ключ git-crypt у base64:
+1. **`GIT_CRYPT_KEY` secret** — Settings → Secrets and variables → Actions →
+   New repository secret. The value is the git-crypt key in base64:
 
    ```powershell
    git-crypt export-key deploy\local\git-crypt.key
@@ -66,20 +70,22 @@ Terraform у CI не запускається: інфраструктура зм
    Remove-Item deploy\local\git-crypt.key
    ```
 
-   Цей ключ відкриває все зашифроване (секрети деплою й корпус) — лише в секрет
-   GitHub, нікуди більше. Секрети не потрапляють у PR із форків.
-2. **Правило main** — Settings → Rules → Rulesets → New ruleset → Import a
+   This key opens everything encrypted (deploy secrets and the corpus) — put it only
+   into the GitHub secret. Secrets are not passed to PRs from forks.
+2. **Ruleset for main** — Settings → Rules → Rulesets → New ruleset → Import a
    ruleset → `.github/rulesets/main.json`.
-3. **Середовище `production`** — зʼявиться саме після першого деплою. У
-   Settings → Environments → production можна обмежити деплой гілкою `main` і,
-   за бажання, додати себе в Required reviewers (кожен деплой — кнопкою).
+3. **`production` environment** — appears after the first deploy. In
+   Settings → Environments → production you can limit deploys to `main` and
+   optionally add yourself as a Required reviewer (every deploy waits for a click).
+4. **Private vulnerability reporting** — Settings → Code security → enable it, so the
+   "Found a vulnerability" button on `#/bugs` works.
 
-## Що безкоштовно і де межі
+## What's free and where the limits are
 
-| Що | Межа |
+| What | Limit |
 | --- | --- |
-| GitHub Actions | публічний репозиторій — без ліміту хвилин на стандартних раннерах |
-| кеш Actions (шари Docker, pre-commit) | 10 ГБ на репозиторій, старе витісняється саме |
-| rulesets, environments | безкоштовно для публічних репозиторіїв |
-| Cloudflare DNS, Let's Encrypt | безкоштовно |
-| VPS RackNerd | платно (річний тариф) |
+| GitHub Actions | public repository — no minute limit on standard runners |
+| Actions cache (Docker layers, pre-commit) | 10 GB per repository, old entries are evicted automatically |
+| rulesets, environments | free for public repositories |
+| Cloudflare DNS, Let's Encrypt | free |
+| RackNerd VPS | paid (yearly plan) |

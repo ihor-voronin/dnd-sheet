@@ -1,95 +1,97 @@
-# Конвеєр «книга → компендіум»
+# The "book → compendium" pipeline
 
-Два різні випадки, які не варто плутати:
+Two different cases that shouldn't be confused:
 
-| Книга | Стан PDF | Що робимо |
+| Book | PDF state | What we do |
 |---|---|---|
-| **Bigby Presents: Glory of the Giants** (`gotg`) | скан, 200 сторінок, **без текстового шару** | OCR + власний аналіз верстки: `pdf2md.py`, `xycut.py`, `despace.py`, `polish.py`, `slice.py`, `build_gotg.py` |
-| **Elemental Evil Player's Companion** (`eepc`) | 25 сторінок, **справжній текстовий шар** | розбір тексту напряму: `build_eepc.py` |
+| **Bigby Presents: Glory of the Giants** (`gotg`) | a scan, 200 pages, **no text layer** | OCR + our own layout analysis: `pdf2md.py`, `xycut.py`, `despace.py`, `polish.py`, `slice.py`, `build_gotg.py` |
+| **Elemental Evil Player's Companion** (`eepc`) | 25 pages, **a real text layer** | parse the text directly: `build_eepc.py` |
 
-## EEPC: коли текст у PDF уже є
+## EEPC: when the PDF already has text
 
-`python scripts/pdf/build_eepc.py` читає `content/raw/eepc/EE_PlayersCompanion.pdf` і збирає записи без OCR. Складність тут не в розпізнаванні, а в структуруванні:
+`python scripts/pdf/build_eepc.py` reads `content/raw/eepc/EE_PlayersCompanion.pdf` and assembles records without OCR. The difficulty here isn't recognition but structure:
 
-* **у текстовому шарі немає заголовків** — ні великих літер, ні позначок стилю. Назви закляттів беруться з самого списку закляттів книги (розділ «Spell Lists»): рядок, що збігається з назвою зі списку, за яким іде «Nth-level школа», вважається початком опису;
-* **блок статистики переноситься на наступний рядок** («Casting Time: 1 reaction, which you take when you take … acid, cold, fire, lightning, or thunder damage»), тому значення полів склеюються, доки не зберуться всі чотири;
-* **останнє закляття (Whirlwind) упирається в задню обкладинку** з рекламою Neverwinter MMORPG — тіло опису обривається на маркетингових рядках;
-* м'який перенос `U+00AD` усередині слів прибирається, інакше «Abi-Dalzim's» не шукається.
+* **the text layer has no headings** — no capitals, no style markers. Spell names are taken from the book's own spell list (the "Spell Lists" section): a line matching a name from the list and followed by "Nth-level school" is treated as the start of a description;
+* **the stat block wraps onto the next line** ("Casting Time: 1 reaction, which you take when you take … acid, cold, fire, lightning, or thunder damage"), so field values are joined until all four are collected;
+* **the last spell (Whirlwind) runs into the back cover** with an ad for the Neverwinter MMORPG — the description body is cut at the marketing lines;
+* soft hyphens `U+00AD` inside words are removed, otherwise "Abi-Dalzim's" can't be found.
 
-Перевірка: `validate_eepc.py` — структурні інваріанти (усі чотири поля статистики, непорожнє тіло, відсутність чужого тексту, очікувані `ability_increases`/`size`/`speed` для кожного виду) плюс порівняння з тими самими закляттями з `xgte`/`pota`. Розбіжності там очікувані — це виправлення errata між передруками, а не помилки розбору (`logs/eepc_validation.txt`).
+Verification: `validate_eepc.py` — structural invariants (all four stat fields, a non-empty body, no foreign text, the expected `ability_increases`/`size`/`speed` for each species) plus a comparison with the same spells from `xgte`/`pota`. Differences there are expected — they're errata fixes between reprints, not parsing errors (`logs/eepc_validation.txt`).
 
-## BGG: скан без текстового шару
+## BGG: a scan without a text layer
 
-Для книг, яких немає на D&D Beyond у вигляді HTML: беремо друкований примірник (PDF зі сканами) і витягаємо текст OCR-ом. Так внесено **Bigby Presents: Glory of the Giants** (`content/raw/gotg-pdf`, 200 сторінок, `source_id: gotg`).
+For books that aren't on D&D Beyond as HTML: take a printed copy (a PDF of scans) and extract the text with OCR. This is how **Bigby Presents: Glory of the Giants** was added (`content/raw/gotg-pdf`, 200 pages, `source_id: gotg`).
 
-Обмеження, з якого все випливає: у такому PDF **немає текстового шару** — кожна сторінка це одна картинка 300 dpi. Тому якість записів залежить від OCR, і кожен запис можна звірити з зображенням сторінки.
+The constraint everything follows from: such a PDF **has no text layer** — every page is a single 300 dpi image. So the quality of the records depends on OCR, and every record can be checked against the page image.
 
-## Формат записів — не «як вийшло», а контракт
+## The record format is a contract, not "whatever came out"
 
-Обидва білдери (і HTML-конвеєр теж) після збірки приводять книгу до
-`contract/compendium-format.json`: однакові поля, однаковий набір і порядок
-ключів `data`, однаковий скелет `text_en`. Опис — [`docs/format.md`](../../docs/format.md).
+Both builders (and the HTML pipeline too) bring the book to
+`contract/compendium-format.json` after assembly: the same fields, the same set and order
+of `data` keys, the same `text_en` skeleton. Description — [`docs/format.md`](../../docs/format.md).
 
 ```powershell
-python -m scripts.normalize --check --source eepc   # що розійшлося з контрактом
-python -m scripts.normalize --write                 # привести весь корпус до канону
+python -m scripts.normalize --check --source eepc   # what diverges from the contract
+python -m scripts.normalize --write                 # bring the whole corpus to canon
 ```
 
-Це важливо саме для PDF-книг: сканований OCR і текстовий шар дають різні
-звички (рядок «8th-Level Necromancy» проти «8th-level necromancy», блок
-«At Higher Levels» з підписом і без), і без спільного формату листок не міг
-би читати ці записи так само, як записи з D&D Beyond.
+This matters especially for PDF books: scanned OCR and a text layer have different habits
+(the line "8th-Level Necromancy" vs "8th-level necromancy", an "At Higher Levels" block
+with and without a caption), and without a shared format the sheet couldn't read these
+records the same way as records from D&D Beyond.
 
-## Порядок кроків
+## Order of steps
 
-| Крок | Скрипт | Що робить | Кеш |
+| Step | Script | What it does | Cache |
 |---|---|---|---|
-| 1 | `pdf2md.py` | копіює вбудоване зображення кожної сторінки без перекодування, розпізнає текст (RapidOCR/PP-OCR), складає сторінку в markdown | `images/`, `ocr/`, `pages/` |
-| 2 | `xycut.py` | порядок читання рекурсивним XY-cut: спершу ріже сторінку по горизонталі, потім по вертикалі, поки не дійде до абзацу (використовується з кроку 1) | — |
-| 3 | `book_index.py` | зіставляє PDF-сторінку з друкованим номером і розділом (`CHAPTER 1 \| CHARACTER CREATION`), будує `index.json` | `index.json` |
-| 4 | `despace.py` / `polish.py` | повертає загублені пробіли за словником із наявного корпусу; зшиває розірвані слова; виправляє однолітерні помилки; прибирає підписи ілюстраторів | — |
-| 5 | `slice.py` / `extract.py` | нарізає текст на сутності: `slice.py` — за списком назв (надійніше для предметів і рис), `extract.py` — за заголовками | — |
-| 6 | `build_gotg.py` | збирає JSONL за схемою `contract/compendium-entry.schema.json` | `content/compendium/gotg/` |
+| 1 | `pdf2md.py` | copies each page's embedded image without re-encoding, recognizes the text (RapidOCR/PP-OCR), assembles the page into markdown | `images/`, `ocr/`, `pages/` |
+| 2 | `xycut.py` | reading order via recursive XY-cut: first cuts the page horizontally, then vertically, until it reaches a paragraph (used from step 1) | — |
+| 3 | `book_index.py` | maps a PDF page to the printed page number and chapter (`CHAPTER 1 \| CHARACTER CREATION`), builds `index.json` | `index.json` |
+| 4 | `despace.py` / `polish.py` | restores lost spaces using a dictionary from the existing corpus; joins broken words; fixes single-letter errors; removes illustrator credits | — |
+| 5 | `slice.py` / `extract.py` | cuts the text into entities: `slice.py` — by a list of names (more reliable for items and feats), `extract.py` — by headings | — |
+| 6 | `build_gotg.py` | assembles JSONL per the `contract/compendium-entry.schema.json` schema | `content/compendium/gotg/` |
 
-## Перевірка (не пропускати)
+## Verification (don't skip it)
 
-Один OCR — одна думка; щоб не приймати помилки розпізнавання за текст книги, усе звіряється з другим джерелом.
+One OCR is one opinion; so as not to mistake recognition errors for the book's text, everything is checked against a second source.
 
-| Скрипт | Що перевіряє |
+| Script | What it checks |
 |---|---|
-| `validate_ref.py` | кожен запис проти другого OCR тієї самої книги (`logs/gotg_ref_text.pdf`, скан Internet Archive з текстовим шаром). Міряє **покриття**: скільки нашого тексту пояснюється книгою, і чи не обірвано запис. Звіт: `logs/gotg_validation.txt` |
-| `compare_items.py` | те саме, але по предметах окремо, із нарізкою другого OCR за рядками статистики (`logs/gotg_ref_items.json`, `logs/gotg_items_diff.txt`) |
-| `check_rules.py` | таблиця Rune Spells (13 пар «руна → закляття») і текст правила Bonus Feats |
-| `sweep_headings.py` | усі заголовки книги проти наявних записів — ловить пропущені сутності |
+| `validate_ref.py` | every record against a second OCR of the same book (`logs/gotg_ref_text.pdf`, an Internet Archive scan with a text layer). It measures **coverage**: how much of our text is explained by the book, and whether a record was cut short. Report: `logs/gotg_validation.txt` |
+| `compare_items.py` | the same, but per item, with the second OCR sliced by stat lines (`logs/gotg_ref_items.json`, `logs/gotg_items_diff.txt`) |
+| `check_rules.py` | the Rune Spells table (13 "rune → spell" pairs) and the text of the Bonus Feats rule |
+| `sweep_headings.py` | all book headings against the existing records — catches missed entities |
 
-Наслідок для цієї книги: 37 із 41 записів повністю пояснюються книгою, 4 — випадки, де другий OCR гірший за нас (перелік у `REVIEWED_OURS_PREFERRED` усередині `validate_ref.py`), 2 авторські записи перевірені `check_rules.py`. Суперечливі числа вирішуються **зображенням сторінки**, не голосуванням OCR: саме так Elemental Cleaver виявився 60 ft, а не 40.
+Outcome for this book: 37 of 41 records are fully explained by the book, 4 are cases where the second OCR is worse than ours (listed in `REVIEWED_OURS_PREFERRED` inside `validate_ref.py`), 2 authored records are verified by `check_rules.py`. Conflicting numbers are resolved by **the page image**, not by an OCR vote: that's how Elemental Cleaver turned out to be 60 ft, not 40.
 
-Порівнювати треба саме на нормалізованому тексті (без пробілів і пунктуації): два OCR по-різному рвуть слова («max imum» проти «maximum»), і наївний word-diff показує 0.5 там, де тексти ідентичні.
+Comparison must be done on normalized text (no spaces or punctuation): two OCRs break words differently ("max imum" vs "maximum"), and a naive word diff shows 0.5 where the texts are identical.
 
-## Як повторити
+## How to reproduce
+
+Run from the repository root:
 
 ```powershell
-$root = 'C:\Users\User\Desktop\work_docs\dnd-sheet'
+$root = (Get-Location).Path
 $py = "$root\.venv\Scripts\python.exe"
 
-# 1+2. сторінки -> markdown (можна перезапускати: готові кроки пропускаються)
+# 1+2. pages -> markdown (can be rerun: finished steps are skipped)
 & $py "$root\scripts\pdf\pdf2md.py" "C:\path\to\book.pdf" "$root\content\raw\gotg-pdf"
 
-# 3. карта сторінок
+# 3. page map
 & $py "$root\scripts\pdf\book_index.py" "$root\content\raw\gotg-pdf" "$root\content\raw\gotg-pdf\index.json"
 
-# 5. нарізка за назвами (список назв — окремий файл, по одній на рядок)
+# 5. slicing by names (the name list is a separate file, one per line)
 & $py "$root\scripts\pdf\slice.py" "$root\content\raw\gotg-pdf" "$root\logs\gotg_items_names.txt" "$root\logs\gotg_items.json" 114-122
 
-# 6. записи + перевірка
+# 6. records + validation
 & $py "$root\scripts\pdf\build_gotg.py"
 & $py -c "import sys; sys.path.insert(0, r'$root\scripts'); from ingest import records; print(records.validate_source('gotg'))"
 ```
 
-## Що варто знати
+## Worth knowing
 
-* **Сторінка PDF = друкована сторінка + 4.** Перевіряється `book_index.py`: бере номер із колонтитула й рахує зсув (147 сторінок дали однаковий зсув 4).
-* **Номери на «d6»-таблицях не розпізнаються** — вони набрані декоративним шрифтом у світлій колонці. У записах рядки пронумеровані 1…6 за порядком, як у книзі.
-* **Двоколонкові сторінки** іноді злипаються (`to a max- Cloudy Escape … imum of 20.`). Для сутностей, які важливі листку, текст вичитаний вручну (`build_gotg.py`, константи `FEATS`, `BACKGROUNDS`, `SUBCLASS`), тому ці записи не залежать від якості автоматичної збірки.
-* **Окремі предмети** (`Ring of Amity`, `Thunderbuss`, `Lucent Destroyer`, `Mistral Mantle`) транскрибовані вручну: перший розірваний між сторінками, решта — зі сторінки, де скан розпізнається найгірше.
-* **Межа скоупу:** розділи 2–4 (лор, організації, анклави) і 6 (бестіарій) у записи **не** переводились — для аркуша персонажа вони не потрібні. Їхній OCR-текст лежить у `pages/` і доступний, якщо колись знадобиться.
+* **PDF page = printed page + 4.** Checked by `book_index.py`: it takes the number from the running footer and computes the offset (147 pages gave the same offset of 4).
+* **Numbers in "d6" tables aren't recognized** — they're set in a decorative font in a light column. In the records the rows are numbered 1…6 in order, as in the book.
+* **Two-column pages** sometimes merge (`to a max- Cloudy Escape … imum of 20.`). For entities that matter to the sheet, the text was proofread by hand (`build_gotg.py`, the constants `FEATS`, `BACKGROUNDS`, `SUBCLASS`), so these records don't depend on the quality of the automatic assembly.
+* **Individual items** (`Ring of Amity`, `Thunderbuss`, `Lucent Destroyer`, `Mistral Mantle`) were transcribed by hand: the first is split across pages, the rest come from the page where the scan is recognized worst.
+* **Scope limit:** chapters 2–4 (lore, organizations, enclaves) and 6 (bestiary) were **not** turned into records — the character sheet doesn't need them. Their OCR text is in `pages/` and available if it's ever needed.

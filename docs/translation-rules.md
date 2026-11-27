@@ -1,55 +1,58 @@
-# Правила перекладу
+# Translation rules
 
-Єдине джерело для всього проєкту: екран (`frontend/src`), сервер і експорт
-(`backend/src`), переклади корпусу (`content/translations/`). Тест
-`backend/tests/api/test_terminology.py` ловить повернення до старих варіантів.
+The single source for the whole project: the UI (`frontend/src`), the server and the
+export (`backend/src`), and corpus translations (`content/translations/`). The test
+`backend/tests/api/test_terminology.py` catches regressions to old spellings.
 
-## Як показувати
+The site's content is Ukrainian; this document describes how that content is written.
 
-1. **Усе українською.** Пояснення, підказки, помилки, тексти правил.
-2. **Назви ігрових сутностей і ключові терміни — «Українська (English)».**
-   Класи, підкласи, види, передісторії, уміння, закляття, риси, предмети,
-   вибори класу (бойові стилі, виклики, маневри…), назви розділів правил:
+## How to display
+
+1. **Everything in Ukrainian.** Explanations, hints, errors, rules texts.
+2. **Names of game entities and key terms — "Ukrainian (English)".**
+   Classes, subclasses, species, backgrounds, features, spells, feats, items,
+   class options (fighting styles, invocations, maneuvers…), names of rules sections:
    `Містичний розряд (Eldritch Blast)`, `Чаклун (Warlock)`,
    `Рятівні кидки (Saving Throws)`.
-3. **У даних — лише українська.** `name_uk` у `content/translations/` і в
-   словниках фронтенду не містить дужок: англійську додає інтерфейс
-   (`withEnglish` у `uk.ts`, `with_english` в `uk_text.py`).
-4. **Немає перекладу — показуємо оригінал**, а не вигадку. Додати переклад
-   у відповідний шар, а не в компонент.
-5. Регістр — як у реченні: «Кислотна стріла Мелфа», не «Кислотна Стріла Мелфа».
-   Власні імена — з великої.
-6. Апостроф — типографський `’` у даних (у коді порівняння нормалізує `’ʼ'`).
+3. **Data holds Ukrainian only.** `name_uk` in `content/translations/` and in the
+   frontend dictionaries has no parentheses: the UI adds the English
+   (`withEnglish` in `uk.ts`, `with_english` in `uk_text.py`).
+4. **No translation — show the original**, never an invention. Add the translation to
+   the right layer, not to a component.
+5. Sentence case: «Кислотна стріла Мелфа», not «Кислотна Стріла Мелфа».
+   Proper names are capitalized.
+6. Apostrophe — the typographic `’` in data (code comparisons normalize `’ʼ'`).
 
-## Де живе переклад
+## Where translations live
 
-| Що | Шар | Звідки бере екран |
+| What | Layer | Where the UI gets it |
 |---|---|---|
-| Уміння класів і підкласів | `content/translations/classes`, `subclasses` | `name_uk`/`text_uk` з API |
-| Види, передісторії | `content/translations/species`, `backgrounds` | з API + `uk.ts` |
-| Закляття (назви) | `content/translations/spells/names.json` | `uk-spells.ts` (`scripts/spells_uk_names.py`) |
-| Риси (назви) | `content/translations/feats/names.json` | `uk-feats.ts` |
-| Вибори класу | `content/translations/optional-features` | `name_uk` з API |
-| Предмети | `content/translations/items` | `uk-items.ts` |
-| Класи, види, підкласи для експорту | `content/translations/terms` (`scripts/terms_uk_export.py` з `uk.ts`) | — |
+| Class and subclass features | `content/translations/classes`, `subclasses` | `name_uk`/`text_uk` from the API |
+| Species, backgrounds | `content/translations/species`, `backgrounds` | from the API + `uk.ts` |
+| Spells (names) | `content/translations/spells/names.json` | `uk-spells.ts` (`scripts/spells_uk_names.py`) |
+| Feats (names) | `content/translations/feats/names.json` | `uk-feats.ts` |
+| Class options | `content/translations/optional-features` | `name_uk` from the API |
+| Items | `content/translations/items` | `uk-items.ts` |
+| Classes, species, subclasses for export | `content/translations/terms` (`scripts/terms_uk_export.py` from `uk.ts`) | — |
 
-## Канонічні терміни
+## Canonical terms
 
-Єдине джерело — **`content/glossary.uk.yml`**: тут вирішується, як
-перекладається термін, і там же списки заборонених написань (`avoid`,
-`avoid_code`), за якими тест перевіряє код, екран і всі переклади корпусу.
-Назви заклять — `content/translations/spells/names.json`; тексти класів,
-підкласів і предметів вирівняно під ці назви (`Містичний розряд`,
-`Утримання особи`, `Розвіювання магії`…).
+The single source is **`content/glossary.uk.yml`**: it decides how a term is
+translated and holds the lists of forbidden spellings (`avoid`, `avoid_code`) that the
+test checks against the code, the UI and all corpus translations.
+Spell names — `content/translations/spells/names.json`; class, subclass and item texts
+are aligned with these names (`Містичний розряд`, `Утримання особи`,
+`Розвіювання магії`…).
 
-Новий термін або зміна перекладу: спершу глосарій (або шар назв), потім
-`pytest backend/tests/api/test_terminology.py` покаже, що ще виправити.
+A new term or a changed translation: the glossary (or the names layer) first, then
+`pytest backend/tests/api/test_terminology.py` shows what else to fix. For example,
+spell slots are always «комірки» and disadvantage is «завада».
 
-## Стиль перекладу
+## Translation style
 
-1. Звертання — на «ви».
-2. Числа, кубики (`1d6`), markdown — без змін.
-3. Переклад 1:1, без «покращень».
-4. Без русизмів-дієприкметників на «-уючий/-аючий»: «сліпуча кара», «чіпка
-   лоза», «танцівні вогники».
-5. Апостроф у даних — типографський `’`.
+1. Address the reader formally («ви»).
+2. Numbers, dice (`1d6`), markdown — unchanged.
+3. Translate 1:1, without "improvements".
+4. No Russian-style participles in «-уючий/-аючий»: «сліпуча кара», «чіпка лоза»,
+   «танцівні вогники».
+5. Apostrophe in data — the typographic `’`.

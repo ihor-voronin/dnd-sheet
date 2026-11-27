@@ -1,20 +1,20 @@
-"""Іконки сайту й аватар бота: кубик d20 у кольорах сайту.
+"""Site icons and the bot avatar: a d20 in the site's colors.
 
-Один малюнок — кілька розмірів:
+One drawing, several sizes:
 
-    frontend/public/favicon.svg            вкладка браузера (масштабується)
-    frontend/public/favicon.ico            16 + 32 + 48 для старих браузерів
-    frontend/public/apple-touch-icon.png   180×180, iOS «на початковий екран»
-    frontend/public/icon-192.png           Android / маніфест
-    frontend/public/icon-512.png           Android / маніфест (і maskable)
-    branding/bot-avatar.png                640×640 для @BotFather (/setuserpic)
+    frontend/public/favicon.svg            the browser tab (scales)
+    frontend/public/favicon.ico            16 + 32 + 48 for old browsers
+    frontend/public/apple-touch-icon.png   180×180, iOS "add to home screen"
+    frontend/public/icon-192.png           Android / manifest
+    frontend/public/icon-512.png           Android / manifest (and maskable)
+    branding/bot-avatar.png                640×640 for @BotFather (/setuserpic)
 
-Кольори — з theme.css: тло `--paper` #11141b, грані `--brass` #d1a654,
-центральна грань `--act` #c2323d. Малюнок свій (контур d20 — звичайна
-ігрова іконографія), без логотипів і графіки Wizards of the Coast.
+Colors come from theme.css: background `--paper` #11141b, faces `--brass` #d1a654,
+the central face `--act` #c2323d. The drawing is our own (a d20 outline is ordinary
+gaming iconography), with no Wizards of the Coast logos or artwork.
 
-Малі розміри мають товщі лінії й без дрібних граней: на 16 px тонкі лінії
-зливаються в пляму.
+Small sizes have thicker lines and no small faces: at 16 px thin lines
+blur into a blob.
 
     .venv/Scripts/python.exe scripts/make_icons.py
 """
@@ -37,7 +37,7 @@ ACT = "#c2323d"
 
 
 def geometry(size: float, scale: float) -> dict[str, list[tuple[float, float]]]:
-    """Контур d20 (шестикутник), центральна грань і ребра до вершин."""
+    """The d20 outline (a hexagon), the central face and the edges to the vertices."""
     cx = cy = size / 2
     r = size * scale / 2
     hexagon = [
@@ -45,7 +45,7 @@ def geometry(size: float, scale: float) -> dict[str, list[tuple[float, float]]]:
         for angle in (-90, -30, 30, 90, 150, 210)
     ]
     top, upper_right, lower_right, bottom, lower_left, upper_left = hexagon
-    # Центральна грань — трикутник вістрям угору, трохи нижче центру, як на справжньому кубику.
+    # The central face is an upward-pointing triangle slightly below center, as on a real die.
     a = (cx, cy - 0.50 * r)
     b = (cx - 0.47 * r, cy + 0.30 * r)
     c = (cx + 0.47 * r, cy + 0.30 * r)
@@ -81,7 +81,7 @@ def svg(size: int = 512, scale: float = 0.74, line: float = 14, radius: float = 
 
 
 def raster(size: int, *, scale: float, line: float, radius: float, edges: bool = True) -> Image.Image:
-    """Малювати вчетверо більше й зменшити: так Pillow дає згладжені краї."""
+    """Draw four times larger and downscale: that way Pillow gives smooth edges."""
     big = size * 4
     image = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
@@ -96,7 +96,7 @@ def raster(size: int, *, scale: float, line: float, radius: float, edges: bool =
     for shape in (g["face"], g["hexagon"]):
         closed = [*shape, shape[0]]
         draw.line(closed, fill=BRASS, width=width, joint="curve")
-        for x, y in shape:  # круглі кути, як stroke-linejoin="round"
+        for x, y in shape:  # round corners, like stroke-linejoin="round"
             draw.ellipse((x - width / 2, y - width / 2, x + width / 2, y + width / 2), fill=BRASS)
     return image.resize((size, size), Image.LANCZOS)
 
@@ -108,7 +108,7 @@ def main() -> None:
     (PUBLIC / "favicon.svg").write_text(svg(), encoding="utf-8")
     (BRANDING / "icon.svg").write_text(svg(), encoding="utf-8")
 
-    # Вкладка браузера: без дрібних ребер, лише контур і червона грань — читається на 16 px.
+    # The browser tab: no small edges, only the outline and the red face — readable at 16 px.
     small = [
         raster(16, scale=0.90, line=1.7, radius=3, edges=False),
         raster(32, scale=0.88, line=1.7, radius=6),
@@ -116,12 +116,12 @@ def main() -> None:
     ]
     small[-1].save(PUBLIC / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)], append_images=small[:-1])
 
-    # iOS сам округлює кути й не любить прозорість — квадрат без заокруглень.
+    # iOS rounds the corners itself and dislikes transparency — a square without rounding.
     raster(180, scale=0.74, line=7, radius=0).convert("RGB").save(PUBLIC / "apple-touch-icon.png")
     raster(192, scale=0.70, line=7.5, radius=0).save(PUBLIC / "icon-192.png")
-    # 512 — ще й maskable: Android обрізає до кола чи «краплі», тож кубик менший (безпечна зона 80%).
+    # 512 is also maskable: Android crops to a circle or a "drop", so the die is smaller (80% safe zone).
     raster(512, scale=0.62, line=18, radius=0).save(PUBLIC / "icon-512.png")
-    # Telegram обрізає аватар до кола: тло на весь квадрат, кубик у центрі.
+    # Telegram crops the avatar to a circle: the background fills the square, the die is centered.
     raster(640, scale=0.66, line=22, radius=0).convert("RGB").save(BRANDING / "bot-avatar.png")
 
     for path in sorted([*PUBLIC.glob("favicon.*"), *PUBLIC.glob("*icon*.png"), *BRANDING.iterdir()]):

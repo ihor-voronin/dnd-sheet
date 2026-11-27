@@ -1,66 +1,66 @@
-# Деплой і секрети
+# Deploy and secrets
 
-> Повний опис — як влаштований деплой, кроки Terraform, сервер, бекапи,
-> відновлення й діагностика: **[docs/deploy.md](../docs/deploy.md)**. Тут — коротко.
+> The full description — how the deploy works, the Terraform steps, the server, backups,
+> recovery and diagnostics: **[docs/deploy.md](../docs/deploy.md)**. This is the short version.
 
-Секрети для деплою (токен бота, id власника, а згодом адреса сервера й ключ
-SSH) лежать у [`deploy/secrets/`](secrets/) і **шифруються git-crypt**:
-у GitHub потрапляє лише шифр, розшифровує їх тільки той, чий ключ GPG
-додано до репозиторію (`.git-crypt/keys/`).
+Deploy secrets (the bot token, the owner id, the server address and the SSH key) live in
+[`deploy/secrets/`](secrets/) and are **encrypted with git-crypt**: only ciphertext
+reaches GitHub, and only someone whose GPG key has been added to the repository
+(`.git-crypt/keys/`) can decrypt them.
 
-## Що тут
+## What's here
 
-| Файл | Що в ньому |
+| File | What it holds |
 | --- | --- |
-| `secrets/prod.env` | змінні `DNDSHEET_*` для продакшну — на сервері стає `.env` поруч з `docker-compose.yml` |
-| `secrets/racknerd.env` | панель VPS (SolusVM) і пароль root — для консолі в панелі; по SSH пароль не пускає |
-| `secrets/cloudflare.env` | `CLOUDFLARE_API_TOKEN` — токен для запису DNS (зона `voronin.app`) |
-| `secrets/ssh/id_ed25519` | ключ деплою: ним заходять на сервер Terraform, `deploy_app.py` і CI |
-| `secrets/terraform/terraform.tfvars` | адреса сервера, домен, зона Cloudflare |
-| `secrets/terraform/terraform.tfstate` | стан Terraform (лише інфраструктура: DNS, налаштування сервера) |
-| `secrets/.gitattributes` | правило «шифрувати все в цій папці» (сам файл відкритий) |
+| `secrets/prod.env` | the `DNDSHEET_*` variables for production — on the server it becomes `.env` next to `docker-compose.yml` |
+| `secrets/racknerd.env` | the VPS panel (SolusVM) and the root password — for the console in the panel; SSH doesn't accept passwords |
+| `secrets/cloudflare.env` | `CLOUDFLARE_API_TOKEN` — a token for writing DNS (the `voronin.app` zone) |
+| `secrets/ssh/id_ed25519` | the deploy key: Terraform, `deploy_app.py` and CI use it to log in to the server |
+| `secrets/terraform/terraform.tfvars` | the server address, domain, Cloudflare zone |
+| `secrets/terraform/terraform.tfstate` | the Terraform state (infrastructure only: DNS, server setup) |
+| `secrets/.gitattributes` | the "encrypt everything in this folder" rule (the file itself is plaintext) |
 
-Назви файлів **не** шифруються — лише вміст. Тож не називайте файли так,
-щоб назва сама видавала секрет.
+File **names** aren't encrypted — only the contents. So don't name files in a way that
+gives the secret away.
 
-## Розблокувати (новий компʼютер або сервер)
+## Unlock (a new computer or server)
 
-Потрібні git-crypt і ключ GPG, доданий до репозиторію:
+You need git-crypt and a GPG key that has been added to the repository:
 
 ```powershell
 winget install --id AGWA.git-crypt -e
-git config gpg.program "C:/Program Files/GnuPG/bin/gpg.exe"   # Windows: GnuPG, де лежить ключ
+git config gpg.program "C:/Program Files/GnuPG/bin/gpg.exe"   # Windows: the GnuPG that holds the key
 git-crypt unlock
 ```
 
-На Linux-сервері: `apt install git-crypt gnupg`, імпортувати ключ GPG
-(`gpg --import`), потім `git-crypt unlock`.
+On a Linux server: `apt install git-crypt gnupg`, import the GPG key (`gpg --import`),
+then `git-crypt unlock`.
 
-Без розблокування файли в `secrets/` — двійковий шифр; решта репозиторію
-працює як завжди.
+Without unlocking, the files in `secrets/` are binary ciphertext; the rest of the
+repository works as usual.
 
-## Додати людину чи сервер
+## Add a person or a server
 
 ```powershell
-gpg --import їхній-публічний-ключ.asc
-git-crypt add-gpg-user --trusted <відбиток ключа>
+gpg --import their-public-key.asc
+git-crypt add-gpg-user --trusted <key fingerprint>
 ```
 
-Команда сама робить коміт з ключем у `.git-crypt/keys/`. Забрати доступ
-так просто не вийде: той, хто вже мав ключ, міг зберегти старі секрети —
-тоді секрети треба замінити (новий токен у @BotFather тощо).
+The command commits the key into `.git-crypt/keys/` itself. Revoking access isn't that
+simple: whoever already had the key could have kept the old secrets — in that case the
+secrets have to be rotated (a new token in @BotFather, etc.).
 
-## Деплой
+## Deploy
 
-Застосунок деплоїть GitHub Actions після злиття в `main` ([docs/ci.md](../docs/ci.md));
-вручну з Windows — `deploy\terraform\deploy.ps1`, інфраструктура —
+GitHub Actions deploys the app after a merge into `main` ([docs/ci.md](../docs/ci.md));
+manually from Windows — `deploy\terraform\deploy.ps1`, infrastructure —
 `deploy.ps1 -Infra` ([docs/deploy.md](../docs/deploy.md)).
 
-## Перед комітом
+## Before committing
 
 ```powershell
-git-crypt status -e    # список зашифрованих файлів; порожній «not encrypted» — добре
+git-crypt status -e    # the list of encrypted files; an empty "not encrypted" is good
 ```
 
-Секрет, який хоч раз потрапив у git відкритим, лишається в історії. Його не
-шифрують заднім числом — його **замінюють** на новий.
+A secret that reached git in plaintext even once stays in the history. It can't be
+encrypted retroactively — it has to be **rotated**.

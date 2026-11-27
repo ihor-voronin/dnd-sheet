@@ -1,11 +1,11 @@
-# CI: кожен PR у main і кожен push у main.
+# CI: every PR into main and every push to main.
 #
-# Три перевірки — їх вимагає правило гілки main (.github/rulesets/main.json):
-#   pre-commit — ті самі хуки, що й локально (.pre-commit-config.yaml), + заголовок PR;
-#   backend    — повні тести й контракти імпортів у тестовому Docker-образі
-#                (корпус книг розблоковується git-crypt ключем із секрету GIT_CRYPT_KEY);
-#   frontend   — типи, ESLint, збірка.
-# Після зеленого CI на main деплой запускає .github/workflows/deploy.yml.
+# Three checks — required by the main branch ruleset (.github/rulesets/main.json):
+#   pre-commit — the same hooks as locally (.pre-commit-config.yaml) + the PR title;
+#   backend    — the full tests and import contracts in the test Docker image
+#                (the book corpus is unlocked with the git-crypt key from the GIT_CRYPT_KEY secret);
+#   frontend   — types, ESLint, build.
+# After a green CI on main, .github/workflows/deploy.yml runs the deploy.
 name: CI
 
 on:
@@ -31,15 +31,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Main зливається squash-ом: повідомлення коміту в main — це заголовок PR.
-      # Ті самі межі, що й у .gitlint для локальних комітів.
+      # main is merged by squash: the commit message on main is the PR title.
+      # The same limits as .gitlint applies to local commits.
       - name: PR title
         if: github.event_name == 'pull_request'
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: |
-          if [ "${#TITLE}" -gt 100 ]; then echo "::error::Заголовок PR довший за 100 символів (${#TITLE})"; exit 1; fi
-          if echo "$TITLE" | grep -qiw "wip"; then echo "::error::Заголовок PR містить WIP"; exit 1; fi
+          if [ "${#TITLE}" -gt 100 ]; then echo "::error::PR title is longer than 100 characters (${#TITLE})"; exit 1; fi
+          if echo "$TITLE" | grep -qiw "wip"; then echo "::error::PR title contains WIP"; exit 1; fi
 
       - uses: actions/setup-python@v7
         with:
@@ -52,7 +52,7 @@ jobs:
       - uses: hashicorp/setup-terraform@v4
         with:
           terraform_wrapper: false
-      - name: Frontend dependencies (eslint, prettier, tsc для хуків)
+      - name: Frontend dependencies (eslint, prettier, tsc for the hooks)
         run: npm ci
         working-directory: frontend
       - run: pip install pre-commit
@@ -80,7 +80,7 @@ jobs:
         env:
           GIT_CRYPT_KEY: ${{ secrets.GIT_CRYPT_KEY }}
         run: |
-          if [ -z "$GIT_CRYPT_KEY" ]; then echo "::error::Немає секрету GIT_CRYPT_KEY (docs/ci.md)"; exit 1; fi
+          if [ -z "$GIT_CRYPT_KEY" ]; then echo "::error::The GIT_CRYPT_KEY secret is missing (docs/ci.md)"; exit 1; fi
           sudo apt-get install -y --no-install-recommends git-crypt
           echo "$GIT_CRYPT_KEY" | base64 -d > "$RUNNER_TEMP/git-crypt.key"
           git-crypt unlock "$RUNNER_TEMP/git-crypt.key"

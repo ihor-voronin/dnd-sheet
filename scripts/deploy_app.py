@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Деплой застосунку на VPS — однаково з Windows і з GitHub Actions (Linux).
+"""Deploy the app to the VPS — the same way from Windows and from GitHub Actions (Linux).
 
-Інфраструктуру (DNS у Cloudflare, Docker, файрвол, swap, бекапи) готує Terraform
-(`deploy/terraform`, рідко й вручну). Цей скрипт — те, що змінюється з кожним
-комітом: образ, compose, Caddyfile, .env. Стану, як у Terraform, тут немає:
-кожен запуск доводить сервер до того, що в репозиторії, тож CI не мусить
-нічого комітити назад.
+Infrastructure (DNS in Cloudflare, Docker, firewall, swap, backups) is set up by Terraform
+(`deploy/terraform`, rarely and by hand). This script covers what changes with every
+commit: the image, compose, Caddyfile, .env. There's no state like Terraform's here:
+every run brings the server to what's in the repository, so CI doesn't have to
+commit anything back.
 
-    python scripts/deploy_app.py              # образ dndsheet:local уже зібраний
-    python scripts/deploy_app.py --build      # спершу docker compose build app
+    python scripts/deploy_app.py              # the dndsheet:local image is already built
+    python scripts/deploy_app.py --build      # docker compose build app first
 
-Кроки:
-1. секрети розблоковані (deploy/secrets — не шифр git-crypt);
-2. образ: якщо на сервері вже цей самий (id у /opt/dndsheet/IMAGE_ID) — пропуск,
-   інакше `docker save` + gzip → scp → `docker load`;
-3. compose.yml, Caddyfile (домен з terraform.tfvars), .env з prod.env;
-4. `docker compose up -d`, чекати healthy і HTTPS через Caddy.
+Steps:
+1. the secrets are unlocked (deploy/secrets isn't git-crypt ciphertext);
+2. the image: if the server already has the same one (the id in /opt/dndsheet/IMAGE_ID) — skip,
+   otherwise `docker save` + gzip → scp → `docker load`;
+3. compose.yml, Caddyfile (the domain from terraform.tfvars), .env from prod.env;
+4. `docker compose up -d`, wait for healthy and for HTTPS through Caddy.
 """
 
 from __future__ import annotations
@@ -40,16 +40,16 @@ MAGIC = b"\x00GITCRYPT\x00"
 
 
 def log(message: str) -> None:
-    print(f"[deploy] {message}", flush=True)  # noqa: T201 — консольний скрипт
+    print(f"[deploy] {message}", flush=True)  # noqa: T201 — a console script
 
 
 def fail(message: str) -> None:
-    sys.stderr.write(f"[deploy] помилка: {message}\n")
+    sys.stderr.write(f"[deploy] error: {message}\n")
     sys.exit(1)
 
 
 def read_tfvars(path: Path) -> dict[str, str]:
-    """Прості рядки `ключ = "значення"` з terraform.tfvars."""
+    """Simple `key = "value"` lines from terraform.tfvars."""
     values: dict[str, str] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         match = re.match(r'\s*([a-z_]+)\s*=\s*"?([^"#]*?)"?\s*(#.*)?$', line)
@@ -61,9 +61,9 @@ def read_tfvars(path: Path) -> dict[str, str]:
 def ensure_unlocked() -> None:
     for path in (SECRETS / "prod.env", SECRETS / "ssh" / "id_ed25519", SECRETS / "terraform" / "terraform.tfvars"):
         if not path.exists():
-            fail(f"немає {path.relative_to(ROOT)}")
+            fail(f"{path.relative_to(ROOT)} is missing")
         if path.read_bytes()[: len(MAGIC)] == MAGIC:
-            fail(f"{path.relative_to(ROOT)} зашифрований — спершу git-crypt unlock (docs/deploy.md)")
+            fail(f"{path.relative_to(ROOT)} is encrypted — run git-crypt unlock first (docs/deploy.md)")
 
 
 class Server:
@@ -80,7 +80,7 @@ class Server:
             check=False,
         )
         if check and result.returncode != 0:
-            fail(f"на сервері: {command}\n{result.stderr.decode('utf-8', 'replace')}")
+            fail(f"on the server: {command}\n{result.stderr.decode('utf-8', 'replace')}")
         return result.stdout.decode("utf-8", "replace").strip()
 
     def put(self, local: Path, remote: str) -> None:
@@ -88,7 +88,7 @@ class Server:
             ["scp", *self.common, "-P", self.port, str(local), f"{self.target}:{remote}"], check=False
         )
         if result.returncode != 0:
-            fail(f"scp {local.name} не вдався")
+            fail(f"scp {local.name} failed")
 
     def write(self, remote: str, content: str, mode: str = "644") -> None:
         self.run(f"cat > {remote} && chmod {mode} {remote}", stdin=content.replace("\r\n", "\n").encode("utf-8"))
@@ -99,13 +99,13 @@ def local_image_id(image: str) -> str:
         ["docker", "image", "inspect", "--format", "{{.Id}}", image], capture_output=True, check=False
     )
     if result.returncode != 0:
-        fail(f"немає образу {image} — зберіть: docker compose build app (або --build)")
+        fail(f"no {image} image — build it: docker compose build app (or --build)")
     return result.stdout.decode().strip()
 
 
 def ship_image(server: Server, image: str, image_id: str) -> None:
     if server.run(f"cat {REMOTE}/IMAGE_ID 2>/dev/null || true") == image_id:
-        log("образ на сервері вже цей — не завантажуємо")
+        log("the server already has this image — not uploading")
         return
     with tempfile.TemporaryDirectory() as folder:
         archive = Path(folder) / "image.tar.gz"
@@ -117,42 +117,42 @@ def ship_image(server: Server, image: str, image_id: str) -> None:
             assert save.stdout is not None
             shutil.copyfileobj(save.stdout, out, 1024 * 1024)
         if save.returncode != 0:
-            fail("docker save не вдався")
-        log(f"завантажуємо {archive.stat().st_size / 1024 / 1024:.0f} МБ…")
+            fail("docker save failed")
+        log(f"uploading {archive.stat().st_size / 1024 / 1024:.0f} MB…")
         server.put(archive, "/tmp/dndsheet-image.tar.gz")
     server.run("docker load -i /tmp/dndsheet-image.tar.gz && rm -f /tmp/dndsheet-image.tar.gz")
     server.write(f"{REMOTE}/IMAGE_ID", image_id)
-    log("образ завантажено")
+    log("image uploaded")
 
 
 def wait_healthy(server: Server) -> None:
     for _ in range(45):
         status = server.run("docker inspect -f '{{.State.Health.Status}}' dndsheet-app 2>/dev/null || true")
         if status == "healthy":
-            log("застосунок: healthy")
+            log("app: healthy")
             return
         time.sleep(2)
     sys.stderr.write(server.run(f"cd {REMOTE} && docker compose -f compose.yml logs --tail 60 app", check=False))
-    fail("застосунок не став healthy")
+    fail("the app did not become healthy")
 
 
 def wait_https(domain: str) -> None:
     url = f"https://{domain}/healthz"
     for _ in range(30):
         try:
-            with urllib.request.urlopen(url, timeout=5) as response:  # noqa: S310 — https на власний домен
+            with urllib.request.urlopen(url, timeout=5) as response:  # noqa: S310 — https to our own domain
                 if response.status == 200:
                     log(f"{url}: 200")
                     return
         except OSError:
             pass
         time.sleep(3)
-    log(f"увага: {url} ще не відповідає (перший сертифікат? docker logs dndsheet-caddy)")
+    log(f"warning: {url} isn't responding yet (first certificate? docker logs dndsheet-caddy)")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--build", action="store_true", help="спершу docker compose build app")
+    parser.add_argument("--build", action="store_true", help="docker compose build app first")
     parser.add_argument("--image", default="dndsheet:local")
     args = parser.parse_args()
 
@@ -160,17 +160,17 @@ def main() -> int:
     tfvars = read_tfvars(SECRETS / "terraform" / "terraform.tfvars")
     host, domain = tfvars.get("server_ip"), tfvars.get("domain")
     if not host or not domain:
-        fail("у terraform.tfvars немає server_ip чи domain")
+        fail("terraform.tfvars has no server_ip or domain")
 
     key = SECRETS / "ssh" / "id_ed25519"
     if os.name != "nt":
-        key.chmod(0o600)  # ssh відмовляється від ключа з ширшими правами
+        key.chmod(0o600)  # ssh refuses a key with wider permissions
     server = Server(host, tfvars.get("ssh_user", "root"), tfvars.get("ssh_port", "22"), key)
 
     if args.build:
         log("docker compose build app…")
         if subprocess.run(["docker", "compose", "build", "app"], cwd=ROOT, check=False).returncode != 0:
-            fail("збірка образу не вдалася")
+            fail("the image build failed")
 
     image_id = local_image_id(args.image)
     ship_image(server, args.image, image_id)
@@ -185,12 +185,12 @@ def main() -> int:
     server.run(
         f"cd {REMOTE} && DNDSHEET_IMAGE={args.image} docker compose -f compose.yml up -d --remove-orphans"
         " && docker image prune -f >/dev/null"
-        # Змінився лише Caddyfile — контейнер не перестворюється, тож конфіг перечитуємо явно.
+        # If only the Caddyfile changed, the container isn't recreated, so reload the config explicitly.
         " && docker exec dndsheet-caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null 2>&1 || true"
     )
     wait_healthy(server)
     wait_https(domain)
-    log(f"готово: https://{domain}/")
+    log(f"done: https://{domain}/")
     return 0
 
 

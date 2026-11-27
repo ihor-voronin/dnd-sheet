@@ -1,279 +1,302 @@
-# Наступні кроки
+# Next steps
 
-Стан на 27.11.2026, після редизайну («Стіл гравця») і звірки з правилами
-PHB 2014. Правила 5.5e (2024) свідомо не підтримуються — лише вільний розподіл
-бонусів виду з MotM/TCoE, як і раніше.
+State as of 27.11.2026, after the redesign ("The player's table") and a check against the
+PHB 2014 rules. The 5.5e (2024) rules are deliberately not supported — only the free
+distribution of species bonuses from MotM/TCoE, as before.
 
-## Що звірено й виправлено
+Ukrainian words in quotes are the labels the app shows.
 
-Перевірено на живих персонажах і в коді; на кожне виправлення є тест у
-`backend/tests/characters/test_rules_2014.py` або `test_expertise.py`.
+## What was checked and fixed
 
-| Правило | Було | Стало | Джерело |
+Checked on live characters and in code; every fix has a test in
+`backend/tests/characters/test_rules_2014.py` or `test_expertise.py`.
+
+| Rule | Was | Now | Source |
 |---|---|---|---|
-| Мультиклас у воїна | вимагав СИЛ 13 **і** СПР 13 | СИЛ 13 **або** СПР 13 | PHB, p. 163 |
-| Текст вимог (чернець, паладин) | «DEX 13 або WIS 13» | «DEX 13 і WIS 13» | PHB, p. 163 |
-| Володіння другого класу | броню й зброю не давав зовсім, інструменти — всі | таблиця мультикласу | PHB, p. 164 |
-| Ліміт підготовки паладина й артифіцера | мод + рівень | мод + ½ рівня (вниз) | PHB, p. 84; TCE, p. 10 |
-| Паладин і слідопит 1 рівня | мали «закляття» й Складність | закляття з 2 рівня | PHB, p. 84, 91 |
-| Слоти «паладин + чаклун» | таблиця мультикласу | таблиця паладина; магія пакту окремо | PHB, p. 164–165 |
-| КЗ ченця зі щитом | 10 + СПР + МУД + щит | без Мудрості | PHB, p. 78 |
-| Кілька способів КЗ без броні | брався перший | береться найкращий | PHB, p. 14 |
-| Атака зброєю без володіння | бонус майстерності додавався | не додається | PHB, p. 146 |
-| Експертність (плут, бард) | не було | вибір на листі, подвоєний бонус | PHB, p. 54, 96 |
-| Jack of All Trades, Remarkable Athlete | не було | ½ бонусу до перевірок без володіння й ініціативи | PHB, p. 54, 72 |
-| Aura of Protection | не було | + ХАР (мін. 1) до порятунків | PHB, p. 85 |
-| Unarmored Movement, Fast Movement | не було | + до швидкості | PHB, p. 48, 78 |
-| Dwarven Toughness, Draconic Resilience | не було | +1 хіт за рівень; КЗ 13 + СПР | PHB, p. 20, 102 |
-| Риси Alert, Mobile, Tough, Observant | лише текст | числа на листі | PHB, p. 165–169 |
-| Покращення до 21 (19 + 2) | сервер відмовляв, екран мовчав | недоступно у виборі, пояснення людською мовою | PHB, p. 165 |
-| Книга заклять мага на 1 рівні | можна записати лише ІНТ + 1 | 6 заклять у книзі | PHB, p. 114 |
-| Бойовий стиль, втаємничення, дар пакту, метамагія, прийоми, улюблений ворог і місцевість | не було | вибір на листі («Уміння → Вибори класу»); Defense +1 КЗ, Archery +2 до дальніх атак | PHB, p. 72, 91, 101, 107, 110 |
-| Містичний лицар, таємний пройдисвіт | не чарували | прогресія ⅓, відомі закляття й слоти з 3 рівня | PHB, p. 75, 98 |
-| Закляття домену й клятви | лише 1 рівня | за таблицею підкласу на кожному рівні | PHB, p. 58, 86 |
-| Маг готує закляття | зі всього списку класу | лише з книги; на рівні — нагадування про +2 | PHB, p. 114 |
-| Заміна закляття на рівні | не було | вибір на екрані рівня (бард, чаклун, чародій, слідопит, третинки) | PHB, p. 53, 101, 107 |
-| Навичка мультикласу (бард, слідопит, плут) | не пропонувалась | вибір на екрані рівня | PHB, p. 164 |
-| Половинні риси, Resilient | +1 вписувався вручну | вибір характеристики при взятті риси; Resilient дає порятунок | PHB, p. 165–169 |
-| Важка броня без Сили | не впливала | −10 фт (дворфів не стосується) | PHB, p. 144 |
+| Multiclassing into fighter | required STR 13 **and** DEX 13 | STR 13 **or** DEX 13 | PHB, p. 163 |
+| Requirement text (monk, paladin) | "DEX 13 or WIS 13" | "DEX 13 and WIS 13" | PHB, p. 163 |
+| Second class proficiencies | gave no armor or weapons at all, all tools | the multiclass table | PHB, p. 164 |
+| Paladin and artificer preparation limit | mod + level | mod + ½ level (rounded down) | PHB, p. 84; TCE, p. 10 |
+| Level 1 paladin and ranger | had "spells" and a DC | spells from level 2 | PHB, p. 84, 91 |
+| Slots for "paladin + warlock" | the multiclass table | the paladin table; Pact Magic separately | PHB, p. 164–165 |
+| Monk AC with a shield | 10 + DEX + WIS + shield | without Wisdom | PHB, p. 78 |
+| Several unarmored AC methods | the first was taken | the best is taken | PHB, p. 14 |
+| Weapon attack without proficiency | the proficiency bonus was added | not added | PHB, p. 146 |
+| Expertise (rogue, bard) | missing | a choice on the sheet, double bonus | PHB, p. 54, 96 |
+| Jack of All Trades, Remarkable Athlete | missing | ½ bonus to non-proficient checks and initiative | PHB, p. 54, 72 |
+| Aura of Protection | missing | + CHA (min. 1) to saves | PHB, p. 85 |
+| Unarmored Movement, Fast Movement | missing | + to speed | PHB, p. 48, 78 |
+| Dwarven Toughness, Draconic Resilience | missing | +1 HP per level; AC 13 + DEX | PHB, p. 20, 102 |
+| Feats Alert, Mobile, Tough, Observant | text only | numbers on the sheet | PHB, p. 165–169 |
+| Improvement to 21 (19 + 2) | the server refused, the screen was silent | unavailable in the choice, explained in plain words | PHB, p. 165 |
+| Wizard's spellbook at level 1 | only INT + 1 could be written | 6 spells in the book | PHB, p. 114 |
+| Fighting style, invocations, pact boon, metamagic, maneuvers, favored enemy and terrain | missing | a choice on the sheet ("Features → Class choices"); Defense +1 AC, Archery +2 to ranged attacks | PHB, p. 72, 91, 101, 107, 110 |
+| Eldritch Knight, Arcane Trickster | didn't cast | ⅓ progression, known spells and slots from level 3 | PHB, p. 75, 98 |
+| Domain and oath spells | level 1 only | per the subclass table at every level | PHB, p. 58, 86 |
+| Wizard prepares spells | from the whole class list | only from the book; on level-up — a reminder about +2 | PHB, p. 114 |
+| Replacing a spell on level-up | missing | a choice on the level screen (bard, warlock, sorcerer, ranger, third casters) | PHB, p. 53, 101, 107 |
+| Multiclass skill (bard, ranger, rogue) | not offered | a choice on the level screen | PHB, p. 164 |
+| Half feats, Resilient | +1 was entered by hand | ability choice when taking the feat; Resilient grants the save | PHB, p. 165–169 |
+| Heavy armor without Strength | had no effect | −10 ft (doesn't apply to dwarves) | PHB, p. 144 |
 
-Звірено без розбіжностей: кубики хітів, порятунки й кількість навичок усіх
-13 класів, рівні підкласів, стандартний набір і вартість розподілу очок
-(27 очок, 8–15), бонус майстерності, хіти (максимум на 1 рівні, середнє далі,
-Статура заднім числом), рівень заклинателя мультикласу, слоти й магія пакту,
-Складність і бонус атаки заклять, КЗ броні й щита, атаки finesse/ranged,
-половина хіт-дайсів на довгому відпочинку.
+Checked with no differences: hit dice, saves and number of skills of all 13 classes,
+subclass levels, the standard array and point-buy cost (27 points, 8–15), the proficiency
+bonus, hit points (max at level 1, average after, Constitution retroactively), multiclass
+caster level, slots and Pact Magic, spell save DC and attack bonus, armor and shield AC,
+finesse/ranged attacks, half the hit dice on a long rest.
 
-## Що ще не відповідає правилам (за пріоритетом)
+## What still doesn't follow the rules (by priority)
 
-Зроблено з попереднього списку: вибори класу з передумовами, ⅓-заклинателі,
-закляття домену/клятви й Круга Землі за рівнями, книга мага, нові й замінні
-закляття та навичка мультикласу на екрані рівня, половинні риси, Defense,
-Archery, Dueling, важка броня (швидкість і завада на Скритність).
+Done from the previous list: class choices with prerequisites, ⅓ casters, domain/oath and
+Circle of the Land spells by level, the wizard's book, new and replacement spells and the
+multiclass skill on the level screen, half feats, Defense, Archery, Dueling, heavy armor
+(speed and disadvantage on Stealth).
 
-Зроблено 27.11.2026 (тести — `test_rules_effects.py`, `test_multiclass_matrix.py`,
+Done 27.11.2026 (tests — `test_rules_effects.py`, `test_multiclass_matrix.py`,
 `test_sheet_api.py`):
 
-- **Риса виду** (варіантна людина, власна лінія) — обовʼязковий вибір на кроці
-  виду у візарді; на листі («Уміння → Вибори класу й рис») можна замінити,
-  заміна прибирає вибори попередньої риси.
-- **Зброя угоди й Хекс-воїна** — позначки на предметі інвентаря (розгорнути
-  предмет або прапорець у формі «Свій предмет»); по одній зброї кожного виду,
-  нова позначка знімає стару. Угода дає володіння й магічні атаки (лук і
-  арбалет — лише з Покращеною зброєю угоди), Хекс-воїн — Харизму (дворучна —
-  лише як зброя угоди). Без позначки атака звичайна, «Дії» підказують, де позначити.
-- **Броня без володіння** — завада на СИЛ/СПР, примітка на атаках, заборона чарувати.
-- **Риси з вибором** — Учень магії, Ритуаліст, Умілий, Знавець навичок,
-  Обдарований, Мовознавець, Майстер зброї, Адепт стихій, Бойовий адепт,
-  Містичний адепт, Адепт метамагії, Учень бою, Позначений феями й тінню,
-  Учень артифіцера, Магія лісового ельфа. Вибір — тим самим механізмом, що й
-  вибори класу (ключ `feat:<риса>:<група>`); ефект — володіння, експертиза,
-  закляття з КС і бонусом атаки. Броньовані риси, Корчемний забіяка, Кухар,
-  Отруйник, Стрілець — володіння без вибору.
-- **Містичні виклики** — закляття за бажанням / раз на відпочинок, Диявольський
-  зір (120 фт), Броня тіней (13 + СПР), Чари впливу (Обман і Переконання),
-  примітки до Містичного розряду (Болісний розряд +ХАР, Містичний спис…),
-  Покращена зброя угоди, Пивець життя, Спраглий клинок.
-- **Бойові стилі** — Two-Weapon, Thrown Weapon, Unarmed, Blind Fighting (сліпе
-  чуття 10 фт), Blessed/Druidic Warrior (два заговори), Superior Technique (маневр).
-- **Атаки** — удар без зброї з сервера; природна зброя видів (табаксі, ааракокра,
-  ящеролюд, мінотавр, леонін, тортл, кентавр, сатир, дампір, ікласті шифтери);
-  бойові мистецтва ченця (СПР і більша кістка для зброї ченця, ударів і
-  природної зброї); Бойова готовність
-  (ІНТ для магічної зброї), Shillelagh (характеристика чарування й d8).
-- **Володіння підкласів** — хексблейд, домени, коледжі доблесті й мечів,
-  бойовий коваль, бронник, співець клинка, асасин.
-- **КЗ** — Клинкова пісня (примітка), Драконяча шкура, Майстер середньої броні (+3 СПР).
-- **Інструмент барда при мультикласі**, **школи заклять** містичного лицаря й
-  таємного пройдисвіта, **вимоги мультикласу на всіх 156 парах** — перевірено.
+- **Species feat** (variant human, custom lineage) — a required choice at the species
+  step in the wizard; on the sheet ("Features → Class and feat choices") it can be
+  replaced, and replacing removes the previous feat's choices.
+- **Pact weapon and Hexblade** — marks on an inventory item (expand the item, or a
+  checkbox in the "Custom item" form); one weapon of each kind, a new mark removes the old
+  one. The pact grants proficiency and magical attacks (bow and crossbow only with
+  Improved Pact Weapon), Hexblade — Charisma (two-handed only as a pact weapon). Without
+  the mark the attack is ordinary, and "Actions" hints where to mark it.
+- **Armor without proficiency** — disadvantage on STR/DEX, a note on attacks, no
+  spellcasting.
+- **Feats with a choice** — Magic Initiate, Ritual Caster, Skilled, Skill Expert, Prodigy,
+  Linguist, Weapon Master, Elemental Adept, Martial Adept, Eldritch Adept, Metamagic Adept,
+  Fighting Initiate, Fey and Shadow Touched, Artificer Initiate, Wood Elf Magic. The choice
+  uses the same mechanism as class choices (key `feat:<feat>:<group>`); the effect —
+  proficiencies, expertise, spells with DC and attack bonus. The armor feats, Tavern
+  Brawler, Chef, Poisoner, Gunner — proficiencies without a choice.
+- **Eldritch invocations** — at-will / once-per-rest spells, Devil's Sight (120 ft),
+  Armor of Shadows (13 + DEX), Beguiling Influence (Deception and Persuasion), notes on
+  Eldritch Blast (Agonizing Blast +CHA, Eldritch Spear…), Improved Pact Weapon, Lifedrinker,
+  Thirsting Blade.
+- **Fighting styles** — Two-Weapon, Thrown Weapon, Unarmed, Blind Fighting (blindsight
+  10 ft), Blessed/Druidic Warrior (two cantrips), Superior Technique (a maneuver).
+- **Attacks** — the unarmed strike from the server; species natural weapons (tabaxi,
+  aarakocra, lizardfolk, minotaur, leonin, tortle, centaur, satyr, dhampir, longtooth
+  shifters); the monk's martial arts (DEX and a bigger die for monk weapons, strikes and
+  natural weapons); Battle Ready (INT for magic weapons), Shillelagh (spellcasting ability
+  and d8).
+- **Subclass proficiencies** — hexblade, domains, the colleges of Valor and Swords,
+  battle smith, armorer, bladesinger, assassin.
+- **AC** — Bladesong (a note), Dragon Hide, Medium Armor Master (+3 DEX).
+- **The bard's instrument on multiclassing**, **spell schools** of the Eldritch Knight and
+  Arcane Trickster, **multiclass requirements on all 156 pairs** — checked.
 
-Зроблено далі (`test_rules_choices_more.py`, `test_sheet_api.py`):
+Done next (`test_rules_choices_more.py`, `test_sheet_api.py`):
 
-- **Книга мага** — у вкладці заклять: скільки в книзі й скільки дали рівні
-  (6 + 2 за рівень); більше — «переписано», менше — «можна дописати».
-- **Зброя кенсея** — позначка на предметі (2 на 3 рівні, +1 на 6, 11, 17):
-  володіння, зброя ченця (СПР і кістка мистецтв), Постріл кенсея / Спритне
-  парирування в примітці; важка й особлива зброя не підходить.
-- **Книга виду (VGM чи MPMM)** — вибір у візарді й на листі там, де від неї
-  залежить кістка природної зброї (табаксі, ааракокра, тортл, кентавр, сатир).
-- **Ресурси рис** — Очки удачі (Lucky, 3 на тривалий відпочинок), кістки переваги
-  Бойового адепта й Вищої техніки (окремий лічильник або +1 до запасу майстра битви).
-- **Вибори риси виду у візарді** — під рисою, тим самим компонентом, що й на
-  листі; «Завершити» не пропустить навичку, яка вже є від передісторії чи класу.
-- **Вибори підкласів і дару угоди** — Домен знань (2 мови, 2 навички з
-  подвоєним бонусом), Домен природи (заговір друїда й навичка), Коледж знань
-  (3 навички), Коледж мечів (бойовий стиль), Самурай (навичка або мова),
-  Угода фоліанта (3 заговори будь-якого класу, Харизма).
+- **The wizard's book** — on the spells tab: how many are in the book and how many the
+  levels gave (6 + 2 per level); more — "copied", fewer — "can be added".
+- **Kensei weapons** — a mark on an item (2 at level 3, +1 at 6, 11, 17): proficiency, a
+  monk weapon (DEX and the martial arts die), Kensei's Shot / Agile Parry in a note; heavy
+  and special weapons don't qualify.
+- **The species book (VGM or MPMM)** — a choice in the wizard and on the sheet where the
+  natural weapon die depends on it (tabaxi, aarakocra, tortle, centaur, satyr).
+- **Feat resources** — Luck Points (Lucky, 3 per long rest), superiority dice of Martial
+  Adept and Superior Technique (a separate counter or +1 to the Battle Master's pool).
+- **Species feat choices in the wizard** — under the feat, the same component as on the
+  sheet; "Finish" won't let through a skill that already comes from the background or
+  class.
+- **Subclass and pact boon choices** — Knowledge Domain (2 languages, 2 skills with double
+  bonus), Nature Domain (a druid cantrip and a skill), College of Lore (3 skills), College
+  of Swords (a fighting style), Samurai (a skill or a language), Pact of the Tome (3
+  cantrips of any class, Charisma).
 
-- **Магічні таємниці** барда (2 на 10, 14, 18 рівнях; входять у відомі, тож ліміт
-  зі списку барда на 2/4/6 менший) і **Додаткові магічні таємниці** Коледжу знань
-  (2 на 6 рівні, понад відомі) — закляття будь-якого класу до найвищого рівня барда,
-  з пошуком у довгому списку; рівень обраного зберігається для листа й PDF.
-- **Книга давніх таємниць** — 2 ритуали 1 рівня будь-якого класу (лише як ритуал).
-- **Вибори підкласів без чисел** — Мисливець (4 вибори), Тотемний воїн (дух, аспект,
-  налаштування), Драконячий предок, Аура бурі, Стихійні дисципліни, Арканний постріл,
-  Руни: вибір зберігається й видний на листі, ефект — текстом умінь.
+- **Magical Secrets** of the bard (2 at levels 10, 14, 18; they count as known, so the
+  limit from the bard list is 2/4/6 lower) and **Additional Magical Secrets** of the
+  College of Lore (2 at level 6, beyond known) — spells of any class up to the bard's
+  highest level, with search in a long list; the chosen spell's level is stored for the
+  sheet and the PDF.
+- **Book of Ancient Secrets** — 2 level-1 rituals of any class (only as rituals).
+- **Subclass choices without numbers** — Hunter (4 choices), Totem Warrior (spirit,
+  aspect, attunement), Draconic Ancestry, Storm Aura, Elemental Disciplines, Arcane Shot,
+  Runes: the choice is stored and visible on the sheet, the effect is in the feature text.
 
-- **Переписані ритуали** — Книга давніх таємниць (до ½ рівня чаклуна) і Ритуаліст (до ½
-  рівня персонажа): група без ліміту, ритуал зі стартової пари вдруге не обрати.
-- **Числа з текстових виборів** — лють (+2/+3/+4 урону в примітці атак Силою, опір
-  у люті), тотем Ведмедя (опір усьому, крім психічного; Аспект — подвоєна вантажність),
-  Драконячий предок (драконяча мова, Стихійна спорідненість: +ХАР у примітці заклять
-  того типу й опір за очко чаклунства), Мисливець (Убивця колосів, Руйнівник орди,
-  Залп, Атака вихору в примітках атак).
-- **Класові примітки атак** — Підступна атака (Nd6 для спритної й дальньої зброї),
-  Божественна кара (паладин 2+, ближній бій).
+- **Copied rituals** — Book of Ancient Secrets (up to ½ the warlock level) and Ritual
+  Caster (up to ½ the character level): a group without a limit, a ritual from the
+  starting pair can't be chosen twice.
+- **Numbers from text choices** — rage (+2/+3/+4 damage in the note on Strength attacks,
+  resistance while raging), the Bear totem (resistance to everything but psychic; the
+  Aspect — doubled carrying capacity), Draconic Ancestry (the Draconic language, Elemental
+  Affinity: +CHA in the note of spells of that type and resistance for a sorcery point),
+  Hunter (Colossus Slayer, Horde Breaker, Volley, Whirlwind Attack in attack notes).
+- **Class attack notes** — Sneak Attack (Nd6 for finesse and ranged weapons), Divine
+  Smite (paladin 2+, melee).
 
-Правила PHB 2014, які лист рахує, на цьому закрито; решта вмінь — текстом у «Вміннях».
+The PHB 2014 rules the sheet computes are closed with this; the other features are text in
+"Features".
 
-### Перевірка правил: усі вміння класів 1–20
+### Rules check: all class features 1–20
 
-Кожне вміння з індексу механік звірено з кодом. Ті, що змінюють числа на листі,
-але не рахувались, тепер рахуються (тести — `test_rules_choices_more.py`):
+Every feature from the mechanics index was checked against the code. Those that change
+numbers on the sheet but weren't computed now are (tests — `test_rules_choices_more.py`):
 
-| Вміння | Що рахує лист |
+| Feature | What the sheet computes |
 |---|---|
-| Первісний чемпіон (варвар 20) | +4 Сили й Статури, максимум 24 |
-| Діамантова душа (чернець 14), Слизький розум (плут 15) | володіння рятівними кидками |
-| Накладання рук, Очищувальний дотик (паладин) | лічильники: 5 × рівень хітів; ХАР разів |
-| Покращена божественна кара (паладин 11) | +1d8 променистого в примітці атак |
-| Спалах генія (артифіцер 7) | лічильник ІНТ разів |
-| Знавець / савант / майстер магічних предметів (артифіцер 10/14/18) | настроювання 4/5/6 предметів |
-| Душа виробу (артифіцер 20) | +1 до рятівних кидків за настроєний предмет |
-| Містичний арканум (чаклун 11/13/15/17) | закляття 6–9 рівнів, раз на тривалий відпочинок |
-| Майстерність заклять (маг 18), Фірмові закляття (маг 20) | вибір заклять, «за бажанням» / раз на короткий відпочинок |
-| Покращений / вищий критичний удар (чемпіон 3/15) | «критичне влучання на 19–20 / 18–20» в атаках |
-| Брутальний критичний удар (варвар 9/13/17) | +1/2/3 кістки при критичному |
-| Відчуття небезпеки, Дикий інстинкт, Надійний талант, Сліпе чуття, Дикі чуття, Спокій розуму, Бойовий заклинатель | примітки в «Чуття та опір» |
-| Чистота тіла, Божественне здоров’я | імунітети в «Чуття та опір» |
+| Primal Champion (barbarian 20) | +4 Strength and Constitution, max 24 |
+| Diamond Soul (monk 14), Slippery Mind (rogue 15) | saving throw proficiency |
+| Lay on Hands, Cleansing Touch (paladin) | counters: 5 × level HP; CHA times |
+| Improved Divine Smite (paladin 11) | +1d8 radiant in the attack note |
+| Flash of Genius (artificer 7) | a counter, INT times |
+| Magic Item Adept / Savant / Master (artificer 10/14/18) | attunement to 4/5/6 items |
+| Soul of Artifice (artificer 20) | +1 to saving throws per attuned item |
+| Mystic Arcanum (warlock 11/13/15/17) | spells of levels 6–9, once per long rest |
+| Spell Mastery (wizard 18), Signature Spells (wizard 20) | spell choices, "at will" / once per short rest |
+| Improved / Superior Critical (champion 3/15) | "critical hit on 19–20 / 18–20" in attacks |
+| Brutal Critical (barbarian 9/13/17) | +1/2/3 dice on a critical |
+| Danger Sense, Feral Instinct, Reliable Talent, Blindsense, Feral Senses, Stillness of Mind, War Caster | notes in "Senses and resistances" |
+| Purity of Body, Divine Health | immunities in "Senses and resistances" |
 
-Свідомо лишаються текстом (лист не має чого рахувати або це рішення за столом):
-Пісня відпочинку, Контрчари, Знищення нежиті, Відбивання снарядів, Повільне падіння,
-Порожнє тіло, Безчасне тіло, Хитра дія, Ухильність, обмеження CR Дикої форми,
-TCoE-заміни виборів на рівнях 4/8/12/16.
+Deliberately left as text (the sheet has nothing to compute, or it's a call at the table):
+Song of Rest, Countercharm, Destroy Undead, Deflect Missiles, Slow Fall, Empty Body,
+Timeless Body, Cunning Action, Evasion, the Wild Shape CR limit, TCoE choice replacements
+at levels 4/8/12/16.
 
-## Переклад
+## Translation
 
-Правило й канонічні терміни — `docs/translation-rules.md`; тест
-`test_terminology.py` стежить за інтерфейсом.
+The rule and canonical terms — `docs/translation-rules.md`; the `test_terminology.py` test
+watches the interface.
 
-Зроблено: **тексти всіх заклять** (723 тексти з абзацами «На вищих рівнях»), **рис**
-(109) і **опційних умінь** (151) — машинна чернетка за глосарієм, перевірена на
-повноту, кістки й числа (`scripts/rules_uk_check.py`). Конвеєр і рішення щодо
-термінів — `docs/translation.md`, розділ «Тексти заклять, рис і опційних умінь».
+Done: **the texts of all spells** (723 texts with "At Higher Levels" paragraphs), **feats**
+(109) and **optional features** (151) — a machine draft following the glossary, checked for
+completeness, dice and numbers (`scripts/rules_uk_check.py`). The pipeline and term
+decisions — `docs/translation.md`, section "Spell, feat and optional feature texts".
 
-Лишилось:
+What's left:
 
-- Вичитка людиною проти офіційного PDF (як і для решти шарів).
-- Власні назви, які перекладачі обрали самі (Аквізишнз Інкорпорейтед, Джим Даркмеджик,
-  коледжі Стриксгейвену), і назви предметів у таблицях «Відтворення магічного
-  предмета» — звести зі словником предметів, коли той перекладатиметься далі.
-- Риси Dragonlance (Лицар Солямнії, Адепти мантій) у корпусі записані російською —
-  перекладено з неї; варто перезібрати ці записи з англійського джерела.
+- Human proofreading against the official PDF (as for the other layers).
+- Proper names the translators chose themselves (Acquisitions Incorporated, Jim
+  Darkmagic, the Strixhaven colleges), and item names in the "Magic Item Replication"
+  tables — reconcile them with the item dictionary when that gets translated further.
+- The Dragonlance feats (Knight of Solamnia, the Robes adepts) are recorded in Russian in
+  the corpus and were translated from it; those records are worth rebuilding from the
+  English source.
 
-## Інтерфейс і дизайн
+## Interface and design
 
-Зроблено:
+Done:
 
-- **Крок «Спорядження»** — назви всіх 31 предмета наборів знаходяться в довіднику;
-  додано набір артифіцера (TCoE), якого не було.
-- **Підготовка заклять на екрані рівня** — жрець, друїд, паладин, артифіцер і маг
-  після підвищення одразу готують набір на день (та сама панель, що на листі);
-  відомі закляття й книга мага й раніше обирались на екрані рівня.
-- **`ddb-*` → `sheet-*`**, `ddb.css` → `sheet.css`, `ddb.tsx` → `sheetParts.tsx`;
-  прибрано ~75 правил, класів яких немає в коді (`styles.css` 1662 → 1241 рядок).
-- **Контраст (WCAG AA)** — `--act-text` для малинового тексту в темній темі (було 3.8:1,
-  стало ≥5:1), `--field-line` для меж полів, кнопок і чипів (було 1.4:1, стало ≥3:1),
-  темніша латунь у світлій темі; напис «Урон» у світлій темі був майже невидимий.
-- **Клавіатура** — видиме кільце фокуса на полях, лічильниках, нотатках; на зрізаних
-  (clip-path) кнопках і кнопках листа — кільце всередині, бо зовнішній outline обрізався;
-  вкладки листа позначають активну `aria-current`. Клікабельних не-кнопок немає.
+- **The "Equipment" step** — the names of all 31 pack items are found in the compendium;
+  the artificer pack (TCoE), which was missing, was added.
+- **Spell preparation on the level screen** — cleric, druid, paladin, artificer and wizard
+  prepare the day's set right after leveling up (the same panel as on the sheet); known
+  spells and the wizard's book were already chosen on the level screen.
+- **`ddb-*` → `sheet-*`**, `ddb.css` → `sheet.css`, `ddb.tsx` → `sheetParts.tsx`; ~75
+  rules whose classes no longer exist in the code were removed (`styles.css` 1662 → 1241
+  lines).
+- **Contrast (WCAG AA)** — `--act-text` for crimson text in the dark theme (was 3.8:1, now
+  ≥5:1), `--field-line` for field, button and chip borders (was 1.4:1, now ≥3:1), a darker
+  brass in the light theme; the «Урон» (Damage) label in the light theme was nearly
+  invisible.
+- **Keyboard** — a visible focus ring on fields, counters, notes; on clipped (clip-path)
+  buttons and sheet buttons the ring is inside, because an outer outline got clipped; the
+  sheet tabs mark the active one with `aria-current`. There are no clickable non-buttons.
 
-- **Шрифти Alegreya** — з `@fontsource/*` у збірці (лише вживані накреслення, кирилиця й
-  латиниця за `unicode-range`); запитів до Google Fonts немає.
-- **Червоний текст** — `--wax-text`: повідомлення про помилки й підписи урону у світлій
-  темі були блідо-рожевими на білому.
-- **Візард пройдено на всіх кроках** (паладин, гірський дворф, солдат → лист). Виправлено:
-  паладину й рейнджеру 1 рівня крок «Закляття» пропонував комірки й підготовку (чарують
-  з 2 рівня; картка класу тепер каже «з 2 рівня»); «Shield» зі стартового набору ставав
-  «Щитом з руїдію» — пошук довідника тепер ставить точну назву першою (і каталог теж);
-  щит із набору вдягається, як і броня; кількість («Сулиця × 5»); назви наборів і сулиць
-  однакові у виборі й інвентарі; інструменти виду й передісторії «на вибір» обираються у
-  візарді; передісторії PHB — першими; підсумок чернетки показує характеристики з бонусом
-  виду; зброя виду, шапка листа й володіння — українською («бойова сокира», не «battleaxe»);
-  «концентрація» замість подвійного «концентрація · зосередження».
-- **Запаси «витратити N»** — Накладання рук, очки чарів і кі (та будь-який лічильник
-  понад 10) мають поле «скільки» поруч із «Витратити / Відновити».
+- **Alegreya fonts** — from `@fontsource/*` in the build (only the styles used, Cyrillic
+  and Latin by `unicode-range`); no requests to Google Fonts.
+- **Red text** — `--wax-text`: error messages and damage labels in the light theme were
+  pale pink on white.
+- **The wizard walked through every step** (paladin, mountain dwarf, soldier → sheet).
+  Fixed: the "Spells" step offered slots and preparation to level 1 paladins and rangers
+  (they cast from level 2; the class card now says "from level 2"); "Shield" from the
+  starting pack became the "Shield of Ruidium" — compendium search now puts the exact name
+  first (the catalog too); a shield from the pack is equipped, like armor; quantities
+  («Сулиця × 5», "Javelin × 5"); pack and javelin names are the same in the choice and the
+  inventory; "choose one" species and background tools are chosen in the wizard; PHB
+  backgrounds come first; the draft summary shows abilities with the species bonus;
+  species weapons, the sheet header and proficiencies are in Ukrainian («бойова сокира»,
+  not "battleaxe"); «концентрація» instead of a doubled «концентрація · зосередження».
+- **"Spend N" pools** — Lay on Hands, sorcery points and ki (and any counter above 10)
+  have a "how many" field next to "Spend / Restore".
 
-## Головна сторінка
+## Home page
 
-Зроблено: віяло справжніх сторінок PDF (`frontend/public/previews/`, жрець 5 з
-`scripts/print_samples.py`), зміст довідника з кількостями (`/api/v1/compendium/books`),
-полиця книг з обкладинками, ціною й посиланням на D&D Beyond, застереження (некомерційний
-фанатський проєкт, повідомлення Fan Content Policy).
+Done: a fan of real PDF pages (`frontend/public/previews/`, cleric 5 from
+`scripts/print_samples.py`), the compendium contents with counts
+(`/api/v1/compendium/books`), a shelf of books with covers, price and a link to D&D Beyond,
+a disclaimer (a non-commercial fan project, the Fan Content Policy notice).
 
-Ціни й обкладинки — `content/books_market.json`, звірені вручну з маркетплейсом D&D Beyond
-27.11.2026; дата показується на сторінці. Ціни змінюються — переглядати раз на кілька
-місяців. Обкладинки показуються з сайту D&D Beyond за посиланням, у репозиторій не копіюються.
+Prices and covers — `content/books_market.json`, checked by hand against the D&D Beyond
+marketplace on 27.11.2026; the date is shown on the page. Prices change — review them every
+few months. Covers are shown from the D&D Beyond site by link and aren't copied into the
+repository.
 
-Оновити прев'ю аркушів: `scripts/print_preview.py --pdf` (у Docker), далі `pdftoppm -r 120`
-сторінок 1, 2, 5 файлу `cleric-5.pdf` у `frontend/public/previews/sheet-{front,spells,features}.png`.
+Refresh the sheet previews: `scripts/print_preview.py --pdf` (in Docker), then
+`pdftoppm -r 120` pages 1, 2, 5 of `cleric-5.pdf` into
+`frontend/public/previews/sheet-{front,spells,features}.png`.
 
-## Друк і PDF
+## Print and PDF
 
-Зроблено: аркуш персонажа для друку за логікою паперового листа (і експорту DDB), чорним по
-білому, рамки з увігнутими кутами, шрифти Alegreya вбудовані. Дані — `characters/api/print_view.py`
-(ті самі, що й на екрані), шаблон — `export/infrastructure/templates/character.html.jinja`.
+Done: a printable character sheet following the logic of the paper sheet (and the DDB
+export), black on white, frames with inverted corners, Alegreya fonts embedded. Data —
+`characters/api/print_view.py` (the same as on screen), template —
+`export/infrastructure/templates/character.html.jinja`.
 
-- **Аркуш для гри** (`/export/pdf`): головна сторінка без суцільного тексту (характеристики,
-  кидки, навички, бій, хіти й кидки смерті для олівця, атаки, обмежені вміння квадратиками,
-  володіння, перелік умінь), закляття (комірки, позначки підготовки, таблиця без описів),
-  спорядження й нотатки з лініями для запису.
-- **Журнал пригод** — окрема сторінка з лініями для записів подій (сесія, що сталося, здобуто).
-- **Додаткові аркуші** наприкінці того самого PDF: повні тексти умінь, особливостей виду,
-  передісторії й описи заклять у дві колонки (`?detailed=false` — без них).
-- **Друк із браузера** (`/print`): той самий HTML — працює й без WeasyPrint.
-- Перегляд оформлення: `python scripts/print_preview.py --pdf` (еталонні персонажі → `logs/print-preview/`).
+- **The play sheet** (`/export/pdf`): a main page without running text (abilities, saves,
+  skills, combat, hit points and death saves for a pencil, attacks, limited features as
+  boxes, proficiencies, a list of features), spells (slots, preparation marks, a table
+  without descriptions), equipment and notes with lines for writing.
+- **Adventure log** — a separate page with lines for recording events (session, what
+  happened, what was gained).
+- **Extra sheets** at the end of the same PDF: the full texts of features, species traits,
+  background and spell descriptions in two columns (`?detailed=false` — without them).
+- **Print from the browser** (`/print`): the same HTML — works even without WeasyPrint.
+- Previewing the layout: `python scripts/print_preview.py --pdf` (reference characters →
+  `logs/print-preview/`).
 
-Далі: звірити з PDF DDB по пунктах (риси характеру, ідеали, звʼязки, вади — у моделі
-персонажа їх ще немає); сторінка-компаньйон для звірів і викликаних істот.
+Next: check against the DDB PDF item by item (personality traits, ideals, bonds, flaws —
+the character model doesn't have them yet); a companion page for beasts and summoned
+creatures.
 
-## Гравці, вхід, довідник
+## Players, sign-in, compendium
 
-Зроблено (налаштування — `RUN.md`, розділ 3.2):
+Done (setup — `RUN.md`, section 3.2):
 
-- **Вхід через Telegram** (Login Widget): сервер перевіряє підпис і свіжість, видає
-  власну cookie-сесію на 30 днів; контекст `identity` (користувачі, сесії). Для `localhost`
-  — вхід для розробки за іменем (лише з `DNDSHEET_DEV_LOGIN=1`).
-- **Персонажі й чернетки в SQLite** (`var/dndsheet.sqlite3`) з власником: доступні з будь-якого
-  пристрою; старі `var/characters/*.json` переносяться один раз і дістаються власнику
-  застосунку. Чужий персонаж для API не існує (404).
-- **Синхронізація листа**: опитування версії кожні 4 с; запис — умовний
-  (`WHERE version < нова`), тож дві одночасні зміни не перезапишуть одна одну, а екран
-  після конфлікту показує свіжу версію.
-- **Довідник без входу** (`#/kb`): види з підрасами, класи з уміннями за рівнями й усіма
-  підкласами, передісторії — ті самі картки, що у візарді; риси, закляття (фільтр за
-  рівнем), опційні вміння, предмети (каталог інвентаря з фільтрами). Пошук українською й
-  англійською.
+- **Telegram sign-in** (Login Widget): the server checks the signature and freshness and
+  issues its own 30-day cookie session; the `identity` context (users, sessions). For
+  `localhost` — a development sign-in by name (only with `DNDSHEET_DEV_LOGIN=1`).
+- **Telegram Mini App**: the same sheet inside Telegram; `initData` is checked with the
+  same HMAC under a different key, the session is a Bearer token; a shared link opens in
+  the Mini App via `startapp=s_<token>`.
+- **Characters and drafts in SQLite** (`var/dndsheet.sqlite3`) with an owner: available
+  from any device; old `var/characters/*.json` files are migrated once and go to the app
+  owner. Someone else's character doesn't exist for the API (404).
+- **Sheet sync**: polling the version every 4 s; writes are conditional
+  (`WHERE version < new`), so two simultaneous changes won't overwrite each other, and
+  after a conflict the screen shows the fresh version.
+- **Compendium without sign-in** (`#/kb`): species with subraces, classes with features by
+  level and all subclasses, backgrounds — the same cards as in the wizard; feats, spells
+  (filter by level), optional features, items (the inventory catalog with filters). Search
+  in Ukrainian and English.
 
-- **Поділитися персонажем**: власник створює посилання `/#/s/<токен>` — лист без входу, лише
-  перегляд (кнопки й поля вимкнені, вкладки й описи працюють), друк і PDF за посиланням, сторінка
-  оновлюється, коли власник змінює лист. Нове посилання гасить старе, «Вимкнути» — відкликає.
-  Видно все, разом із нотатками.
+- **Share a character**: the owner creates a `/#/s/<token>` link — the sheet without
+  sign-in, view only (buttons and fields are disabled, tabs and descriptions work), print
+  and PDF by link, the page refreshes when the owner changes the sheet. A new link
+  invalidates the old one, "Disable" revokes it. Everything is visible, notes included.
 
-Далі:
+Next:
 
-- Публічний хостинг з HTTPS і доменом для бота (VPS або тунель), `/setdomain` у BotFather.
-- Лист як Telegram Mini App — після адаптації під телефон (перевірка `initData` — той самий
-  HMAC, інший ключ).
-- Партії й майстер — свідомо відкладено.
-- Монстрів у довіднику немає: бестіарій лежить окремо від корпусу довідника.
+- Parties and a DM view — deliberately postponed.
+- There are no monsters in the compendium: the bestiary is kept apart from the compendium
+  corpus.
 
-## Інфраструктура
+## Infrastructure
 
-Залежності фронтенду: `npm audit` — 0 вразливостей (прибрано невживаний `zod`,
-`vite` 6.4.6 закриває попередження `esbuild` dev-сервера).
+Frontend dependencies: `npm audit` — 0 vulnerabilities (the unused `zod` was removed,
+`vite` 6.4.6 closes the `esbuild` dev-server warning).
 
-Зроблено: тести в образі (`test-docker.cmd`, етап `test` у `Dockerfile`; там проходять і
-PDF-тести) і швидкий dev-режим (`dev-docker.cmd`: Vite + `uvicorn --reload`, код із диска).
-CI на GitHub без корпусу книг не має сенсу — корпус у git не зберігається.
+Done:
+
+- Tests in the image (`test-docker.cmd`, the `test` stage in the `Dockerfile`; the PDF
+  tests pass there too) and a fast dev mode (`dev-docker.cmd`: Vite + `uvicorn --reload`,
+  code from disk).
+- Production at <https://dnd.voronin.app>: a VPS with Caddy and Let's Encrypt, Cloudflare
+  DNS, infrastructure in Terraform — [deploy.md](deploy.md).
+- GitHub Actions: pre-commit, backend and frontend checks on every PR, auto-deploy after a
+  green `main` — [ci.md](ci.md). The book corpus is encrypted with git-crypt, and CI
+  unlocks it with the `GIT_CRYPT_KEY` secret.

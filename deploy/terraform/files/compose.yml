@@ -1,5 +1,5 @@
-# Продакшн на VPS: застосунок за Caddy. Порт застосунку назовні не відкритий —
-# лише Caddy слухає 80 (і 443, коли зʼявиться домен).
+# Production on the VPS: the app behind Caddy. The app port isn't exposed —
+# only Caddy listens on 80 and 443.
 services:
   app:
     image: ${DNDSHEET_IMAGE:-dndsheet:local}

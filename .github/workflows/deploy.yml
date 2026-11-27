@@ -1,11 +1,11 @@
-# Деплой застосунку на https://dnd.voronin.app — після зеленого CI на main.
+# Deploys the app to https://dnd.voronin.app — after a green CI on main.
 #
-# Збирає образ тут (з розблокованим корпусом) і віддає його scripts/deploy_app.py:
-# той самий скрипт, що й з Windows (`deploy\terraform\deploy.ps1`). Terraform тут
-# не запускається — інфраструктура (DNS, налаштування сервера) змінюється вручну.
+# Builds the image here (with the corpus unlocked) and hands it to scripts/deploy_app.py:
+# the same script as from Windows (`deploy\terraform\deploy.ps1`). Terraform doesn't
+# run here — infrastructure (DNS, server setup) is changed by hand.
 #
-# Середовище production: у Settings → Environments можна додати обовʼязкове
-# підтвердження перед кожним деплоєм і дозволити деплой лише з main.
+# The production environment: Settings → Environments can add a required approval
+# before every deploy and allow deploys from main only.
 name: Deploy
 
 on:
@@ -25,7 +25,7 @@ concurrency:
 jobs:
   deploy:
     name: deploy
-    # Лише зелений CI після push у main або ручний запуск з main.
+    # Only a green CI after a push to main, or a manual run from main.
     if: >-
       (github.event_name == 'workflow_run'
         && github.event.workflow_run.conclusion == 'success'
@@ -44,7 +44,7 @@ jobs:
         env:
           GIT_CRYPT_KEY: ${{ secrets.GIT_CRYPT_KEY }}
         run: |
-          if [ -z "$GIT_CRYPT_KEY" ]; then echo "::error::Немає секрету GIT_CRYPT_KEY (docs/ci.md)"; exit 1; fi
+          if [ -z "$GIT_CRYPT_KEY" ]; then echo "::error::The GIT_CRYPT_KEY secret is missing (docs/ci.md)"; exit 1; fi
           sudo apt-get install -y --no-install-recommends git-crypt
           echo "$GIT_CRYPT_KEY" | base64 -d > "$RUNNER_TEMP/git-crypt.key"
           git-crypt unlock "$RUNNER_TEMP/git-crypt.key"

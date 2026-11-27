@@ -1,149 +1,133 @@
-# Довідник як API (етап 1)
+# Compendium API
 
-Мета етапу: візард створення персонажа й лист мають брати класи, підкласи,
-закляття й предмети **через HTTP**, а не читати `content/` самі. Довідник —
-read-only: жодних записів через API не створюється й не змінюється.
+The character wizard and the sheet take classes, subclasses, spells and items **over
+HTTP** instead of reading `content/` themselves. The compendium is read-only: nothing is
+created or changed through this API.
 
-## Звідки дані
+## Where the data comes from
 
-`content/compendium/<book>/<category>.jsonl` — 3818 записів у 89 книгах,
-9 категорій (класи, підкласи, види, передісторії, риси, опційні вміння,
-закляття, предмети, правила). Формат запису — `contract/compendium-entry.schema.json`,
-канонічний порядок полів — `contract/compendium-format.json`.
+`content/compendium/<book>/<category>.jsonl` — records from 89 books in 9 categories
+(classes, subclasses, species, backgrounds, feats, optional features, spells, items,
+rules). The record format is `contract/compendium-entry.schema.json`, the canonical field
+order is `contract/compendium-format.json`.
 
-Корпус читається в памʼять один раз при старті застосунку (≈0.6 с на 3818
-записів). Тека перекривається змінною `DNDSHEET_CONTENT_DIR` — саме так тести
-підсовують свій маленький корпус.
+The corpus is read into memory once at startup (≈0.6 s). The folder can be overridden
+with `DNDSHEET_CONTENT_DIR` — that's how tests substitute their own small corpus.
 
-Свіжий клон репозиторію корпусу не містить (тексти книг під копирайтом):
-`/summary` тоді віддає `entries: 0` і попередження, а не 500.
+In the repository the corpus is encrypted (git-crypt, book texts are copyrighted). In a
+clone that isn't unlocked, `/summary` returns `entries: 0` and a warning, not a 500.
 
-## Шари
+## Layers
 
 ```
 compendium/
-  domain/          # CompendiumEntry, Category, EntryQuery, Page, порти
-  application/     # CompendiumService: зведення, класи, класові закляття
-  infrastructure/  # JSONL-корпус, похідний індекс списків, назви книг
-  api/             # APIRouter + серіалізація
+  domain/          # CompendiumEntry, Category, EntryQuery, Page, ports
+  application/     # CompendiumService: summary, classes, class spells, books overview
+  infrastructure/  # JSONL corpus, derived spell-list index, book names, market data
+  api/             # APIRouter + serialization
 ```
 
-`lint-imports` тримає це: домен не бачить ні FastAPI, ні інфраструктури.
+`lint-imports` enforces this: the domain sees neither FastAPI nor infrastructure.
 
-## Ендпоінти
+## Endpoints
 
-Усі під `/api/v1/compendium`.
+All under `/api/v1/compendium`.
 
-| Метод | Шлях | Що дає |
+| Method | Path | Returns |
 |---|---|---|
-| GET | `/summary` | скільки записів, по категоріях і книгах; чи є класові списки; попередження |
-| GET | `/entries` | записи з фільтрами й пагінацією |
-| GET | `/entries/{id}` | повна картка запису, разом з `text_en` |
-| GET | `/classes` | класи + кількість підкласів у кожного |
-| GET | `/classes/{class}/subclasses` | підкласи класу |
-| GET | `/classes/{class}/spells?max_level=` | закляття класу до рівня; поле `source` каже, звідки вони |
-| GET | `/spells?level=&school=&class_name=&q=` | закляття |
-| GET | `/optional-features?feature_type=` | інвокації, маневри, метамагія, інфузії… |
-| GET | `/items?item_type=&rarity=&magical=&q=` | предмети |
-| GET | `/mechanics` | скільки класів, видів і передісторій мають числа |
-| GET | `/classes/mechanics` | усі класи з механіками (для екрана вибору) |
-| GET | `/classes/{class}/mechanics` | хіт-дайс, володіння, слоти, риси за рівнями, вимоги мультикласу |
-| GET | `/species` | базові види з бонусами характеристик |
-| GET | `/species/{species}/subspecies` | підраси виду (вже з успадкованими числами) |
-| GET | `/species/{species}/mechanics` | один вид або підраса |
+| GET | `/summary` | how many records, by category and book; whether class spell lists exist; warnings |
+| GET | `/books` | books for the home page: what each contributes, price, D&D Beyond link, cover |
+| GET | `/entries` | records with filters and pagination |
+| GET | `/entries/{id}` | the full record card, including `text_en` |
+| GET | `/classes` | classes + number of subclasses each |
+| GET | `/classes/{class}/subclasses` | the class's subclasses |
+| GET | `/classes/{class}/spells?max_level=` | the class's spells up to a level; `source` says where they came from |
+| GET | `/spells?level=&school=&class_name=&q=` | spells |
+| GET | `/optional-features?feature_type=` | invocations, maneuvers, metamagic, infusions… |
+| GET | `/items?item_type=&rarity=&magical=&q=` | items |
+| GET | `/mechanics` | how many classes, species and backgrounds have numbers |
+| GET | `/classes/mechanics` | all classes with mechanics (for the selection screen) |
+| GET | `/classes/{class}/mechanics` | hit die, proficiencies, slots, features by level, multiclass prerequisites |
+| GET | `/species` | base species with ability bonuses |
+| GET | `/species/{species}/subspecies` | the species' subraces (with inherited numbers) |
+| GET | `/species/{species}/mechanics` | one species or subrace |
+| GET | `/backgrounds` | backgrounds with skills and languages |
+| GET | `/backgrounds/{name}/mechanics` | one background |
 
-Крок «Вид» візарда (`/characters/wizard/{id}/steps/species`) віддає не лише
-числа, а й текст книги — з перекладом, де він є: у кожному вмінні `name_en` /
-`text` (оригінал) і `name_uk` / `text_uk` (українська), в описі —
-`description_uk`. Переклад лежить у `content/translations/species/*.json`,
-ключ — `sha1` оригіналу; немає перекладу — цих полів немає взагалі, і екран
-показує оригінал. Деталі — `docs/translation.md`.
-| GET | `/backgrounds` | передісторії з навичками й мовами |
-| GET | `/backgrounds/{name}/mechanics` | одна передісторія |
+The wizard's Species step (`/characters/wizard/{id}/steps/species`) returns not only
+numbers but also the book text — translated where a translation exists: every feature has
+`name_en` / `text` (original) and `name_uk` / `text_uk` (Ukrainian), the description has
+`description_uk`. Translations live in `content/translations/species/*.json`, keyed by the
+`sha1` of the original; without a translation these fields are absent and the UI shows
+the original. Details — `docs/translation.md`.
 
-Фільтри `/entries`: `category`, `source_id`, `q` (пошук за назвою, без
-регістру й пунктуації), `level`, `school`, `feature_type`, `item_type`,
-`rarity`, `magical`, `subclass_of`, `edition`, `status`, `limit` (1..200),
-`offset`.
+The knowledge base (`/api/v1/kb/*`) is the public, sign-in-free view of the same data for
+the site's compendium section.
 
-Список віддає **без** `text_en` (`brief`), картка запису — **з** текстом
-(`full`). Це не оптимізація заради краси: текст класу важить більше за всі
-інші поля разом.
+`/entries` filters: `category`, `source_id`, `q` (name search, case- and
+punctuation-insensitive; exact name matches rank first), `level`, `school`,
+`feature_type`, `item_type`, `rarity`, `magical`, `subclass_of`, `edition`, `status`,
+`limit` (1..200), `offset`.
 
-Помилки: `400` — неможливі параметри запиту, `404` — немає такого запису,
-`422` — тип/межі не пройшли валідацію FastAPI.
+Lists return records **without** `text_en` (`brief`), the record card — **with** the
+text (`full`). Not cosmetics: a class's text weighs more than all other fields combined.
 
-## Класові списки заклять
+Errors: `400` — impossible query parameters, `404` — no such record, `422` — type/bounds
+failed FastAPI validation.
 
-У корпусі `data.classes` заповнено лише для **43 з 905** заклять (це книги,
-де джерело дало список). Тому «закляття волшебника до 3 рівня» з самих
-записів не видно.
+## Class spell lists
 
-Рішення — похідний індекс `content/index/spell-lists.json`, який збирається з
-таблиць «Spell Lists» у книгах:
+In the corpus `data.classes` is filled for only a small share of spells (the books whose
+source provided a list). So "wizard spells up to level 3" can't be read from the records
+alone.
 
-```powershell
-.venv\Scripts\python -m scripts.ingest.spell_lists --write   # зібрати
-.venv\Scripts\python -m scripts.ingest.spell_lists --check   # перевірити
-```
-
-Зараз у ньому 8 класів PHB, 845 позицій (Wizard 215, Sorcerer 129, Bard 120,
-Druid 110, Cleric 106, Warlock 74, Ranger 46, Paladin 45). Кожна назва
-звіряється з корпусом: якщо в книзі є закляття, якого немає в записах, скрипт
-про це скаже.
-
-Поле `source` у відповіді — це ступінь довіри до списку:
-
-* `spell-lists` — зі списків книги (повний набір);
-* `entry-data` — з `data.classes` заклять (неповний, лише де є);
-* `none` — списку немає: порожній результат означає «не знаю», а не «нуль».
-
-Індекс похідний і в репозиторій не комітиться (`content/index/` у
-`.gitignore`): він збирається з корпусу, якого в репозиторії теж немає.
-
-## Механіки (етап 2)
-
-Текст умінь у корпусі є, а чисел для листа немає: хіт-дайс, володіння, бонуси
-виду, таблиці слотів. Їх дає другий похідний індекс із дзеркала 5e.tools:
+The solution is the derived index `content/index/spell-lists.json`, built from the
+"Spell Lists" tables in the books:
 
 ```powershell
-.venv\Scripts\python -m scripts.ingest.mechanics --write   # зібрати обидва
-.venv\Scripts\python -m scripts.ingest.mechanics --check   # порівняти з диском
+.venv\Scripts\python -m scripts.ingest.spell_lists --write   # build
+.venv\Scripts\python -m scripts.ingest.spell_lists --check   # verify
 ```
 
-* `content/index/class-mechanics.json` — 13 класів 2014 (12 PHB + артифіцер
-  TCE): хіт-дайс, кидки порятунку, вибір навичок, володіння, характеристика
-  заклять, прогрес заклять, таблиця слотів 20×9, Pact Magic 20×2, вимоги
-  мультикласу, риси за рівнями, опційні вміння, стартове спорядження;
-* `content/index/origin-mechanics.json` — 69 видів, 64 підраси, 94
-  передісторії: бонуси характеристик (фіксовані й «на вибір»), розмір,
-  швидкість, темний зір, опір, навички, мови, інструменти.
+It covers the 8 PHB casting classes (Wizard 215, Sorcerer 129, Bard 120, Druid 110,
+Cleric 106, Warlock 74, Ranger 46, Paladin 45). Every name is checked against the corpus:
+if a book has a spell that the records don't, the script reports it.
 
-Підраси несуть успадковані числа батька (Hill Dwarf: +2 CON, +1 WIS,
-швидкість 25, темний зір 60). Формат описаний у
+The `source` field in the response is the confidence level of the list:
+
+* `spell-lists` — from the books' lists (complete);
+* `entry-data` — from the spells' `data.classes` (incomplete, only where present);
+* `none` — no list: an empty result means "unknown", not "zero".
+
+The index is derived from the corpus and, like it, is stored in git encrypted.
+
+## Mechanics
+
+The corpus has feature texts but no numbers for the sheet: hit die, proficiencies,
+species bonuses, slot tables. A second derived index from the 5e.tools mirror provides
+them:
+
+```powershell
+.venv\Scripts\python -m scripts.ingest.mechanics --write   # build both
+.venv\Scripts\python -m scripts.ingest.mechanics --check   # compare with disk
+```
+
+* `content/index/class-mechanics.json` — 13 classes of 2014 (12 PHB + the TCE artificer):
+  hit die, saving throws, skill choices, proficiencies, spellcasting ability, spell
+  progression, the 20×9 slot table, Pact Magic 20×2, multiclass prerequisites, features
+  by level, optional features, starting equipment;
+* `content/index/origin-mechanics.json` — 69 species, 64 subraces, 94 backgrounds: ability
+  bonuses (fixed and "choose"), size, speed, darkvision, resistances, skills, languages,
+  tools.
+
+Subraces carry the parent's inherited numbers (Hill Dwarf: +2 CON, +1 WIS, speed 25,
+darkvision 60). The format is described in
 [`contract/mechanics-format.json`](../contract/mechanics-format.json).
 
-`ability_unresolved: true` — у виду немає закодованих бонусів характеристик:
-у 2022-перевиданнях (MPMM, RHW) дзеркало лишає поле `ability` порожнім, а
-правило живе текстом. Візард (етап 3) для таких видів дасть вибір
-«+2/+1 або +1/+1/+1 до будь-яких».
+`ability_unresolved: true` — the species has no encoded ability bonuses: in the 2022
+reprints (MPMM, RHW) the mirror leaves `ability` empty and the rule lives in text. The
+wizard gives such species a choice of "+2/+1 or +1/+1/+1 to any".
 
-Немає індексів (свіжий клон) — `/mechanics` віддає `available: false` з
-поясненням, а `/summary` додає попередження. Помилки: `404` — немає такого
-класу, виду чи передісторії.
-
-## Перевірено
-
-| Гейт | Результат |
-|---|---|
-| `pytest backend` | **328 passed, 1 skipped** (на етапі 1 було 211) |
-| `lint-imports` | **5 contracts kept, 0 broken** |
-| `scripts/preflight.py` | OK; без корпусу — попередження, не падіння |
-| живий запит | `/summary` → 3818 записів, 89 книг; `/classes/wizard/spells` → 215, `source: spell-lists`; `/mechanics` → 13 класів, 69 видів, 94 передісторії |
-
-## Що далі
-
-Етап 3: візард створення персонажа читає ці ендпоінти крок за кроком
-(вид → клас → характеристики → передісторія → спорядження → закляття), а
-`Character` v2 перевіряє кожен крок своїми інваріантами. Доменні числа
-еталонних персонажів уже зафіксовані — [`domain-character.md`](domain-character.md).
+Without indexes (a locked clone) `/mechanics` returns `available: false` with an
+explanation, and `/summary` adds a warning. Errors: `404` — no such class, species or
+background.

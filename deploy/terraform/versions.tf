@@ -8,8 +8,8 @@ terraform {
     }
   }
 
-  # Стан у git, але зашифрований git-crypt (deploy/secrets/**): його бачить
-  # кожен, хто розблокував репозиторій, і ніхто в GitHub.
+  # The state is in git, but encrypted by git-crypt (deploy/secrets/**): anyone who
+  # unlocked the repository can see it, and nobody on GitHub can.
   backend "local" {
     path = "../secrets/terraform/terraform.tfstate"
   }

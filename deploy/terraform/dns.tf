@@ -1,8 +1,8 @@
-# DNS у Cloudflare: dnd.voronin.app → IP сервера.
+# DNS in Cloudflare: dnd.voronin.app → the server IP.
 #
-# Запис без проксі Cloudflare («сіра хмарка»): трафік іде прямо на сервер, а
-# сертифікат видає Let's Encrypt через Caddy. Токен API провайдер бере зі
-# змінної середовища CLOUDFLARE_API_TOKEN (deploy.ps1 читає deploy/secrets/cloudflare.env).
+# The record isn't proxied by Cloudflare (the "grey cloud"): traffic goes straight to the
+# server, and Let's Encrypt issues the certificate through Caddy. The provider takes the API
+# token from the CLOUDFLARE_API_TOKEN environment variable (deploy.ps1 reads deploy/secrets/cloudflare.env).
 provider "cloudflare" {}
 
 data "cloudflare_zone" "site" {
@@ -18,5 +18,5 @@ resource "cloudflare_dns_record" "site" {
   content = var.server_ip
   ttl     = 1
   proxied = false
-  comment = "dnd-sheet: керує Terraform (deploy/terraform)"
+  comment = "dnd-sheet: managed by Terraform (deploy/terraform)"
 }

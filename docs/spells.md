@@ -1,100 +1,97 @@
-# Закляття поза рівнем
+# Spells outside of level-up
 
-Підвищення рівня — не єдиний момент, коли змінюється список заклять. За
-столом гравець робить дві різні речі, і лист тепер уміє обидві:
+Level-up isn't the only moment the spell list changes. At the table a player does two
+different things, and the sheet supports both:
 
-* **готує набір на день** — жрець, друїд, паладин, маг, артифіцер (PHB, p. 201);
-* **додає закляття** — зі списку класу або своє власне, якого немає в книзі.
+* **prepares a set for the day** — cleric, druid, paladin, wizard, artificer (PHB, p. 201);
+* **adds a spell** — from the class list or a custom one that isn't in any book.
 
-Раніше це робилося лише разом із рівнем, і лист не встигав за грою: жрець
-готує закляття щоранку, а власні закляття майстер часто дозволяє додати
-посеред сесії.
+Previously this happened only together with a level, and the sheet couldn't keep up with
+play: a cleric prepares spells every morning, and DMs often allow a custom spell
+mid-session.
 
-## Денна підготовка
+## Daily preparation
 
-Екран: вкладка **«Закляття» → «Підготовка на день»**. Для кожного класу, що
-готує, є пошук по списку класу, прапорці й лічильник «обрано N / ліміт».
+UI: the **Spells → Preparation for the day** tab. For each preparing class there is a
+search over the class list, checkboxes and a "selected N / limit" counter.
 
-Правила, які застосовуються:
+Rules applied:
 
-| Правило | Джерело | Де |
+| Rule | Source | Where |
 |---|---|---|
-| підготовлених ≤ модифікатор + рівень класу, мінімум 1 | PHB, p. 201 | `Character.prepared_limit` (`shared.rules.prepared_spell_limit`) |
-| підготовка — це **набір на день**, учорашні закляття не лишаються | PHB, p. 201 | `Character.prepare_spells` |
-| заговори підготовкою не змінюються | PHB, p. 201 | `Character.prepare_spells` (відмова) |
-| рівень закляття не вище за слоти класу | таблиця класу | `ClassMechanics.max_spell_level` |
-| клас без підготовки (Воїн, Чаклун…) готувати не може | правила класу | `Character.prepared_limit` |
+| prepared ≤ modifier + class level, minimum 1 | PHB, p. 201 | `Character.prepared_limit` (`shared.rules.prepared_spell_limit`) |
+| preparation is **a set for the day**; yesterday's spells don't stay | PHB, p. 201 | `Character.prepare_spells` |
+| cantrips aren't changed by preparation | PHB, p. 201 | `Character.prepare_spells` (refusal) |
+| spell level no higher than the class's slots | class table | `ClassMechanics.max_spell_level` |
+| a class without preparation (Fighter, Warlock…) can't prepare | class rules | `Character.prepared_limit` |
 
-Ліміт рахується **однією** формулою — `shared.rules.prepared_spell_limit`:
-нею ж користується обчислювач листа (`ClassCasting.prepared_limit`), тож
-екран і перевірка не розходяться.
+The limit is computed by **one** formula — `shared.rules.prepared_spell_limit`: the sheet
+calculator uses it too (`ClassCasting.prepared_limit`), so the UI and the validation
+can't diverge.
 
-## Власні (домашні) закляття
+## Custom (homebrew) spells
 
-Гравець може вписати закляття, якого немає в книзі: назву, рівень і текст
-своїми словами. Воно зберігається з прапорцем `custom` і позначається на
-листі словом **«власне»** (у PDF/Markdown — «1 рівня · власне» + текст).
+A player can write in a spell that isn't in any book: name, level and text in their own
+words. It's stored with a `custom` flag and marked on the sheet as «власне» ("custom";
+in PDF/Markdown — "level 1 · custom" + the text).
 
-Домен не виводить із нього жодних правил: ні школи, ні урону, ні часу
-накладання — це текст гравця. Довідник до власних заклять не застосовується
-навіть тоді, коли назва збіглася з книжковою: інакше «Fireball» із власним
-описом показував би книжковий.
+The domain derives no rules from it: no school, damage or casting time — it's the
+player's text. The compendium doesn't apply to custom spells even when the name matches a
+book spell: otherwise "Fireball" with a custom description would show the book one.
 
-Власне закляття **завжди підготовлене** (у нього немає списку класу, з якого
-його готувати) і **займає місце в ліміті** — інакше власними можна було б
-обійти правило підготовки. Якщо місця немає, сервер відмовить:
-«підготовлених заклять 2, а можна 1».
+A custom spell is **always prepared** (it has no class list to prepare from) and **counts
+toward the limit** — otherwise custom spells could bypass the preparation rule. If there's
+no room, the server refuses: "2 spells prepared, only 1 allowed".
 
 ## API
 
 ```
-POST   /api/v1/characters/{id}/spells           додати (з довідника або власне)
-DELETE /api/v1/characters/{id}/spells           прибрати (name_en + class_key)
-POST   /api/v1/characters/{id}/spells/prepare   замінити підготовлений набір класу
+POST   /api/v1/characters/{id}/spells           add (from the compendium or custom)
+DELETE /api/v1/characters/{id}/spells           remove (name_en + class_key)
+POST   /api/v1/characters/{id}/spells/prepare   replace the class's prepared set
 ```
 
-Додати книжкове:
+Add a book spell:
 
 ```json
 {"class_key": "cleric", "name_en": "Bless", "level": 1,
  "entry_id": "phb-2014/spell/bless", "prepared": true}
 ```
 
-Додати власне:
+Add a custom spell:
 
 ```json
 {"class_key": "cleric", "name_en": "Благословення столу", "level": 1,
  "custom": true, "description": "Усі союзники за столом отримують +1…"}
 ```
 
-Підготувати набір на день (рівень можна не надсилати, якщо закляття вже є в
-листі):
+Prepare the set for the day (the level can be omitted if the spell is already on the
+sheet):
 
 ```json
 {"class_key": "cleric", "spells": [{"name_en": "Bless", "level": 1},
                                     {"name_en": "Cure Wounds", "level": 1}]}
 ```
 
-`version` — той самий optimistic lock, що й у `PATCH` листа (409 на стару
-версію). Успіх повертає `sheet` і `version`; відмова — 422 з текстом, чому
-саме («можна 5», «клас не готує», «максимум 1»).
+`version` is the same optimistic lock as in the sheet's `PATCH` (409 on a stale version).
+Success returns `sheet` and `version`; a refusal is a 422 with the reason ("only 5
+allowed", "the class doesn't prepare", "maximum 1").
 
-## Що зберігається
+## What is stored
 
-* `spells[]` — назва, рівень, клас, `entry_id` (у книжкових), `prepared`;
-* `spells[].custom` + `spells[].description` — власне закляття й текст;
-* порядок і склад заклять класу — саме він і є «підготовленим набором».
+* `spells[]` — name, level, class, `entry_id` (for book spells), `prepared`;
+* `spells[].custom` + `spells[].description` — a custom spell and its text;
+* the order and composition of the class's spells — that is the "prepared set".
 
-## Межі (чесно)
+## Limits (honestly)
 
-* **Книга заклять мага не моделюється окремо.** У корпусі маг позначений як
-  «готує закляття» без ліміту відомих, тому він готує з усього списку класу,
-  як жрець. У книзі 2014 у нього ще є книжка заклять (6 на 1 рівні, +2 за
-  рівень) — щоб її додати, потрібен окремий список «у книзі», а не прапорець.
-* **Заговори не змінюються щодня** — ні підготовкою, ні видаленням із
-  підготовленого набору; вони міняються лише з рівнем (або вручну, якщо
-  видалити й додати заново).
-* **Власне закляття не має структурованих полів** (час, дистанція, урон):
-  усе, що показує лист, — це текст гравця.
-* **«Дії» не знають про власні закляття більше, ніж текст**: кубика урону там
-  не буде, бо він не структурований.
+* **The wizard's spellbook isn't modeled separately.** In the corpus the wizard is marked
+  as "prepares spells" without a known-spells limit, so it prepares from the whole class
+  list, like a cleric. In the 2014 book it also has a spellbook (6 at level 1, +2 per
+  level) — adding that needs a separate "in the book" list, not a flag.
+* **Cantrips don't change daily** — neither by preparation nor by removal from the
+  prepared set; they change only with a level (or by hand: remove and add again).
+* **A custom spell has no structured fields** (time, range, damage): everything the sheet
+  shows is the player's text.
+* **Actions know no more about custom spells than their text**: there's no damage die,
+  because it isn't structured.

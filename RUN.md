@@ -1,272 +1,269 @@
-# Запуск dndsheet
+# Running dndsheet
 
-Покрокова інструкція: перше встановлення, щоденний запуск, тести, діагностика проблем.
-Актуально для стану «етап 4»: довідник, персонаж, візард, лист під час гри, демо-листок і експорт.
+Step by step: first install, daily run, tests, pre-commit, troubleshooting.
+Production (server, Terraform, secrets) is in [docs/deploy.md](docs/deploy.md);
+CI and auto-deploy in [docs/ci.md](docs/ci.md).
 
-**Що перевірено на цій машині:** Python 3.13 (venv), Node 24, Windows 11 / PowerShell 7.
-Потрібно: Python ≥ 3.11, Node ≥ 20. Git — опційно.
-
----
-
-## 0. Куди йти
-
-```
-C:\Users\User\Desktop\work_docs\dnd-sheet
-```
-
-Усі команди нижче виконуються з цієї теки, якщо не вказано інше.
+**Requirements:** Python ≥ 3.11, Node ≥ 20, Git, Docker Desktop (recommended).
+Checked on Windows 11 / PowerShell 7 with Python 3.12–3.13 and Node 22–24.
 
 ---
 
-## 1. Перше встановлення (один раз)
+## 0. Where to run commands
 
-### 1.1 Python-середовище
+All commands below run from the repository root unless stated otherwise.
+
+**After cloning**, unlock the encrypted files (book corpus and deploy secrets) —
+without that the compendium is empty and part of the tests fail:
 
 ```powershell
-cd C:\Users\User\Desktop\work_docs\dnd-sheet
+git config gpg.program "C:/Program Files/GnuPG/bin/gpg.exe"
+git-crypt unlock
+```
+
+Details and who can unlock: [docs/deploy.md](docs/deploy.md), section "First run on a new machine".
+
+---
+
+## 1. First install (once)
+
+### 1.1 Python environment
+
+```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e "backend[dev]"
 ```
 
-Що ставиться: FastAPI, Pydantic, Jinja2, uvicorn + тестові pytest, jsonschema, httpx, import-linter.
+Installs FastAPI, Pydantic, Jinja2, uvicorn and the test tools (pytest, jsonschema,
+httpx, import-linter, pyyaml).
 
-Перевірка:
+Check:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest backend -q
 ```
 
-Очікувано: **557 passed, 2 skipped** (скіп — PDF, див. розділ 6).
+Expected: all tests pass; 2 are skipped on Windows without GTK (PDF, see section 6).
 
-### 1.2 Фронтенд
+### 1.2 Frontend
 
 ```powershell
 cd frontend
 npm install
-npm run contract      # генерує TypeScript-типи з contract/sheet-document.schema.json
+npm run contract      # generates TypeScript types from contract/sheet-document.schema.json
 ```
 
-> `npm run contract` треба повторювати **щоразу після зміни** `contract/sheet-document.schema.json`.
-> Файл `src/contract/sheetDocument.ts` генерований — руками не редагувати.
+> Re-run `npm run contract` **every time** `contract/sheet-document.schema.json` changes.
+> `src/contract/sheetDocument.ts` is generated — don't edit it by hand.
 
-### 1.3 (Опційно) PDF-рендер
+### 1.3 (Optional) PDF rendering
 
 ```powershell
-cd C:\Users\User\Desktop\work_docs\dnd-sheet
 .\.venv\Scripts\python.exe -m pip install -e "backend[pdf]"
 ```
 
-Цього **недостатньо** на Windows: WeasyPrint потребує GTK (Pango/cairo). Деталі й варіанти — розділ 6.
+On Windows this is **not enough**: WeasyPrint needs GTK (Pango). See section 6.
 
 ---
 
-## 2. Щоденний запуск (режим розробки)
+## 2. Daily run (development mode)
 
-Потрібні **два термінали**.
+Two terminals.
 
-**Термінал 1 — API:**
+**Terminal 1 — API:**
 
 ```powershell
-cd C:\Users\User\Desktop\work_docs\dnd-sheet
+$env:DNDSHEET_DEV_LOGIN = "1"     # sign in by name; Telegram doesn't work on localhost
 .\.venv\Scripts\python.exe -m uvicorn dndsheet.main:app --reload
 ```
 
-**Термінал 2 — SPA з гарячим перезавантаженням:**
+**Terminal 2 — SPA with hot reload:**
 
 ```powershell
-cd C:\Users\User\Desktop\work_docs\dnd-sheet\frontend
+cd frontend
 npm run dev
 ```
 
-Відкрити: **http://127.0.0.1:5173**
-
-Vite проксіює `/api` і `/healthz` на `http://127.0.0.1:8000` (налаштовано у `frontend/vite.config.ts`),
-тому CORS не потрібен.
+Open **http://127.0.0.1:5173**. Vite proxies `/api` and `/healthz` to
+`http://127.0.0.1:8000` (see `frontend/vite.config.ts`), so no CORS is needed.
 
 ---
 
-## 3. Запуск як один сервер (як буде на хостингу)
+## 3. Single server (like production)
 
-FastAPI сам роздає зібраний фронтенд з того ж origin.
+FastAPI serves the built frontend from the same origin.
 
 ```powershell
-cd C:\Users\User\Desktop\work_docs\dnd-sheet\frontend
+cd frontend
 npm run build
-
 cd ..
 .\.venv\Scripts\python.exe -m uvicorn dndsheet.main:app --host 127.0.0.1 --port 8000
 ```
 
-Відкрити: **http://127.0.0.1:8000**
+Open **http://127.0.0.1:8000**.
 
-Чернетки візарда й збережені персонажі лежать у `var/` (у git не потрапляє).
-Каталог можна змінити:
+Data (SQLite: characters, wizard drafts, users, sessions) lives in `var/`, which is
+not in git. To use another folder:
 
 ```powershell
 $env:DNDSHEET_DATA_DIR = "C:\dndsheet-data"
 ```
 
-
-> Поки що SPA-fallback на `index.html` для клієнтських маршрутів не зроблено: працює `/`,
-> але не `/characters/123` після перезавантаження. Це зʼявиться разом із React Router на етапі 1.
-
 ---
 
-## 3.1 Docker: усе в контейнері (рекомендований запуск)
+## 3.1 Docker: everything in a container (recommended)
 
-Локальний Python і Node для цього не потрібні — потрібен лише Docker Desktop.
-
-```powershell
-cd C:\Users\User\Desktop\work_docs\dnd-sheet
-
-docker compose up -d --build        # зібрати образ і підняти
-docker compose ps                   # стан і порт
-docker compose logs -f app          # журнали
-docker compose down                 # зупинити
-```
-
-Відкрити: **http://127.0.0.1:8000** (порт прокинутий лише на цей компʼютер: `127.0.0.1:8000:8000`).
-
-Що всередині образу:
-
-- етап `web` (node:22-alpine) збирає SPA — `tsc --noEmit && vite build`, у фінальний образ Node не потрапляє;
-- етап `runtime` (python:3.12-slim) ставить backend із extra `pdf`, кладе `content/sources.yml`,
-  `content/compendium`, `content/bestiary`, `content/index` (без `content/raw` — він потрібен лише ingest);
-- `content/raw`, `var/`, `logs/`, `.venv`, `node_modules` відсікає `.dockerignore`.
-
-Дані живуть на хості: `./var` прокинутий у `/app/var`, тому персонажі, чернетки візарда й
-користувачі (база `var/dndsheet.sqlite3`) переживають `docker compose down` і перезбірку.
-Старі файли `var/characters/*.json` переносяться в базу на першому старті й лишаються на
-диску як резервна копія.
+Only Docker Desktop is needed — no local Python or Node.
 
 ```powershell
-docker compose exec app ls /app/var # база й старі файли зсередини
+docker compose up -d --build        # build the image and start
+docker compose ps                   # status and port
+docker compose logs -f app          # logs
+docker compose down                 # stop
 ```
 
-Змінні, якими керується образ: `DNDSHEET_DATA_DIR=/app/var`, `DNDSHEET_CONTENT_DIR=/app/content`,
-`DNDSHEET_SPA_DIST=/app/frontend/dist` (усі вже виставлені в `docker-compose.yml`).
+Open **http://127.0.0.1:8000** (the port is bound to this machine only: `127.0.0.1:8000:8000`).
 
-**PDF у Docker працює.** `GET /api/v1/demo/export/pdf` і `/api/v1/characters/<id>/export/pdf`
-віддають 4–5 сторінок A4 із кирилицею — на відміну від Windows, де без GTK було 503.
+What's in the image (`Dockerfile`):
 
-Після змін у коді:
+- stage `web` (node:22-alpine) builds the SPA — `tsc --noEmit && vite build`; Node doesn't reach the final image;
+- stage `deps` installs the backend with the `pdf` extra into a separate prefix, without `.pyc` and sources;
+- stage `runtime` (python:3.12-slim) gets the installed packages, the Pango/HarfBuzz libraries
+  and a Cyrillic font for WeasyPrint, `content/sources.yml`, `content/compendium`,
+  `content/bestiary`, `content/index` and translations (not `content/raw` — only ingest needs it);
+- `.dockerignore` excludes `content/raw`, `var/`, `logs/`, `.venv`, `node_modules`.
+
+Data lives on the host: `./var` is mounted into `/app/var`, so characters, drafts and
+users (`var/dndsheet.sqlite3`) survive `docker compose down` and rebuilds. Old
+`var/characters/*.json` files are imported into the database on first start and kept
+on disk as a backup.
 
 ```powershell
-docker compose up -d --build     # перезібрати й перезапустити
+docker compose exec app ls /app/var   # the database from inside
 ```
 
-**Автоперезбірка.** `watch-docker.cmd` (або `docker compose up -d --build` і потім
-`docker compose watch`) стежить за `frontend/`, `backend/src`, `backend/pyproject.toml` і
-`content/translations`: після збереження файлу образ перезбирається, а контейнер
-перезапускається сам (1–2 хв на збірку). Вікно має лишатися відкритим; закрили — стеження
-зупиниться, а контейнер працюватиме далі з останньою версією.
+Environment the image uses: `DNDSHEET_DATA_DIR=/app/var`, `DNDSHEET_CONTENT_DIR=/app/content`,
+`DNDSHEET_SPA_DIST=/app/frontend/dist` (all set in `docker-compose.yml`).
 
-**Швидкий режим розробки.** `dev-docker.cmd` (або `docker compose --profile dev up api-dev web-dev`)
-піднімає Vite на http://127.0.0.1:5173 і API з `uvicorn --reload` на 8001. Код монтується з
-диска, тож зміни у `frontend/` і `backend/src` видно за секунди, без перезбирання образу.
+**PDF works in Docker.** `GET /api/v1/characters/<id>/export/pdf` returns A4 pages with
+Cyrillic text — unlike Windows without GTK, where it's 503.
 
-**Тести в Docker.** `test-docker.cmd` (або `docker compose --profile test run --rm --build test`)
-запускає `pytest` і DDD-гейти в образі, де є корпус довідника й WeasyPrint — тобто разом із
-PDF-тестами, які на Windows пропускаються. CI на GitHub тут не допоможе: корпус книг у git не
-зберігається (`.gitignore`), а без нього тести правил не мають на чому працювати.
+After code changes:
 
-PostgreSQL у compose є, але застосунок його поки не використовує (стан — SQLite у `var/`).
-Підняти за потреби: `docker compose --profile db up -d` (порт 5433).
+```powershell
+docker compose up -d --build     # rebuild and restart
+```
 
-## 3.2 Вхід через Telegram і хто що бачить
+**Auto-rebuild.** `watch-docker.cmd` (or `docker compose up -d --build` followed by
+`docker compose watch`) watches `frontend/`, `backend/src`, `backend/pyproject.toml` and
+`content/translations`: on save the image is rebuilt and the container restarts (1–2 min
+per build). Keep the window open; closing it stops watching, the container keeps running
+the last version.
 
-- **Без входу** — лише довідник (`#/kb`): види, класи з підкласами, передісторії, риси,
-  закляття, опційні вміння, предмети.
-- **Після входу** — свої персонажі й чернетки. Вони в базі на сервері, тому той самий
-  гравець бачить їх з телефона, ноутбука й іншого браузера. Чужий персонаж для API «не
-  існує» (404).
-- **Лист синхронізується сам**: кожні 4 секунди питає номер версії й перечитує себе, якщо
-  лист змінили з іншого пристрою. Дві одночасні зміни однієї версії не перезапишуть одна
-  одну — друга отримає «лист змінили на іншому пристрої», а екран покаже свіжу версію.
+**Fast dev mode.** `dev-docker.cmd` (or `docker compose --profile dev up api-dev web-dev`)
+runs Vite on http://127.0.0.1:5173 and the API with `uvicorn --reload` on 8001. Code is
+mounted from disk, so changes in `frontend/` and `backend/src` show up in seconds,
+without rebuilding the image.
 
-**Налаштувати бота** (потрібна публічна HTTPS-адреса — Telegram не пускає віджет на `localhost`):
+**Tests in Docker.** `test-docker.cmd` (or `docker compose --profile test run --rm --build test`)
+runs `pytest` and the import contracts in an image with the corpus and WeasyPrint — so
+including the PDF tests that are skipped on Windows. CI runs exactly this image
+(see [docs/ci.md](docs/ci.md)).
 
-1. У [@BotFather](https://t.me/BotFather): `/newbot` → імʼя й username бота, отримати токен.
-2. Там же `/setdomain` → вибрати бота → вказати домен сайту (без `https://`).
-3. Поруч із `docker-compose.yml` створити `.env` (у git не потрапляє):
+PostgreSQL is in compose but not used by the app yet (state is SQLite in `var/`).
+Start it if needed: `docker compose --profile db up -d` (port 5433).
+
+## 3.2 Telegram sign-in and who sees what
+
+- **Without signing in** — the compendium only (`#/kb`): species, classes with
+  subclasses, backgrounds, feats, spells, optional features, items; plus shared
+  read-only sheets (`#/s/<token>`).
+- **Signed in** — your own characters and drafts. They're in the server database, so the
+  same player sees them from a phone, a laptop or another browser. Someone else's
+  character "doesn't exist" for the API (404).
+- **The sheet syncs itself**: every 4 seconds it asks for the version number and reloads
+  if the sheet was changed on another device. Two simultaneous edits of the same version
+  can't overwrite each other — the second gets "the sheet was changed on another device"
+  and the screen shows the fresh version.
+
+**Setting up the bot** (needs a public HTTPS address — Telegram doesn't allow the
+widget on `localhost`):
+
+1. In [@BotFather](https://t.me/BotFather): `/newbot` → bot name and username, get the token.
+2. There, `/setdomain` → choose the bot → enter the site's domain (without `https://`).
+3. Create `.env` next to `docker-compose.yml` (not in git):
 
    ```
-   DNDSHEET_TELEGRAM_BOT=назва_бота_без_собачки
+   DNDSHEET_TELEGRAM_BOT=bot_username_without_at
    DNDSHEET_TELEGRAM_BOT_TOKEN=123456:ABC...
    DNDSHEET_DEV_LOGIN=0
-   DNDSHEET_OWNER_TELEGRAM_ID=ваш_числовий_id   # необовʼязково
+   DNDSHEET_OWNER_TELEGRAM_ID=your_numeric_id   # optional
    ```
 
-   Для продакшну ці значення зберігаються в репозиторії зашифрованими —
-   `deploy/secrets/prod.env` (git-crypt + GPG). Як розблокувати й додати
-   людину чи сервер — [`deploy/README.md`](deploy/README.md).
+   For production these values are stored in the repository encrypted —
+   `deploy/secrets/prod.env` (git-crypt + GPG); see [`deploy/README.md`](deploy/README.md).
 
-4. `docker compose up -d --build`. На головній сторінці зʼявиться кнопка «Увійти через Telegram».
+4. `docker compose up -d --build`. The home page shows the "Log in with Telegram" button.
 
-Сервер перевіряє підпис Telegram (HMAC від токена бота) і свіжість входу (до доби), потім
-видає власну cookie-сесію на 30 днів (HttpOnly, SameSite=Lax; `Secure`, коли сайт відкрито
-через HTTPS або проксі передає `X-Forwarded-Proto: https`; примусово — `DNDSHEET_COOKIE_SECURE=1`).
-У базі лежить лише SHA-256 від токена сесії.
+The server checks Telegram's signature (HMAC with the bot token) and freshness (up to a
+day), then issues its own 30-day cookie session (HttpOnly, SameSite=Lax; `Secure` when the
+site is served over HTTPS or the proxy sends `X-Forwarded-Proto: https`; force it with
+`DNDSHEET_COOKIE_SECURE=1`). The database stores only a SHA-256 of the session token.
+The Telegram Mini App signs in with `initData` and sends the session as a Bearer header
+(see [docs/deploy.md](docs/deploy.md)).
 
-**Чиї старі персонажі.** Перенесені з файлів персонажі не мають власника. Їх отримує
-користувач з `DNDSHEET_OWNER_TELEGRAM_ID`, а якщо змінну не задано — перший, хто увійде.
+**Who gets old characters.** Characters imported from files have no owner. They go to
+the user from `DNDSHEET_OWNER_TELEGRAM_ID`, or, if it isn't set, to the first user who
+signs in.
 
-**Вхід для розробки** (`DNDSHEET_DEV_LOGIN=1`, у compose ввімкнений за замовчуванням) —
-поле «імʼя гравця» замість Telegram, щоб працювати на `localhost`. Будь-хто, хто бачить
-сторінку, може увійти під будь-яким іменем, тому порт відкритий лише на `127.0.0.1`.
-**Перед публікацією в мережу вимкніть його** (`DNDSHEET_DEV_LOGIN=0` у `.env`).
+**Development sign-in** (`DNDSHEET_DEV_LOGIN=1`, on by default in compose) — a "player
+name" field instead of Telegram, to work on `localhost`. Anyone who can see the page can
+sign in under any name, which is why the port is bound to `127.0.0.1` only.
+**Turn it off before exposing the site** (`DNDSHEET_DEV_LOGIN=0` in `.env`).
 
-**Без входу взагалі** (`DNDSHEET_AUTH=off`) — режим одного гравця: усе належить
-«локальному гравцю». Так працюють тести.
+**No sign-in at all** (`DNDSHEET_AUTH=off`) — single-player mode: everything belongs to
+a "local player". The tests run this way.
 
 ---
 
-## 4. Що можна подивитись одразу
+## 4. What to look at right away
 
-| Адреса | Що це |
+| URL | What it is |
 |---|---|
-| `http://127.0.0.1:8000/` | SPA: список збережених персонажів, візард (`#/create`), демо-листок |
+| `http://127.0.0.1:8000/` | SPA: home page, your characters, compendium |
 | `http://127.0.0.1:8000/healthz` | `{"status":"ok"}` |
-| `http://127.0.0.1:8000/#/create` | візард створення персонажа (6 кроків) |
-| `http://127.0.0.1:8000/#/character/<id>/level-up` | підвищення рівня: клас, хіти, підклас, характеристики, закляття |
-| `http://127.0.0.1:8000/api/v1/characters` | збережені персонажі |
+| `http://127.0.0.1:8000/#/create` | the character creation wizard (6 steps) |
+| `http://127.0.0.1:8000/#/character/<id>/level-up` | level-up: class, hit points, subclass, abilities, spells |
+| `http://127.0.0.1:8000/#/bugs` | "Found a bug?" |
+| `http://127.0.0.1:8000/api/v1/characters` | saved characters |
 | `http://127.0.0.1:8000/api/v1/demo/sheet` | `SheetDocument` (JSON) |
 | `http://127.0.0.1:8000/api/v1/renderers` | `{"formats":["markdown","pdf"]}` |
-| `http://127.0.0.1:8000/api/v1/demo/export/markdown` | Markdown-листок |
 | `http://127.0.0.1:8000/docs` | Swagger UI |
 
-Швидка перевірка з консолі:
-
-```powershell
-(Invoke-WebRequest http://127.0.0.1:8000/healthz).Content
-(Invoke-WebRequest http://127.0.0.1:8000/api/v1/demo/export/markdown).Content
-```
-
-У SPA наведи або сфокусуй значок **«?»** біля підпису — покаже оригінальний англійський текст.
+In the SPA, hover or focus a term to see the original English text.
 
 ---
 
-## 5. Тести й гейти якості
+## 5. Tests and quality gates
 
 ```powershell
-cd C:\Users\User\Desktop\work_docs\dnd-sheet
-
-python scripts\preflight.py                                       # без залежностей, stdlib only
-.\.venv\Scripts\python.exe -m pytest backend -q                   # 109 passed, 1 skipped
-.\.venv\Scripts\lint-imports.exe backend/pyproject.toml           # 4 contracts kept
+python scripts\preflight.py                                            # no dependencies, stdlib only
+.\.venv\Scripts\python.exe -m pytest backend -q                        # backend tests
+.\.venv\Scripts\lint-imports.exe --config backend/pyproject.toml       # bounded-context contracts
 
 cd frontend
-npm run typecheck                                                 # tsc --noEmit
-npm run build                                                     # tsc + vite build
+npm run typecheck                                                      # tsc --noEmit
+npm run lint                                                           # ESLint, 0 warnings
+npm run build                                                          # tsc + vite build
 ```
 
-Що саме перевіряє `scripts/preflight.py`: синтаксис усіх `.py`, валідність JSON-контракту,
-інваріанти `SheetDocument` (посилання на поля, `id == ключ`, двомовність, типи значень),
-чистоту домену (заміна import-linter), golden-числа домену й те, що обчислювач формул
-не пропускає `__import__`.
+`scripts/preflight.py` checks: syntax of every `.py`, the JSON contract, `SheetDocument`
+invariants (field references, `id == key`, bilingual labels, value types), domain purity
+(an import-linter substitute), the domain's golden numbers and that the formula evaluator
+doesn't let `__import__` through.
 
-Окремо conformance-набір рендерів:
+The renderer conformance suite on its own:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest backend -k conformance -v
@@ -274,109 +271,111 @@ npm run build                                                     # tsc + vite b
 
 ---
 
-## 5.1 Перевірки перед комітом (pre-commit)
+## 5.1 Pre-commit checks
 
-Налаштування — `.pre-commit-config.yaml`, за зразком GloPros. Один раз:
+Configured in `.pre-commit-config.yaml` (modeled on GloPros). Once:
 
 ```powershell
-pre-commit install          # хуки pre-commit і commit-msg
-cd frontend; npm install    # ESLint, Prettier з плагіном — їх хуки беруть звідси
+pre-commit install          # pre-commit and commit-msg hooks
+cd frontend; npm install    # ESLint and Prettier with its plugin — the hooks use these
 ```
 
-Далі кожен `git commit` перевіряє змінені файли:
+From then on every `git commit` checks the changed files:
 
-| Хук | Що робить |
+| Hook | What it does |
 | --- | --- |
-| ruff-check, ruff (isort), ruff-format | Python: лінт, порядок імпортів, форматування (`ruff.toml`) |
-| prettier | фронтенд: форматування й порядок імпортів (`frontend/.prettierrc.json`) |
-| eslint | фронтенд: лінт (`frontend/eslint.config.js`), без жодного попередження |
-| tsc | фронтенд: перевірка типів |
-| shellcheck, shfmt | скрипти `.sh` (відступ 2) |
+| ruff-check, ruff (isort), ruff-format | Python: lint, import order, formatting (`ruff.toml`) |
+| prettier | frontend: formatting and import order (`frontend/.prettierrc.json`) |
+| eslint | frontend: lint (`frontend/eslint.config.js`), zero warnings |
+| tsc | frontend: type check |
+| shellcheck, shfmt | `.sh` scripts (2-space indent) |
 | terraform fmt | `deploy/terraform/*.tf` |
-| trufflehog | секрети в змінених файлах (образ Docker) |
-| secrets-encrypted | файли з `deploy/secrets/` ідуть у коміт лише зашифрованими git-crypt |
-| end-of-file, trailing-whitespace, BOM, json/yaml/toml, великі файли, конфлікти | дрібні перевірки з pre-commit-hooks |
-| gitlint | повідомлення коміту: заголовок ≤ 100 символів, рядки тіла ≤ 160 |
+| trufflehog | secrets in changed files (Docker image) |
+| secrets-encrypted | everything git-crypt should encrypt (secrets, corpus) is ciphertext in the index |
+| end-of-file, trailing-whitespace, BOM, json/yaml/toml, large files, conflicts | small checks from pre-commit-hooks |
+| gitlint | commit message: title ≤ 100 characters, body lines ≤ 160 |
 
-Форматери виправляють файли самі й зупиняють коміт: перегляньте зміни,
-`git add`, комітьте ще раз. Прогнати все вручну — `pre-commit run --all-files`.
+Formatters fix files themselves and stop the commit: review the changes, `git add`,
+commit again. Run everything by hand: `pre-commit run --all-files`.
 
-## 6. PDF: чому 503 і що робити
+## 6. PDF: why 503 and what to do
 
-`GET /api/v1/demo/export/pdf` повертає 503, поки немає робочого WeasyPrint.
-На Windows сам pip-пакет не працює без GTK (Pango/cairo).
+`GET /api/v1/demo/export/pdf` returns 503 until WeasyPrint works. On Windows the pip
+package alone doesn't work without GTK (Pango).
 
-> **У Docker PDF уже працює** (розділ 3.1): образ ставить WeasyPrint і системні бібліотеки,
-> тому `/export/pdf` віддає справжній файл. 503 лишається тільки для запуску без контейнера.
+> **PDF already works in Docker** (section 3.1): the image installs WeasyPrint and the
+> system libraries. 503 remains only when running without the container.
 
-Варіанти для запуску без контейнера:
+Options without the container:
 
-1. **GTK-рантайм локально** — поставити GTK3 і додати його `bin` у `PATH`.
-2. **Docker / WSL для PDF** — так само буде на хостингу, Windows лишається чистим. *(рекомендовано)*
-3. **Замінити адаптер на Chromium-друк** — без нативних залежностей, але важчий рантайм.
+1. **GTK runtime locally** — install GTK3 and add its `bin` to `PATH`.
+2. **Docker / WSL for PDF** — the same as production, Windows stays clean. *(recommended)*
+3. **Swap the adapter for Chromium printing** — no native dependencies, but a heavier runtime.
 
-Заміна адаптера не зачіпає домен: усе за портом `SheetRenderer`
-(`backend/src/dndsheet/export/domain/renderer.py`).
+Swapping the adapter doesn't touch the domain: everything is behind the `SheetRenderer`
+port (`backend/src/dndsheet/export/domain/renderer.py`).
 
 ---
 
-## 7. Діагностика проблем
+## 7. Troubleshooting
 
-### `Access is denied` / `The directory is not empty` при перестворенні `.venv`
+### `Access is denied` / `The directory is not empty` when recreating `.venv`
 
-Файли тримає процес, що лишився від перерваного встановлення:
+A process from an interrupted install holds the files:
 
 ```powershell
-cd C:\Users\User\Desktop\work_docs\dnd-sheet
 Get-Process | Where-Object { $_.Path -like '*dnd-sheet\.venv\Scripts\python.exe' } |
   ForEach-Object { Stop-Process -Id $_.Id -Force }
 Remove-Item -Recurse -Force .venv
 python -m venv .venv
 ```
 
-### `No module named pip` у `.venv`
+### `No module named pip` in `.venv`
 
-Venv створено з `--without-pip` (так буває, коли `ensurepip` не відпрацював). Перестворити:
+The venv was created with `--without-pip` (happens when `ensurepip` failed). Recreate:
 
 ```powershell
 python -m venv --clear .venv
 .\.venv\Scripts\python.exe -m ensurepip --upgrade
 ```
 
-### `spawn EPERM` під час `npm run build`
+### `spawn EPERM` during `npm run build`
 
-Це обмеження пісочниці, коли команду запускає агент: esbuild не може створити дочірній процес.
-У звичайному терміналі збірка працює. Якщо бачиш це у власному терміналі — перевір антивірус
-або запусти `npm rebuild esbuild`.
+A sandbox restriction when an agent runs the command: esbuild can't spawn a child
+process. In a normal terminal the build works. If you see it in your own terminal, check
+the antivirus or run `npm rebuild esbuild`.
 
-### Кирилиця в консолі як `??????`
+### Cyrillic shows as `??????` in the console
 
-Це лише відображення, файли UTF-8. Для читабельного виводу:
+Only the display; files are UTF-8. For readable output:
 
 ```powershell
 chcp 65001
 $env:PYTHONIOENCODING = "utf-8"
 ```
 
-### Порт зайнятий
+### Port in use
 
 ```powershell
 Get-NetTCPConnection -LocalPort 8000 | Select-Object OwningProcess
 ```
 
-або запустити на іншому порту: `--port 8010` (і тоді оновити проксі у `frontend/vite.config.ts`).
+or run on another port: `--port 8010` (and update the proxy in `frontend/vite.config.ts`).
 
 ### `ModuleNotFoundError: No module named 'dndsheet'`
 
-Забуто `pip install -e "backend[dev]"` або команда виконується не тим інтерпретатором.
-Використовуй саме `.\.venv\Scripts\python.exe`, а не глобальний `python`.
+`pip install -e "backend[dev]"` was skipped or the command uses another interpreter. Use
+`.\.venv\Scripts\python.exe`, not the global `python`.
+
+### The compendium is empty / many tests fail after cloning
+
+The corpus is encrypted — run `git-crypt unlock` (section 0).
 
 ---
 
-## 8. Повне перевстановлення з нуля
+## 8. Full reinstall from scratch
 
 ```powershell
-cd C:\Users\User\Desktop\work_docs\dnd-sheet
 Remove-Item -Recurse -Force .venv, frontend\node_modules, frontend\dist -ErrorAction SilentlyContinue
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
@@ -386,9 +385,9 @@ cd frontend; npm install; npm run contract; npm run build
 
 ---
 
-## 9. Linux / CI (коротко)
+## 9. Linux (short)
 
-Є `Makefile` з цілями `install`, `test`, `arch`, `contract`, `dev`, `web-dev`, `web-build`:
+The `Makefile` has `install`, `test`, `arch`, `contract`, `dev`, `web-dev`, `web-build` targets:
 
 ```bash
 make install
@@ -399,19 +398,22 @@ make web-build
 
 ---
 
-## 10. Де що лежить
+## 10. Where things are
 
 ```
 backend/src/dndsheet/
-  shared/        # VO: Ability, AbilityScore, DiceExpression, Armor, errors → kernel.py
-  characters/    # агрегат Character + DerivedStatsCalculator
-  sheets/        # SheetDocument, формули, лейбли, build_document
-  export/        # порт SheetRenderer, реєстр, адаптери Markdown/PDF, Jinja-шаблон
-  identity/      # користувачі, вхід через Telegram, сесії (SQLite)
+  shared/        # kernel: Ability, AbilityScore, DiceExpression, Armor, Money; rules tables
+  characters/    # Character aggregate, wizard, sheet, level-up, DerivedStatsCalculator, SQLite store
+  compendium/    # compendium: JSONL corpus, indexes, service, API
+  sheets/        # SheetDocument, formulas, labels, build_document
+  export/        # SheetRenderer port, registry, Markdown/PDF adapters, Jinja template
+  identity/      # users, Telegram sign-in (widget and Mini App), sessions (SQLite)
   api/           # FastAPI: create_app()
-contract/        # JSON Schema + фікстури (єдине джерело типів)
-content/         # глосарій v0 (чернетка)
+contract/        # JSON Schema + fixtures (single source of types)
+content/         # glossary, sources, translations; encrypted corpus and indexes
 frontend/        # React SPA (Vite, TanStack Query, Radix Tooltip)
-docs/            # план і ADR
-scripts/         # preflight.py
+deploy/          # Terraform, server files, encrypted secrets
+.github/         # CI and deploy workflows, ruleset for main
+docs/            # plan, ADRs, per-area docs
+scripts/         # preflight, ingest, translations, deploy, hooks
 ```

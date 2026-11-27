@@ -1,19 +1,19 @@
-# ADR 0002 — Правила обчислює тільки сервер
+# ADR 0002 — Only the server computes the rules
 
-Статус: прийнято.
+Status: accepted.
 
-## Контекст
+## Context
 
-Гібридна автоматизація (обчислювані поля + ръчні оверрайди) спокушає реалізувати перерахунок на клієнті для миттєвості.
+Hybrid automation (computed fields + manual overrides) tempts one to recompute on the client for instant feedback.
 
-## Рішення
+## Decision
 
-Єдиний рушій — Python (`DerivedStatsCalculator`, `ModifierResolver`, `FormulaEvaluator`).
-SPA не містить формул 5e. Кожна зміна → `PATCH /characters/{id}` з `If-Match: version` → сервер повертає перерахований `SheetDocument`.
-Для прев'ю у візарді — `POST /characters/{id}/preview` без збереження.
+There is a single engine — Python (`DerivedStatsCalculator`, `ModifierResolver`, `FormulaEvaluator`).
+The SPA contains no 5e formulas. Every change → `PATCH /characters/{id}` with the current version → the server returns the recomputed sheet.
+Wizard previews are computed on the server too, without saving.
 
-## Наслідки
+## Consequences
 
-- Немає двох джерел істини для КЗ/ПЗ.
-- Затримка ~50–200 мс на зміну; компенсується оптимістичним рендером лише косметики та дебаунсом.
-- Офлайн-редагування не підтримується (не вимога).
+- There are no two sources of truth for AC or HP.
+- ~50–200 ms latency per change; mitigated by optimistic rendering of cosmetics only and by debouncing.
+- Offline editing is not supported (not a requirement).

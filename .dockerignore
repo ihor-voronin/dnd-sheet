@@ -1,6 +1,6 @@
-# Усе, що не потрібне всередині образу
+# Everything that isn't needed inside the image
 
-# --- git і сесія ---
+# --- git and the session ---
 .git
 .gitignore
 .github
@@ -21,7 +21,7 @@ frontend/node_modules
 frontend/dist
 *.tsbuildinfo
 
-# --- дані й журнали (корпус потрапляє вибірково, див. Dockerfile) ---
+# --- data and logs (the corpus is copied selectively, see Dockerfile) ---
 content/raw
 content/.session
 var
@@ -31,11 +31,11 @@ artifacts
 sink-*.log
 ingest-status*.txt
 
-# --- зайве для образу ---
+# --- not needed in the image ---
 docs
 .idea
 .vscode
 **/*.bak
 
-# --- доступи до хостингу (лише локально) ---
+# --- hosting credentials (local only) ---
 deploy/local

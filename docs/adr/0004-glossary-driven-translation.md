@@ -1,22 +1,22 @@
-# ADR 0004 — Глосарій як дані, переклад із провенансом
+# ADR 0004 — Glossary as data, translation with provenance
 
-Статус: прийнято.
+Status: accepted.
 
-## Контекст
+## Context
 
-Джерело контенту — англійське. Офіційний український переклад існує у вигляді PDF, доступного для звірки.
-Обсяг тексту ~1.5–2 млн символів. Без єдиного глосарія терміни розповзуться за два тижні.
+The content's source language is English. An official Ukrainian translation exists as a PDF available for reference.
+The text volume is ~1.5–2 million characters. Without a single glossary the terms would drift apart within two weeks.
 
-## Рішення
+## Decision
 
-- `content/glossary.uk.yml` → таблиця `glossary_terms` (term_en, term_uk, source, citation, status).
-- UI-рядки — gettext; ігрові терміни — тільки глосарій.
-- Кожен локалізований рядок має `provenance: official | own_human | own_mt_draft` + `citation`.
-- `glossary-lint` у CI: якщо в `en` є затверджений термін, а в `uk` — не його переклад, білд падає.
-- MT дозволений лише як чернетка (`own_mt_draft`), доки людина не підтвердить.
+- `content/glossary.uk.yml` holds the terms (term_en, term_uk, source, citation, status) and the forbidden spellings.
+- UI strings are code; game terms come only from the glossary.
+- Every localized string carries `provenance: official | own_human | own_mt_draft` + `citation`.
+- A glossary check in CI (`backend/tests/api/test_terminology.py`): if code or translations use a forbidden spelling, the build fails.
+- Machine translation is allowed only as a draft (`own_mt_draft`) until a human confirms it.
 
-## Наслідки
+## Consequences
 
-- Переклад стає керованим процесом, а не побічною роботою.
-- Потрібен UI/CLI для вичитки та вставлення офіційних термінів із цитатою (книга + сторінка).
-- Рядки без офіційного відповідника позначені явно — видно, де ризик розбіжності з офіційним UA.
+- Translation becomes a managed process rather than a side job.
+- A UI/CLI is needed to review and insert official terms with a citation (book + page).
+- Strings with no official counterpart are marked explicitly — it's visible where they may diverge from the official Ukrainian edition.

@@ -1,189 +1,191 @@
-# Лист під час гри (етап 4)
+# The sheet during play
 
-Персонаж створений — далі ним грають. Лист показує обчислені числа, але
-дозволяє їх **виправити**, веде лічильники (хіти, слоти, хіт-дайси, кидки
-смерті, натхнення, втома), рахує атаки зі зброї та вміє відпочивати. Кожна
-зміна зберігається на диск одразу й переживає перезапуск.
+The character is created — now it's played. The sheet shows computed numbers but lets
+you **override** them, keeps counters (HP, slots, hit dice, death saves, inspiration,
+exhaustion), computes weapon attacks and handles rests. Every change is saved
+immediately (SQLite) and is visible from any device.
 
 ```
-Character.state ── DerivedStatsCalculator ──> ComputedSheet ──> PATCH/rest ──> var/characters/*.json
-      ▲                                                                              │
-      └──────────────────────── читання: числа + стан + атаки ◄───────────────────────┘
+Character.state ── DerivedStatsCalculator ──> ComputedSheet ──> PATCH/rest ──> SQLite (versioned)
+      ▲                                                                            │
+      └──────────────────────── read: numbers + state + attacks ◄──────────────────┘
 ```
 
-Рівень тут не редагується: кнопка **«+1 рівень»** у шапці веде на окремий
-екран підвищення (етап 7, [`level-up.md`](level-up.md)) — рівень міняє
-класи, хіти, уміння й ресурси одразу, тому це не «правка поля».
+The level isn't edited here: the **"+1 level"** button in the header leads to the
+separate level-up screen ([`level-up.md`](level-up.md)) — a level changes classes, HP,
+features and resources at once, so it isn't a "field edit".
 
-## Що зберігається, а що рахується
+## What is stored and what is computed
 
-Це головна межа етапу: **правила** (КЗ, максимум хітів, слоти, DC) не
-зберігаються — вони перераховуються з класів, виду й предметів. Зберігається
-**стан**: скільки хітів зараз, скільки слотів витрачено, кидки смерті,
-втома, виправлення, нотатки.
+This is the main boundary: **rules** (AC, max HP, slots, DC) aren't stored — they're
+recomputed from classes, species and items. What's stored is **state**: current HP,
+spent slots, death saves, exhaustion, overrides, notes.
 
-| Стан (`SheetState`) | Правила (`ComputedSheet`) |
+| State (`SheetState`) | Rules (`ComputedSheet`) |
 |---|---|
 | `hp.current`, `hp.temporary` | `hit_points.maximum` |
-| `slots_used`, `pact_used` | скільки слотів усього |
-| `hit_dice_used` | пул хіт-дайсів |
-| `death_saves`, `inspiration`, `exhaustion` | КЗ, ініціатива, швидкість, навички |
-| `overrides`, `notes` | DC, бонус атаки закляттям |
+| `slots_used`, `pact_used` | total slots |
+| `hit_dice_used` | the hit dice pool |
+| `death_saves`, `inspiration`, `exhaustion` | AC, initiative, speed, skills |
+| `overrides`, `notes` | DC, spell attack bonus |
 
-`hp.current = None` — це «гравець ще не чіпав хіти», лист показує максимум;
-`0` — непритомний персонаж із кидками смерті. Ці два стани не зливаються:
-персонаж на нулі хітів показується як нуль і на екрані, і в експорті.
+`hp.current = None` means "the player hasn't touched HP yet", the sheet shows the
+maximum; `0` is an unconscious character making death saves. The two states never merge:
+a character at zero HP shows zero both on screen and in the export.
 
-Максимумів у стані немає навмисно: якщо завтра зміниться правило (новий
-предмет, рівень), лист перерахується, а «витрачено 2 з 4» лишиться осмисленим.
+There are deliberately no maximums in the state: if a rule changes tomorrow (a new item,
+a level), the sheet is recomputed, and "2 of 4 spent" stays meaningful.
 
-## Виправлення вручну (override)
+## Manual overrides
 
-Клік по числу відкриває поле. Обчислене поле (КЗ, ініціатива, швидкість,
-пасивна уважність, навичка, порятунок) змінюється **лише як виправлення**:
-сервер зберігає його окремо, а лист показує «вручну», підсвічує число й дає
-кнопку «↺», яка повертає розрахунок.
+Clicking a number opens a field. A computed field (AC, initiative, speed, passive
+Perception, a skill, a save) changes **only as an override**: the server stores it
+separately, and the sheet shows "manual", highlights the number and offers a "↺" button
+that restores the computed value.
 
-Дозволені ключі — білий список (`SheetState.OVERRIDABLE` + `skill:*`,
-`save:*`). Не можна виправити рівень чи бонус майстерності: це зламало б усі
-похідні. Кожне виправлення — це свідомий компроміс («КЗ 19 від магічного
-плаща, якого немає в довіднику»), тому воно й позначене.
+The allowed keys are a whitelist (`SheetState.OVERRIDABLE` + `skill:*`, `save:*`). The
+level or the proficiency bonus can't be overridden: that would break every derived
+number. Every override is a conscious compromise ("AC 19 from a magic cloak that isn't in
+the compendium"), which is why it's marked.
 
-## Лічильники й відпочинок
+## Counters and rests
 
-| Дія | Що робить |
+| Action | What it does |
 |---|---|
-| короткий відпочинок | Pact Magic і ресурси з коротким відновленням (Друге дихання, Дія-сплеск, Кі…); хіти й кістки — вручну |
-| довгий відпочинок | хіти до максимуму, усі слоти, половина **загальної** кількості кісток (округлення вниз, мінімум 1), усі ресурси, кидки смерті 0, втома −1 |
-| шкода | спершу знімає тимчасові хіти, потім поточні; нижче нуля не опускається (PHB, p. 197) |
-| лікування | додає хіти, **не вище максимуму** |
-| витратити хіт-дайс | кидок + Статура, лікує, позначає дайс витраченим |
-| слоти | `+/-` на кожному рівні; не більше максимуму (перевіряє застосунок) |
-| класові ресурси | `+/-` на кожному ресурсі (Друге дихання, Кі, Канал божественності…); ліміт рахує домен |
-| кидки смерті | три успіхи / три провали, кліком |
-| натхнення, втома | перемикач і число 0..6 |
+| short rest | Pact Magic and short-rest resources (Second Wind, Action Surge, Ki…); HP and hit dice by hand |
+| long rest | HP to maximum, all slots, half of the **total** hit dice (rounded down, minimum 1), all resources, death saves 0, exhaustion −1 |
+| damage | removes temporary HP first, then current; doesn't go below zero (PHB, p. 197) |
+| healing | adds HP, **not above the maximum** |
+| spend a hit die | roll + Constitution, heals, marks the die as spent |
+| slots | `+/-` on each level; not above the maximum (the app enforces it) |
+| class resources | `+/-` on each resource (Second Wind, Ki, Channel Divinity…); the domain computes the limit |
+| death saves | three successes / three failures, by clicking |
+| inspiration, exhaustion | a toggle and a number 0..6 |
 
-Тимчасові хіти відпочинок **не знімає**: за правилами вони живуть, доки їх не
-знімуть або не замінять новими (це видно й у повідомленні про відпочинок).
+Rests **don't remove** temporary HP: per the rules they last until removed or replaced
+(the rest message says so too).
 
-Шкода й лікування — **окремі дії**, а не «вписати число»: `hp.damage` і
-`hp.heal` застосовуються сервером за правилами. Хіт-дайсів не може бути
-витрачено більше, ніж є — це вже інваріант агрегату, а не UI.
+Damage and healing are **separate actions**, not "type a number": `hp.damage` and
+`hp.heal` are applied by the server per the rules. You can't spend more hit dice than you
+have — that's an aggregate invariant, not a UI check.
 
-Відпочинок повертає `rest`-звіт (`hp_before`, `hp_after`, `hit_dice_*`,
-`features_reset`, `exhaustion_*`), і екран показує саме його, а не здогад із
-попереднього стану: «Довгий відпочинок · хіти 5 → 12 · кістки хітів: витрачено
-1 → 0 · тимчасові хіти 3 збережено».
+A rest returns a `rest` report (`hp_before`, `hp_after`, `hit_dice_*`, `features_reset`,
+`exhaustion_*`), and the screen shows exactly that, not a guess from the previous state.
 
-## Атаки
+## Attacks
 
-Для кожної зброї в інвентарі лист рахує атаку з даних довідника
+For each weapon in the inventory the sheet computes an attack from compendium data
 (`data.damage`, `data.properties`):
 
-* ближній бій — Сила; `finesse` — краща зі Сили й Спритності;
-  `ammunition` — Спритність;
-* бонус атаки = майстерність + модифікатор; урон = кубик + модифікатор.
+* melee — Strength; `finesse` — the better of Strength and Dexterity; `ammunition` —
+  Dexterity;
+* attack bonus = proficiency + modifier; damage = die + modifier.
 
-Дані предмета шукаються за `entry_id` або точною назвою й кешуються на час
-життя застосунку. Немає кубика в довіднику — немає рядка атаки (краще ніж
-вигаданий «1d6»), **але** якщо в предмета є власний `damage`, рядок будується
-з нього: гравець міг додати магічну зброю, якої немає в корпусі.
+Item data is looked up by `entry_id` or the exact name and cached for the app's lifetime.
+No die in the compendium — no attack row (better than an invented "1d6"), **but** if the
+item has its own `damage`, the row is built from it: the player may have added a magic
+weapon that isn't in the corpus.
 
-## Інвентар
+## Inventory
 
-Предмети додають із каталогу (пошук, фільтри за типом, магічністю й книгою)
-або вручну; кожен рядок можна змінити (назва, тип, кількість, вага, КЗ броні
-й межа Спритності, урон зброї, властивості) або прибрати. Це ті самі поля,
-які несе `InventoryItem`:
+Items are added from the catalog (search, filters by type, magic and book) or by hand;
+every row can be edited (name, type, quantity, weight, armor AC and Dexterity cap, weapon
+damage, properties) or removed. These are the fields `InventoryItem` carries:
 
-| Поле | Для чого |
+| Field | Purpose |
 |---|---|
-| `name_en`, `kind`, `quantity`, `weight_lb` | що це й скільки важить |
-| `equipped` | броня/щит впливають на КЗ; споряджена броня знімає попередню |
-| `attuned` | настроювання на магічний предмет |
-| `armor_base`, `dex_cap` | числа броні (лише `kind = armor`) |
-| `damage`, `notes` | власний урон зброї та властивості (перекривають довідник) |
-| `entry_id` | звідки предмет узявся (для довідника) |
+| `name_en`, `kind`, `quantity`, `weight_lb` | what it is and how much it weighs |
+| `equipped` | armor/shield affect AC; equipping armor unequips the previous one |
+| `attuned` | attunement to a magic item |
+| `armor_base`, `dex_cap` | armor numbers (only `kind = armor`) |
+| `damage`, `notes` | the weapon's own damage and properties (override the compendium) |
+| `entry_id` | where the item came from (for the compendium) |
 
-Сервер перевіряє інваріанти: одна броня й один щит одночасно, урон буває лише
-у зброї, номер предмета має існувати, **не більше трьох предметів із
-настроюванням** (PHB, с. 138 — `Inventory.__post_init__`). Каталог прибирає
-дублі з різних книг (той самий предмет у PHB і «базових правилах» — один
-рядок).
+The server checks invariants: one armor and one shield at a time, only weapons have
+damage, the item index must exist, **no more than three attuned items** (PHB, p. 138 —
+`Inventory.__post_init__`). The catalog removes duplicates from different books (the same
+item in the PHB and the Basic Rules is one row).
 
-Настроювання показується лише там, де воно є: чип «настроїти» з'являється,
-коли довідник каже `attunement: true` (або предмет уже настроєний), рахунок
-«настроювання N з 3» стоїть у заголовку, четвертий предмет упирається в межу
-з підказкою. У PDF/Markdown до рядка предмета додається «настроєно».
+Attunement shows only where it applies: the "attune" chip appears when the compendium
+says `attunement: true` (or the item is already attuned), the "attuned N of 3" count is
+in the heading, and a fourth item hits the limit with a hint. In PDF/Markdown the item
+row gets "attuned".
 
+## Features
 
-## Уміння
+The Features tab shows class and subclass features **with the rules text**, translated
+into Ukrainian where a translation exists:
 
-Вкладка «Уміння» показує класові й підкласові вміння **з текстом правил**:
+* `characters/api/features.py` cuts sections out of the class Markdown
+  (`### Second Wind`) and the subclass (`## War Priest`), and reads a subclass feature's
+  level from the caption `*1st-level Cleric feature*`;
+* subclass features above the character's level aren't shown (The Fiend at level 1 gives
+  only Dark One's Blessing, not Dark One's Own Luck).
 
-* `characters/api/features.py` вирізає розділи з Markdown класу
-  (`### Second Wind`) і підкласу (`## War Priest`), а рівень підкласового
-  вміння читає з підпису `*1st-level Cleric feature*`;
-* підкласові вміння вище рівня персонажа не показуються (The Fiend на 1 рівні
-  дає лише Dark One's Blessing, не Dark One's Own Luck);
-* текст лишається оригінальним (англійською), як і назви заклять; підписи
-  інтерфейсу українські.
+Limited class resources (`feature_resources`) are a separate layer:
 
-Обмежені класові ресурси (`feature_resources`) — окремий шар:
+* the table in `domain/services/feature_resources.py` knows levels, amounts (including
+  "CHA modifier", "monk level") and when a resource recovers;
+* subclass resources switch on only with the matching subclass (War Priest — War Domain,
+  Superiority Dice — Battle Master);
+* the counters live in `SheetState.feature_used`, are checked against the limit and reset
+  by rests by their own rule.
 
-* таблиця `domain/services/feature_resources.py` знає рівні, кількість
-  (у тому числі «модифікатор ХАР», «рівень монаха») і коли ресурс
-  відновлюється;
-* підкласові ресурси вмикаються лише з відповідним підкласом (War Priest —
-  War Domain, Superiority Dice — Battle Master);
-* лічильники живуть у `SheetState.feature_used`, перевіряються на «не більше
-  ліміту» і скидаються відпочинком за своїм правилом.
+## Actions in combat
 
-## Дії в бою
+The Actions tab gathers everything that can be done on a turn into one model:
 
-Вкладка «Дії» збирає все, що можна зробити в хід, в одну модель:
+* weapon rows (attack, range, damage, properties), an **Unarmed Strike** (1 + STR
+  bludgeoning, grapple and shove) and available spells;
+* class resources with counters (Second Wind, War Priest…) under their action type;
+* an **"Attacks per action"** heading — 1 plus each Extra Attack feature;
+* filters **All / Attack / Action / Bonus action / Reaction / Other / Limited** and groups
+  by action type (a spell with "1 bonus action" casting time goes to bonus actions,
+  reactions to reactions);
+* standard turn actions with a short Ukrainian rules hint in each group (Attack, Dash,
+  Disengage, Dodge, Grapple, Help, Hide, Improvise, Use an Object, Magic, Ready, Search,
+  Shove, Study, Utilize).
 
-* рядки зброї (атака, дистанція, урон, властивості), **Удар без зброї**
-  (1 + СИЛ дроблячої шкоди, захват і штовханина) та доступні закляття;
-* класові ресурси з лічильниками (Друге дихання, War Priest…) у їхньому типі дії;
-* заголовок **«Атак за дію»** — 1 плюс кожна риса Extra Attack;
-* фільтри **Усі / Атака / Дія / Бонусна дія / Реакція / Інше / Обмежене** і
-  групи за типом дії (закляття з часом «1 бонусна дія» — у бонусних, реакція — у реакціях);
-* стандартні дії ходу з короткою українською підказкою правила в кожній групі
-  (Атака, Ривок, Відхід, Ухиляння, Захват, Допомога, Сховатися, Імпровізація,
-  Вплив, Магія, Готовність, Пошук, Штовханина, Вивчення, Використання).
+## Background
 
-## Передісторія
+The tab shows the name and book, alignment, the **specific** skills, tools and languages
+(the ones actually chosen, not "how many may be chosen"), equipment from the `Equipment`
+line, the background feature with its text and the full description from the
+compendium. Appearance moved here from the notes: it's part of "who I am", not a note
+taken during play.
 
-Вкладка показує назву й книгу, світогляд, **конкретні** навички, інструменти й
-мови (ті, що справді обрані, а не «скільки можна»), спорядження з рядка
-`Equipment`, рису передісторії з текстом і повний опис із довідника. Зовнішність
-переїхала сюди з нотаток: це частина «хто я», а не замітка під час гри.
+## Notes
 
-## Нотатки
+Four sections: allies, enemies, backstory, notes. The field grows with the text, changes
+go to the server after an 800 ms pause (no "save" button), next to it you see "saving /
+saved at 14:32" and word and character counts. "Clear" takes two clicks, so a section
+can't be lost by accident. All sections (with the appearance) can be exported to `.md`
+(not inside Telegram, where the webview can't save files). The set of sections is fixed:
+the domain validates note keys.
 
-Чотири розділи: союзники, вороги, передісторія, нотатки. Поле саме виростає під
-текст, зміни йдуть на сервер через паузу 800 мс (без кнопки «зберегти»), поруч
-видно «зберігаємо / збережено о 14:32» і кількість слів та символів.
-«Очистити» — у два кліки, щоб не втратити розділ випадково. Є експорт усіх
-розділів (разом із зовнішністю) у `.md`. Набір розділів фіксований: домен
-перевіряє ключі нотаток, тому довільних розділів поки немає.
+## Live sync between devices
+
+Every 4 seconds the open sheet asks for its version number (`GET …/version`) and reloads
+when it changed — for example after an edit from a phone. Every write carries `version`;
+a stale one gets `409` and the screen shows the fresh sheet with "the sheet was changed
+on another device".
 
 ## API
 
-| Метод | Шлях | Призначення |
+| Method | Path | Purpose |
 |---|---|---|
-| `PATCH` | `/api/v1/characters/{id}` | часткова зміна стану |
-| `POST` | `/api/v1/characters/{id}/rest` | `{"kind": "short"\|"long"}` + `rest`-звіт у відповіді |
+| `PATCH` | `/api/v1/characters/{id}` | partial state change |
+| `POST` | `/api/v1/characters/{id}/rest` | `{"kind": "short"\|"long"}` + a `rest` report in the response |
 | `POST` | `/api/v1/characters/{id}/hit-dice` | `{"die": 10, "roll": 6}` |
-| `POST` | `/api/v1/characters/{id}/items` | `{"item": {...}}` — додати предмет |
-| `PATCH` | `/api/v1/characters/{id}/items/{index}` | `{"fields": {...}}` — змінити |
-| `DELETE` | `/api/v1/characters/{id}/items/{index}` | прибрати предмет |
-| `GET` | `/api/v1/characters/{id}` | повний лист |
-| `GET` | `/api/v1/characters/{id}/export/markdown` | лист файлом (етап 5) |
-| `GET` | `/api/v1/characters/{id}/export/pdf` | друк A4 (етап 5), `503` без WeasyPrint |
+| `POST` | `/api/v1/characters/{id}/items` | `{"item": {...}}` — add an item |
+| `PATCH` | `/api/v1/characters/{id}/items/{index}` | `{"fields": {...}}` — change it |
+| `DELETE` | `/api/v1/characters/{id}/items/{index}` | remove an item |
+| `GET` | `/api/v1/characters/{id}` | the full sheet |
+| `GET` | `/api/v1/characters/{id}/version` | the version number (live sync) |
+| `GET` | `/api/v1/characters/{id}/export/pdf`, `/print` | printing (see [`export.md`](export.md)) |
+| `GET/POST/DELETE` | `/api/v1/characters/{id}/share` | the read-only share link |
 
-`PATCH` приймає будь-яку підмножину полів:
+`PATCH` accepts any subset of fields:
 
 ```json
 {"version": 5,
@@ -198,90 +200,72 @@ Character.state ── DerivedStatsCalculator ──> ComputedSheet ──> PATC
  "notes": {"appearance": "шрам на щоці"}}
 ```
 
-Шкода й лікування — це `{"hp": {"damage": 7}}` або `{"hp": {"heal": 7}}`.
-`version` необовʼязковий, але якщо переданий і застарів — `409`: двоє вкладок
-не перезапишуть один одного мовчки. Помилка правила — `422` з причиною.
+Damage and healing are `{"hp": {"damage": 7}}` or `{"hp": {"heal": 7}}`. `version` is
+optional, but if it's sent and stale — `409`: two tabs can't silently overwrite each
+other. A rules violation is a `422` with the reason.
 
-Відповідь завжди містить **повний лист** — клієнт не збирає його з частин.
+The response always contains **the full sheet** — the client doesn't assemble it from
+pieces.
 
-## Закляття
+## Spells
 
-У «Діях» показуються закляття, доступні зараз (заговори, підготовлені, або
-всі знані, якщо клас не готує), із короткими даними з довідника:
+The Actions tab shows spells available right now (cantrips, prepared, or all known if
+the class doesn't prepare), with short data from the compendium:
 
-* час чарування, дистанція, тривалість (українською, з одиницями);
-* перший кубик урону й тип (`1d10 сила`), порятунок (`рятунок СПР`),
-  згадка атаки закляттям, концентрація й ритуал.
+* casting time, range, duration (in Ukrainian, with units);
+* the first damage die and type, the saving throw, a mention of a spell attack,
+  concentration and ritual.
 
-Вкладка «Закляття» показує **повні картки відомих заклять**: те саме плюс
-компоненти (`V, S, M (the petrified eye of a newt)`), школа, повний текст
-опису й блок «На вищих рівнях». Рядок `2nd-level abjuration` з тексту
-відрізано — рівень і школа вже є в підписах. Картки згруповані за рівнем і
-згорнуті за замовчуванням.
+The Spells tab shows **full cards of known spells**: the same plus components, school,
+the full description and the "At Higher Levels" block. The `2nd-level abjuration` line is
+cut from the text — level and school are already in the labels. Cards are grouped by
+level (and by class in a multiclass, each with its own DC and attack) and collapsed by
+default. Daily preparation and custom spells are described in [`spells.md`](spells.md).
 
-Це підказка, а не розрахунок ефекту: `characters/api/spell_meta.py` бере
-`data` запису (час, дистанція, компоненти, вищі рівні) і `text_en` (опис),
-кешуючи результат на застосунку.
+This is a hint, not an effect calculation: `characters/api/spell_meta.py` takes the
+record's `data` (time, range, components, higher levels) and `text_en` (description),
+caching the result in the app.
 
-## Екран
+## Screen
 
-`frontend/src/features/character/CharacterView.tsx` — темний аркуш у дусі
-D&D Beyond: шапка, ряд гексагонів характеристик і блок хітів, далі три
-колонки (порятунки й володіння / ініціатива й навички / стан і робоча панель).
-Робоча панель має пʼять вкладок:
+`frontend/src/features/character/CharacterView.tsx` — a dark sheet in the spirit of D&D
+Beyond: a header, a row of ability hexagons and the HP block, then three columns (saves
+and proficiencies / initiative and skills / state and the work panel). On a phone the
+layout becomes a single column with sticky tabs and an "actions" toggle in the header.
+The work panel has tabs:
 
-* **Дії** — зброя, Удар без зброї, доступні закляття й ресурси з фільтрами
-  за типом дії, «атак за дію» та підказками стандартних дій;
-* **Закляття** — чарування, лічильники слотів, повні картки відомих заклять
-  (компоненти, опис, урон, вищі рівні);
-* **Інвентар** — пошук у довіднику, додавання, правка, видалення, «споряджено»
-  (змінює КЗ), гроші, вага;
-* **Уміння** — ресурси класу з лічильниками, класові й підкласові вміння з
-  розгортуваним текстом правил, володіння з джерелами;
-* **Передісторія** — що вона дає (навички, інструменти, мови, спорядження),
-  риса й опис із довідника, зовнішність;
-* **Нотатки** — чотири розділи з автозбереженням, лічильниками й експортом.
+* **Actions** — weapons, Unarmed Strike, available spells and resources with action-type
+  filters, "attacks per action" and standard action hints;
+* **Spells** — spellcasting, slot counters, full cards of known spells, preparation;
+* **Inventory** — compendium search, add, edit, remove, "equipped" (changes AC), money, weight;
+* **Features** — class resources with counters, class and subclass features with
+  expandable rules text, proficiencies with sources;
+* **Background** — what it gives (skills, tools, languages, equipment), the feature and
+  description from the compendium, appearance;
+* **Notes** — four sections with autosave and counters.
 
-`hp.tsx` — блок хітів (великі поточні/максимум/тимчасові, поле кількості,
-кнопки «Шкода»/«Лікування», швидкі ±1/±5/±10) і кістки хітів (кинути чи
-вписати кидок, «намистини» вільного пулу).
-`inventory.tsx` — пошук, форма предмета, рядки з правкою й видаленням.
-`editing.tsx` — `NumberField` (завжди видиме число зі степперами),
-`EditableNumber` (клік → поле → Enter/blur), `Counter`, `Pips`.
+`hp.tsx` — the HP block (large current/max/temporary, an amount field, "Damage"/"Heal"
+buttons, quick ±1/±5/±10) and hit dice (roll or enter a roll, "beads" of the free pool).
+`inventory.tsx` — search, the item form, rows with edit and remove.
+`editing.tsx` — `NumberField` (an always-visible number with steppers), `EditableNumber`
+(click → field → Enter/blur), `Counter`, `Pips`.
 
-## Експорт
+## Deliberately not done
 
-Той самий лист із тим самим станом віддається на друк: PDF і та сама сторінка
-у вкладці браузера («Друк»). Кнопки живуть у шапці екрана персонажа; PDF
-показується лише тоді, коли сервер справді вміє його зібрати (є WeasyPrint).
-Markdown-файл листа лишився лише в API (`/export/markdown`) — кнопки на екрані
-немає: для гри за столом він нічого не додавав до PDF.
+* **Conditions (poisoned, prone…) and concentration tracking** — a separate layer.
+* **Mechanical effects of items** — the corpus has name, type, weight, AC and weapon
+  damage, but not "Ring of Regeneration" and the like; so a rest accounts for features,
+  slots, HP and hit dice, not magic item properties.
+* **Item images** — the compendium has text, not pictures; the character portrait is a
+  placeholder with initials.
 
-Документ збирається з `Character` + `ComputedSheet` і містить усі шість
-розділів, а не першу сторінку. Деталі, контракт полів і таблиця «що
-потрапляє» — [`export.md`](export.md).
+## Tests
 
-## Що свідомо не зроблено
-
-* **Текст умінь класу** — у вкладці «Уміння» лише назви й рівні: повний текст
-  живе в довіднику, і його показ — окремий крок (разом із рисами й підкласами
-  на етапі 7).
-* **Підготовка заклять на листі** — перемикання `prepared` для класів, що
-  готують; зараз показується те, що обрано при створенні.
-* **Умови (poisoned, prone…) і концентрація** — окремий шар, етап 8.
-* **Механічні ефекти предметів** — у корпусі є назва, тип, вага, КЗ і урон
-  зброї, але не «Ring of Regeneration» тощо; тому відпочинок враховує риси,
-  слоти, хіти й кістки, а не властивості магічних речей.
-* **Зображення предметів** — у довіднику є текст, але не картинки; портрет
-  персонажа — заглушка з ініціалів.
-
-## Тести
-
-| Файл | Що тримає |
+| File | What it holds |
 |---|---|
-| `tests/characters/test_sheet_state.py` | валідація стану, виправлення, відпочинок, хіт-дайси, атаки, 0 хітів ≠ «не задано» |
-| `tests/api/test_sheet_api.py` | PATCH/rest/hit-dice через HTTP, шкода й тимчасові хіти, лікування не вище максимуму, інвентар (додати/змінити/прибрати, власний урон), класові ресурси й відпочинок (`rest`-звіт, ресурси підкласу, скидання), передісторія з довідника (риса, опис, спорядження), 409, атаки з довідника |
-| `tests/api/test_characters_api.py` | короткі дані заклять у листі (час, дистанція, урон, порятунок), текст умінь класу, лічильник Другого дихання |
-| `tests/api/test_spell_meta.py` | компоненти, опис без рядка рівня, вищі рівні, урон і порятунок із тексту |
-| `tests/api/test_export_api.py` | експорт листа гравця файлом (Markdown/PDF) зі станом |
-| `tests/characters/test_json_store.py` | агрегат зі станом → файл → агрегат; міграція `character/1` → `character/2` |
+| `tests/characters/test_sheet_state.py` | state validation, overrides, rests, hit dice, attacks, 0 HP ≠ "not set" |
+| `tests/api/test_sheet_api.py` | PATCH/rest/hit-dice over HTTP, damage and temporary HP, healing not above max, inventory (add/change/remove, own damage), class resources and rests (`rest` report, subclass resources, resets), background from the compendium, 409, attacks from the compendium |
+| `tests/api/test_characters_api.py` | short spell data on the sheet (time, range, damage, save), class feature text, the Second Wind counter |
+| `tests/api/test_spell_meta.py` | components, description without the level line, higher levels, damage and save from the text |
+| `tests/api/test_export_api.py` | exporting a player's sheet with its state |
+| `tests/identity/test_auth.py` | ownership, sync conflicts, share links, Telegram sign-in |

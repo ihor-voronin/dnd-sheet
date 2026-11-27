@@ -1,6 +1,6 @@
 /**
- * Кодогенерація TS-типів з контракту.
- * Запуск: pnpm run contract (потрібен один раз після npm install).
+ * Generates TS types from the contract.
+ * Run: npm run contract (needed once after npm install).
  */
 import { compileFromFile } from "json-schema-to-typescript";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -12,8 +12,8 @@ const schemaPath = resolve(here, "../../contract/sheet-document.schema.json");
 const outPath = resolve(here, "../src/contract/sheetDocument.ts");
 
 const banner = `/**
- * ЗГЕНЕРОВАНО з contract/sheet-document.schema.json
- * Не редагувати руками. Перегенерація: pnpm run contract
+ * GENERATED from contract/sheet-document.schema.json
+ * Do not edit by hand. Regenerate: npm run contract
  */
 `;
 
@@ -26,4 +26,4 @@ const typescript = await compileFromFile(schemaPath, {
 await mkdir(dirname(outPath), { recursive: true });
 await writeFile(outPath, typescript, "utf8");
 
-console.log(`Контракт згенеровано: ${outPath}`);
+console.log(`Contract generated: ${outPath}`);

@@ -1,6 +1,6 @@
 /**
- * ЗГЕНЕРОВАНО з contract/sheet-document.schema.json
- * Не редагувати руками. Перегенерація: pnpm run contract
+ * GENERATED from contract/sheet-document.schema.json
+ * Do not edit by hand. Regenerate: npm run contract
  */
 
 /**

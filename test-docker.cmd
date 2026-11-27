@@ -1,13 +1,13 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-echo Запускаю тести й DDD-гейти в Docker-образі (там є корпус і WeasyPrint)...
+echo Running the tests and DDD gates in the Docker image (it has the corpus and WeasyPrint)...
 docker compose --profile test run --rm --build test
 if errorlevel 1 (
   echo.
-  echo ТЕСТИ НЕ ПРОЙШЛИ. Скопіюйте текст вище й надішліть Claude.
+  echo TESTS FAILED. See the output above.
 ) else (
   echo.
-  echo Усі тести пройшли.
+  echo All tests passed.
 )
 pause

@@ -1,143 +1,146 @@
-# Деплой: сервер, Terraform, CI і секрети
+# Deploy: server, Terraform, CI and secrets
 
-Сайт живе на **https://dnd.voronin.app** — VPS на RackNerd, домен у Cloudflare.
-Усе, що потрібно для деплою, лежить у репозиторії: код — відкрито, доступи,
-стан Terraform і корпус книг — зашифровані git-crypt.
+The site runs at **https://dnd.voronin.app** — a RackNerd VPS, domain in Cloudflare.
+Everything needed to deploy is in the repository: the code in plain text; credentials,
+Terraform state and the book corpus encrypted with git-crypt.
 
-- **Звичайно** деплоїть GitHub Actions: злиття PR у `main` → CI зелений →
-  `deploy.yml` (див. [docs/ci.md](ci.md)).
-- **Вручну з Windows** — та сама логіка однією командою:
+- **Normally** GitHub Actions deploys: PR merged into `main` → CI green →
+  `deploy.yml` (see [docs/ci.md](ci.md)).
+- **By hand from Windows** — the same logic in one command:
 
 ```powershell
 .\deploy\terraform\deploy.ps1
 ```
 
-## Як це влаштовано
+## How it works
 
-Дві частини, що змінюються з різною частотою:
+Two parts that change at different rates:
 
 ```
-ЗАСТОСУНОК — з кожним злиттям у main             VPS (Ubuntu 24.04, 192.227.140.142)
-GitHub Actions (deploy.yml) або deploy.ps1        ─────────────────────────────────
+APP — with every merge into main                  VPS (Ubuntu 24.04, 192.227.140.142)
+GitHub Actions (deploy.yml) or deploy.ps1         ─────────────────────────────────
   docker build (runtime)  ──► dndsheet:local
   scripts/deploy_app.py (SSH)
-     ├─ образ: docker save + gzip ──────────────► docker load (якщо id новий)
+     ├─ image: docker save + gzip ──────────────► docker load (if the id is new)
      └─ compose.yml, Caddyfile, .env ───────────► /opt/dndsheet → docker compose up -d
                                                     ├─ caddy  :80/:443  (Let's Encrypt)
                                                     └─ app    :8000     (dndsheet:local)
 
-ІНФРАСТРУКТУРА — рідко, вручну
+INFRASTRUCTURE — rarely, by hand
 deploy.ps1 -Infra ─► terraform apply
-  ├─ cloudflare_dns_record ─────────────────────► Cloudflare: dnd.voronin.app → IP (без проксі)
-  └─ bootstrap (SSH) ───────────────────────────► Docker, ufw, swap, бекапи, SSH лише ключем
+  ├─ cloudflare_dns_record ─────────────────────► Cloudflare: dnd.voronin.app → IP (no proxy)
+  └─ bootstrap (SSH) ───────────────────────────► Docker, ufw, swap, backups, key-only SSH
 ```
 
-**Застосунок — `scripts/deploy_app.py`.** Без стану: кожен запуск доводить
-сервер до того, що в репозиторії. Образ вантажиться лише коли його id
-змінився (id останнього лежить у `/opt/dndsheet/IMAGE_ID`), Caddy перечитує
-конфіг, скрипт чекає, поки застосунок стане healthy і HTTPS відповість. Той
-самий скрипт запускає і CI (Linux), і `deploy.ps1` (Windows).
+**The app — `scripts/deploy_app.py`.** Stateless: every run brings the server to what's
+in the repository. The image is uploaded only when its id changed (the last id is in
+`/opt/dndsheet/IMAGE_ID`), Caddy reloads its config, and the script waits for the app to
+become healthy and for HTTPS to answer. CI (Linux) and `deploy.ps1` (Windows) run the
+same script.
 
-**Інфраструктура — Terraform.** У RackNerd немає API для Terraform, тож сервер
-куплено вручну; Terraform доводить його до потрібного стану по SSH і керує
-записом DNS у Cloudflare. Кожен крок повторюється лише тоді, коли змінилось те,
-від чого він залежить:
+**Infrastructure — Terraform.** RackNerd has no Terraform API, so the server was bought
+by hand; Terraform brings it to the desired state over SSH and manages the DNS record in
+Cloudflare. Each step reruns only when what it depends on changes:
 
-| Крок | Повторюється, коли змінилось | Що робить |
+| Step | Reruns when | What it does |
 | --- | --- | --- |
-| `cloudflare_dns_record.site` | IP або домен | запис A `dnd.voronin.app` → IP, «сіра хмарка» (трафік прямо на сервер) |
-| `terraform_data.bootstrap` | `files/bootstrap.sh` | Docker з офіційного репозиторію, ufw (22, 80, 443), swap 2 ГБ, щоденний бекап бази, `PasswordAuthentication no` |
+| `cloudflare_dns_record.site` | IP or domain changes | A record `dnd.voronin.app` → IP, "grey cloud" (traffic goes straight to the server) |
+| `terraform_data.bootstrap` | `files/bootstrap.sh` changes | Docker from the official repository, ufw (22, 80, 443), 2 GB swap, daily database backup, `PasswordAuthentication no` |
 
-**Чому застосунок не в Terraform.** Колись був — але стан Terraform мусив би
-після кожного деплою з CI комітитись назад у захищену гілку `main`. Скрипт без
-стану цього не потребує.
+**Why the app isn't in Terraform.** It used to be — but then the Terraform state would
+have to be committed back into the protected `main` branch after every CI deploy. The
+stateless script doesn't need that.
 
-**Чому образ збирається не на сервері.** Корпус довідника (`content/compendium`,
-`bestiary`, `index`) — тексти книг: у git він лише зашифрований. Розблокувати
-його вміє CI (секрет `GIT_CRYPT_KEY`) і ваш компʼютер, а не сервер.
+**Why the image isn't built on the server.** The compendium corpus (`content/compendium`,
+`bestiary`, `index`) is book text: in git it exists only encrypted. CI (the
+`GIT_CRYPT_KEY` secret) and your machine can unlock it; the server can't.
 
-## Файли
+## Files
 
-| Шлях | Що це | У git |
+| Path | What it is | In git |
 | --- | --- | --- |
-| `scripts/deploy_app.py` | деплой застосунку (CI і Windows) | відкрито |
-| `deploy/terraform/*.tf` | інфраструктура: DNS, налаштування сервера | відкрито |
-| `deploy/terraform/files/` | `bootstrap.sh`, `compose.yml`, `Caddyfile.tftpl` | відкрито (LF) |
-| `deploy/terraform/deploy.ps1` | вхід з Windows: застосунок або `-Infra` | відкрито |
-| `.github/workflows/` | CI і деплой (docs/ci.md) | відкрито |
-| `deploy/secrets/prod.env` | змінні застосунку → `.env` на сервері | шифр |
-| `deploy/secrets/cloudflare.env` | `CLOUDFLARE_API_TOKEN` (DNS зони `voronin.app`) | шифр |
-| `deploy/secrets/racknerd.env` | панель VPS і пароль root (для консолі в панелі) | шифр |
-| `deploy/secrets/ssh/id_ed25519` | ключ, яким заходять на сервер | шифр |
-| `deploy/secrets/terraform/terraform.tfvars` | IP, домен, зона | шифр |
-| `deploy/secrets/terraform/terraform.tfstate` | стан Terraform (лише інфраструктура) | шифр |
-| `content/compendium`, `bestiary`, `index` | корпус довідника (тексти книг) | шифр |
-| `deploy/local/` | тимчасове: ключ git-crypt для секрету GitHub | ні (`.gitignore`) |
+| `scripts/deploy_app.py` | app deploy (CI and Windows) | plain |
+| `deploy/terraform/*.tf` | infrastructure: DNS, server setup | plain |
+| `deploy/terraform/files/` | `bootstrap.sh`, `compose.yml`, `Caddyfile.tftpl` | plain (LF) |
+| `deploy/terraform/deploy.ps1` | Windows entry point: the app or `-Infra` | plain |
+| `.github/workflows/` | CI and deploy (docs/ci.md) | plain |
+| `deploy/secrets/prod.env` | app variables → `.env` on the server | encrypted |
+| `deploy/secrets/cloudflare.env` | `CLOUDFLARE_API_TOKEN` (DNS for zone `voronin.app`) | encrypted |
+| `deploy/secrets/racknerd.env` | VPS panel and root password (for the panel console) | encrypted |
+| `deploy/secrets/ssh/id_ed25519` | the key used to reach the server | encrypted |
+| `deploy/secrets/terraform/terraform.tfvars` | IP, domain, zone | encrypted |
+| `deploy/secrets/terraform/terraform.tfstate` | Terraform state (infrastructure only) | encrypted |
+| `content/compendium`, `bestiary`, `index` | compendium corpus (book texts) | encrypted |
+| `deploy/local/` | temporary: git-crypt key for the GitHub secret | no (`.gitignore`) |
 
-Шифрують правила `.gitattributes` у `deploy/secrets/` і в папках корпусу. Назви
-файлів видно, вміст — ні. Хук `secrets-encrypted` (pre-commit і CI) перевіряє,
-що в індексі все це справді шифр.
+Encryption is driven by the `.gitattributes` rules in `deploy/secrets/` and in the corpus
+folders. File names are visible, contents are not. The `secrets-encrypted` hook (pre-commit
+and CI) checks that all of it really is ciphertext in the index.
 
-## Звичайний деплой
+## Regular deploy
 
-Через PR: злили в `main` → CI → деплой сам. Вручну з Windows:
+Through a PR: merge into `main` → CI → the deploy runs by itself. By hand from Windows:
 
 ```powershell
-.\deploy\terraform\deploy.ps1                # зібрати образ і оновити застосунок
-.\deploy\terraform\deploy.ps1 -NoBuild       # без перезбирання (змінився лише конфіг чи .env)
-.\deploy\terraform\deploy.ps1 -Infra -Plan   # що змінить Terraform
-.\deploy\terraform\deploy.ps1 -Infra         # застосувати інфраструктуру (спитає «yes»)
+.\deploy\terraform\deploy.ps1                # build the image and update the app
+.\deploy\terraform\deploy.ps1 -NoBuild       # no rebuild (only config or .env changed)
+.\deploy\terraform\deploy.ps1 -Infra -Plan   # what Terraform would change
+.\deploy\terraform\deploy.ps1 -Infra         # apply infrastructure (asks for "yes")
 ```
 
-`deploy.ps1` відмовляється працювати, поки щось у `deploy/secrets/` зашифроване.
+`deploy.ps1` refuses to run while anything in `deploy/secrets/` is still encrypted.
 
-**Після `-Infra` закомітьте стан** — інакше на іншому компʼютері Terraform
-вирішить, що нічого ще не створено:
+**After `-Infra`, commit the state** — otherwise Terraform on another machine will think
+nothing has been created yet:
 
 ```powershell
 git add deploy/secrets/terraform
 git commit -m "Terraform state after infra change"
 ```
 
-## Перший запуск на новому компʼютері
+## First run on a new machine
 
-1. Інструменти: `winget install --id Hashicorp.Terraform -e`,
-   `winget install --id AGWA.git-crypt -e`, Docker Desktop, Python 3, GnuPG з
-   вашим ключем.
-2. Розблокувати секрети й корпус:
+1. Tools: `winget install --id Hashicorp.Terraform -e`,
+   `winget install --id AGWA.git-crypt -e`, Docker Desktop, Python 3, GnuPG with
+   your key.
+2. Unlock secrets and the corpus:
 
    ```powershell
    git config gpg.program "C:/Program Files/GnuPG/bin/gpg.exe"
    git-crypt unlock
    ```
 
-   `gpg.program` потрібен, бо ключ лежить у GnuPG для Windows, а не в `gpg`
-   з Git Bash.
-3. `.\deploy\terraform\deploy.ps1 -Infra -Plan` — має показати «No changes».
+   `gpg.program` is needed because the key lives in GnuPG for Windows, not in the `gpg`
+   bundled with Git Bash.
+3. `.\deploy\terraform\deploy.ps1 -Infra -Plan` — should report "No changes".
 
-## Доступ до сервера
+## Server access
 
 ```powershell
 ssh -i deploy\secrets\ssh\id_ed25519 root@192.227.140.142
 ```
 
-Вхід паролем по SSH вимкнено. Якщо ключ втрачено — консоль VNC у панелі
-RackNerd (доступи в `deploy/secrets/racknerd.env`), пароль root.
+Password login over SSH is disabled. If the key is lost — the VNC console in the
+RackNerd panel (credentials in `deploy/secrets/racknerd.env`), root password.
 
-На Windows OpenSSH відмовляється від ключа з «чужими» правами — один раз:
+On Windows, OpenSSH rejects a key with "foreign" permissions — once:
 `icacls deploy\secrets\ssh\id_ed25519 /inheritance:r /grant:r "$env:USERNAME:R"`.
-На Linux — `chmod 600`.
+On Linux — `chmod 600`.
 
-На сервері:
+On the server:
 
-| Що | Де |
+| What | Where |
 | --- | --- |
-| застосунок | `/opt/dndsheet` (`compose.yml`, `Caddyfile`, `.env`) |
-| база | `/opt/dndsheet/var/dndsheet.sqlite3` |
-| бекапи | `/opt/dndsheet/backups/dndsheet-РРРР-ММ-ДД.sqlite3`, 14 днів (`/etc/cron.daily/dndsheet-backup`) |
-| журнали | `docker logs dndsheet-app`, `docker logs dndsheet-caddy` |
+| app | `/opt/dndsheet` (`compose.yml`, `Caddyfile`, `.env`) |
+| database | `/opt/dndsheet/var/dndsheet.sqlite3` (SQLite, WAL) |
+| backups | `/opt/dndsheet/backups/dndsheet-YYYY-MM-DD.sqlite3`, 14 days (`/etc/cron.daily/dndsheet-backup`) |
+| logs | `docker logs dndsheet-app`, `docker logs dndsheet-caddy` |
 
-## Відновити базу з бекапу
+The database is a host folder mounted into the container (not a Docker volume), so
+deploys, image changes and even `docker compose down -v` don't touch it. Backups are on
+the same disk — an off-server copy is not set up yet.
+
+## Restore the database from a backup
 
 ```bash
 cd /opt/dndsheet
@@ -147,100 +150,98 @@ chown 10001:10001 var/dndsheet.sqlite3
 docker compose -f compose.yml start app
 ```
 
-## Домен і HTTPS
+## Domain and HTTPS
 
-- DNS: Cloudflare, зона `voronin.app`, запис керується Terraform (`dns.tf`).
-  Без проксі Cloudflare: сертифікат видає Let's Encrypt через Caddy (HTTP-01),
-  і віджет Telegram бачить справжній домен.
-- Caddy сам продовжує сертифікат; `http://` і голий IP переводить на
+- DNS: Cloudflare, zone `voronin.app`, the record is managed by Terraform (`dns.tf`).
+  No Cloudflare proxy: Let's Encrypt issues the certificate through Caddy (HTTP-01),
+  and the Telegram widget sees the real domain.
+- Caddy renews the certificate itself; `http://` and the bare IP redirect to
   `https://dnd.voronin.app`.
-- Змінити домен: `domain` у `deploy/secrets/terraform/terraform.tfvars` →
-  `deploy.ps1 -NoBuild`. Старий запис Terraform видалить сам.
+- To change the domain: `domain` in `deploy/secrets/terraform/terraform.tfvars` →
+  `deploy.ps1 -Infra` (Terraform removes the old record) and `deploy.ps1 -NoBuild`.
 
-## Вхід через Telegram і Mini App
+## Telegram sign-in and the Mini App
 
-Бот — `@DnD_Sheet_VoroninAppBot`; назва й токен — у `deploy/secrets/prod.env`
-(`DNDSHEET_TELEGRAM_BOT`, `DNDSHEET_TELEGRAM_BOT_TOKEN`). Окремого сервера бота
-немає: і віджет на сайті, і Mini App працюють без нього.
+The bot is `@DnD_Sheet_VoroninAppBot`; its name and token are in `deploy/secrets/prod.env`
+(`DNDSHEET_TELEGRAM_BOT`, `DNDSHEET_TELEGRAM_BOT_TOKEN`). There is no separate bot
+server: both the site widget and the Mini App work without one.
 
-**На сайті** — віджет «Увійти через Telegram». У @BotFather: `/setdomain` →
+**On the site** — the "Log in with Telegram" widget. In @BotFather: `/setdomain` →
 `dnd.voronin.app`.
 
-**У Telegram (Mini App)** — той самий сайт усередині Telegram:
+**In Telegram (Mini App)** — the same site inside Telegram:
 
-- вхід без кнопки: Telegram передає підписаний `initData`, сервер перевіряє
-  його (`POST /api/v1/auth/telegram-webapp`, ключ — HMAC «WebAppData» від
-  токена бота) і повертає токен сесії. Той самий Telegram id — той самий
-  гравець, персонажі спільні з сайтом;
-- сесія їде заголовком `Authorization: Bearer …`: у Telegram у браузері сайт
-  живе в iframe, куди cookie не доходять;
-- тема — як у Telegram; кнопка «Назад» Telegram; свайп униз не закриває
-  застосунок посеред листа;
-- PDF качає сам Telegram (`downloadFile`), друк відкривається в браузері
-  телефона — за посиланням з коротким токеном `?link=…` (5 хвилин, лише GET);
-- «Поділитися» дає ще й `https://t.me/DnD_Sheet_VoroninAppBot?startapp=s_<токен>`
-  — лист «лише читати» відкривається одразу в Telegram.
+- sign-in without a button: Telegram passes a signed `initData`, the server verifies it
+  (`POST /api/v1/auth/telegram-webapp`, key — HMAC "WebAppData" of the bot token) and
+  returns a session token. Same Telegram id — same player, characters shared with the site;
+- the session travels as `Authorization: Bearer …`: Telegram in a browser hosts the site
+  in an iframe where cookies don't arrive;
+- Telegram's theme and Back button; swiping down doesn't close the app mid-sheet;
+- Telegram downloads the PDF itself (`downloadFile`), printing opens in the phone's
+  browser — via a link with a short-lived `?link=…` token (5 minutes, GET only);
+- "Share" also gives `https://t.me/DnD_Sheet_VoroninAppBot?startapp=s_<token>` —
+  the read-only sheet opens right inside Telegram.
 
-Скрипт Telegram (`telegram-web-app.js`) вантажиться лише тоді, коли сторінку
-відкрив Telegram (див. `frontend/index.html`); звичайний сайт telegram.org не чіпає.
+The Telegram script (`telegram-web-app.js`) loads only when Telegram opened the page
+(see `frontend/index.html`); the regular site doesn't contact telegram.org.
 
-Налаштування в @BotFather (робить власник бота):
+Setup in @BotFather (done by the bot owner):
 
-1. `/mybots` → бот → **Bot Settings → Configure Mini App → Enable Mini App** →
-   URL `https://dnd.voronin.app` — у профілі бота зʼявиться кнопка «Open».
-2. **Bot Settings → Menu Button** → URL `https://dnd.voronin.app`, текст
-   «Лист персонажа» — кнопка біля поля повідомлення.
-3. Посилання на застосунок: `https://t.me/DnD_Sheet_VoroninAppBot?startapp`.
-4. Аватар бота: `/setuserpic` → бот → надіслати `branding/bot-avatar.png`
-   (640×640, той самий кубик d20, що й іконка сайту; усі іконки генерує
+1. `/mybots` → bot → **Bot Settings → Configure Mini App → Enable Mini App** →
+   URL `https://dnd.voronin.app` — the bot profile gets an "Open" button.
+2. **Bot Settings → Menu Button** → URL `https://dnd.voronin.app`, text
+   "Лист персонажа" — a button next to the message field.
+3. Link to the app: `https://t.me/DnD_Sheet_VoroninAppBot?startapp`.
+4. Bot avatar: `/setuserpic` → bot → send `branding/bot-avatar.png`
+   (640×640, the same d20 as the site icon; all icons are generated by
    `scripts/make_icons.py`).
 
-**Перевірити локально без Telegram**: `.claude/launch.json` → `miniapp-check`
-(тестовий токен `123456:TEST-TOKEN`). Підписати `initData` тим самим токеном
-(як у `backend/tests/identity/test_auth.py::_init_data`) і відкрити
+**Testing locally without Telegram**: `.claude/launch.json` → `miniapp-check`
+(test token `123456:TEST-TOKEN`). Sign `initData` with that token (as
+`backend/tests/identity/test_auth.py::_init_data` does) and open
 `http://localhost:8021/?x=1#tgWebAppData=<initData>&tgWebAppVersion=8.0&tgWebAppPlatform=android`.
 
-## Секрети
+## Secrets
 
-- **Додати людину** (щоб могла деплоїти): імпортувати її публічний ключ GPG і
-  `git-crypt add-gpg-user --trusted <відбиток>` — команда сама комітить.
-- **Відкликати** не вийде «назад у часі»: хто мав ключ, міг зберегти старі
-  секрети. Тоді змініть їх: новий токен Cloudflare, новий ключ SSH (оновити
-  `authorized_keys` на сервері), новий токен бота.
-- **Перед комітом** — `git-crypt status -e`: усе в `deploy/secrets/` має бути
-  `encrypted`.
-- Секрет, що хоч раз потрапив у git відкритим, лишається в історії — його
-  замінюють, а не шифрують заднім числом.
+- **Add a person** (so they can deploy): import their public GPG key and run
+  `git-crypt add-gpg-user --trusted <fingerprint>` — the command commits by itself.
+- **Revoking** can't go "back in time": whoever had the key could keep the old
+  secrets. Rotate them: a new Cloudflare token, a new SSH key (update
+  `authorized_keys` on the server), a new bot token.
+- **Before committing** — `git-crypt status -e`: everything in `deploy/secrets/` must be
+  `encrypted` (the `secrets-encrypted` hook checks this too).
+- A secret that has ever been committed in plain text stays in history — it is rotated,
+  not encrypted retroactively.
 
-## Образ
+## Image
 
-| | Розмір |
+| | Size |
 | --- | --- |
-| на диску сервера | ~270 МБ |
-| архів для завантаження | ~90 МБ |
+| on the server's disk | ~270 MB |
+| upload archive | ~90 MB |
 
-Що тримає розмір: python:3.12-slim (~120 МБ), WeasyPrint з fontTools (~60 МБ),
-pango/harfbuzz і шрифт DejaVu для PDF (~25 МБ), корпус довідника (~46 МБ).
-Python-залежності ставляться окремим етапом без `.pyc` і без вихідників
-backend; uvicorn — без `[standard]`.
+What keeps it at that size: python:3.12-slim (~120 MB), WeasyPrint with fontTools
+(~60 MB), Pango/HarfBuzz and the DejaVu font for PDF (~25 MB), the compendium corpus
+(~46 MB). Python dependencies are installed in a separate stage without `.pyc` and
+without backend sources; uvicorn without `[standard]`.
 
-## Підводні камені (вже обійдені)
+## Pitfalls (already worked around)
 
-- **Terraform `local-exec` на Windows**: провайдер `external` не бачить Docker
-  Desktop, а `cmd` ламає лапки в шляхах. Через це образ і застосунок пішли з
-  Terraform у `scripts/deploy_app.py` (Python однаково працює на Windows і в CI).
-- **PowerShell 5 читає `.ps1` без BOM як cp1251** — кирилиця ламає розбір;
-  хук `fix-byte-order-marker` не чіпає `.ps1`.
-- **Файли для сервера мусять мати LF** — `deploy/terraform/files/.gitattributes`
-  (`eol=lf`), а скрипти ще й прибирають `` перед завантаженням.
-- **`deploy/local/` — лише тимчасове**: доступи й ключі — у `deploy/secrets/`.
+- **Terraform `local-exec` on Windows**: the `external` provider can't reach Docker
+  Desktop, and `cmd` breaks quotes in paths. That's why the image and app moved out of
+  Terraform into `scripts/deploy_app.py` (Python behaves the same on Windows and in CI).
+- **PowerShell 5 reads `.ps1` without a BOM as cp1251** — Cyrillic breaks parsing; the
+  `fix-byte-order-marker` hook leaves `.ps1` files alone.
+- **Files for the server must have LF** — `deploy/terraform/files/.gitattributes`
+  (`eol=lf`), and the scripts also strip `\r` before uploading.
+- **`deploy/local/` is temporary only**: credentials and keys belong in `deploy/secrets/`.
 
-## Коли щось пішло не так
+## When something goes wrong
 
-| Симптом | Де дивитись |
+| Symptom | Where to look |
 | --- | --- |
-| `deploy.ps1` чи CI: «… зашифрований» | `git-crypt unlock`; у CI — секрет `GIT_CRYPT_KEY` |
-| `app: healthy` не дочекались | у виводі — останні 60 рядків `docker logs dndsheet-app`; найчастіше `.env` |
-| `https: ще немає сертифіката` | `docker logs dndsheet-caddy`: запис DNS ще не поширився або закритий порт 80 |
-| Terraform хоче все створити заново | стан не закомічений або не розблокований |
-| SSH: `Permission denied (publickey)` | права на ключ (див. вище) або ключ не той |
+| `deploy.ps1` or CI: "… is encrypted" | `git-crypt unlock`; in CI — the `GIT_CRYPT_KEY` secret |
+| "app did not become healthy" | the output shows the last 60 lines of `docker logs dndsheet-app`; usually `.env` |
+| HTTPS doesn't answer yet | `docker logs dndsheet-caddy`: DNS not propagated yet or port 80 closed |
+| Terraform wants to create everything again | state not committed or not unlocked |
+| SSH: `Permission denied (publickey)` | key permissions (see above) or the wrong key |

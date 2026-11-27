@@ -1,222 +1,201 @@
-# Персонаж v2: класи, мультиклас, володіння з джерелами (етап 2)
+# The character: classes, multiclass, proficiencies with sources
 
-Мета етапу: `Character` перестає бути «шість характеристик і броня» й стає
-тим, з чого справді збирається лист: мультиклас, вид, передісторія,
-володіння з походженням, хіти, інвентар, закляття. Числа рахуються однією
-доріжкою, а еталонні персонажі фіксують те, що мусить вийти.
+`Character` isn't "six abilities and an armor" but what a sheet is really built from:
+multiclass, species, background, proficiencies with their origin, hit points, inventory,
+spells. Numbers are computed along one path, and reference characters pin down what must
+come out.
 
-## Що додано
+## Structure
 
 ```
 content/raw/_index/  ──scripts/ingest/mechanics.py──>  content/index/class-mechanics.json
-                        (5e.tools: хіт-дайси, володіння,           origin-mechanics.json
-                         таблиці слотів, бонуси видів)                     │
+                        (5e.tools: hit dice, proficiencies,        origin-mechanics.json
+                         slot tables, species bonuses)                     │
                                                                           ▼
-shared/rules.py  ◀──розбір──  compendium/infrastructure/mechanics_index.py
+shared/rules.py  ◀──parsing──  compendium/infrastructure/mechanics_index.py
    │                                   │
-   │ VO правил                    /api/v1/compendium/classes/{name}/mechanics
+   │ rules value objects          /api/v1/compendium/classes/{name}/mechanics
    ▼                                   │
-characters/domain ──порт RulesSource◀──┘  (адаптер: characters/infrastructure/compendium_rules.py)
+characters/domain ──RulesSource port◀──┘  (adapter: characters/infrastructure/compendium_rules.py)
    │
-   ├── character.py            агрегат v2 (мультиклас, вид, історія, вибір, закляття, хіти)
-   ├── class_level.py          «Воїн 2 + Візард 3» замість одного рівня
-   ├── proficiencies.py        володіння з джерелом (class/species/background/manual)
-   ├── inventory.py            предмети, споряджене, гроші, вага
-   ├── spells.py               KnownSpell (з класом!), PactMagic, SpellSlots
-   ├── vitals.py               HitPointState (поточні, тимчасові, кидки, оверрайд)
+   ├── character.py            the aggregate (multiclass, species, background, choices, spells, HP)
+   ├── class_level.py          "Fighter 2 + Wizard 3" instead of a single level
+   ├── proficiencies.py        proficiencies with a source (class/species/background/manual)
+   ├── inventory.py            items, equipped, money, weight
+   ├── spells.py               KnownSpell (with its class!), PactMagic, SpellSlots
+   ├── vitals.py               HitPointState (current, temporary, rolls, override)
    └── services/
-        derived_stats.py      ComputedSheet v2
-        modifier_resolver.py  «звідки взялося +1 до Сили»
-        spell_slots.py        мультикласові слоти, Pact Magic, DC і атака
-        hit_points.py         максимум хітів і пул хіт-дайсів
+        derived_stats.py      ComputedSheet
+        modifier_resolver.py  "where the +1 to Strength came from"
+        spell_slots.py        multiclass slots, Pact Magic, DC and attack
+        hit_points.py         max HP and the hit dice pool
+        level_up.py           level-up planning
+        rest.py               short and long rests
 ```
 
-## Ключові рішення
+## Key decisions
 
-**Характеристики — базові, не підсумкові.** `Character.abilities` зберігає те,
-що гравець уклав (набір / point buy / кидки). Бонуси виду додає
-`ModifierResolver`, тому лист завжди може пояснити «16 = 15 + 1 (людина)».
-Межа 30 застосовується до підсумку.
+**Abilities are base values, not totals.** `Character.abilities` stores what the player
+assigned (standard array / point buy / rolls). Species bonuses are added by
+`ModifierResolver`, so the sheet can always explain "16 = 15 + 1 (human)". The cap of 30
+applies to the total.
 
-**Володіння несуть джерело.** `Proficiency(kind, value, source)` де
-`source = GrantSource(kind, key)` («class:fighter», «species:hill dwarf»).
-Тому видно, що навичка прийшла і з класу, і з передісторії, а при зміні класу
-зникає саме те, що він давав. Підписи українською сюди не потрапляють: це
-турбота `localization`.
+**Proficiencies carry a source.** `Proficiency(kind, value, source)` where
+`source = GrantSource(kind, key)` ("class:fighter", "species:hill dwarf"). So it's
+visible that a skill came from both the class and the background, and changing a class
+removes exactly what it granted. Ukrainian labels don't go here: that's the presentation
+layer's job.
 
-**Класи й рівні.** `Character.classes` — список `CharacterClass(class_key,
-level, subclass_key)`. Сумарний рівень ≤ 20, підклас — не раніше рівня, з
-якого клас його дає (жрець і варлок — 1, друїд і волшебник — 2, решта — 3).
+**Classes and levels.** `Character.classes` is a list of `CharacterClass(class_key,
+level, subclass_key)`. Total level ≤ 20, the subclass no earlier than the level at which
+the class grants it (cleric and warlock — 1, druid and wizard — 2, the rest — 3).
 
-**Перший клас — особливий.** Кидки порятунку, броня й зброя надходять лише від
-першого класу: за PHB (p. 164) мультиклас не дає цих володінь повторно.
+**The first class is special.** Saving throws, armor and weapons come only from the first
+class: per the PHB (p. 164) multiclassing doesn't grant those proficiencies again.
 
-**Слоти заклять.** Рівень заклинателя рахується за PHB (p. 165): повні класи
-цілком, напівзаклинателі навпіл (артифіцер TCE — вгору), третинні — на
-третину. Pact Magic варлока рахується окремо й до суми не входить.
+**Spell slots.** Caster level is computed per the PHB (p. 165): full casters in full,
+half casters halved (the TCE artificer rounds up), third casters by a third. The
+warlock's Pact Magic is computed separately and doesn't add to the sum. In a multiclass
+every casting class keeps its own spell save DC and attack bonus.
 
-**Максимум хітів.** 1 рівень — максимум хіт-дайса першого класу + Статура;
-далі кидок (якщо записаний) або середнє (половина дайса + 1) + Статура; кожен
-рівень додає щонайменше 1 хіт. Мультиклас бере дайс кожного класу.
+**Max HP.** Level 1 — the first class's hit die maximum + Constitution; after that the
+roll (if recorded) or the average (half the die + 1) + Constitution; each level adds at
+least 1 HP. A multiclass uses each class's die.
 
-**Таблиці правил живуть у коді.** 20 рядків слотів і 20 рядків Pact Magic — це
-SRD-контент, який не змінюється від книги до книги й без якого домен не порахує
-нічого. Тому вони в `shared/rules.py`, а не в корпусі. Індекс механік додатково
-зберігає таблиці класів, і тест `test_real_mechanics.py` перевіряє, що
-волшебник і жрець дають однакові слоти на 3 рівні.
+**Rules tables live in code.** 20 rows of slots and 20 rows of Pact Magic are SRD
+content that doesn't change from book to book, and without them the domain can't compute
+anything. So they're in `shared/rules.py`, not in the corpus. The mechanics index also
+stores the class tables, and `test_real_mechanics.py` checks that the wizard and the
+cleric give the same slots at level 3.
 
-## Еталонні персонажі (доказ правил)
+## Reference characters (proof of the rules)
 
-`characters/application/golden.py` — три персонажі, числа яких зафіксовані
-тестами. Ті самі тести ганяються на **двох** джерелах правил: на маленькій
-фікстурі (працює без корпусу) і на справжньому індексі. Розбіжність падає
-саме там, де виникла.
+`characters/application/golden.py` — three characters whose numbers are pinned by tests.
+The same tests run on **two** rules sources: a small fixture (works without the corpus)
+and the real index. A divergence fails exactly where it appears.
 
-| Персонаж | Що перевіряє | Числа |
+| Character | What it checks | Numbers |
 |---|---|---|
-| **Воїн 1** (людина, солдат) | максимум d10, важка броня + щит, +1 до всього | AC 18, HP 12, бонус 2, STR 16, порятунки STR +5 / CON +4, Атлетика +5 |
-| **Варлок 1** (тифлінг, служитель) | Pact Magic, DC від CHA, опір вогню | AC 12, HP 9, DC 13, атака +5, 1 слот 1 рівня, темний зір 60 |
-| **Воїн 2 / Візард 3** (людина, солдат) | мультиклас: рівень, слоти, хіт-дайси | рівень 5, бонус 3, рівень заклинателя 3, слоти 4×1 + 2×2, HP 33, дайси d10×2 + d6×3 |
+| **Fighter 1** (human, soldier) | d10 maximum, heavy armor + shield, +1 to everything | AC 18, HP 12, proficiency 2, STR 16, saves STR +5 / CON +4, Athletics +5 |
+| **Warlock 1** (tiefling, acolyte) | Pact Magic, DC from CHA, fire resistance | AC 12, HP 9, DC 13, attack +5, 1 level-1 slot, darkvision 60 |
+| **Fighter 2 / Wizard 3** (human, soldier) | multiclass: level, slots, hit dice | level 5, proficiency 3, caster level 3, slots 4×1 + 2×2, HP 33, dice d10×2 + d6×3 |
 
-Ендпоінт для ока: `GET /api/v1/characters/golden` віддає повністю обчислені
-листи цих трьох персонажів (`sheet.abilities`, `sheet.hit_points`,
-`sheet.spellcasting`, `sheet.proficiencies` з джерелами).
+A sanity endpoint: `GET /api/v1/characters/golden` returns the fully computed sheets of
+these three (`sheet.abilities`, `sheet.hit_points`, `sheet.spellcasting`,
+`sheet.proficiencies` with sources).
 
-## Індекси механік
+## Mechanics indexes
 
-`scripts/ingest/mechanics.py` збирає два похідні файли з дзеркала 5e.tools:
+`scripts/ingest/mechanics.py` builds two derived files from the 5e.tools mirror:
 
-* `content/index/class-mechanics.json` — 13 класів 2014: хіт-дайс, кидки
-  порятунку, вибір навичок, володіння, характеристика заклять, прогрес
-  заклять, таблиці слотів (20×9), Pact Magic (20×2), вимоги мультикласу,
-  риси за рівнями, опційні вміння, стартове спорядження;
-* `content/index/origin-mechanics.json` — 69 видів, 64 підраси, 94
-  передісторії: бонуси характеристик (фіксовані й «на вибір»), розмір,
-  швидкість, темний зір, опір, навички, мови, інструменти.
+* `content/index/class-mechanics.json` — 13 classes of 2014: hit die, saving throws,
+  skill choices, proficiencies, spellcasting ability, spell progression, slot tables
+  (20×9), Pact Magic (20×2), multiclass prerequisites, features by level, optional
+  features, starting equipment;
+* `content/index/origin-mechanics.json` — 69 species, 64 subraces, 94 backgrounds:
+  ability bonuses (fixed and "choose"), size, speed, darkvision, resistances, skills,
+  languages, tools.
 
-Підраси вже несуть успадковані числа батька: «Hill Dwarf» — це +2 CON і +1 WIS,
-швидкість 25, темний зір 60, дворфська зброя. Дзеркало тримає це окремо, і без
-злиття половина правил губилася б.
+Subraces already carry the parent's inherited numbers: "Hill Dwarf" is +2 CON and +1 WIS,
+speed 25, darkvision 60, dwarven weapons. The mirror keeps these separately, and without
+the merge half the rules would be lost.
 
-Формат — [`contract/mechanics-format.json`](../contract/mechanics-format.json),
-перевіряється `tests/contract/test_mechanics_format.py` на готових файлах.
+Format — [`contract/mechanics-format.json`](../contract/mechanics-format.json), checked by
+`tests/contract/test_mechanics_format.py` on the built files.
 
-`content/index/` у git немає (як і корпусу): це похідні від текстів книги.
-Свіжий клон працює, але `mechanics_available()` каже `false`, а візард чесно
-покаже, що механік немає.
+`content/index/` is derived from book texts, so in git it's encrypted together with the
+corpus. A locked clone works, but `mechanics_available()` returns `false` and the wizard
+honestly shows that mechanics are missing.
 
-## Вибір на 1 рівні: що сервер справді враховує
+## Level 1 choices the server actually enforces
 
-Рівень 1 — це не «просто клас і характеристики»: три класи вимагають підклас
-одразу, а частина видів дає заговори й закляття. Ось повний перелік того, що
-перевіряється, і звідки числа.
+Level 1 isn't "just a class and abilities": three classes require a subclass right away,
+and some species grant cantrips and spells. Here's the full list of what is checked and
+where the numbers come from.
 
-### Класи, де підклас обирають на 1 рівні
+### Classes that choose a subclass at level 1
 
-| Клас | Що обирають | Що це дає на 1 рівні |
+| Class | What is chosen | What it gives at level 1 |
 |---|---|---|
-| Жрець | Divine Domain | доменні закляття **завжди підготовлені** (`bless`, `cure wounds` для Life) |
-| Чаклун | Sorcerous Origin | числових механік у даних немає — лише запис вибору |
-| Варлок | Otherworldly Patron | **розширений список** заклять (The Fiend: `burning hands`, `command`) |
-| решта 10 | — | підклас на 2 (друїд, візард) або 3 рівні |
+| Cleric | Divine Domain | domain spells **always prepared** (`bless`, `cure wounds` for Life) |
+| Sorcerer | Sorcerous Origin | no numeric mechanics in the data — only the recorded choice |
+| Warlock | Otherworldly Patron | an **expanded spell list** (The Fiend: `burning hands`, `command`) |
+| the other 10 | — | subclass at level 2 (druid, wizard) or 3 |
 
-`subclass_level == 1` — це саме ці три; крок класу не пропустить без вибору й
-не дасть обрати підклас раніше часу.
+`subclass_level == 1` is exactly these three; the class step doesn't pass without the
+choice and doesn't allow picking a subclass too early.
 
-### Види, де треба вибирати
+### Species that require choices
 
-| Вид | Що вибирати | Як перевіряється |
+| Species | What to choose | How it's checked |
 |---|---|---|
-| будь-який із підрасами | підрасу (Dwarf 2, Elf 8, Gnome 5, Halfling 3, Dragonborn 2) | підраса мусить належати виду |
-| напівельф | дві здібності +1, дві навички, одну мову | `ability_choice`, `skill_any=2`, `languages_any=1` |
-| високий ельф | один заговір зі списку візарда | `cantrip_choice` + список класу з корпусу |
-| людина | нічого: +1 до всіх | фіксовані бонуси |
+| any with subraces | a subrace (Dwarf 2, Elf 8, Gnome 5, Halfling 3, Dragonborn 2) | the subrace must belong to the species |
+| half-elf | two +1 abilities, two skills, one language | `ability_choice`, `skill_any=2`, `languages_any=1` |
+| high elf | one cantrip from the wizard list | `cantrip_choice` + the class list from the corpus |
+| human | nothing: +1 to everything | fixed bonuses |
 
-Людина довго позначалася як `ability_unresolved` через помилку складача:
-злиття «звичайного» варіанта додавало бонуси, але не перераховувало прапорець.
-Виправлено — `unresolved` тепер означає рівно те, що має: «числа в дзеркалі не
-закодовані». Такі види (MPMM, VRGR, TCE) візард **відхиляє** з поясненням:
-правила 2022 року («+2/+1 або +1/+1/+1») — не наш скоуп, і мовчки давати 0
-бонусів було б гірше за відмову.
+The human was long marked `ability_unresolved` because of a builder bug: merging the
+"standard" variant added bonuses but didn't recompute the flag. Fixed — `unresolved` now
+means exactly what it should: "the numbers aren't encoded in the mirror". Such species
+(MPMM, VRGR, TCE) get the "+2/+1 or +1/+1/+1" choice in the wizard; the bonuses live in
+`Character.ability_spread` and are added in `ModifierResolver` (on the sheet
+"13 + 1 = 14").
 
-### Види, які дають закляття одразу
+### Species that grant spells right away
 
-| Вид | Що дає на 1 рівні |
+| Species | What it gives at level 1 |
 |---|---|
-| Тифлінг | `thaumaturgy` |
-| Дроу | `dancing lights` |
-| Лісовий гном | `minor illusion` |
-| Юань-ті (чистокровний) | `animal friendship` |
-| Тритон | `fog cloud` |
-| Фірболг | `detect magic`, `disguise self` |
-| Аасімар | `light` |
-| Генасі (кожен) | свій заговір (`produce flame`, `shocking grasp`, …) |
-| Мітки драконів | свій заговір / закляття 1 рівня |
+| Tiefling | `thaumaturgy` |
+| Drow | `dancing lights` |
+| Forest gnome | `minor illusion` |
+| Yuan-ti Pureblood | `animal friendship` |
+| Triton | `fog cloud` |
+| Firbolg | `detect magic`, `disguise self` |
+| Aasimar | `light` |
+| Genasi (each) | its own cantrip (`produce flame`, `shocking grasp`, …) |
+| Dragonmarks | their own cantrip / level-1 spell |
 
-Це все приходить із `additionalSpells` дзеркала і складається в індекс
-(`shared_cantrips`, `cantrip_choice`, `granted_spells`). У файлі персонажа
-зберігається **лише вибір** (`spell_choices`); самі бонуси виду похідні й
-перераховуються при кожному читанні — як і бонуси характеристик.
+All of this comes from the mirror's `additionalSpells` and is folded into the index
+(`shared_cantrips`, `cantrip_choice`, `granted_spells`). The character file stores **only
+the choice** (`spell_choices`); the species' grants themselves are derived and recomputed
+on every read — like ability bonuses.
 
-### Що поки не враховано (етап 7)
+## Slots: one class ≠ multiclass
 
-* числові риси підкласу на 1 рівні: важка броня домену жреця, `Draconic
-  Resilience` чаклуна (+1 хіт за рівень, КЗ 13+DEX), «Blessings of Knowledge»;
-* закляття виду з 3-го й 5-го рівня (тифлінг отримує `hellish rebuke` на 3-му);
-* риса «Variant Human» (риса + навичка) — риси як такі ще не модельовані.
+The multiclass table and the class table are **not the same** for half casters.
+Paladin 5 has 4 level-1 slots and 2 level-2 slots, while the multiclass table at caster
+level 2 gives only 3 level-1 slots: the class gets a new slot level on odd levels, and
+halving with rounding down eats that step.
 
-## Слоти: один клас ≠ мультиклас
+So `SpellSlotService`:
 
-Таблиця мультикласу й таблиця класу — **не те саме** для напівзаклинателів.
-Paladin 5 має 4 слоти 1 рівня й 2 другого, а таблиця мультикласу за рівнем
-заклинателя 2 дає лише 3 слоти 1 рівня: клас отримує новий рівень слотів на
-непарних рівнях, а ділення навпіл із округленням вниз цей крок зʼїдає.
+* **one** casting class → slots from the class's own table (`slots_from: "class"`);
+  non-casters (Fighter 5 alongside Paladin 5) don't affect the choice of table;
+* **two or more** → the multiclass table by total caster level
+  (`slots_from: "multiclass"`), Pact Magic separately, as before.
 
-Тому `SpellSlotService`:
+This isn't the literal reading of PHB p. 164 (there the multiclass table applies as soon
+as there's more than one class), but a deliberate choice: otherwise a dip into a
+non-caster would **reduce** a paladin's slots, which nobody plays at the table. The
+divergence is pinned by `test_half_caster_keeps_its_table_when_dipping_a_non_caster`.
 
-* **один** заклинательський клас → слоти з власної таблиці класу
-  (`slots_from: "class"`); не-заклинателі (Воїн 5 при Paladin 5) на вибір
-  таблиці не впливають;
-* **два й більше** → таблиця мультикласу за сумарним рівнем заклинателя
-  (`slots_from: "multiclass"`), Pact Magic — окремо, як і раніше.
+The 20-level check (`test_twenty_levels.py`) runs every class and every pair of casting
+classes: 260 "class × level" rows and 6840 splits between two classes. That's what found
+the half-caster bug.
 
-Це не буквальне прочитання PHB p. 164 (там мультикласова таблиця
-застосовується щойно класів більше одного), а свідомий вибір: інакше діп у
-не-заклинателя **зменшував** би слоти паладина, чого за столом не грають.
-Розходження зафіксоване тестом `test_half_caster_keeps_its_table_when_dipping_a_non_caster`.
+## Tests
 
-Перевірка на 20 рівнях (`test_twenty_levels.py`) проганяє кожен клас і кожну
-пару заклинательських класів: 260 рядків «клас × рівень» і 6840 розподілів
-між двома класами. Саме вона знайшла помилку з напівзаклинателями.
-
-## Межі етапу (що свідомо не зроблено)
-
-* **Риси з числовими бонусами** (ASI на 4/8/12/16/19, Tough, Resilient) —
-  етап 7. `ModifierResolver` до них готовий: додається блок, а не переписується
-  обчислювач.
-* **Атаки зброєю** (бонус атаки, кубик урону) — етап 4: потрібні дані предметів
-  (`data.damage`, `properties`), які вже є в записах довідника.
-* **Експертиза** (подвійний бонус майстерності) — етап 7 разом із підкласами.
-* **Вільний розподіл характеристик** 2022-перевидань (MPMM, RHW) **зроблено**:
-  такі види позначені `ability_unresolved: true`, візард дає вибір «+2 і +1»
-  або «+1, +1 і +1», а бонуси живуть у `Character.ability_spread` і
-  додаються в `ModifierResolver` (на листі «13 + 1 = 14»).
-* **БД і акаунти** — етап 6. Персонаж уже зберігається (файли `var/characters/*.json`,
-  порт `CharacterRepository`), але без користувачів і транзакцій.
-
-## Тести
-
-| Файл | Що тримає |
+| File | What it holds |
 |---|---|
-| `tests/characters/test_golden.py` | три еталони на двох джерелах правил |
-| `tests/characters/test_invariants.py` | рівні, підкласи, ліміти заклять, вибір навичок, хіти |
-| `tests/characters/test_derived_stats.py` | КЗ, навички, порятунки, швидкість, пасивна уважність, попередження |
-| `tests/characters/test_spell_slots.py` | рівень заклинателя, таблиці, Pact Magic, DC |
-| `tests/characters/test_hit_points.py` | максимум на 1 рівні, середнє, кидки, мультиклас |
-| `tests/compendium/test_mechanics.py` | читач індексів: битий файл не валить застосунок |
-| `tests/compendium/test_real_mechanics.py` | реальні числа з книгами (скіп без корпусу) |
-| `tests/contract/test_mechanics_format.py` | формат індексів, межі, ключі, таблиці |
-| `tests/api/test_characters_api.py` | `/characters/golden`, експорт, механіки довідника |
-| `tests/characters/test_twenty_levels.py` | 13 класів × 20 рівнів і всі пари заклинателів (6840 розподілів) |
-| `tests/characters/test_granted_spells.py` | заговори виду, вибір високого ельфа, домен жреця |
-| `tests/compendium/test_real_mechanics.py` | вибір на 1 рівні на справжніх індексах |
+| `tests/characters/test_golden.py` | three reference characters on two rules sources |
+| `tests/characters/test_invariants.py` | levels, subclasses, spell limits, skill choices, HP |
+| `tests/characters/test_derived_stats.py` | AC, skills, saves, speed, passive Perception, warnings |
+| `tests/characters/test_spell_slots.py` | caster level, tables, Pact Magic, DC |
+| `tests/characters/test_hit_points.py` | max at level 1, average, rolls, multiclass |
+| `tests/characters/test_multiclass_matrix.py` | multiclass combinations: slots, DC and attack per class |
+| `tests/compendium/test_mechanics.py` | the index reader: a broken file doesn't crash the app |
+| `tests/compendium/test_real_mechanics.py` | real numbers from the books (skipped without the corpus), level-1 choices |
+| `tests/contract/test_mechanics_format.py` | index format, bounds, keys, tables |
+| `tests/api/test_characters_api.py` | `/characters/golden`, export, compendium mechanics |
+| `tests/characters/test_twenty_levels.py` | 13 classes × 20 levels and all caster pairs (6840 splits) |
+| `tests/characters/test_granted_spells.py` | species cantrips, the high elf's choice, the cleric's domain |

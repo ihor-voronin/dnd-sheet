@@ -1,234 +1,232 @@
-# D&D 5e (2014) — листок персонажа українською. План
+# D&D 5e (2014) — a character sheet in Ukrainian. Plan
 
-Статус: **затверджено** (v5). Персональне використання, локальний запуск, пізніше — власний сайт.
-v5 (2026-11-26): етапи переглянуто — жодних зовнішніх імпортів персонажів, контент і створення персонажа
-повністю свої; листок будуємо за еталоном екранів (§13), а не за чужими даними.
+Status: **approved** (v5), stages 1–7 done, stage 8 partly done (deploy, Telegram).
+The site runs at https://dnd.voronin.app.
+v5 (2026-11-26): stages revised — no external character imports, content and character
+creation are entirely our own; the sheet is built against a screen reference (§13), not
+against someone else's data.
 
-## 1. Принцип
+## 1. Principle
 
-Джерело правди — не верстка, а доменний документ:
+The source of truth is not the layout but a domain document:
 
 ```
-Character (агрегат) ──> DerivedStatsCalculator ──> ComputedSheet ──> SheetDocument (JSON, версіонований)
-                                                                        ├──> React-рендер (веб)
-                                                                        ├──> PdfRenderer (друк)
-                                                                        ├──> MarkdownRenderer (чат/текст)
-                                                                        └──> [PngRenderer, FoundryJson] — пізніше
+Character (aggregate) ──> DerivedStatsCalculator ──> ComputedSheet ──> SheetDocument (JSON, versioned)
+                                                                          ├──> React rendering (web)
+                                                                          ├──> PdfRenderer (print)
+                                                                          ├──> MarkdownRenderer (chat/text)
+                                                                          └──> [PngRenderer, FoundryJson] — later
 ```
 
-Кожен рендер — адаптер за портом `SheetRenderer`. Додавання рендера не змінює домен.
+Every renderer is an adapter behind the `SheetRenderer` port. Adding a renderer doesn't
+change the domain. (The printed sheet later got its own paper-shaped view model — see
+[`export.md`](export.md).)
 
-## 2. Рішення
+## 2. Decisions
 
-| Рішення | Значення |
+| Decision | Value |
 |---|---|
-| Правила | лише 2014 (SRD 5.1 + книги), `edition` у моделі |
-| Мова | українська; кожен рядок несе оригінал англійською для тултіпа |
-| Термінологія | окремий глосарій (`content/glossary.uk.yml`), не gettext |
-| Переклад | офіційний UA (PDF) де є → інакше власний; MT-чернетка + вичитка |
-| Фронтенд | SPA: React 18 + TypeScript + Vite |
-| Обчислення | сервер авторитетний; клієнт не дублює правила |
-| Автоматизація | гібрид: декларативні модифікатори + `manual override` |
-| Акаунти | з першого дня, cookie-сесії |
-| Експорт | власна верстка (без AcroForm) |
-| Контент | дані, не код; поле `license` для майбутнього SRD-only режиму |
-| Хостинг | локально (docker-compose) → власний сайт |
+| Rules | 2014 only (SRD 5.1 + books), `edition` in the model |
+| Language | Ukrainian; every string carries the English original for the tooltip |
+| Terminology | a separate glossary (`content/glossary.uk.yml`), not gettext |
+| Translation | the official Ukrainian edition (PDF) where it exists → otherwise our own; MT draft + review |
+| Frontend | SPA: React 18 + TypeScript + Vite |
+| Computation | the server is authoritative; the client doesn't duplicate rules |
+| Automation | hybrid: declarative modifiers + manual override |
+| Accounts | Telegram sign-in, cookie sessions (Bearer in the Mini App) |
+| Export | our own layout (no AcroForm) |
+| Content | data, not code; a `license` field for a future SRD-only mode |
+| Hosting | locally (docker-compose) → a VPS with auto-deploy from GitHub Actions |
 
-## 3. Обмежені контексти
+## 3. Bounded contexts
 
-| Контекст | Відповідальність |
+| Context | Responsibility |
 |---|---|
-| `identity` | користувачі, сесії, власність |
-| `compendium` | довідник: класи, підкласи, види, передісторії, риси, закляття, предмети; версіонований, read-only |
-| `characters` | агрегат `Character`, білдер, рівні, ASI/feats, інвентар, закляття |
-| `sheets` | `ComputedSheet` → `SheetDocument`, шаблони, лейаут, кастомні поля, формули |
-| `localization` | глосарій, конвеєр перекладу, `glossary-lint` |
-| `export` | порт `SheetRenderer` + реєстр адаптерів, job-и |
+| `identity` | users, sessions, ownership |
+| `compendium` | the compendium: classes, subclasses, species, backgrounds, feats, spells, items; versioned, read-only |
+| `characters` | the `Character` aggregate, builder, levels, ASI/feats, inventory, spells |
+| `sheets` | `ComputedSheet` → `SheetDocument`, templates, layout, custom fields, formulas |
+| `export` | the `SheetRenderer` port + adapter registry |
 
-Спілкування — доменні події та read-only порти. Спільних таблиць між контекстами немає.
+Communication goes through domain events and read-only ports. Contexts share no tables.
+(A separate `localization` context was planned; the glossary pipeline lives in
+`content/`, `scripts/` and the terminology test instead.)
 
-## 4. Доменна модель
+## 4. Domain model
 
-**Агрегати:** `Character` (AR), `CompendiumEntry` (AR), `SheetTemplate` (AR), `LayoutOverride` (entity).
+**Aggregates:** `Character` (AR), `CompendiumEntry` (AR), `SheetTemplate` (AR), `LayoutOverride` (entity).
 
-**VO:** `AbilityScore` (1..30), `DiceExpression`, `Armor`, `HitPoints`, `Money`, `Level`, `LocalizedText`, `Weight`.
+**Value objects:** `AbilityScore` (1..30), `DiceExpression`, `Armor`, `HitPoints`, `Money`, `Level`, `LocalizedText`, `Weight`.
 
-**Сервіси:** `DerivedStatsCalculator`, `ModifierResolver`, `SpellSlotService`, `FormulaEvaluator` (whitelisted AST, без `eval`).
+**Services:** `DerivedStatsCalculator`, `ModifierResolver`, `SpellSlotService`, `FormulaEvaluator` (whitelisted AST, no `eval`).
 
-**Події:** `CharacterCreated`, `LevelGained`, `AbilityScoresChanged`, `LayoutCustomized`, `SheetExported`.
+**Events:** `CharacterCreated`, `LevelGained`, `AbilityScoresChanged`, `LayoutCustomized`, `SheetExported`.
 
-Інваріанти: рівень 1..20, сумарний рівень ≤20, характеристика 1..30, підготовлені закляття ≤ слотів.
+Invariants: level 1..20, total level ≤ 20, ability 1..30, prepared spells within the limits.
 
-## 5. Кастомізація (4 рівні)
+## 5. Customization (4 levels)
 
-1. Лейаут: порядок, видимість, групування, сторінка.
-2. Лейбли: перейменування термінів для персонажа.
-3. Нові поля: `text|number|longtext|checkbox|list|counter|formula|dice`.
-4. Оверрайди й кастомні модифікатори (+ історія змін).
+1. Layout: order, visibility, grouping, page.
+2. Labels: renaming terms per character.
+3. New fields: `text|number|longtext|checkbox|list|counter|formula|dice`.
+4. Overrides and custom modifiers (+ change history).
 
-## 6. Контракт і захист від розходження рендерів
+## 6. The contract and protection against diverging renderers
 
-- `contract/sheet-document.schema.json` — єдине джерело типів.
-- Кодогенерація: pydantic-моделі (Python) і TS-типи + zod (фронт). Руками не редагуються.
-- `contract/fixtures/*.json` — conformance-набір: мінімум, усі типи полів, переповнення, 3+ сторінки, кастомні поля, оверрайди, відʼємні модифікатори, порожній переклад.
-- Кожен рендер зобовʼязаний пройти тест на фікстурах. Новий рендер без тестів не мержиться.
-- `schemaVersion` — semver; major-невідповідність → рендер відмовляється.
+- `contract/sheet-document.schema.json` — the single source of types.
+- Codegen: pydantic models (Python) and TS types (frontend). Not edited by hand.
+- `contract/fixtures/*.json` — the conformance set: minimal, every field type, overflow, 3+ pages, custom fields, overrides, negative modifiers, missing translation.
+- Every renderer must pass the fixture tests. A new renderer without tests isn't merged.
+- `schemaVersion` is semver; a major mismatch → the renderer refuses.
 
-## 7. Тултіп з оригіналом
+## 7. Tooltip with the original
 
-- Веб: Radix Tooltip, `hint.en` (доступність: aria-describedby, клавіатура).
-- PDF: виноски внизу сторінки (`float: footnote` у WeasyPrint) + опційні `/Text`-анотації; перемикач `маркери+виноски / тільки маркери / без`.
-- Текст листка завжди двомовний у моделі — тултіп не є точковим фіксом.
+- Web: Radix Tooltip, `hint.en` (accessibility: aria-describedby, keyboard).
+- PDF: the original in parentheses next to the Ukrainian name ("Ukrainian (English)").
+- The sheet text is always bilingual in the model — the tooltip isn't a point fix.
 
-## 8. Стек
+## 8. Stack
 
-Backend: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0 async, Alembic, PostgreSQL 16, Argon2id, WeasyPrint, pypdf.
-Frontend: React 18, TypeScript, Vite, TanStack Query, React Router, Radix UI, dnd-kit (пізніше), Tailwind.
-Деплой: FastAPI роздає `frontend/dist`, один origin, без CORS.
+Backend: Python 3.12, FastAPI, Pydantic v2, SQLite (WAL), WeasyPrint, pypdf.
+(Planned originally: SQLAlchemy, Alembic, PostgreSQL, Argon2id — not needed so far;
+Telegram sign-in replaced passwords.)
+Frontend: React 18, TypeScript, Vite, TanStack Query, Radix UI.
+Deploy: FastAPI serves `frontend/dist`, one origin, no CORS; Docker + Caddy on a VPS
+(see [`deploy.md`](deploy.md)).
 
-## 9. Етапи
+## 9. Stages
 
-Етап 0 (каркас) і контентний етап (корпус книг) закриті. Далі — порядок «спершу довідник, потім персонаж,
-потім екрани»: кожен етап дає працездатний шматок, перевірений тестами.
+Stage 0 (skeleton) and the content stage (the book corpus) are closed. Then the order
+"compendium first, then the character, then the screens": each stage delivers a working
+piece, verified by tests.
 
-**Стан на 2026-11-26:** етап 1 закрито — довідник читається доменом, віддається через HTTP
-(3818 записів, 89 книг, 9 категорій), класові списки заклять зібрані зі «Spell Lists» книг.
-Деталі — [`api-compendium.md`](api-compendium.md).
+**Stage 1 closed (2026-11-26):** the compendium is read by the domain and served over
+HTTP (89 books, 9 categories); class spell lists are built from the books' "Spell Lists".
+Details — [`api-compendium.md`](api-compendium.md).
 
-**Етап 2 закрито (2026-11-26):** `Character` v2 — мультиклас, вид, передісторія, володіння
-з джерелами, хіти, інвентар, закляття; `ModifierResolver` (бонуси виду й вибору),
-`SpellSlotService` (мультикласові слоти + Pact Magic), максимум хітів і пул хіт-дайсів.
-Дзеркало 5e.tools дало похідні індекси механік: `content/index/class-mechanics.json`
-(13 класів 2014) і `origin-mechanics.json` (69 видів, 64 підраси, 94 передісторії).
-Три еталонні персонажі — «Воїн 1», «Варлок 1», «Воїн 2 / Візард 3» — зафіксовані
-тестами на двох джерелах правил (фікстура й справжній корпус). Деталі —
+**Stage 2 closed (2026-11-26):** `Character` v2 — multiclass, species, background,
+proficiencies with sources, HP, inventory, spells; `ModifierResolver` (species and choice
+bonuses), `SpellSlotService` (multiclass slots + Pact Magic), max HP and the hit dice pool.
+The 5e.tools mirror provided derived mechanics indexes: `content/index/class-mechanics.json`
+(13 classes of 2014) and `origin-mechanics.json` (69 species, 64 subraces, 94
+backgrounds). Three reference characters — "Fighter 1", "Warlock 1", "Fighter 2 / Wizard
+3" — are pinned by tests on two rules sources (a fixture and the real corpus). Details —
 [`domain-character.md`](domain-character.md).
 
-**Етап 3 закрито (2026-11-26):** візард створення — шість кроків (вид → клас →
-характеристики → передісторія → спорядження → закляття), сервер перевіряє
-кожен крок, чернетка зберігається у файлах і в `localStorage`, назад можна
-ходити з будь-якого кроку, а зміна класу чи виду прибирає залежні відповіді.
-Створений персонаж лягає на диск і переживає перезапуск сервера. Деталі —
-[`wizard.md`](wizard.md).
+**Stage 3 closed (2026-11-26):** the creation wizard — six steps (species → class →
+abilities → background → equipment → spells), the server validates every step, the
+draft is saved, you can go back to any step, and changing a class or species clears the
+dependent answers. Details — [`wizard.md`](wizard.md).
 
-**Додано після аудиту виборів на 1 рівні:** підклас на 1 рівні вимагають
-рівно три класи (жрець, чаклун, варлок); заговори й закляття виду (тифлінг,
-дроу, лісовий гном, високий ельф тощо) тепер у індексі й на листі; доменні
-закляття жреця показуються як завжди підготовлені, розширений список
-патрона — як додаткові варіанти; види 2022-перевидань відхиляються з
-поясненням замість мовчазних нулів. Виправлено прапорець
-`ability_unresolved` у людини (помилка злиття «звичайного» варіанта).
+**Added after the level-1 choices audit:** exactly three classes require a subclass at
+level 1 (cleric, sorcerer, warlock); species cantrips and spells (tiefling, drow, forest
+gnome, high elf, etc.) are now in the index and on the sheet; the cleric's domain spells
+show as always prepared, the patron's expanded list as additional options. The human's
+`ability_unresolved` flag was fixed (a bug in merging the "standard" variant).
 
-**Етап 4 закрито (2026-11-26):** лист під час гри — шість вкладок (огляд,
-дії, закляття, інвентар, уміння, нотатки), редагування на місці з позначкою
-«вручну» й скиданням, лічильники (хіти, слоти, Pact Magic, хіт-дайси, кидки
-смерті, натхнення, втома), відпочинок короткий/довгий за правилами, атаки
-зі зброї з даних довідника. Стан зберігається у `var/characters/*.json` і
-переживає перезапуск; `PATCH` з `version` не дає двом вкладкам перезаписати
-одна одну. Деталі — [`sheet.md`](sheet.md).
+**Stage 4 closed (2026-11-26):** the sheet during play — tabs, in-place editing marked
+"manual" with a reset, counters (HP, slots, Pact Magic, hit dice, death saves,
+inspiration, exhaustion), short/long rest by the rules, weapon attacks from compendium
+data. `PATCH` with `version` prevents two tabs from overwriting each other. Details —
+[`sheet.md`](sheet.md).
 
-**Етап 5 закрито (2026-11-26):** повний експорт листа — `SheetDocument`
-збирається з реального `Character` + `SheetState` (не з демо) і містить усі
-шість розділів екрана: особу, характеристики, бій зі станом, порятунки й
-навички, атаки, уміння, володіння, чарування зі слотами, закляття, інвентар,
-гроші й вагу, нотатки, застереження. Обидва рендери (PDF через HTML-шаблон і
-Markdown) проходять conformance на справжньому листі. Експорт став другим
-споживачем рядків листа — закляття, вміння й володіння збираються в одному
-місці, тому екран і документ не розходяться. Дорогою знайдено й виправлено
-помилку: нуль хітів показувався як максимум (непритомний персонаж виглядав
-здоровим) — формат персонажа став `character/2` з міграцією. Деталі —
-[`export.md`](export.md).
+**Stage 5 closed (2026-11-26):** full sheet export — `SheetDocument` is built from a real
+`Character` + `SheetState` (not a demo) and holds every section of the screen. Both
+renderers (PDF via an HTML template and Markdown) pass conformance on a real sheet. A
+bug was found and fixed along the way: zero HP showed as the maximum (an unconscious
+character looked healthy) — the character format became `character/2` with a migration.
+Details — [`export.md`](export.md).
 
-**Етап 7 закрито (2026-11-26):** підвищення рівня на тому самому документі —
-екран «+1 рівень» із класом (наявним або новим: мультиклас за вимогами PHB),
-хітами (середнє або кидок, на своє місце в пулі), підкласом на його рівні,
-покращенням характеристик або рисою (межа 20 рахується після бонусів виду),
-новими закляттями й підсумком «було → стало». Сервер авторитетний: план
-рахує `LevelUpPlanner` на копії персонажа, а `LevelUpService` перевіряє
-вибори й пише агрегат. Деталі — [`level-up.md`](level-up.md).
+**Stage 6 closed (2026-11-27):** storage and accounts — SQLite (characters with versions
+and owners, drafts, sessions, share links), Telegram sign-in (Login Widget and Mini App),
+read-only share links, live sync between devices.
 
-**Закляття поза рівнем (після етапу 7, 2026-11-26):** денна підготовка
-(жрець, друїд, паладин, маг, артифіцер: набір на день, ліміт «модифікатор +
-рівень», заговори й рівень заклять за правилами класу) і додавання заклять
-зі списку класу або **власних**, які лист позначає словом «власне» й не
-плутає з книжковими. Вимоги мультикласу можна свідомо обійти галочкою — і
-лист памʼятає, що саме обійшли (`multiclass_waivers`). Деталі —
-[`spells.md`](spells.md), [`level-up.md`](level-up.md).
+**Stage 7 closed (2026-11-26):** level-up on the same document — a "+1 level" screen with
+the class (existing or new: multiclass per the PHB prerequisites), hit points (average or
+roll, in its place in the pool), the subclass at its level, an ability improvement or a
+feat (the cap of 20 counted after species bonuses), new spells and a "before → after"
+summary. Details — [`level-up.md`](level-up.md).
 
-**Крок «Вид» у візарді (після етапу 7, 2026-11-26):** види й підраси названі
-українською (англійська в дужках), на вибір показується опис книги й список
-особливостей — Harengon раніше виглядав як «без бонусів», бо механіки дають
-лише числа. Підраса тепер обовʼязкова там, де вона дає частину чисел, і це
-перевіряє сервер. Деталі — [`wizard.md`](wizard.md).
+**Spells outside of level-up (after stage 7):** daily preparation and adding spells from
+the class list or **custom** ones. Multiclass prerequisites can be deliberately bypassed
+with a checkbox — and the sheet remembers what was bypassed (`multiclass_waivers`).
+Details — [`spells.md`](spells.md), [`level-up.md`](level-up.md).
 
-Перед етапом 3 зроблено **перевірку на 20 рівнях**: кожен із 13 класів
-прогнано через сервіс на всіх рівнях і звірено з власною таблицею класу, а всі
-пари заклинательських класів — із таблицею мультикласу (6840 розподілів).
-Перевірка знайшла справжню помилку: напівзаклинателі (paladin/ranger) на
-непарних рівнях отримували слоти за таблицею мультикласу, тобто на 1–2 слоти
-менше. Виправлено: один заклинательський клас читає свою таблицю, два й
-більше — мультикласову.
+**Stage 8 (in progress):** deploy to https://dnd.voronin.app (Terraform, Docker, Caddy),
+CI/CD with GitHub Actions ([`ci.md`](ci.md)), the Telegram Mini App, a paper-style PDF.
+Customization (§5) is still ahead.
 
-| # | Зміст | DoD | ~Час |
+Before stage 3 a **20-level check** was done: each of the 13 classes ran through the
+service at every level against its own class table, and every pair of casting classes
+against the multiclass table (6840 splits). It found a real bug: half casters
+(paladin/ranger) got slots from the multiclass table on odd levels, i.e. 1–2 slots fewer.
+Fixed: one casting class reads its own table, two or more — the multiclass one.
+
+| # | Content | DoD | ~Time |
 |---|---|---|---|
-| 1 | **Довідник як API**: `compendium` — read-only домен над `content/*.jsonl`, індекси за категорією, книгою, назвою; запити «класи», «підкласи класу», «закляття класу до рівня N», «предмети за типом» | Усі 3818 записів доступні через `/api/v1/compendium/...`; фільтри працюють; тести на індекси | 1 тиждень |
-| 2 | **`Character` v2**: класи й рівні (мультиклас), вид, передісторія, володіння з джерелами, HP, броня, інвентар, закляття, риси; `DerivedStatsCalculator` v2 + `ModifierResolver` для бонусів виду й класу | Golden-персонажі «Воїн 1» і «Варлок 1» збігаються з правилами; інваріанти й тести | 1.5 тижні |
-| 3 | **Візард створення**: 6 кроків (§13), сервер авторитетний, чернетка зберігається, назад/вперед між кроками | Створити й зберегти персонажа 1 рівня; повернутись на будь-який крок | 1.5 тижні |
-| 4 | **Лист як в еталона**: вкладки, редагування на місці з позначкою override, лічильники (HP, слоти, хіт-дайс, смертельні кидки), відпочинок | Все змінюється й зберігається; після перезавантаження стан той самий | 1.5 тижні |
-| 5 | **Повний експорт**: PDF і Markdown усіх секцій листа | A4 з усіма вкладками, conformance на 2 рендерах | 1 тиждень |
-| 6 | **Збереження й акаунти**: БД, cookie-сесії (Argon2id), публічне посилання | Кілька персонажів на користувача; чужий лист недоступний | 1 тиждень |
-| 7 | **Рівні 2–20**: підвищення рівня, ASI/риси, мультиклас, слоти за таблицею | Персонаж 7 рівня створений і роздрукований | 2 тижні |
-| 8 | **Кастомізація** (§5), експорт-поліш, деплой | Власна секція з формулою у вебі й PDF; сайт на домені | 3 тижні |
+| 1 | **Compendium as an API**: `compendium` — a read-only domain over `content/*.jsonl`, indexes by category, book, name; queries "classes", "a class's subclasses", "a class's spells up to level N", "items by type" | All records available via `/api/v1/compendium/...`; filters work; index tests | 1 week |
+| 2 | **`Character` v2**: classes and levels (multiclass), species, background, proficiencies with sources, HP, armor, inventory, spells, feats; `DerivedStatsCalculator` v2 + `ModifierResolver` for species and class bonuses | Golden "Fighter 1" and "Warlock 1" match the rules; invariants and tests | 1.5 weeks |
+| 3 | **Creation wizard**: 6 steps (§13), server-authoritative, the draft is saved, back/forward between steps | Create and save a level-1 character; go back to any step | 1.5 weeks |
+| 4 | **The sheet like the reference**: tabs, in-place editing with an override mark, counters (HP, slots, hit dice, death saves), rests | Everything changes and is saved; the state survives a reload | 1.5 weeks |
+| 5 | **Full export**: PDF and Markdown of every section | A4 with all tabs, conformance on 2 renderers | 1 week |
+| 6 | **Storage and accounts**: database, sessions, public link | Several characters per user; someone else's sheet is inaccessible | 1 week |
+| 7 | **Levels 2–20**: level-up, ASI/feats, multiclass, slots by the table | A level-7 character created and printed | 2 weeks |
+| 8 | **Customization** (§5), export polish, deploy | A custom section with a formula on the web and in PDF; the site on a domain | 3 weeks |
 
-## 10. Скоуп книг
+## 10. Book scope
 
-**У корпусі — усі 48 книг бібліотеки** (33 сорсбуки + 15 пригод), 672 сторінки, 4537 записів. Тягнемо все, що є, без добірки: докачка окремих книг дорожча за повторну обробку, а зайвий запис нікому не заважає.
+**The corpus holds every book in the library** (sourcebooks and adventures). We take
+everything there is, without curation: re-fetching individual books costs more than
+reprocessing, and an extra record bothers nobody.
 
-Що з цього *використовує* застосунок — окреме питання, і воно вирішується прапорцями, а не видаленням книг:
+What the app *uses* is a separate question, decided by flags, not by deleting books:
 
-| Шар | Книги | У застосунку |
+| Layer | Books | In the app |
 |---|---|---|
-| Ядро | PHB, DMG, Basic Rules (SRD) | завжди |
-| Опції | XGtE, TCoE, SCAG, FToD, EGtW, AI, VGtM, MToF, MotM | увімкнені за замовчуванням |
-| Бестіарій | MM, Monstrous Compendium, Fiendish Folio, MToF | для диких форм і фамільярів |
-| Сетинги й пригоди | GGR, ERLW, MOoT, VRGtR, SCC, SAiS, BMT, WBtW, решта пригод | за вибором кампанії |
-| Плейтест | Unearthed Arcana | вимкнено |
-| Третя сторона | Humblewood | вимкнено, окремий прапорець |
+| Core | PHB, DMG, Basic Rules (SRD) | always |
+| Options | XGtE, TCoE, SCAG, FToD, EGtW, AI, VGtM, MToF, MotM | on by default |
+| Bestiary | MM, Monstrous Compendium, Fiendish Folio, MToF | for wild shapes and familiars |
+| Settings and adventures | GGR, ERLW, MOoT, VRGtR, SCC, SAiS, BMT, WBtW, other adventures | per campaign |
+| Playtest | Unearthed Arcana | off |
+| Third party | Humblewood | off, a separate flag |
 
-## 11. Ризики
+## 11. Risks
 
-1. Обсяг перекладу (~1.5–2 млн символів) — головний ризик; мітигація: глосарій-constrained MT + вичитка + пріоритезація.
-2. Розходження рендерів — codegen + conformance.
-3. Дублювання рушія в JS — заборонено ревʼю.
-4. Очікування «все автоматизовано» — чесно: ~85–90% декларативного, решта override.
-5. Правове — персональне використання; код готовий до SRD-only режиму.
+1. Translation volume (~1.5–2 million characters) — the main risk; mitigation: glossary-constrained MT + review + prioritization.
+2. Diverging renderers — codegen + conformance.
+3. Duplicating the engine in JS — forbidden in review.
+4. Expecting "everything automated" — honestly: ~85–90% declarative, the rest overrides.
+5. Legal — non-commercial fan project; book texts are stored only encrypted; the code is ready for an SRD-only mode.
 
-## 12. Відкриті питання
+## 12. Open questions
 
-- Одиниці: фути/фунти з метричними в дужках — вирішено за замовчуванням, змінюється налаштуванням.
-- Чи потрібен експорт у Foundry VTT — вирішується після етапу 7.
+- Units: feet/pounds with metric in parentheses — decided as the default, changeable by a setting.
+- Whether a Foundry VTT export is needed.
 
-## 13. Еталон екранів (не даних)
+## 13. Screen reference (not data)
 
-Орієнтир — як виглядає й поводиться робочий листок у D&D Beyond. Повторюємо **структуру екранів і
-поведінку**, не копіюючи ні текстів, ні даних, ні ілюстрацій, ні верстки: увесь контент — зі свого
-корпусу (`content/`), усі числа — зі своїх правил. Чужого імпорту персонажів немає й не буде.
+The reference is how a working sheet looks and behaves in D&D Beyond. We repeat **the
+structure of screens and the behavior**, copying neither texts, data, illustrations nor
+layout: all content comes from our own corpus (`content/`), all numbers from our own
+rules. There is no import of someone else's characters and there won't be.
 
-**Екран персонажа.** Шапка: імʼя, клас(и) і рівень, вид, передісторія, світогляд. Панель бою: HP
-(поточні/максимум/тимчасові), AC, ініціатива, швидкість, кубики хітів, смертельні кидки, натхнення,
-бонус майстерності. Далі вкладки:
+**Character screen.** Header: name, class(es) and level, species, background,
+alignment. Combat panel: HP (current/max/temporary), AC, initiative, speed, hit dice,
+death saves, inspiration, proficiency bonus. Then tabs:
 
-- **Дії** — атаки, зброя, здібності: короткий текст, бонус, кубик;
-- **Закляття** — за класами, слоти за рівнями, підготовлені, фокуси/ритуали, DC і бонус атаки;
-- **Інвентар** — предмети з кількістю, вагою, «споряджено/налаштовано», гроші, вантажопідйомність;
-- **Уміння й риси** — класові, підкласові, расові, риси, з повним текстом;
-- **Нотатки** — зовнішність, союзники, вороги, передісторія, власні нотатки.
+- **Actions** — attacks, weapons, abilities: short text, bonus, die;
+- **Spells** — by class, slots by level, prepared, cantrips/rituals, DC and attack bonus;
+- **Inventory** — items with quantity, weight, "equipped/attuned", money, carrying capacity;
+- **Features and feats** — class, subclass, species, feats, with full text;
+- **Notes** — appearance, allies, enemies, backstory, own notes.
 
-**Поведінка.** Клік по числу — редагування на місці; обчислене поле змінюється лише як override, і тоді
-це позначено. Лічильники (слоти, хіт-дайс, заряди) зменшуються й відновлюються; короткий і довгий
-відпочинок відновлюють те, що мають. Кожен рядок має тултіп з англійським оригіналом (§7).
+**Behavior.** Clicking a number edits it in place; a computed field changes only as an
+override, and that's marked. Counters (slots, hit dice, charges) go down and are
+restored; short and long rests restore what they should. Every line has a tooltip with
+the English original (§7).
 
-**Створення.** Покроковий візард: вид → клас (і підклас, якщо він на 1 рівні) → характеристики
-(набір / point buy / кидки) → передісторія й володіння → спорядження → закляття. Між кроками можна
-ходити назад; сервер перевіряє кожен крок і зберігає чернетку. Підвищення рівня — окремий потік на
-тому самому документі, без «перестворення» персонажа.
+**Creation.** A step-by-step wizard: species → class (and subclass if it comes at level
+1) → abilities (standard array / point buy / rolls) → background and proficiencies →
+equipment → spells. You can go back between steps; the server validates every step and
+saves the draft. Level-up is a separate flow on the same document, without "recreating"
+the character.

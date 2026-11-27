@@ -1,44 +1,51 @@
-# content/ — база знань (дані)
+# content/ — the knowledge base (data)
 
-Тут живе все, що є **даними**, а не кодом (див. ADR 0003).
+Everything here is **data**, not code (see ADR 0003).
 
-| Файл / тека | Що це | У git |
+| File / folder | What it is | In git |
 |---|---|---|
-| `glossary.uk.yml` | глосарій української термінології | так |
-| `sources.yml` | **реєстр джерел**: 93 джерела (52 книги бібліотеки + 41 тека дзеркала), черги, ліцензії, прогалини | так |
-| `raw/<source>/*.html` | сирий HTML сторінок книги з D&D Beyond | **ні** (copyright) |
-| `raw/_index/<source>.json` | список сторінок книги (результат discover) | **ні** |
-| `compendium/<source>/<category>.jsonl` | записи довідника за схемою — те, з чого збирається лист персонажа | **ні** (містять text_en) |
-| `bestiary/<source>/monster.jsonl` | статблоки монстрів: той самий формат запису, окремий корпус (листок їх не читає) | **ні** (містять text_en) |
-| `index/spell-lists.json` | похідний індекс: класові списки заклять зі «Spell Lists» книг | **ні** (похідне від текстів) |
-| `index/class-mechanics.json` | похідний індекс: хіт-дайси, володіння, таблиці слотів, вимоги мультикласу, риси за рівнями | **ні** (похідне від дзеркала) |
-| `index/origin-mechanics.json` | похідний індекс: бонуси характеристик, швидкість, темний зір, навички й мови видів і передісторій | **ні** (похідне від дзеркала) |
-| `.session/cookies.json` | cookies сесії D&D Beyond | **ні** (живі креденшели) |
+| `glossary.uk.yml` | Ukrainian terminology glossary | plain |
+| `sources.yml` | **source registry**: 93 sources (52 library books + 41 mirror folders), queues, licenses, gaps | plain |
+| `books_market.json` | book prices, covers and D&D Beyond links for the home page | plain |
+| `translations/` | Ukrainian names and texts (see [docs/translation-rules.md](../docs/translation-rules.md)) | plain |
+| `compendium/<source>/<category>.jsonl` | compendium records — what the character sheet is built from | **encrypted** (contain `text_en`) |
+| `bestiary/<source>/monster.jsonl` | monster stat blocks: same record format, a separate corpus (the sheet doesn't read it) | **encrypted** (contain `text_en`) |
+| `index/spell-lists.json` | derived index: class spell lists from the books' "Spell Lists" | **encrypted** (derived from texts) |
+| `index/class-mechanics.json` | derived index: hit dice, proficiencies, slot tables, multiclass prerequisites, features by level | **encrypted** |
+| `index/origin-mechanics.json` | derived index: ability bonuses, speed, darkvision, skills and languages of species and backgrounds | **encrypted** |
+| `raw/<source>/*.html` | raw HTML of book pages | **no** (copyright) |
+| `raw/_index/<source>.json` | page list of a book (result of discover) | **no** |
+| `.session/cookies.json` | site session cookies | **no** (live credentials) |
 
-Похідні індекси (`index/`) складаються скриптами й не комітяться:
+Encryption uses git-crypt (`.gitattributes` in each of `compendium/`, `bestiary/`,
+`index/`): the public repository holds only ciphertext, CI and the owner unlock it
+(see [docs/deploy.md](../docs/deploy.md)). Without unlocking, these files are binary and
+the compendium is empty.
+
+Derived indexes (`index/`) are built by scripts:
 
 ```powershell
-python -m scripts.ingest.spell_lists --write   # класові списки заклять
-python -m scripts.ingest.mechanics --write     # механіки класів, видів, передісторій
+python -m scripts.ingest.spell_lists --write   # class spell lists
+python -m scripts.ingest.mechanics --write     # class, species and background mechanics
 ```
 
-Межа між корпусами — частина контракту `contract/compendium-format.json`
-(блок `corpora`), а не домовленість у коді: якщо монстр опиниться в
-`compendium/`, preflight і тести впадуть.
+The boundary between corpora is part of the `contract/compendium-format.json` contract
+(the `corpora` block), not a convention in code: if a monster ends up in
+`compendium/`, preflight and the tests fail.
 
-Схема запису: [`contract/compendium-entry.schema.json`](../contract/compendium-entry.schema.json).
+Record schema: [`contract/compendium-entry.schema.json`](../contract/compendium-entry.schema.json).
 
-## Конвеєр
+## Pipeline
 
 ```
 sources.yml ──> discover ──> fetch ──> parse ──┬──> compendium/<source>/*.jsonl
-                 (BFS)      (HTML)     (markdown + поля)  │   (категорії листа)
+                 (BFS)      (HTML)  (markdown + fields)  │   (sheet categories)
                                                          └──> bestiary/<source>/monster.jsonl
                                                               │
                                                               └──> validate (jsonschema)
 ```
 
-Запуск з кореня репозиторію (потрібен файл сесії):
+Run from the repository root (needs the session file):
 
 ```bash
 python -m scripts.ingest.cli discover --source phb-2014
@@ -48,11 +55,11 @@ python -m scripts.ingest.cli run      --source phb-2014 --delay 1.5
 python -m scripts.ingest.cli all      --tiers 1,1.5,2
 ```
 
-Кожен етап ідемпотентний і продовжується з місця зупинки (`_checkpoint.json`).
-При CAPTCHA конвеєр зупиняється з кодом 2 і зберігає прогрес.
+Every stage is idempotent and resumes where it stopped (`_checkpoint.json`).
+On a CAPTCHA the pipeline stops with exit code 2 and keeps its progress.
 
-## Правове
+## Legal
 
-- `license: proprietary` — персональне використання, публікація заборонена.
-- `license: srd` — CC-BY, єдиний шар, який можна показувати публічно.
-- Сирі тексти й переклади **не комітяться**; у git — лише реєстр, схема й код.
+- `license: proprietary` — book texts; stored in git only encrypted, never published in plain text.
+- `license: srd` — CC-BY, the only layer that may be shown publicly as is.
+- Raw HTML and session cookies are never committed.

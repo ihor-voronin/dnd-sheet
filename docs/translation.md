@@ -1,84 +1,84 @@
-# Переклад предметів українською
+# Translating the content into Ukrainian
 
-Статус: **машинна чернетка** — звірена на кістках і числах, але не вичитана
-проти офіційного українського PDF. Це той самий шлях, що в плані («MT-чернетка
-+ вичитка»), і він свідомо відкритий: краще показати переклад із чесною
-позначкою, ніж англійський текст там, де людина читає правила.
+Status: **a machine draft** — checked on dice and numbers, but not proofread
+against the official Ukrainian PDF. This is the same path as in the plan ("MT draft
++ proofreading"), and it's deliberately open: it's better to show a translation with an
+honest label than English text where a person reads the rules.
 
-## Що перекладено
+Ukrainian words below are quoted as they appear in the app.
 
-| Шар | Записів | Де лежить |
+## Items
+
+| Layer | Records | Where it lives |
 |---|---|---|
-| Назви | 1109 (усі унікальні назви корпусу, 54 книги) | `frontend/src/features/character/uk-items.ts` |
-| Описи | 235 (усі описи базових правил) | `frontend/public/items-uk.json` |
+| Names | 1109 (all unique names in the corpus, 54 books) | `frontend/src/features/character/uk-items.ts` |
+| Descriptions | 235 (all Basic Rules descriptions) | `frontend/public/items-uk.json` |
 
-Описи перекладені лише для `basic-rules-2014`: це той самий набір, що в
-безкоштовних правилах, і єдиний шар, де є справжній текст правила, а не рядок
-таблиці. Решта книг (пригоди, сеттінги) поки показуються англійською — їхня
-черга наступна.
+Descriptions are translated only for `basic-rules-2014`: it's the same set as in
+the free rules, and the only layer with real rule text rather than a table row. The
+other books (adventures, settings) are still shown in English — they're next in line.
 
-## Як це зроблено
+### How it's done
 
 ```
-content/compendium/*/item.jsonl      (англійська, корпус)
-        │  scripts/items_uk_prepare.py — ріже на черги по ~9 тис. символів
+content/compendium/*/item.jsonl      (English, the corpus)
+        │  scripts/items_uk_prepare.py — cuts it into queues of ~9k characters
         ▼
-var/translations/items/in/*.json     (черги; не в git — генеруються)
-        │  переклад (агент читає PROMPT.txt, пише файл на чергу)
+var/translations/items/in/*.json     (queues; not in git — generated)
+        │  translation (an agent reads PROMPT.txt, writes one file per queue)
         ▼
-content/translations/items/*.json    (українська; у git — це джерело правди)
-        │  scripts/items_uk_check.py  — довжина й кістки
-        │  scripts/items_uk_merge.py  — злиття, нормалізація термінів
+content/translations/items/*.json    (Ukrainian; in git — the source of truth)
+        │  scripts/items_uk_check.py  — length and dice
+        │  scripts/items_uk_merge.py  — merge, term normalization
         ▼
-frontend/src/features/character/uk-items.ts   (назви, синхронні)
-frontend/public/items-uk.json                 (описи, вантажаться на вимогу)
+frontend/src/features/character/uk-items.ts   (names, synchronous)
+frontend/public/items-uk.json                 (descriptions, loaded on demand)
 ```
 
-Назви — синхронні, бо список інвентаря не має «мигати» англійською перед тим,
-як підвантажиться словник. Описи — окремий файл, бо це ~200 КБ тексту, які
-потрібні лише тоді, коли предмет розгорнули.
+Names are synchronous because the inventory list mustn't "flash" English before the
+dictionary loads. Descriptions are a separate file because it's ~200 KB of text that's
+needed only when an item is expanded.
 
-## Перевірки
+### Checks
 
-`scripts/items_uk_check.py` ловить обрізаний переклад (довжина менша за 55 %
-англійської) і загублені кістки (`2d4 + 2` мусить бути в перекладі). Обидві
-перевірки — грубі, але саме ці помилки видно на екрані як неправильне правило.
+`scripts/items_uk_check.py` catches a truncated translation (length below 55% of the
+English) and lost dice (`2d4 + 2` must be in the translation). Both checks are crude, but
+these are exactly the errors that show up on screen as a wrong rule.
 
-`scripts/items_uk_merge.py` додатково виправляє слова, які перекладачі пишуть
-по-російському, а глосарій проєкту каже інакше:
+`scripts/items_uk_merge.py` also fixes words that translators write the Russian way,
+while the project glossary says otherwise:
 
-* `ячейка` → `комірка` (глосарій: Spell Slot — Комірка закляття);
+* `ячейка` → `комірка` (glossary: Spell Slot — «Комірка закляття»);
 * `палочка` → `паличка` (Wand).
 
-## Як додати нову книгу
+### Adding a new book
 
-1. `python scripts/items_uk_prepare.py` — перерізати черги (скрипт бере весь
-   корпус, тож описи нових книг треба додати в `PROSE_SOURCES`).
-2. Перекласти нові файли з `in/` у `content/translations/items/` (інструкція
-   для перекладача — `var/translations/items/PROMPT.txt`).
+1. `python scripts/items_uk_prepare.py` — re-cut the queues (the script takes the whole
+   corpus, so descriptions of new books must be added to `PROSE_SOURCES`).
+2. Translate the new files from `in/` into `content/translations/items/` (instructions
+   for the translator — `var/translations/items/PROMPT.txt`).
 3. `python scripts/items_uk_check.py && python scripts/items_uk_merge.py`.
-4. `npm run build` — згенеровані файли потрапляють у бандл і в `dist/`.
+4. `npm run build` — the generated files go into the bundle and `dist/`.
 
-## Звірка назв з українськими джерелами
+### Checking names against Ukrainian sources
 
-Свої назви порівняно з двома перекладами, які реально читають за столом:
+Our names were compared with two translations people actually read at the table:
 
-| Джерело | Що дає | Охоплення |
+| Source | What it gives | Coverage |
 |---|---|---|
-| [5esrd.kyiv.ua](https://5esrd.kyiv.ua/) | переклад SRD одним перекладачем (ІНРІУМ) | таблиці зброї, броні, спорядження; закляття |
-| [dndworld.space](https://www.dndworld.space/predmety/) | найбільший каталог предметів українською | 4284 назви з парою «українська + English» |
+| [5esrd.kyiv.ua](https://5esrd.kyiv.ua/) | an SRD translation by one translator (ІНРІУМ) | weapon, armor and gear tables; spells |
+| [dndworld.space](https://www.dndworld.space/predmety/) | the largest catalog of items in Ukrainian | 4284 names as "Ukrainian + English" pairs |
 
-Скрипти: `scripts/reference_dndworld.py`, `scripts/reference_5esrd_spells.py`,
-`scripts/items_uk_compare.py` (пише розбіжності, нічого не змінює).
+Scripts: `scripts/reference_dndworld.py`, `scripts/reference_5esrd_spells.py`,
+`scripts/items_uk_compare.py` (writes the differences, changes nothing).
 
-**Предмети.** З 1109 назв у каталозі D&D World є 666; з них 342 збігаються
-дослівно, 324 — інший варіант. Частина розбіжностей — стиль («Набір кісток»
-проти «Набір гральних кісток»), частина — справжні помилки машинного
-перекладу. Тому автоматично не прийнято нічого: 50 назв зброї й броні
-звірено з таблицями 5esrd і зафіксовано в `uk.ts` (`ITEM_SRD`), з них 11
-виправлено по суті:
+**Items.** Of 1109 names, 666 are in the D&D World catalog; 342 of them match word for
+word, 324 are a different variant. Some differences are style («Набір кісток» vs
+«Набір гральних кісток»), some are real machine translation errors. So nothing was
+accepted automatically: 50 weapon and armor names were checked against the 5esrd tables
+and pinned in `uk.ts` (`ITEM_SRD`), 11 of them corrected in substance:
 
-| Було (машинне) | Стало (SRD) |
+| Was (machine) | Became (SRD) |
 |---|---|
 | Стьобана броня | Гамбезон (Padded) |
 | Кіраса | Нагрудник (Breastplate) |
@@ -93,10 +93,10 @@ frontend/public/items-uk.json                 (описи, вантажатьс�
 | Шабля | Скимитар (Scimitar) |
 | Бойове кайло | Клевець (War Pick) |
 
-**Закляття.** Тут джерела розходяться між собою, і вибрати «правильне» без
-книги неможливо:
+**Spells.** Here the sources disagree with each other, and picking the "right" one
+without the book is impossible:
 
-| Закляття | У нас | 5esrd | D&D World | 1d20 |
+| Spell | Ours | 5esrd | D&D World | 1d20 |
 |---|---|---|---|---|
 | Eldritch Blast | Містичний постріл | Позамежний заряд | Потойбічний Розрив | Потойбічний вибух |
 | Prestidigitation | Дрібні чари | Штукарство | — | — |
@@ -104,304 +104,303 @@ frontend/public/items-uk.json                 (описи, вантажатьс�
 | Burning Hands | Палаючі долоні | Палючі долоні | Палаючі Руки | — |
 | Divine Favor | Божественна прихильність | Божа милість | Божа Прихильність | — |
 
-Інші шість (Guidance, Light, Mending, Bless, Shield of Faith, Hex) збігаються
-з 5esrd.
+The other six (Guidance, Light, Mending, Bless, Shield of Faith, Hex) match 5esrd.
 
-**Висновок.** Остаточно звірити можна лише з офіційним українським PDF
-Книги гравця: спільнотні переклади суперечать одне одному навіть у назвах
-заклять рівня 1. Поки що в застосунку — власні назви, звірені з SRD там, де
-це однозначно (зброя й броня), і машинні — решта.
+**Conclusion.** A final check is only possible against the official Ukrainian PDF of the
+Player's Handbook: community translations contradict each other even in the names of
+level-1 spells. For now the app uses our own names, checked against the SRD where it's
+unambiguous (weapons and armor), and machine ones for the rest.
 
-## Чого тут немає
+### What's not here
 
-* Вичитки проти офіційного PDF: звірено з двома спільнотними перекладами
-  (див. розділ вище), а вони розходяться між собою. Для предметів зброя й
-  броня зафіксовані за SRD; назви решти предметів і заклять лишаються
-  машинними, доки не буде книжки.
-* Перекладу описів з книг, крім базових правил.
-* Перекладу в PDF/Markdown-експорті: там досі `name_en`.
+* Proofreading against the official PDF: checked against two community translations
+  (see the section above), and they disagree with each other. For items, weapons and
+  armor are pinned to the SRD; the names of other items and spells stay machine-made
+  until the book is available.
+* Translation of descriptions from books other than the Basic Rules.
+* Translation in the PDF/Markdown export: it still uses `name_en`.
 
-## Переклад видів (раси, підраси, їхні вміння)
+## Species (races, subraces, their traits)
 
-Другий шар перекладу, зроблений так само — файлами, а не правкою корпусу.
+The second translation layer, done the same way — with files, not by editing the corpus.
 
-| Шар | Записів | Де лежить |
+| Layer | Records | Where it lives |
 |---|---|---|
-| Назви вмінь | 274 (усі назви з корпусу видів) | `content/translations/species/names*.json` |
-| Тексти вмінь | 524 (унікальні тексти) | `content/translations/species/texts*.json` |
-| Описи видів і підрас | 105 | `content/translations/species/descriptions*.json` |
+| Trait names | 274 (all names from the species corpus) | `content/translations/species/names*.json` |
+| Trait texts | 524 (unique texts) | `content/translations/species/texts*.json` |
+| Species and subrace descriptions | 105 | `content/translations/species/descriptions*.json` |
 
-Ключ — не назва, а `sha1(оригінальний текст)[:10]`: «Darkvision» у двадцяти
-видів — той самий рядок, і перекладати його двадцять разів не треба. Файли
-читає `backend/src/dndsheet/characters/api/trait_uk.py` і додає до відповіді
-`name_uk`, `text_uk`, `description_uk`; екран показує «Темний зір
-(Darkvision)», а якщо перекладу немає — оригінал.
+The key isn't the name but `sha1(original text)[:10]`: "Darkvision" in twenty species is
+the same string, and there's no need to translate it twenty times. The files are read by
+`backend/src/dndsheet/characters/api/trait_uk.py`, which adds `name_uk`, `text_uk`,
+`description_uk` to the response; the screen shows «Темний зір (Darkvision)», and if there's
+no translation — the original.
 
 ```
-content/compendium/*/species.jsonl   (англійська, корпус)
+content/compendium/*/species.jsonl   (English, the corpus)
         │  scripts/species_uk_prepare.py [--missing]
         ▼
-var/uk/input/*.json                  (черги; не в git — генеруються)
-        │  переклад (агент читає var/uk/GLOSSARY.md, пише файл на чергу)
+var/uk/input/*.json                  (queues; not in git — generated)
+        │  translation (an agent reads var/uk/GLOSSARY.md, writes one file per queue)
         ▼
-content/translations/species/*.json  (українська; у git — джерело правди)
-        │  scripts/species_uk_check.py    — повнота (кожен id має переклад)
-        │  scripts/species_uk_validate.py — числа, кубики, абзаци, «не англійська»
+content/translations/species/*.json  (Ukrainian; in git — the source of truth)
+        │  scripts/species_uk_check.py    — completeness (every id has a translation)
+        │  scripts/species_uk_validate.py — numbers, dice, paragraphs, "not English"
         ▼
-backend characters/api/trait_uk.py → API → візард, крок «Вид»
+backend characters/api/trait_uk.py → API → the wizard, "Species" step
 ```
 
-Чому не згенеровано у фронтенд, як назви предметів: текстів ~240 КБ, і вони
-потрібні лише на кроці створення. Бандл не має важчати на них.
+Why it isn't generated into the frontend like item names: the texts are ~240 KB, and
+they're needed only at the creation step. The bundle shouldn't get heavier because of them.
 
-Підраси обовʼязково готуються з `parent_name_en`: половина з них описана в
-тексті батьківського виду, і без нього `species_details` повертає лише числа.
-Перший прохід через це «загубив» 108 текстів — їх додав `--missing`.
+Subraces must be prepared with `parent_name_en`: half of them are described in the text
+of the parent species, and without it `species_details` returns only numbers. The first
+pass "lost" 108 texts because of this — `--missing` added them.
 
-### Перевірки
+### Checks
 
-* `scripts/species_uk_check.py --strict` — повнота: 673 (перший прохід) + 230
-  (підраси) записів, кожен id рівно один раз.
-* `scripts/species_uk_validate.py` — кубики й числа збігаються з оригіналом,
-  абзаців стільки ж, текст справді український. Саме ця перевірка зловила
-  «5×5 футів» замість «квадратна ділянка 5 футів» — числа розійшлися.
+* `scripts/species_uk_check.py --strict` — completeness: 673 (first pass) + 230
+  (subraces) records, every id exactly once.
+* `scripts/species_uk_validate.py` — dice and numbers match the original, the same
+  number of paragraphs, the text really is Ukrainian. This check caught
+  «5×5 футів» instead of «квадратна ділянка 5 футів» — the numbers diverged.
 * `backend/tests/api/test_species_uk.py::test_every_species_trait_has_ukrainian_name_and_text`
-  — те саме в тестах: падає, якщо зʼявиться вид без перекладу.
+  — the same in tests: fails if a species without a translation appears.
 
-### Статус
+### Status
 
-Машинна чернетка, звірена на кістках і числах, але **не вичитана** проти
-офіційного українського PDF — так само, як предмети. Оригінальна назва завжди
-поруч у дужках, тож помилку видно й легко виправити один файл.
+A machine draft, checked on dice and numbers, but **not proofread** against the official
+Ukrainian PDF — just like items. The original name is always next to it in parentheses,
+so an error is visible and easy to fix in one file.
 
-## Переклад особливостей класів
+## Class features
 
-Третій шар, зроблений тією ж машиною: корпус не чіпаємо, переклад лежить
-поруч і приєднується за хешем оригіналу.
+The third layer, made by the same machinery: we don't touch the corpus, the translation
+lives next to it and is joined by the hash of the original.
 
-| Шар | Записів | Де лежить |
+| Layer | Records | Where it lives |
 |---|---|---|
-| Назви вмінь | 257: 174 заголовки глави (`Rage`, `Extra Attack`, `Eldritch Invocations`…) + 83 назви індексу механік (`Extra Attack (2)`, `Destroy Undead (CR 1)`, опційні вміння TCoE) | `content/translations/classes/names.json` |
-| Тексти вмінь | 233 унікальні тексти (45,7 тис. слів оригіналу) | `content/translations/classes/texts-*.json` |
-| Описи класів | 12 (проза на початку глави) | `content/translations/classes/descriptions.json` |
+| Feature names | 257: 174 chapter headings (`Rage`, `Extra Attack`, `Eldritch Invocations`…) + 83 names from the mechanics index (`Extra Attack (2)`, `Destroy Undead (CR 1)`, TCoE optional features) | `content/translations/classes/names.json` |
+| Feature texts | 233 unique texts (45.7k words of original) | `content/translations/classes/texts-*.json` |
+| Class descriptions | 12 (the prose at the start of the chapter) | `content/translations/classes/descriptions.json` |
 
-Назви зібрані в один файл руками: `scripts/classes_uk_names.py` тримає
-словник `NAMES` (заголовки глави) і `EXTRA_NAMES` (назви з індексу механік),
-бо саме тут видно весь список одним екраном і легко помітити розбіжність
-(`Arcane Tradition` у мага — та сама назва підкласу, що в `TERMS` на
-фронтенді). Скрипт звіряє словник із корпусом **і з індексом механік** і
-падає, якщо якась назва лишилась без перекладу.
+The names are collected in one file by hand: `scripts/classes_uk_names.py` holds the
+`NAMES` dictionary (chapter headings) and `EXTRA_NAMES` (names from the mechanics index),
+because that's where the whole list is visible on one screen and a divergence is easy to
+spot (`Arcane Tradition` for the wizard is the same subclass name as in `TERMS` on the
+frontend). The script checks the dictionary against the corpus **and the mechanics index**
+and fails if any name is left without a translation.
 
-Тексти — файлами, як у видів:
+Texts — as files, like species:
 
 ```
-content/compendium/phb-2014/class.jsonl  (англійська, корпус)
+content/compendium/phb-2014/class.jsonl  (English, the corpus)
         │  scripts/classes_uk_prepare.py [--missing]
         ▼
-var/uk/classes/input/*.json          (черги по ~4 тис. слів; не в git)
-        │  переклад (агент читає var/uk/classes/BRIEF.md, пише файл на чергу)
+var/uk/classes/input/*.json          (queues of ~4k words; not in git)
+        │  translation (an agent reads var/uk/classes/BRIEF.md, writes one file per queue)
         ▼
-content/translations/classes/*.json  (українська; у git — джерело правди)
-        │  scripts/classes_uk_check.py    — повнота
-        │  scripts/classes_uk_validate.py — числа, кубики, абзаци, пункти
+content/translations/classes/*.json  (Ukrainian; in git — the source of truth)
+        │  scripts/classes_uk_check.py    — completeness
+        │  scripts/classes_uk_validate.py — numbers, dice, paragraphs, list items
         ▼
-backend characters/api/classes_uk.py → API → візард (крок «Клас») і лист (вкладка «Уміння»)
+backend characters/api/classes_uk.py → API → the wizard ("Class" step) and the sheet ("Features" tab)
 ```
 
-Два уроки з видів, які тут уже враховані:
+Two lessons from species that are already taken into account here:
 
-* **`id` у чергах** — хеш оригіналу, а не назва. Перший прохід готував тексти
-  без поля `id`, і валідатор падав на `KeyError`: перекладачі рахували хеш
-  самі. Тепер `classes_uk_prepare.py` пише `id` у кожен запис.
-* **Таблиці в тексті** (`Quick Build`, прогресія рівнів) — це частина правила:
-  валідатор перевіряє не лише числа, а й кількість пунктів списку та
-  `####`-підзаголовків, бо саме на них переклад «згортається» в переказ.
+* **`id` in the queues** is the hash of the original, not the name. The first pass
+  prepared texts without an `id` field, and the validator failed with a `KeyError`:
+  translators computed the hash themselves. Now `classes_uk_prepare.py` writes an `id`
+  into every record.
+* **Tables in the text** (`Quick Build`, level progression) are part of the rule: the
+  validator checks not only numbers but also the number of list items and `####`
+  subheadings, because that's exactly where a translation "collapses" into a retelling.
 
-### Перевірки
+### Checks
 
-* `scripts/classes_uk_check.py --strict` — повнота: 174 назви + 233 тексти +
-  12 описів, кожен id рівно один раз.
-* `scripts/classes_uk_validate.py` — кубики й числа збігаються з оригіналом,
-  абзаців/пунктів/підзаголовків стільки ж, текст справді український.
+* `scripts/classes_uk_check.py --strict` — completeness: 174 names + 233 texts +
+  12 descriptions, every id exactly once.
+* `scripts/classes_uk_validate.py` — dice and numbers match the original, the same
+  number of paragraphs/items/subheadings, the text really is Ukrainian.
 * `backend/tests/api/test_classes_uk.py::test_every_class_feature_has_ukrainian_name_and_text`
-  — те саме в тестах: падає, якщо зʼявиться клас без перекладу.
+  — the same in tests: fails if a class without a translation appears.
 * `backend/tests/api/test_classes_uk.py::test_every_mechanics_feature_name_has_ukrainian_name`
-  — назви з індексу механік (`Extra Attack (2)`, `Destroy Undead (CR 1)`) теж
-  мають переклад: інакше список умінь мішає дві мови.
+  — names from the mechanics index (`Extra Attack (2)`, `Destroy Undead (CR 1)`) are
+  translated too: otherwise the feature list mixes two languages.
 
-### Що цим виправлено на екрані
+### What this fixed on screen
 
-Раніше тексти класових умінь бралися з ручного словника
-`frontend/src/features/character/uk.ts`, і там для `Spellcasting` лежав **текст
-жреця**. Маг, чаклун і бард бачили чуже правило. Тепер `text_uk` приходить із
-шару за класом, а словник лишається запасним шляхом.
+Class feature texts used to come from the hand-written dictionary
+`frontend/src/features/character/uk.ts`, and for `Spellcasting` it held **the cleric's
+text**. The wizard, warlock and bard saw someone else's rule. Now `text_uk` comes from the
+per-class layer, and the dictionary stays as a fallback.
 
-### Чого ще немає
+### What's still missing
 
-* **Вичитки** проти офіційного PDF — як і в попередніх шарах. (Уміння
-  підкласів перекладено окремим шаром — див. нижче.)
+* **Proofreading** against the official PDF — as in the previous layers. (Subclass
+  features are translated as a separate layer — see below.)
 
-## Переклад передісторій
+## Backgrounds
 
-Четвертий шар. Передісторія — це не лише назва: у книзі вона тримає опис,
-рису з текстом і рядок `Equipment:`, з якого крок «Спорядження» додає
-предмети. Тому перекладено все чотири.
+The fourth layer. A background isn't just a name: in the book it holds a description, a
+feature with text and an `Equipment:` line from which the "Equipment" step adds items.
+So all four are translated.
 
-| Шар | Записів | Де лежить |
+| Layer | Records | Where it lives |
 |---|---|---|
-| Назви передісторій | 94 (узяті з `TERMS`, щоб не було двох списків) | `content/translations/backgrounds/names.json` |
-| Назви рис | 70 (`Military Rank`, `Shelter of the Faithful`…) | там же |
-| Описи | 66 унікальних (у книгах повторюються між варіантами) | `descriptions-*.json` |
-| Тексти рис | 39 унікальних | `features-*.json` |
-| Фрази спорядження | 159 (`uniform`, `pouch containing 10 gp`…) | `equipment.json` |
+| Background names | 94 (taken from `TERMS`, so there aren't two lists) | `content/translations/backgrounds/names.json` |
+| Feature names | 70 (`Military Rank`, `Shelter of the Faithful`…) | same place |
+| Descriptions | 66 unique (they repeat between variants in the books) | `descriptions-*.json` |
+| Feature texts | 39 unique | `features-*.json` |
+| Equipment phrases | 159 (`uniform`, `pouch containing 10 gp`…) | `equipment.json` |
 
-Разом ≈29 тис. слів оригіналу. Назви передісторій **не дублюються**: скрипт
-`scripts/backgrounds_uk_names.py` читає `TERMS` із
-`frontend/src/features/character/uk.ts` і бере готові назви — так «Солдат» не
-може стати «Воїном» в одному місці й «Солдатом» в іншому.
+About 29k words of original in total. Background names **aren't duplicated**: the script
+`scripts/backgrounds_uk_names.py` reads `TERMS` from
+`frontend/src/features/character/uk.ts` and takes the existing names — so «Солдат»
+can't become «Воїн» in one place and «Солдат» in another.
 
 ```
-content/compendium/*/background.jsonl  (англійська, корпус)
+content/compendium/*/background.jsonl  (English, the corpus)
         │  scripts/backgrounds_uk_prepare.py [--missing]
         ▼
-var/uk/backgrounds/input/*.json        (черги; не в git)
-        │  переклад (агент читає var/uk/backgrounds/BRIEF.md + глосарій класів)
+var/uk/backgrounds/input/*.json        (queues; not in git)
+        │  translation (an agent reads var/uk/backgrounds/BRIEF.md + the class glossary)
         ▼
 content/translations/backgrounds/*.json
-        │  scripts/backgrounds_uk_check.py    — повнота
-        │  scripts/backgrounds_uk_validate.py — числа, абзаци, пункти, «не англійська»
+        │  scripts/backgrounds_uk_check.py    — completeness
+        │  scripts/backgrounds_uk_validate.py — numbers, paragraphs, items, "not English"
         ▼
-backend characters/api/backgrounds_uk.py → API → візард (крок «Передісторія») і лист (вкладка «Передісторія»)
+backend characters/api/backgrounds_uk.py → API → the wizard ("Background" step) and the sheet ("Background" tab)
 ```
 
-Дві особливості, яких не було в інших шарах:
+Two particularities that the other layers didn't have:
 
-* **Спорядження — це не правило, а список предметів.** Фрази перекладаються
-  окремо й показуються лише як підпис: пошук у довіднику й додавання в
-  інвентар ідуть за англійським `text`, тому переклад не може «зламати»
-  предмет. Варіанти вибору («bone dice or deck of cards») перекладаються
-  паралельним масивом `choices_uk`, щоб `<select>` показував українське, а
-  надсилав англійське.
-* **На листі спорядження — один рядок** (як у книзі), тому його українська
-  версія збирається з перекладених фраз, а не перекладається вдруге:
-  «гаманець із 10 зм» звучить однаково в п'яти передісторіях.
+* **Equipment isn't a rule but a list of items.** The phrases are translated separately
+  and shown only as a caption: lookup in the compendium and adding to the inventory go by
+  the English `text`, so a translation can't "break" an item. Choice variants ("bone dice
+  or deck of cards") are translated as a parallel `choices_uk` array, so the `<select>`
+  shows Ukrainian but submits English.
+* **On the sheet equipment is one line** (as in the book), so its Ukrainian version is
+  assembled from the translated phrases rather than translated a second time:
+  «гаманець із 10 зм» reads the same in five backgrounds.
 
-### Перевірки
+### Checks
 
-* `scripts/backgrounds_uk_check.py --strict` — повнота: 164 назви + 66 описів
-  + 39 рис + 159 фраз.
-* `scripts/backgrounds_uk_validate.py` — числа й кубики, абзаци, пункти,
-  «чи не англійська».
-* `backend/tests/api/test_backgrounds_uk.py` — пошук за хешем, терпимість до
-  відсутнього перекладу, крок візарда для «Солдата» і тест повноти на всі 94
-  передісторії.
+* `scripts/backgrounds_uk_check.py --strict` — completeness: 164 names + 66 descriptions
+  + 39 features + 159 phrases.
+* `scripts/backgrounds_uk_validate.py` — numbers and dice, paragraphs, items,
+  "is it not English".
+* `backend/tests/api/test_backgrounds_uk.py` — lookup by hash, tolerance for a missing
+  translation, the wizard step for «Солдат» and a completeness test for all 94
+  backgrounds.
 
-### Статус
+### Status
 
-Машинна чернетка, звірена на числах і структурі, **не вичитана** проти
-офіційного українського PDF — як і предмети, види та класи. Оригінал завжди
-лишається в payload поруч, тож помилку видно й легко виправити один файл.
+A machine draft, checked on numbers and structure, **not proofread** against the official
+Ukrainian PDF — like items, species and classes. The original always stays next to it in
+the payload, so an error is visible and easy to fix in one file.
 
-## Переклад особливостей підкласів
+## Subclass features
 
-П'ятий шар, і останній із тих, що показує лист: тепер вкладка «Уміння» не
-мішає українські класові вміння з англійськими підкласовими.
+The fifth layer, and the last of those the sheet shows: now the «Уміння» (Features) tab
+doesn't mix Ukrainian class features with English subclass ones.
 
-| Шар | Записів | Де лежить |
+| Layer | Records | Where it lives |
 |---|---|---|
-| Назви особливостей | 639 (`Channel Divinity: Preserve Life`, `Oath Spells`…) | `content/translations/subclasses/names.json` |
-| Тексти | 684 унікальні (≈59 тис. слів оригіналу) | `content/translations/subclasses/texts-*.json` |
+| Feature names | 639 (`Channel Divinity: Preserve Life`, `Oath Spells`…) | `content/translations/subclasses/names.json` |
+| Texts | 684 unique (≈59k words of original) | `content/translations/subclasses/texts-*.json` |
 
-Ключ, як і в попередніх шарах, — `sha1` оригіналу. Текст — це тіло розділу:
-курсивний підпис рівня (`*10th-level Cleric feature*`) з нього зрізає
-`features._strip_level_mark`, бо рівень уже є окремим полем; інакше він
-дублювався б у кожному тексті (і перекладачеві не було б чого перекладати).
+The key, as in the previous layers, is the `sha1` of the original. The text is the
+section body: the italic level caption (`*10th-level Cleric feature*`) is cut from it by
+`features._strip_level_mark`, because the level is already a separate field; otherwise it
+would be duplicated in every text (and the translator would have nothing to translate).
 
 ```
-content/compendium/*/class.jsonl       (підкласи — ## заголовки в главі класу)
+content/compendium/*/class.jsonl       (subclasses — ## headings in the class chapter)
         │  scripts/subclasses_uk_prepare.py [--missing]
         ▼
-var/uk/subclasses/input/*.json         (черги; не в git)
-        │  переклад (агент читає var/uk/subclasses/BRIEF.md + глосарій класів)
+var/uk/subclasses/input/*.json         (queues; not in git)
+        │  translation (an agent reads var/uk/subclasses/BRIEF.md + the class glossary)
         ▼
 content/translations/subclasses/*.json
-        │  scripts/subclasses_uk_check.py    — повнота
-        │  scripts/subclasses_uk_validate.py — числа, абзаци, пункти, «не англійська»
+        │  scripts/subclasses_uk_check.py    — completeness
+        │  scripts/subclasses_uk_validate.py — numbers, paragraphs, items, "not English"
         ▼
-backend characters/api/subclasses_uk.py → лист (вкладка «Уміння») і крок підвищення рівня
+backend characters/api/subclasses_uk.py → the sheet ("Features" tab) and the level-up step
 ```
 
-### Перевірки
+### Checks
 
-* `scripts/subclasses_uk_check.py --strict` — 639 назв + 684 тексти.
-* `scripts/subclasses_uk_validate.py` — числа й кубики, абзаци, пункти,
-  підзаголовки, «чи не англійська» (у назвах дозволені лише кубики `(d10)`).
+* `scripts/subclasses_uk_check.py --strict` — 639 names + 684 texts.
+* `scripts/subclasses_uk_validate.py` — numbers and dice, paragraphs, items,
+  subheadings, "is it not English" (only dice like `(d10)` are allowed in names).
 * `backend/tests/api/test_level_up_api.py::test_subclass_features_have_ukrainian_texts`
-  — падає, якщо зʼявиться підклас без перекладу.
+  — fails if a subclass without a translation appears.
 
-### Що цим виправлено на екрані
+### What this fixed on screen
 
-* Вкладка «Уміння» на листі тепер показує підкласові вміння українською.
-* Крок підвищення рівня показує **весь шлях** обраної спеціалізації з
-  рівнями, а вміння поточного рівня — ще й текстом правила.
+* The «Уміння» tab on the sheet now shows subclass features in Ukrainian.
+* The level-up step shows **the whole path** of the chosen specialization with levels,
+  and the features of the current level also with their rule text.
 
-### Знахідка в корпусі
+### A find in the corpus
 
-У тексті `Land's Stride` (коло землі, друїд) у корпусі стоїть
-«moving through nonmagical **3** costs you no extra movement», а в `Ghost
-Walk` (фантом, плут) — «as if they were **3**»; замість «difficult terrain»
-потрапила цифра 3 (схоже, зноска при ingest). Переклад зберіг число, щоб
-валідатор не «виправив» правило мовчки, але це дефект джерела, а не
-перекладу: його варто виправити в корпусі окремо.
+In the text of `Land's Stride` (Circle of the Land, druid) the corpus says
+"moving through nonmagical **3** costs you no extra movement", and in `Ghost Walk`
+(Phantom, rogue) — "as if they were **3**"; the digit 3 got in instead of "difficult
+terrain" (apparently a footnote during ingest). The translation kept the number so the
+validator wouldn't silently "fix" the rule, but it's a defect of the source, not of the
+translation: it should be fixed in the corpus separately.
 
-Три інші дефекти джерела, які видно на екрані:
+Three other source defects that are visible on screen:
 
-* **`Lunar Sorcery` (SotDQ)** — запис у корпусі **російською** і без жодного
-  `##`: це переклад цілого розділу пригоди, а не глава підкласу. Тому
-  `subclass_intro` позначає такий запис `corrupt`, і екран каже «текст
-  пошкоджений», а не показує простирадло чужого тексту.
-* **`SCAG` / `DMG`** у таблицях божеств — плейсхолдери замість назв книг
-  (імовірно, зноски при ingest). Переклад лишив їх як є, щоб не вигадувати.
-* Назви божеств у кількох таблицях замінені тим самим плейсхолдером —
-  виправляти треба в корпусі (§ ingest), а не в перекладі.
+* **`Lunar Sorcery` (SotDQ)** — the record in the corpus is **in Russian** and has no
+  `##` at all: it's a translation of a whole adventure chapter, not a subclass chapter.
+  So `subclass_intro` marks such a record `corrupt`, and the screen says "the text is
+  damaged" instead of showing a sheet of someone else's text.
+* **`SCAG` / `DMG`** in the deity tables — placeholders instead of book names
+  (probably footnotes during ingest). The translation left them as they are, so as not to
+  invent anything.
+* Deity names in several tables were replaced by the same placeholder — this needs fixing
+  in the corpus (§ ingest), not in the translation.
 
-## Правопис: «хіти», а не «хити»
+## Spelling: «хіти», not «хити»
 
-Домен бере «хіти» з гри, а не з медицини: **хіт → хіта → хітів** (Hit
-Points). Тому:
+The domain takes «хіти» (hit points) from the game, not from medicine:
+**хіт → хіта → хітів** (Hit Points). So:
 
-* множина — **«хіти»**, «кістки **хітів**» («Кістки хітів» у картці листа);
-* одна кістка — **«кістка хіту»** («Кістка хіту d10», «витратити кістку
-  хіту»), а не «кістка хітів»;
-* «хит» — інше слово, і саме ним колись «виправили» переклад.
+* the plural is **«хіти»**, «кістки **хітів**» («Кістки хітів» on the sheet card);
+* one die is **«кістка хіту»** («Кістка хіту d10», «витратити кістку хіту»), not
+  «кістка хітів»;
+* «хит» is a different word, and it was once used to "fix" the translation.
 
-Усі шари перевірені й виправлені (53 форми «хитів» + 36 форм однини, 30
-файлів: переклади, `uk.ts`, лист, README, docs). Глосарій
-(`content/glossary.uk.yml`) тепер каже «Хіти / Кістки хітів / Тимчасові
-хіти», а тест
-`backend/tests/api/test_translations_spelling.py` ловить регресію: будь-яке
-«хитів»/«хиту» в `content/translations/` валить тести.
+All layers were checked and fixed (53 forms of «хитів» + 36 singular forms, 30 files:
+translations, `uk.ts`, the sheet, README, docs). The glossary
+(`content/glossary.uk.yml`) now says «Хіти / Кістки хітів / Тимчасові хіти», and the test
+`backend/tests/api/test_translations_spelling.py` catches a regression: any «хитів»/«хиту»
+in `content/translations/` fails the tests.
 
-## Тексти заклять, рис і опційних умінь
+## Spell, feat and optional feature texts
 
-| Шар | Текстів | Де лежить | Де видно |
+| Layer | Texts | Where it lives | Where it's shown |
 |---|---|---|---|
-| Закляття | 723 (опис + «На вищих рівнях») | `content/translations/spells/texts-NN.json` | картка закляття на листі, довідник |
-| Риси | 109 | `content/translations/feats/texts-NN.json` | «Уміння → Риси», вибір риси на рівні й у візарді |
-| Опційні вміння | 151 | `content/translations/optional-features/texts-NN.json` | «Вибори класу й рис» |
+| Spells | 723 (description + "At Higher Levels") | `content/translations/spells/texts-NN.json` | the spell card on the sheet, the compendium |
+| Feats | 109 | `content/translations/feats/texts-NN.json` | "Features → Feats", feat choice on level-up and in the wizard |
+| Optional features | 151 | `content/translations/optional-features/texts-NN.json` | "Class and feat choices" |
 
-Ключ — `sha1(оригіналу)[:10]` (`dndsheet.shared.translations`); для заклять —
-опис без рядка «3rd-level evocation», як його віддає API.
+The key is `sha1(original)[:10]` (`dndsheet.shared.translations`); for spells — the
+description without the "3rd-level evocation" line, as the API returns it.
 
 ```
-python scripts/rules_uk_prepare.py [--missing]   # черги var/uk/<шар>/input/texts-NN.json + var/uk/NAMES.md
-# переклад за var/uk/RULES_BRIEF.md (терміни — var/uk/GLOSSARY.md, назви — var/uk/NAMES.md)
-python scripts/rules_uk_check.py [шар NN]       # повнота, кістки, числа, довжина, заборонене з глосарію
-python scripts/translations_normalize.py --write # звести відомі варіанти термінів
+python scripts/rules_uk_prepare.py [--missing]   # queues var/uk/<layer>/input/texts-NN.json + var/uk/NAMES.md
+# translation per var/uk/RULES_BRIEF.md (terms — var/uk/GLOSSARY.md, names — var/uk/NAMES.md)
+python scripts/rules_uk_check.py [layer NN]      # completeness, dice, numbers, length, glossary-forbidden words
+python scripts/translations_normalize.py --write # unify known term variants
 ```
 
-Переклали 10 агентів паралельно; варіанти термінів, яких не було в глосарії, зведено
-скриптом і внесено в глосарій: «показник небезпеки» (challenge rating), «темний зір»
-(darkvision), «істинний зір» (truesight), «сліпе чуття» (blindsight); навичка
-Investigation — «Розслідування», скорочення Мудрості — «МУД». Закляття Darkvision
-перейменовано з «Темнозір» на «Темний зір».
+Ten agents translated in parallel; term variants that weren't in the glossary were
+unified by the script and added to the glossary: «показник небезпеки» (challenge rating),
+«темний зір» (darkvision), «істинний зір» (truesight), «сліпе чуття» (blindsight); the
+Investigation skill is «Розслідування», the Wisdom abbreviation is «МУД». The Darkvision
+spell was renamed from «Темнозір» to «Темний зір».

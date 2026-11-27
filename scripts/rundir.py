@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Запустити команду з указаного каталогу (для хуків pre-commit фронтенду).
+"""Run a command from a given directory (for the frontend pre-commit hooks).
 
-Аргументи після `--` — шляхи від кореня репозиторію; їх переписуємо відносно
-каталогу. За зразком GloPros, але через subprocess: на Windows `os.execvp` не
-знаходить `npx.cmd`, а `shutil.which` враховує PATHEXT.
+Arguments after `--` are paths from the repository root; they're rewritten relative
+to the directory. It uses subprocess: on Windows `os.execvp` doesn't find
+`npx.cmd`, while `shutil.which` respects PATHEXT.
 
     python scripts/rundir.py frontend npx --no-install eslint -- frontend/src/App.tsx
 """
@@ -36,7 +36,7 @@ def main(argv: Sequence[str] = sys.argv[1:]) -> int:
 
     executable = shutil.which(command)
     if executable is None:
-        sys.stderr.write(f"rundir.py: команду «{command}» не знайдено в PATH\n")
+        sys.stderr.write(f"rundir.py: command '{command}' not found in PATH\n")
         return 127
     return subprocess.run([executable, *args], cwd=directory, check=False).returncode
 
