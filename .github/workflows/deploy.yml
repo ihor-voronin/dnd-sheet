@@ -36,7 +36,7 @@ jobs:
       name: production
       url: https://dnd.voronin.app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
@@ -50,9 +50,9 @@ jobs:
           git-crypt unlock "$RUNNER_TEMP/git-crypt.key"
           rm -f "$RUNNER_TEMP/git-crypt.key"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: Build image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           target: runtime
