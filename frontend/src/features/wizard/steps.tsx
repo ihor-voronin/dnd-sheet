@@ -1082,6 +1082,20 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
   const [backgroundLanguages, setBackgroundLanguages] = useState<string[]>(
     picks.filter((pick) => pick.source.kind === "background" && pick.kind === "language").map((pick) => pick.value),
   );
+  // Власна передісторія: текст гравця + стандартні 2 навички / 1 інструмент.
+  const customInitial = initial.custom_background ?? null;
+  const [customName, setCustomName] = useState(customInitial?.name ?? "");
+  const [customDescription, setCustomDescription] = useState(customInitial?.description ?? "");
+  const [customFeatureName, setCustomFeatureName] = useState(customInitial?.feature_name ?? "");
+  const [customFeatureText, setCustomFeatureText] = useState(customInitial?.feature_text ?? "");
+  const [customEquipment, setCustomEquipment] = useState(customInitial?.equipment ?? "");
+  const [customMoney, setCustomMoney] = useState(customInitial?.money_gp ?? 0);
+  const [customSkills, setCustomSkills] = useState<string[]>(
+    picks.filter((pick) => pick.source.kind === "background" && pick.kind === "skill").map((pick) => pick.value),
+  );
+  const [customTools, setCustomTools] = useState<string[]>(
+    picks.filter((pick) => pick.source.kind === "background" && pick.kind === "tool").map((pick) => pick.value),
+  );
 
   const background: BackgroundView | undefined = options.backgrounds.find((item) => item.key === backgroundKey);
   const classSkillsOption = options.class_skills;
@@ -1108,6 +1122,12 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
     }
   }
   if (background) {
+    for (const skill of background.custom ? customSkills : []) {
+      picked.push({ kind: "skill", value: skill, source: { kind: "background", key: background.key } });
+    }
+    for (const tool of background.custom ? customTools : []) {
+      picked.push({ kind: "tool", value: tool, source: { kind: "background", key: background.key } });
+    }
     for (const language of backgroundLanguages) {
       picked.push({ kind: "language", value: language, source: { kind: "background", key: background.key } });
     }
@@ -1261,6 +1281,93 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
         />
       ) : null}
 
+      {background?.custom ? (
+        <section className="wizard-block">
+          <h3>Власна передісторія</h3>
+          <p className="hint">
+            Напишіть свою передісторію: назву, опис, рису й спорядження. Правила
+            вибору стандартні — дві навички, один інструмент, одна мова.
+          </p>
+          <label className="field">
+            <span>Назва *</span>
+            <input
+              value={customName}
+              placeholder="напр. Син гільдії ковалів"
+              onChange={(event) => setCustomName(event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Опис</span>
+            <textarea
+              rows={4}
+              value={customDescription}
+              placeholder="Звідки ви, що вас сформувало…"
+              onChange={(event) => setCustomDescription(event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Назва риси</span>
+            <input
+              value={customFeatureName}
+              placeholder="напр. Звʼязки в гільдії"
+              onChange={(event) => setCustomFeatureName(event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Що дає риса</span>
+            <textarea
+              rows={3}
+              value={customFeatureText}
+              placeholder="напр. Ви можете зупинитися в будь-якій кузні гільдії…"
+              onChange={(event) => setCustomFeatureText(event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Спорядження (рядок, як у книзі)</span>
+            <input
+              value={customEquipment}
+              placeholder="напр. Кинджал, мотузка, 10 зм"
+              onChange={(event) => setCustomEquipment(event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Гроші, зм</span>
+            <input
+              type="number"
+              min={0}
+              value={customMoney}
+              onChange={(event) => setCustomMoney(Math.max(0, Number(event.target.value) || 0))}
+            />
+          </label>
+
+          <h4 className="species-card__h4">
+            Навички передісторії ({customSkills.length} з 2)
+          </h4>
+          <div className="chip-row">
+            {ALL_SKILLS.map((skill) => (
+              <button
+                key={skill}
+                type="button"
+                className={`chip ${customSkills.includes(skill) ? "chip--active" : ""}`}
+                onClick={() => setCustomSkills((current) => toggle(current, skill, 2))}
+              >
+                {skillLabel(skill)}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {background?.custom ? (
+        <LanguagePicker
+          title={`Інструменти передісторії (${customTools.length} з 1)`}
+          values={customTools}
+          onChange={setCustomTools}
+          limit={1}
+          placeholder="напр. thieves' tools"
+        />
+      ) : null}
+
       {background && background.languages_any_standard > 0 ? (
         <LanguagePicker
           title={`Мови передісторії (${backgroundLanguages.length} з ${background.languages_any_standard})`}
@@ -1277,15 +1384,35 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
         <p className="hint hint--warn">Вид вимагає рівно {speciesSkillsOption?.any} навичок.</p>
       ) : null}
 
+      {background?.custom && !customName.trim() ? (
+        <p className="hint hint--warn">Для власної передісторії потрібна назва.</p>
+      ) : null}
+
       <button
         type="button"
         className="button button--primary"
-        disabled={busy || !backgroundKey || !classSkillsReady || !speciesSkillsReady}
+        disabled={
+          busy ||
+          !backgroundKey ||
+          !classSkillsReady ||
+          !speciesSkillsReady ||
+          Boolean(background?.custom && !customName.trim())
+        }
         onClick={() =>
           onSubmit({
             background_key: backgroundKey,
             alignment: alignment || null,
             picks: picked,
+            custom_background: background?.custom
+              ? {
+                  name: customName.trim(),
+                  description: customDescription.trim(),
+                  feature_name: customFeatureName.trim(),
+                  feature_text: customFeatureText.trim(),
+                  equipment: customEquipment.trim(),
+                  money_gp: customMoney,
+                }
+              : null,
           })
         }
       >
@@ -1300,11 +1427,13 @@ function LanguagePicker({
   values,
   onChange,
   limit,
+  placeholder = "напр. elvish",
 }: {
   title: string;
   values: string[];
   onChange: (values: string[]) => void;
   limit: number;
+  placeholder?: string;
 }) {
   const [draft, setDraft] = useState("");
   return (
@@ -1313,7 +1442,7 @@ function LanguagePicker({
       <div className="inline-row">
         <input
           value={draft}
-          placeholder="напр. elvish"
+          placeholder={placeholder}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
             if (event.key !== "Enter") return;

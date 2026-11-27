@@ -643,6 +643,96 @@ def test_equipment_step_keeps_notes_and_weapon_damage(client: TestClient) -> Non
     assert saved["longsword"]["damage"] == "1d8 slashing"
 
 
+def test_custom_background_reaches_sheet(client: TestClient) -> None:
+    """Власна передісторія: гравець пише текст, правила вибору стандартні."""
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    _walk(
+        client,
+        draft_id,
+        [
+            ("species", {"name": "Тест Власної", "species_key": "human"}),
+            ("class", {"class_key": "fighter"}),
+            (
+                "abilities",
+                {
+                    "method": "standard_array",
+                    "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8},
+                },
+            ),
+            (
+                "background",
+                {
+                    "background_key": "custom",
+                    "alignment": "neutral",
+                    "picks": [
+                        {"kind": "skill", "value": "athletics", "source": {"kind": "class", "key": "fighter"}},
+                        {"kind": "skill", "value": "intimidation", "source": {"kind": "class", "key": "fighter"}},
+                        {"kind": "skill", "value": "arcana", "source": {"kind": "background", "key": "custom"}},
+                        {"kind": "skill", "value": "history", "source": {"kind": "background", "key": "custom"}},
+                        {"kind": "tool", "value": "smith's tools", "source": {"kind": "background", "key": "custom"}},
+                        {"kind": "language", "value": "dwarvish", "source": {"kind": "background", "key": "custom"}},
+                    ],
+                    "custom_background": {
+                        "name": "Син гільдії ковалів",
+                        "description": "Ви виросли біля горна й знаєте ціну металу.",
+                        "feature_name": "Звʼязки в гільдії",
+                        "feature_text": "Вас приймуть у будь-якій кузні гільдії.",
+                        "equipment": "Кинджал, мотузка, 10 зм",
+                        "money_gp": 10,
+                    },
+                },
+            ),
+            ("equipment", {"items": [], "money": {"gp": 10}}),
+        ],
+    )
+    finish = client.post(f"/api/v1/characters/wizard/{draft_id}/finish")
+    assert finish.status_code == 200, finish.text
+    sheet = finish.json()["sheet"]
+    details = sheet["background_details"]
+    assert details["name_en"] == "Син гільдії ковалів"
+    assert details["description"].startswith("Ви виросли біля горна")
+    assert details["feature_en"] == "Звʼязки в гільдії"
+    assert details["feature_text"] == "Вас приймуть у будь-якій кузні гільдії."
+    assert "smith's tools" in details["tools"]
+    assert "dwarvish" in details["languages"]
+    assert "arcana" in details["skills"]
+    assert details["equipment"].startswith("Кинджал")
+
+
+def test_custom_background_requires_name(client: TestClient) -> None:
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    _walk(
+        client,
+        draft_id,
+        [
+            ("species", {"name": "Без Назви", "species_key": "human"}),
+            ("class", {"class_key": "fighter"}),
+            (
+                "abilities",
+                {
+                    "method": "standard_array",
+                    "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8},
+                },
+            ),
+        ],
+    )
+    response = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/background",
+        json={
+            "background_key": "custom",
+            "alignment": None,
+            "picks": [
+                {"kind": "skill", "value": "athletics", "source": {"kind": "class", "key": "fighter"}},
+                {"kind": "skill", "value": "intimidation", "source": {"kind": "class", "key": "fighter"}},
+            ],
+            "custom_background": {"name": "  "},
+        },
+    )
+    assert response.status_code == 422, response.text
+
+
 def test_class_features_endpoint_explains_every_feature(client: TestClient) -> None:
     """«Усі вміння класу за рівнями» — з перекладом і текстом правила.
 

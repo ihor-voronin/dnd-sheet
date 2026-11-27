@@ -24,7 +24,7 @@ from dndsheet.characters.domain.wizard import (
 from dndsheet.characters.api.species_traits import species_details
 from dndsheet.characters.api.features import class_details
 from dndsheet.characters.api import classes_uk, subclasses_uk
-from dndsheet.characters.api.background_info import background_details
+from dndsheet.characters.api.background_info import background_details, parse_equipment
 from dndsheet.compendium.api.serializers import (
     background_mechanics_full,
     class_mechanics_full,
@@ -252,6 +252,11 @@ def _background_options(
     store = cache if cache is not None else {}
     backgrounds: list[dict[str, Any]] = []
     for item in service.backgrounds():
+        # «Custom Background» з книги PHB — це лише заголовок розділу «своя
+        # передісторія»: правил він не дає (риса «Choose a Feature»). Його
+        # замінює наша форма нижче, інакше в списку два однакові пункти.
+        if item.key.strip().casefold() == "custom background":
+            continue
         payload = background_mechanics_full(item)
         details = background_details(service, item.name_en, item.feature_en, store)
         payload["description"] = details["description"]
@@ -263,6 +268,29 @@ def _background_options(
         payload["feature_uk"] = details.get("feature_uk")
         payload["feature_text_uk"] = details.get("feature_text_uk")
         backgrounds.append(payload)
+    # «Власна передісторія»: гравець пише назву, опис, рису й спорядження
+    # сам, а правила вибору — стандартні (2 навички / 1 інструмент / 1 мова).
+    backgrounds.append(
+        {
+            "key": "custom",
+            "name_en": "Custom Background",
+            "source_id": "custom",
+            "skill_proficiencies": [],
+            "tool_proficiencies": [],
+            "skill_any": 2,
+            "tools_any": 1,
+            "languages_any_standard": 1,
+            "feature_en": None,
+            "description": "",
+            "feature_text": "",
+            "equipment": "",
+            "money": {},
+            "description_uk": None,
+            "feature_uk": None,
+            "feature_text_uk": None,
+            "custom": True,
+        }
+    )
     options: dict[str, Any] = {
         "backgrounds": backgrounds,
         "alignments": list(ALIGNMENTS),
@@ -305,17 +333,30 @@ def _equipment_options(
     }
     background = draft.background
     if background is not None:
-        # Спорядження передісторії додається одразу; де книга дає вибір
-        # («bone dice or deck of cards») — вибір показує екран.
-        details = background_details(
-            service, background.name_en, background.feature_en, store
-        )
-        options["background"] = {
-            "key": background.key,
-            "name_en": background.name_en,
-            "equipment": details["equipment"],
-            "money": details["money"],
-        }
+        if draft.custom_background:
+            # Власна передісторія: рядок спорядження написав гравець —
+            # розбираємо його тим самим парсером, що й рядки з книг.
+            custom = draft.custom_background
+            rows, parsed_money = parse_equipment(str(custom.get("equipment") or ""))
+            money = parsed_money or {"gp": int(custom.get("money_gp") or 0)}
+            options["background"] = {
+                "key": background.key,
+                "name_en": str(custom.get("name") or background.name_en),
+                "equipment": rows,
+                "money": money,
+            }
+        else:
+            # Спорядження передісторії додається одразу; де книга дає вибір
+            # («bone dice or deck of cards») — вибір показує екран.
+            details = background_details(
+                service, background.name_en, background.feature_en, store
+            )
+            options["background"] = {
+                "key": background.key,
+                "name_en": background.name_en,
+                "equipment": details["equipment"],
+                "money": details["money"],
+            }
     if draft.class_key:
         definition = draft.class_definition
         options["class"] = {

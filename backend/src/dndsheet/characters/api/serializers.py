@@ -359,6 +359,7 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
     if step is WizardStep.BACKGROUND:
         return {
             "background_key": draft.background_key,
+            "custom_background": draft.custom_background,
             "alignment": draft.alignment,
             "picks": [
                 {

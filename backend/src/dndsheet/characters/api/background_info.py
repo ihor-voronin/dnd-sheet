@@ -46,6 +46,8 @@ def enrich_background(
 
 
 def _details(service: CompendiumService, character: Character) -> dict[str, Any]:
+    if character.custom_background:
+        return _custom_details(character, character.custom_background)
     background = character.background
     entry = _entry(service, background.name_en)
     text = entry.text_en or "" if entry is not None else ""
@@ -92,6 +94,61 @@ def _details(service: CompendiumService, character: Character) -> dict[str, Any]
             "languages_any": remaining(
                 ProficiencyKind.LANGUAGE, background.languages_any_standard
             ),
+        }
+    )
+
+
+def _custom_details(
+    character: Character, custom: dict[str, Any]
+) -> dict[str, Any]:
+    """Власна передісторія: текст гравця, володіння — як обрав."""
+    background = character.background
+    equipment = str(custom.get("equipment") or "")
+    rows, money = parse_equipment(equipment)
+    if not money and custom.get("money_gp"):
+        money = {"gp": int(custom["money_gp"])}
+    items = character.all_proficiencies().items
+    mine = [
+        item
+        for item in items
+        if item.source.kind.value == "background"
+        and item.source.key == (background.key if background else "custom")
+    ]
+
+    def values(kind: ProficiencyKind) -> list[str]:
+        return sorted({str(item.value) for item in mine if item.kind is kind})
+
+    chosen = [
+        item
+        for item in character.chosen.items
+        if item.source.kind.value == "background"
+        and item.source.key == (background.key if background else "custom")
+    ]
+
+    def remaining(kind: ProficiencyKind, total: int) -> int:
+        picked = sum(1 for item in chosen if item.kind is kind)
+        return max(0, total - picked)
+
+    skill_any = background.skill_any if background else 2
+    tools_any = background.tools_any if background else 1
+    languages_any = background.languages_any_standard if background else 1
+    return backgrounds_uk.enrich_sheet(
+        {
+            "key": background.key if background else "custom",
+            "name_en": str(custom.get("name") or "Власна передісторія"),
+            "source_id": "custom",
+            "feature_en": custom.get("feature_name") or None,
+            "feature_text": str(custom.get("feature_text") or ""),
+            "description": str(custom.get("description") or ""),
+            "equipment": equipment,
+            "equipment_rows": rows,
+            "money": money,
+            "skills": values(ProficiencyKind.SKILL),
+            "tools": values(ProficiencyKind.TOOL),
+            "languages": values(ProficiencyKind.LANGUAGE),
+            "skill_any": remaining(ProficiencyKind.SKILL, skill_any),
+            "tools_any": remaining(ProficiencyKind.TOOL, tools_any),
+            "languages_any": remaining(ProficiencyKind.LANGUAGE, languages_any),
         }
     )
 

@@ -70,6 +70,9 @@ class Character:
     species_key: str | None = None
     subspecies_key: str | None = None
     background_key: str | None = None
+    #: Власна передісторія: текст, який гравець написав сам (назва, опис,
+    #: риса, спорядження). Правила вибору при цьому стандартні.
+    custom_background: dict[str, Any] | None = None
     alignment: str | None = None
     #: Володіння, які гравець обрав або додав сам. Похідні від класу, виду й
     #: передісторії не дублюються тут — їх збирає `all_proficiencies()`.
@@ -377,6 +380,21 @@ class Character:
         if background_key and background is None:
             raise NotFoundError(f"немає правил передісторії {background_key!r}")
         self.background_key = background.key if background else None
+        if self.background_key != "custom":
+            self.custom_background = None
+        self.bump_version()
+
+    def set_custom_background(self, data: Mapping[str, Any]) -> None:
+        """Власна передісторія: текст гравця + стандартні правила вибору."""
+        self.background_key = "custom"
+        self.custom_background = {
+            "name": str(data.get("name") or "").strip() or "Власна передісторія",
+            "description": str(data.get("description") or "").strip(),
+            "feature_name": str(data.get("feature_name") or "").strip(),
+            "feature_text": str(data.get("feature_text") or "").strip(),
+            "equipment": str(data.get("equipment") or "").strip(),
+            "money_gp": max(0, int(data.get("money_gp") or 0)),
+        }
         self.bump_version()
 
     def choose_ability_bonuses(self, abilities: Iterable[Ability]) -> None:

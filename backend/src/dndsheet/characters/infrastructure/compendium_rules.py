@@ -20,6 +20,10 @@ from dndsheet.shared.rules import (
     SpeciesMechanics,
 )
 
+#: Ключ власної передісторії: її текст гравець пише сам, правила вибору —
+#: стандартні (2 навички, 1 інструмент, 1 мова).
+CUSTOM_BACKGROUND_KEY = "custom"
+
 
 @dataclass(slots=True)
 class CompendiumRulesSource:
@@ -35,6 +39,19 @@ class CompendiumRulesSource:
         return self._lookup("species", key, self.service.species_mechanics)
 
     def background_mechanics(self, key: str) -> BackgroundMechanics | None:
+        cleaned = (key or "").strip().casefold()
+        if cleaned == CUSTOM_BACKGROUND_KEY:
+            # «Власна передісторія»: в корпусі її немає, але правила вибору
+            # (2 навички, 1 інструмент, 1 мова) задає сама гра — ті самі
+            # числа, що й у PHB для власної передісторії.
+            return BackgroundMechanics(
+                key=CUSTOM_BACKGROUND_KEY,
+                name_en="Custom Background",
+                source_id="custom",
+                skill_any=2,
+                tools_any=1,
+                languages_any_standard=1,
+            )
         return self._lookup("background", key, self.service.background_mechanics)
 
     def _lookup(self, kind: str, key: str, resolve) -> Any:  # noqa: ANN001

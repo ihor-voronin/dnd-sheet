@@ -114,6 +114,7 @@ class WizardService:
                 background_key=_text(body, "background_key"),
                 picks=_picks(body.get("picks")),
                 alignment=_optional_text(body, "alignment"),
+                custom=body.get("custom_background") if isinstance(body.get("custom_background"), dict) else None,
             )
         elif step is WizardStep.EQUIPMENT:
             draft.apply_equipment(

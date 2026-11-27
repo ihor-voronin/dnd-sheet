@@ -134,6 +134,8 @@ export interface BackgroundView {
   tools_any: number;
   languages_any_standard: number;
   feature_en: string | null;
+  /** Власна передісторія: текст пише гравець, правила вибору стандартні. */
+  custom?: boolean;
   /** Опис і текст риси з книги. */
   description?: string;
   feature_text?: string;
@@ -384,8 +386,18 @@ export interface AbilitiesAnswers {
   rolls: number[];
 }
 
+export interface CustomBackgroundPayload {
+  name: string;
+  description: string;
+  feature_name: string;
+  feature_text: string;
+  equipment: string;
+  money_gp: number;
+}
+
 export interface BackgroundAnswers {
   background_key: string | null;
+  custom_background?: CustomBackgroundPayload | null;
   alignment: string | null;
   picks: PickPayload[];
 }

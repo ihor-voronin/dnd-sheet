@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
-from typing import Iterable, Mapping
+from typing import Any, Iterable, Mapping
 
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.class_level import CharacterClass
@@ -38,6 +38,7 @@ from dndsheet.characters.domain.proficiencies import (
     SourceKind,
 )
 from dndsheet.characters.domain.spells import KnownSpell
+from dndsheet.shared.kernel import Skill
 from dndsheet.characters.domain.vitals import HitPointState
 from dndsheet.shared.errors import NotFoundError, ValidationError
 from dndsheet.shared.kernel import Ability, AbilityScore, Money
@@ -117,6 +118,32 @@ class StepStatus:
     optional: bool
 
 
+#: Ключ «власної передісторії»: правила вибору стандартні, текст — гравця.
+CUSTOM_BACKGROUND_KEY = "custom"
+CUSTOM_BACKGROUND_NAME = "Власна передісторія"
+
+
+def _custom_background(raw: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Нормалізувати текст власної передісторії з форми."""
+    data = dict(raw or {})
+    name = str(data.get("name") or "").strip()
+    if not name:
+        raise ValidationError("вкажіть назву власної передісторії")
+    if len(name) > 80:
+        raise ValidationError("назва власної передісторії — до 80 символів")
+    try:
+        money = max(0, int(data.get("money_gp") or 0))
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("гроші власної передісторії — ціле число") from exc
+    return {
+        "name": name,
+        "description": str(data.get("description") or "").strip(),
+        "feature_name": str(data.get("feature_name") or "").strip(),
+        "feature_text": str(data.get("feature_text") or "").strip(),
+        "equipment": str(data.get("equipment") or "").strip(),
+        "money_gp": money,
+    }
+
 @dataclass(slots=True)
 class Draft:
     """Відповіді кроків одного створення персонажа.
@@ -140,6 +167,10 @@ class Draft:
     ability_scores: dict[Ability, int] = field(default_factory=dict)
     roll_set: tuple[int, ...] = ()
     background_key: str | None = None
+    #: Власна передісторія: назва, опис, риса й спорядження, які гравець
+    #: написав сам. Правила вибору (2 навички / 1 інструмент / 1 мова) —
+    #: стандартні, їх дає `RulesSource` для ключа `custom`.
+    custom_background: dict[str, Any] | None = None
     alignment: str | None = None
     picks: tuple[Proficiency, ...] = ()
     items: tuple[InventoryItem, ...] = ()
@@ -312,6 +343,7 @@ class Draft:
         background_key: str,
         picks: Iterable[Proficiency] = (),
         alignment: str | None = None,
+        custom: Mapping[str, Any] | None = None,
     ) -> None:
         background = self.rules.background_mechanics(background_key)
         if background is None:
@@ -320,6 +352,9 @@ class Draft:
         candidate.background_key = background.key
         candidate.alignment = alignment.strip() if alignment else None
         candidate.picks = tuple(picks)
+        candidate.custom_background = (
+            _custom_background(custom) if background.key == CUSTOM_BACKGROUND_KEY else None
+        )
         candidate._validate_background()
         candidate.revision += 1
         self._commit(candidate)
@@ -432,6 +467,7 @@ class Draft:
             species_key=self.species_key,
             subspecies_key=self.subspecies_key,
             background_key=self.background_key,
+            custom_background=dict(self.custom_background) if self.custom_background else None,
             alignment=self.alignment,
             chosen=Proficiencies(items=self.picks),
             inventory=Inventory(items=self.items, money=self.money),
@@ -582,6 +618,17 @@ class Draft:
             raise NotFoundError(f"немає правил передісторії {self.background_key!r}")
         if self.class_key is None:
             raise ValidationError("спершу оберіть клас")
+        if self.background_key == CUSTOM_BACKGROUND_KEY:
+            if not self.custom_background:
+                raise ValidationError("власна передісторія без назви й опису")
+            for pick in self.picks:
+                if pick.kind is ProficiencyKind.SKILL:
+                    try:
+                        Skill(pick.value.strip().casefold().replace(" ", "_"))
+                    except ValueError as exc:
+                        raise ValidationError(f"невідома навичка {pick.value!r}") from exc
+                elif not pick.value.strip():
+                    raise ValidationError("володіння без значення")
         accepted = Proficiencies()
         for pick in self.picks:
             validate_pick(self.rules, pick, existing=accepted)
