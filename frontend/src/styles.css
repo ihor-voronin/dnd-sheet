@@ -2063,3 +2063,65 @@ input[type="radio"] {
   color: var(--graphite);
   font-size: var(--t-sm);
 }
+
+/* Інвентар на кроці «Спорядження»: предмет — рамка, «Що це дає» — всередині. */
+.wizard-inventory {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-inv {
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.wizard-inv__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wizard-inv__name {
+  font-weight: 700;
+}
+
+.wizard-inv__qty {
+  color: var(--graphite);
+  font-weight: 400;
+}
+
+.wizard-inv__remove {
+  flex: none;
+  font-size: var(--t-sm);
+}
+
+.wizard-inv__meta {
+  margin-top: 2px;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.wizard-inv__tag {
+  margin-left: 8px;
+}
+
+.wizard-inv .item-facts {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line-soft);
+}
+
+.wizard-inv .item-facts > summary {
+  font-size: var(--t-sm);
+}
+
+#my-characters {
+  scroll-margin-top: 12px;
+}

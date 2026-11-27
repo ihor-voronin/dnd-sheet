@@ -95,6 +95,15 @@ function useRoute(): [Route, (next: Route) => void] {
   return [route, navigate];
 }
 
+/** Прокрутити до елемента, щойно сторінка його намалює (після переходу між сторінками). */
+function scrollToWhenReady(id: string, attempt = 0) {
+  window.setTimeout(() => {
+    const target = document.getElementById(id);
+    if (target) target.scrollIntoView({ block: "start" });
+    else if (attempt < 20) scrollToWhenReady(id, attempt + 1);
+  }, 60);
+}
+
 function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
   const { data, isPending, error } = useQuery({
     queryKey: ["characters"],
@@ -102,7 +111,7 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
   });
 
   return (
-    <section className="saved">
+    <section className="saved" id="my-characters">
       <div className="saved-head">
         <h2>Мої персонажі</h2>
         <button type="button" className="button button--primary" onClick={() => navigate({ name: "create" })}>
@@ -348,7 +357,12 @@ function Shell() {
             type="button"
             className="link-button"
             aria-current={route.name === "home" ? "page" : undefined}
-            onClick={() => navigate({ name: "home" })}
+            onClick={() => {
+              navigate({ name: "home" });
+              // «Мої персонажі» — це список, а не верх головної: на телефоні він
+              // під обкладинкою й прикладами листа, тож ведемо одразу до нього.
+              if (user) scrollToWhenReady("my-characters");
+            }}
           >
             {user ? "Мої персонажі" : "Головна"}
           </button>

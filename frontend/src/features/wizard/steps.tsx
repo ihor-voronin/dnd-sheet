@@ -2605,18 +2605,30 @@ export function EquipmentStep({
       {items.length ? (
         <section className="wizard-block">
           <h3>Інвентар — {items.length}</h3>
-          <ul className="plain-list">
+          {/* Кожен предмет — окрема рамка: «Що це дає» лежить усередині рамки
+              свого предмета, а не висить між двома рядками. */}
+          <ul className="wizard-inventory">
             {items.map((item, index) => (
-              <li key={`${item.name_en}-${index}`}>
-                {backgroundNames[item.name_en] ?? itemLabel(item.name_en)}
-                {(item.quantity ?? 1) > 1 ? ` × ${item.quantity}` : ""} ·{" "}
-                {ITEM_KIND_LABELS[item.kind] ?? item.kind}
-                {item.armor_base ? ` · КЗ ${item.armor_base}${item.dex_cap !== null && item.dex_cap !== undefined ? ` (СПР ≤ ${item.dex_cap})` : ""}` : ""}
-                {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}
-                {item.equipped ? " · споряджено" : ""}{" "}
-                <button type="button" className="link-button" onClick={() => setItems(items.filter((_, position) => position !== index))}>
-                  прибрати
-                </button>
+              <li key={`${item.name_en}-${index}`} className="wizard-inv">
+                <div className="wizard-inv__head">
+                  <span className="wizard-inv__name">
+                    {backgroundNames[item.name_en] ?? itemLabel(item.name_en)}
+                    {(item.quantity ?? 1) > 1 ? <span className="wizard-inv__qty"> × {item.quantity}</span> : null}
+                  </span>
+                  <button
+                    type="button"
+                    className="link-button wizard-inv__remove"
+                    onClick={() => setItems(items.filter((_, position) => position !== index))}
+                  >
+                    прибрати
+                  </button>
+                </div>
+                <div className="wizard-inv__meta">
+                  {ITEM_KIND_LABELS[item.kind] ?? item.kind}
+                  {item.armor_base ? ` · КЗ ${item.armor_base}${item.dex_cap !== null && item.dex_cap !== undefined ? ` (СПР ≤ ${item.dex_cap})` : ""}` : ""}
+                  {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}
+                  {item.equipped ? <span className="tag wizard-inv__tag">споряджено</span> : null}
+                </div>
                 <ItemFacts
                   nameEn={item.name_en}
                   entryId={item.entry_id ?? null}

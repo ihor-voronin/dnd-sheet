@@ -1219,12 +1219,7 @@ export function InventoryPanel({
                       <p className="hint">Шукаємо опис…</p>
                     ) : detail.text ? (
                       <RuleText text={detail.showEnglish && detail.english ? detail.english : detail.text} />
-                    ) : (
-                      <p className="hint">
-                        Опису в книзі немає — лише цифри вище. Свої нотатки можна
-                        дописати кнопкою ✎.
-                      </p>
-                    )}
+                    ) : null}
                     {detail.english && detail.translated ? (
                       <button
                         type="button"
@@ -1370,6 +1365,11 @@ export function ItemFacts({
     return own;
   })();
 
+  // Без опису й без чисел, яких немає в самому рядку (тип і вага там уже є), —
+  // «Що це дає» нічого не дає: не показуємо його зовсім.
+  const telling = stats.filter(([label]) => label !== "Тип" && label !== "Вага");
+  if (!loading && !translated && !english && !telling.length) return null;
+
   return (
     <details className="reckoning item-facts" open={open}>
       <summary>Що це дає</summary>
@@ -1386,12 +1386,6 @@ export function ItemFacts({
       ) : null}
       {translated || english ? (
         <RuleText text={showEnglish && english ? english : translated || english} />
-      ) : null}
-      {!loading && !translated && !english ? (
-        <p className="hint">
-          Опису в книзі немає — лише числа вище. Свої нотатки можна дописати на
-          екрані персонажа.
-        </p>
       ) : null}
       {english && translated ? (
         <button
