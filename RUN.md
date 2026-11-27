@@ -198,6 +198,10 @@ PostgreSQL у compose є, але застосунок його поки не в�
    DNDSHEET_OWNER_TELEGRAM_ID=ваш_числовий_id   # необовʼязково
    ```
 
+   Для продакшну ці значення зберігаються в репозиторії зашифрованими —
+   `deploy/secrets/prod.env` (git-crypt + GPG). Як розблокувати й додати
+   людину чи сервер — [`deploy/README.md`](deploy/README.md).
+
 4. `docker compose up -d --build`. На головній сторінці зʼявиться кнопка «Увійти через Telegram».
 
 Сервер перевіряє підпис Telegram (HMAC від токена бота) і свіжість входу (до доби), потім
