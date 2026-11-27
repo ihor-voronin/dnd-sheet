@@ -795,7 +795,7 @@ export function InventoryPanel({
 
   return (
     <>
-      <h3 className="ddb-work__title">
+      <h3 className="sheet-work__title">
         <span>Інвентар</span>
         <span className="short">
           настроювання {attunedCount} з {MAX_ATTUNED} · вага {carrying.weight} з{" "}

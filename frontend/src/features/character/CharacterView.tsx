@@ -50,7 +50,7 @@ import {
   SavePills,
   SkillTable,
   initials,
-} from "./ddb";
+} from "./sheetParts";
 import { EditableNumber, NumberField, Pips } from "./editing";
 import { HitDiceBlock, HitPointsBlock } from "./hp";
 import { InventoryPanel } from "./inventory";
@@ -145,7 +145,7 @@ function describeRest(report: RestReport): string {
     parts.push(`відновлено: ${report.features_reset.join(", ")}`);
   }
   if (!parts.length) parts.push("стан уже був повний");
-  return `${report.kind === "long" ? "Довгий" : "Короткий"} відпочинок · ${parts.join(" · ")}`;
+  return `${report.kind === "long" ? "Тривалий" : "Короткий"} відпочинок · ${parts.join(" · ")}`;
 }
 
 export function CharacterView({
@@ -405,7 +405,7 @@ export function CharacterView({
     if (tab === "spells") {
       return (
         <>
-          <h3 className="ddb-work__title">
+          <h3 className="sheet-work__title">
             <span>Чарування</span>
           </h3>
           {sheet.armor_untrained?.length ? (
@@ -433,7 +433,7 @@ export function CharacterView({
             busy={busy}
             onSave={savePrepared}
           />
-          <h3 className="ddb-work__title">
+          <h3 className="sheet-work__title">
             <span>Відомі закляття</span>
             <span className="short">натисніть, щоб читати</span>
           </h3>
@@ -461,7 +461,7 @@ export function CharacterView({
         <>
           {sheet.feature_resources.length ? (
             <>
-              <h3 className="ddb-work__title">
+              <h3 className="sheet-work__title">
                 <span>Ресурси класу</span>
                 <span className="short">витрачено</span>
               </h3>
@@ -474,7 +474,7 @@ export function CharacterView({
           ) : null}
           {sheet.class_choices?.length || sheet.species_feat || sheet.species_source ? (
             <>
-              <h3 className="ddb-work__title">
+              <h3 className="sheet-work__title">
                 <span>Вибори класу й рис</span>
               </h3>
               {sheet.species_source ? (
@@ -502,20 +502,20 @@ export function CharacterView({
               />
             </>
           ) : null}
-          <h3 className="ddb-work__title">
+          <h3 className="sheet-work__title">
             <span>Уміння</span>
             <span className="short">натисніть, щоб читати</span>
           </h3>
           <FeaturesList features={sheet.features} />
           {sheet.feat_details?.length ? (
             <>
-              <h3 className="ddb-work__title">
+              <h3 className="sheet-work__title">
                 <span>Риси</span>
               </h3>
               <FeatsList feats={sheet.feat_details} />
             </>
           ) : null}
-          <h3 className="ddb-work__title">
+          <h3 className="sheet-work__title">
             <span>Володіння з джерелами</span>
           </h3>
           <ProficienciesList proficiencies={sheet.proficiencies} />
@@ -548,15 +548,15 @@ export function CharacterView({
 
   return (
     <article className="sheet character-view">
-      <header className="ddb-top">
-        <div className="ddb-identity">
-          <span className="ddb-portrait" aria-hidden="true">
+      <header className="sheet-top">
+        <div className="sheet-identity">
+          <span className="sheet-portrait" aria-hidden="true">
             {initials(character.name)}
           </span>
           <div>
-            <p className="ddb-kicker">Лист персонажа · {originText}</p>
-            <h1 className="ddb-name">{character.name}</h1>
-            <p className="ddb-sub">
+            <p className="sheet-kicker">Лист персонажа · {originText}</p>
+            <h1 className="sheet-name">{character.name}</h1>
+            <p className="sheet-sub">
               <span>{speciesText}</span>
               <span>·</span>
               <span>{classText}</span>
@@ -564,18 +564,18 @@ export function CharacterView({
             </p>
           </div>
         </div>
-        <div className="ddb-top__actions">
+        <div className="sheet-top__actions">
           <a
-            className="ddb-btn ddb-btn--link"
+            className="sheet-btn sheet-btn--link"
             href={`#/character/${encodeURIComponent(id)}/level-up`}
             title="Узяти наступний рівень: клас, хіти, підклас, характеристики"
           >
             +1 рівень
           </a>
-          <div className="ddb-rest">
+          <div className="sheet-rest">
             <button
               type="button"
-              className="ddb-btn"
+              className="sheet-btn"
               disabled={busy}
               onClick={() => void rest("short")}
             >
@@ -583,20 +583,20 @@ export function CharacterView({
             </button>
             <button
               type="button"
-              className="ddb-btn ddb-btn--primary"
+              className="sheet-btn sheet-btn--primary"
               disabled={busy}
               onClick={() => void rest("long")}
             >
               Тривалий відпочинок
             </button>
           </div>
-          <div className="ddb-export">
-            <span className="ddb-export__label">Експорт</span>
-            <a className="ddb-btn ddb-btn--link" href={exportUrl(id, "markdown")} download>
+          <div className="sheet-export">
+            <span className="sheet-export__label">Експорт</span>
+            <a className="sheet-btn sheet-btn--link" href={exportUrl(id, "markdown")} download>
               Markdown
             </a>
             <a
-              className="ddb-btn ddb-btn--link"
+              className="sheet-btn sheet-btn--link"
               href={`${exportUrl(id, "markdown")}?originals=false`}
               download
             >
@@ -604,7 +604,7 @@ export function CharacterView({
             </a>
             {pdfReady ? (
               <a
-                className="ddb-btn ddb-btn--link ddb-btn--primary"
+                className="sheet-btn sheet-btn--link sheet-btn--primary"
                 href={exportUrl(id, "pdf")}
                 download
               >
@@ -620,7 +620,7 @@ export function CharacterView({
       </header>
 
       {waiverText ? (
-        <p className="ddb-waiver-note" role="note">
+        <p className="sheet-waiver-note" role="note">
           <span>
             Вимоги мультикласу проігноровано: {waiverText}. Це правило дому — PHB вимагає
             13 у ключовій характеристиці класу.
@@ -629,11 +629,11 @@ export function CharacterView({
       ) : null}
 
       {restNote ? (
-        <p className="ddb-rest-note" role="status">
+        <p className="sheet-rest-note" role="status">
           <span>{restNote}</span>
           <button
             type="button"
-            className="ddb-rest-note__close"
+            className="sheet-rest-note__close"
             onClick={() => setRestNote(null)}
             aria-label="Закрити повідомлення про відпочинок"
           >
@@ -642,8 +642,8 @@ export function CharacterView({
         </p>
       ) : null}
 
-      <div className="ddb-strip">
-        <ul className="ddb-abilities">
+      <div className="sheet-strip">
+        <ul className="sheet-abilities">
           {ABILITIES.map((ability) => (
             <AbilityHex key={ability} code={ability} ability={sheet.abilities[ability]} />
           ))}
@@ -665,46 +665,46 @@ export function CharacterView({
         />
       </div>
 
-      {error ? <p className="status status--error ddb-status">{error}</p> : null}
-      {busy ? <p className="meta ddb-status">Зберігаємо…</p> : null}
+      {error ? <p className="status status--error sheet-status">{error}</p> : null}
+      {busy ? <p className="meta sheet-status">Зберігаємо…</p> : null}
 
-      <div className="ddb-grid">
-        <div className="ddb-col">
-          <section className="ddb-card">
-            <h2 className="ddb-card__title">
+      <div className="sheet-grid">
+        <div className="sheet-col">
+          <section className="sheet-card">
+            <h2 className="sheet-card__title">
               <span>Рятівні кидки</span>
             </h2>
             <SavePills saves={sheet.saving_throws} render={overrideNumber} />
           </section>
 
-          <section className="ddb-card">
-            <h2 className="ddb-card__title">
+          <section className="sheet-card">
+            <h2 className="sheet-card__title">
               <span>Пасивні показники</span>
             </h2>
             <PassiveList items={passives} />
           </section>
 
-          <section className="ddb-card">
-            <h2 className="ddb-card__title">
+          <section className="sheet-card">
+            <h2 className="sheet-card__title">
               <span>Чуття та опір</span>
             </h2>
-            <ul className="ddb-rows">
+            <ul className="sheet-rows">
               <li>
-                <span className="ddb-rows__label">Темний зір</span>
+                <span className="sheet-rows__label">Темний зір</span>
                 <span>{sheet.darkvision ? `${sheet.darkvision} фт` : "—"}</span>
               </li>
               {sheet.blindsight ? (
                 <li>
-                  <span className="ddb-rows__label">Сліпе чуття</span>
+                  <span className="sheet-rows__label">Сліпе чуття</span>
                   <span>{sheet.blindsight} фт</span>
                 </li>
               ) : null}
               <li>
-                <span className="ddb-rows__label">Швидкість</span>
+                <span className="sheet-rows__label">Швидкість</span>
                 <span>{sheet.speed} фт</span>
               </li>
               <li>
-                <span className="ddb-rows__label">Опір</span>
+                <span className="sheet-rows__label">Опір</span>
                 <span>{sheet.resistances.length ? sheet.resistances.map(damageTypeLabel).join(", ") : "—"}</span>
               </li>
               {(sheet.resistance_notes ?? []).map((note) => (
@@ -715,15 +715,15 @@ export function CharacterView({
             </ul>
           </section>
 
-          <section className="ddb-card">
-            <h2 className="ddb-card__title">
+          <section className="sheet-card">
+            <h2 className="sheet-card__title">
               <span>Володіння</span>
             </h2>
             <ProficiencyGroups proficiencies={sheet.proficiencies} />
           </section>
         </div>
 
-        <div className="ddb-col ddb-col--mid">
+        <div className="sheet-col sheet-col--mid">
           {sheet.warnings?.length ? (
             <div className="sheet-warnings" role="status">
               {sheet.warnings.map((warning) => (
@@ -733,7 +733,7 @@ export function CharacterView({
               ))}
             </div>
           ) : null}
-          <div className="ddb-hexrow">
+          <div className="sheet-hexrow">
             <HexStat
               label="Ініціатива"
               value={overrideNumber("initiative", sheet.initiative, "Ініціатива")}
@@ -749,8 +749,8 @@ export function CharacterView({
             <p className="hint">{sheet.armor_class.notes.join("; ")}</p>
           ) : null}
 
-          <section className="ddb-card">
-            <h2 className="ddb-card__title">
+          <section className="sheet-card">
+            <h2 className="sheet-card__title">
               <span>Навички</span>
             </h2>
             <SkillTable skills={sheet.skills} render={overrideNumber} />
@@ -799,9 +799,9 @@ export function CharacterView({
           </section>
         </div>
 
-        <div className="ddb-col ddb-col--work">
-          <section className="ddb-card">
-            <h2 className="ddb-card__title">
+        <div className="sheet-col sheet-col--work">
+          <section className="sheet-card">
+            <h2 className="sheet-card__title">
               <span>Стан</span>
             </h2>
             <div className="state-row">
@@ -862,10 +862,10 @@ export function CharacterView({
 
           {/* Кістки хітів не є ключовим блоком (хіти — так), тому згорнуті:
               розгортає гравець, коли справді витрачає кістку. */}
-          <details className="ddb-card ddb-card--collapsible">
-            <summary className="ddb-card__title">
+          <details className="sheet-card sheet-card--collapsible">
+            <summary className="sheet-card__title">
               <span>
-                <span className="ddb-caret" aria-hidden>
+                <span className="sheet-caret" aria-hidden>
                   ▸
                 </span>{" "}
                 Кістки хітів
@@ -881,20 +881,21 @@ export function CharacterView({
             />
           </details>
 
-          <div className="ddb-work">
-            <nav className="ddb-tabs" aria-label="Розділи листа">
+          <div className="sheet-work">
+            <nav className="sheet-tabs" aria-label="Розділи листа">
               {TABS.map((item) => (
                 <button
                   key={item.id}
                   type="button"
-                  className={`ddb-tab ${tab === item.id ? "is-active" : ""}`}
+                  className={`sheet-tab ${tab === item.id ? "is-active" : ""}`}
+                  aria-current={tab === item.id ? "page" : undefined}
                   onClick={() => setTab(item.id)}
                 >
                   {item.label}
                 </button>
               ))}
             </nav>
-            <div className="ddb-work__body">{workTab}</div>
+            <div className="sheet-work__body">{workTab}</div>
           </div>
         </div>
       </div>

@@ -21,7 +21,9 @@ import {
   fetchFeats,
   fetchLevelUp,
   levelUpCharacter,
+  prepareCharacterSpells,
 } from "../../api";
+import type { SheetMutation } from "../../api";
 import type { FeatEntry } from "../wizard/types";
 import { ActiveGloss, GlossProvider, Term } from "../../components/Term";
 import {
@@ -39,6 +41,7 @@ import {
 import type { LevelUpPlan, LevelUpReport, LevelUpView } from "../wizard/types";
 import { SubclassBrief } from "../wizard/SubclassBrief";
 import { RuleText } from "./panels";
+import { SpellsPreparePanel } from "./spells";
 import { featLabel, featureLabel, itemLabel, spellLabel, termLabel, ukSubclass, withEnglish } from "./uk";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"] as const;
@@ -110,6 +113,8 @@ export function LevelUpWizard({
   const [replaceSpell, setReplaceSpell] = useState<{ from: string; to: string }>({ from: "", to: "" });
   const [newSpells, setNewSpells] = useState<string[]>([]);
   const [spellQuery, setSpellQuery] = useState("");
+  // Рівень уже піднято, а клас готує закляття щодня: підготовка — тут же, не на листі.
+  const [done, setDone] = useState<(SheetMutation & { report: LevelUpReport; classKey: string }) | null>(null);
 
   const levelUp = useQuery({
     queryKey: ["level-up", characterId],
@@ -288,11 +293,66 @@ export function LevelUpWizard({
         body.spells = [...learned, { name_en: entry.name_en, level: Number(entry.data.level ?? 1), entry_id: entry.id }];
       }
       const result = await levelUpCharacter(characterId, body);
-      onDone(result.level_up);
+      const prepares = result.sheet.spellcasting.classes.some(
+        (item) => item.key === plan.class_key && item.prepares && item.prepared_limit !== null,
+      );
+      if (prepares) {
+        setDone({ sheet: result.sheet, version: result.version, report: result.level_up, classKey: plan.class_key });
+        setBusy(false);
+      } else {
+        onDone(result.level_up);
+      }
     } catch (failure) {
       setError(humanError(messageOf(failure)));
       setBusy(false);
     }
+  }
+
+  if (done) {
+    const casting = {
+      ...done.sheet.spellcasting,
+      classes: done.sheet.spellcasting.classes.filter((item) => item.key === done.classKey),
+    };
+    return (
+      <div className="levelup">
+        <section className="wizard-block">
+          <h2>
+            Рівень піднято: {termLabel(done.report.class_name)} {done.report.from_level} → {done.report.to_level}
+          </h2>
+          <p className="hint">
+            Клас готує закляття щодня: оберіть набір на сьогодні тут або пізніше на листі,
+            вкладка «Закляття». Ліміт уже враховує новий рівень.
+          </p>
+          <SpellsPreparePanel
+            casting={casting}
+            spells={done.sheet.spells}
+            busy={busy}
+            onSave={async (key, picks) => {
+              setBusy(true);
+              setError(null);
+              try {
+                const result = await prepareCharacterSpells(characterId, key, picks, done.version);
+                setDone({ ...done, sheet: result.sheet, version: result.version });
+                return true;
+              } catch (failure) {
+                setError(humanError(messageOf(failure)));
+                return false;
+              } finally {
+                setBusy(false);
+              }
+            }}
+          />
+          {error ? (
+            <p className="status status--error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button type="button" className="button button--primary" onClick={() => onDone(done.report)}>
+            До листа
+          </button>
+        </section>
+      </div>
+    );
   }
 
   if (levelUp.isPending) return <p className="status">Читаємо рівні…</p>;
@@ -710,7 +770,7 @@ export function LevelUpWizard({
 
             {plan.max_spell_level > 0 ? (
               <section className="wizard-block">
-                <h3>{nextStep()}. {pickCantrips + pickLeveled ? "Нові закляття" : "Закляття — готуються на листі"}</h3>
+                <h3>{nextStep()}. {pickCantrips + pickLeveled ? "Нові закляття" : "Закляття — підготовка після підвищення"}</h3>
                 {pickCantrips + pickLeveled ? (
                   <div className="levelup-spells">
                     <p className="hint">
@@ -775,9 +835,9 @@ export function LevelUpWizard({
                     ? "Маг вписує в книгу 2 нові закляття за рівень (PHB, с. 114), а готує лише з книги. "
                     : ""}
                   {pickCantrips + pickLeveled
-                    ? "Описи заклять і підготовку на день — на листі, вкладка «Закляття»."
+                    ? "Описи заклять — на листі, вкладка «Закляття»."
                     : gain.leveled
-                      ? `Клас готує закляття щодня зі всього списку: тепер можна готувати на ${gain.leveled} більше, до ${plan.max_spell_level}-го рівня. Підготовка — на листі, вкладка «Закляття».`
+                      ? `Клас готує закляття щодня зі всього списку: тепер можна готувати на ${gain.leveled} більше, до ${plan.max_spell_level}-го рівня. Підготовка — наступним кроком, одразу після підвищення.`
                       : "Нових заклять цей рівень не додає."}
                 </p>
                 {onOpenSpells ? (
@@ -867,8 +927,8 @@ export function LevelUpWizard({
               </ul>
               <p className="hint">
                 Підвищення не можна скасувати в застосунку — перевірте список вище.
-                {plan.max_spell_level > 0 && gain.cantrips + gain.leveled
-                  ? " Нові закляття оберете на листі одразу після цього."
+                {plan.max_spell_level > 0 && plan.limits.prepared.after !== null
+                  ? " Підготовку на день запропонуємо одразу після цього."
                   : ""}
               </p>
               {error ? (

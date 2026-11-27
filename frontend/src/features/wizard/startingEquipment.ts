@@ -101,6 +101,13 @@ const FOCUS: StartingRow = [
 ];
 
 export const STARTING_EQUIPMENT: Record<string, StartingRow[]> = {
+  // Артифіцер (TCoE, p. 10).
+  artificer: [
+    fixed("дві будь-які прості зброї", { any: "дві прості зброї" }),
+    [LIGHT_CROSSBOW],
+    [one("шипована шкіряна броня", { name: "Studded leather" }), one("лускатий обладунок", { name: "Scale mail" })],
+    fixed("злодійські інструменти й набір підземельника", { name: "Thieves' tools" }, { pack: "dungeoneer" }),
+  ],
   barbarian: [
     [one("велика сокира", { name: "Greataxe" }), one("будь-яка військова зброя ближнього бою", { any: "військова зброя ближнього бою" })],
     [one("дві ручні сокири", { name: "Handaxe", qty: 2 }), one("будь-яка проста зброя", { any: "проста зброя" })],

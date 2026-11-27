@@ -39,7 +39,7 @@ export function BackgroundPanel({
   if (!details) {
     return (
       <>
-        <h3 className="ddb-work__title">
+        <h3 className="sheet-work__title">
           <span>Передісторія</span>
         </h3>
         <p className="hint">
@@ -58,7 +58,7 @@ export function BackgroundPanel({
 
   return (
     <div className="background-panel">
-      <h3 className="ddb-work__title">
+      <h3 className="sheet-work__title">
         <span>Передісторія</span>
         <span className="short">{details.source_id === "custom" ? "власна" : details.source_id || "2014"}</span>
       </h3>
@@ -132,7 +132,7 @@ export function BackgroundPanel({
         </details>
       ) : null}
 
-      <h3 className="ddb-work__title">
+      <h3 className="sheet-work__title">
         <span>Зовнішність</span>
         <span className="short">зберігається автоматично</span>
       </h3>

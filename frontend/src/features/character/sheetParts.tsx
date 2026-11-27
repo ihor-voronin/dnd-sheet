@@ -49,12 +49,12 @@ export function AbilityHex({
 }) {
   const basis = `База ${ability.base}${ability.bonus ? `, бонус ${modifierLabel(ability.bonus)}` : ""}`;
   return (
-    <li className="ddb-ability">
-      <span className="ddb-ability__label">{ABILITY_LABELS[code] ?? code}</span>
-      <div className="ddb-hex" title={`${ABILITY_LABELS[code] ?? code}: ${ability.total} (${basis})`}>
-        <div className="ddb-hex__inner">
-          <span className="ddb-hex__mod">{modifierLabel(ability.modifier)}</span>
-          <span className="ddb-hex__score">{ability.total}</span>
+    <li className="sheet-ability">
+      <span className="sheet-ability__label">{ABILITY_LABELS[code] ?? code}</span>
+      <div className="sheet-hex" title={`${ABILITY_LABELS[code] ?? code}: ${ability.total} (${basis})`}>
+        <div className="sheet-hex__inner">
+          <span className="sheet-hex__mod">{modifierLabel(ability.modifier)}</span>
+          <span className="sheet-hex__score">{ability.total}</span>
         </div>
       </div>
     </li>
@@ -73,12 +73,12 @@ export function HexStat({
   title?: string;
 }) {
   return (
-    <div className="ddb-hexstat">
-      <span className="ddb-hexstat__label">{label}</span>
-      <div className="ddb-hex ddb-hex--small" title={title}>
-        <div className="ddb-hex__inner">
-          <span className="ddb-hexstat__value">{value}</span>
-          {note ? <span className="ddb-hex__note">{note}</span> : null}
+    <div className="sheet-hexstat">
+      <span className="sheet-hexstat__label">{label}</span>
+      <div className="sheet-hex sheet-hex--small" title={title}>
+        <div className="sheet-hex__inner">
+          <span className="sheet-hexstat__value">{value}</span>
+          {note ? <span className="sheet-hex__note">{note}</span> : null}
         </div>
       </div>
     </div>
@@ -93,25 +93,25 @@ export function SavePills({
   render: RenderValue;
 }) {
   return (
-    <ul className="ddb-saves">
+    <ul className="sheet-saves">
       {ABILITIES.map((code) => {
         const save = saves[code];
         if (!save) return null;
         return (
-          <li key={code} className={`ddb-save${save.proficient ? " is-prof" : ""}`}>
+          <li key={code} className={`sheet-save${save.proficient ? " is-prof" : ""}`}>
             <span
-              className="ddb-save__dot"
+              className="sheet-save__dot"
               title={save.proficient ? "володіє рятівним кидком" : "без володіння"}
             />
-            <span className="ddb-save__name">
+            <span className="sheet-save__name">
               {ABILITY_SHORT[code]}
               {save.disadvantage ? (
-                <span className="ddb-skill__dis" title="Завада (disadvantage): броня без володіння">
+                <span className="sheet-skill__dis" title="Завада (disadvantage): броня без володіння">
                   {" "}З
                 </span>
               ) : null}
             </span>
-            <span className="ddb-save__value">
+            <span className="sheet-save__value">
               {render(`save:${code}`, save.value, `Рятівний кидок ${abilityLabel(code)}`)}
             </span>
           </li>
@@ -127,12 +127,12 @@ export function PassiveList({
   items: { label: string; value: number; note?: string }[];
 }) {
   return (
-    <ul className="ddb-passives">
+    <ul className="sheet-passives">
       {items.map((item) => (
-        <li key={item.label} className="ddb-passive">
-          <span className="ddb-passive__value">{item.value}</span>
-          <span className="ddb-passive__label">{item.label}</span>
-          {item.note ? <span className="ddb-passive__note">{item.note}</span> : null}
+        <li key={item.label} className="sheet-passive">
+          <span className="sheet-passive__value">{item.value}</span>
+          <span className="sheet-passive__label">{item.label}</span>
+          {item.note ? <span className="sheet-passive__note">{item.note}</span> : null}
         </li>
       ))}
     </ul>
@@ -147,27 +147,27 @@ export function SkillTable({
   render: RenderValue;
 }) {
   return (
-    <ul className="ddb-skills">
+    <ul className="sheet-skills">
       {SKILL_ORDER.map((skill) => {
         const value = skills[skill];
         if (!value) return null;
         return (
           <li
             key={skill}
-            className={`ddb-skill${value.proficient ? " is-prof" : ""}${value.expertise ? " is-expert" : ""}`}
+            className={`sheet-skill${value.proficient ? " is-prof" : ""}${value.expertise ? " is-expert" : ""}`}
             title={value.expertise ? "Експертиза: бонус майстерності подвоєно" : undefined}
           >
-            <span className="ddb-skill__abil">{ABILITY_SHORT[SKILL_ABILITY[skill]] ?? ""}</span>
-            <span className="ddb-skill__dot" aria-hidden />
-            <span className="ddb-skill__name">
+            <span className="sheet-skill__abil">{ABILITY_SHORT[SKILL_ABILITY[skill]] ?? ""}</span>
+            <span className="sheet-skill__dot" aria-hidden />
+            <span className="sheet-skill__name">
               {skillLabel(skill)}
               {value.disadvantage ? (
-                <span className="ddb-skill__dis" title="Броня дає заваду (disadvantage) на цю навичку">
+                <span className="sheet-skill__dis" title="Броня дає заваду (disadvantage) на цю навичку">
                   {" "}З
                 </span>
               ) : null}
             </span>
-            <span className="ddb-skill__value">
+            <span className="sheet-skill__value">
               {render(`skill:${skill}`, value.value, `Навичка ${skillLabel(skill)}`)}
             </span>
           </li>
@@ -205,11 +205,11 @@ export function ProficiencyGroups({
   if (!groups.length) return <p className="hint">—</p>;
 
   return (
-    <div className="ddb-prof">
+    <div className="sheet-prof">
       {groups.map((group) => (
-        <div key={group.kind} className="ddb-prof__group">
-          <span className="ddb-prof__title">{group.title}</span>
-          <span className="ddb-prof__values">
+        <div key={group.kind} className="sheet-prof__group">
+          <span className="sheet-prof__title">{group.title}</span>
+          <span className="sheet-prof__values">
             {group.values.map((value) => proficiencyValue(group.kind, value)).join(" · ")}
           </span>
         </div>

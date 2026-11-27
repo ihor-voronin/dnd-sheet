@@ -61,7 +61,7 @@ export function SpellsPreparePanel({
 
   return (
     <>
-      <h3 className="ddb-work__title">
+      <h3 className="sheet-work__title">
         <span>Підготовка на день</span>
         <span className="short">зі списку класу</span>
       </h3>

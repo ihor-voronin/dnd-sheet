@@ -5,7 +5,7 @@
  * Alegreya, латунний пунктир термінів і маргіналія з поясненнями.
  *
  * Темна тема — типова для всього застосунку; світла — [data-theme="day"].
- * styles.css і ddb.css посилаються лише на ці токени.
+ * styles.css і sheet.css посилаються лише на ці токени.
  *
  *   --act   малиновий: дії, обране, фокус (назва --patina лишилась як псевдонім)
  *   --wax   червоний: хіти, обовʼязкове, незворотне
@@ -23,6 +23,10 @@
   --act: #d6404a;
   --act-ink: #ffffff;
   --act-soft: #3a1c22;
+  /* Малиновий як колір тексту: --act на темному тлі дає лише 3.8:1, тут — ≥5:1 (WCAG AA). */
+  --act-text: #f26b74;
+  /* Межі полів і кнопок: ≥3:1 до тла (WCAG 1.4.11), --line лишається для декоративних рамок. */
+  --field-line: #717a8d;
   --brass: #d1a654;
   --brass-soft: #3a3020;
   --wax: #ff6b73;
@@ -78,7 +82,10 @@
   --act: #b3242e;
   --act-ink: #ffffff;
   --act-soft: #f8e4e5;
-  --brass: #8a6420;
+  --act-text: var(--act);
+  --field-line: #7d8696;
+  /* Темніша латунь: 5:1 і на світлому тлі, і на --brass-soft. */
+  --brass: #7f5c1c;
   --brass-soft: #f2e8d4;
   --wax: #a51d2a;
   --wax-soft: #f6e0e2;
@@ -178,7 +185,7 @@ h4 {
 /* --- кнопки й поля ----------------------------------------------------- */
 
 .button {
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: var(--r-field);
   background: var(--leaf);
   color: var(--ink);
@@ -226,7 +233,7 @@ h4 {
 }
 
 .link-button {
-  color: var(--patina);
+  color: var(--act-text);
   font-family: var(--sans);
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -240,7 +247,7 @@ textarea {
   font-size: var(--t-md);
   color: var(--ink);
   background: var(--leaf);
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: var(--r-field);
 }
 
@@ -249,6 +256,8 @@ select:focus,
 textarea:focus {
   border-color: var(--patina);
   outline: none;
+  /* Кільце фокуса: лише зміна кольору рамки в 1 px з клавіатури не видно. */
+  box-shadow: 0 0 0 2px var(--patina);
 }
 
 .field__hint {
@@ -272,7 +281,7 @@ textarea:focus {
 /* --- чипи й варіанти --------------------------------------------------- */
 
 .chip {
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: var(--r-field);
   background: var(--leaf);
   color: var(--ink);
@@ -412,7 +421,6 @@ textarea:focus {
 /* Текст книги — serif: гравець бачить, де слова правил, а де застосунку. */
 .reckoning,
 .species-description,
-.rule-text,
 .option__details {
   font-family: var(--serif);
   line-height: 1.6;
@@ -576,7 +584,7 @@ textarea:focus {
 
 .step-rail .step-chip--done .step-index {
   border-color: var(--patina);
-  color: var(--patina);
+  color: var(--act-text);
 }
 
 .step-rail .step-chip--locked {
@@ -801,7 +809,7 @@ textarea:focus {
   height: 18px;
   border: 1px solid var(--line);
   border-radius: var(--r-field);
-  color: var(--patina);
+  color: var(--act-text);
   font-family: var(--sans);
   font-size: 13px;
 }
@@ -817,7 +825,7 @@ textarea:focus {
 
 .option__details summary {
   margin-top: 4px;
-  color: var(--patina);
+  color: var(--act-text);
   font-size: var(--t-sm);
 }
 
@@ -839,11 +847,22 @@ textarea:focus {
 }
 
 /* Неон і світіння прибираємо, але НЕ фон: шестикутники малюються заливкою. */
-.character-view [class*="ddb-"] {
+.character-view [class*="sheet-"] {
   box-shadow: none !important;
   filter: none !important;
 }
 
+/* …крім фокуса з клавіатури: кнопки листа зрізані (clip-path), зовнішній
+ * outline їх не облямовує — кільце всередині. */
+.character-view [class*="sheet-"]:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--act-text) !important;
+}
+
+/* Залита малинова кнопка: світле кільце всередині малинового. */
+.character-view .sheet-btn--primary:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--act-ink), inset 0 0 0 4px var(--act) !important;
+}
 
 .character-view h1,
 .character-view h2,
@@ -1013,6 +1032,22 @@ textarea:focus {
   font-weight: 700;
 }
 
+/* Зріз (clip-path) обрізає зовнішній outline — фокус малюємо всередині:
+ * світла рамка на малиновій кнопці, малинова — на звичайній і на картках. */
+.button:focus-visible,
+.option:focus-visible,
+.option:has(:focus-visible),
+.species-card:has(:focus-visible),
+.saved:has(:focus-visible) {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--patina);
+}
+
+.button--primary:focus-visible,
+.button--seal:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--act-ink), inset 0 0 0 4px var(--act);
+}
+
 /* Номер кроку — шестикутник. */
 .step-index {
   width: 30px;
@@ -1134,9 +1169,7 @@ textarea:focus {
 }
 
 /* Підписи чисел на листі — вузькі капітелі, як на ігрових листах. */
-.summary__abbr,
-.stat-label,
-.ability-card__name {
+.summary__abbr {
   font-family: var(--caps);
   letter-spacing: 0.06em;
 }
@@ -1229,19 +1262,19 @@ textarea:focus {
  * — у «жетоні» знизу. Малі шестикутники (ініціатива, майстерність…) —
  * сірою рамкою, щоб характеристики лишались головними. */
 /* Сітка: колонка ширша за шестикутник, щоб сусіди не злипались. */
-.character-view .ddb-abilities {
+.character-view .sheet-abilities {
   grid-template-columns: repeat(6, 96px);
   gap: 14px 10px;
 }
 
-.character-view .ddb-hex {
+.character-view .sheet-hex {
   width: 88px;
   height: 100px;
   clip-path: var(--hex-v);
   background: var(--brass) !important;
 }
 
-.character-view .ddb-hex__inner {
+.character-view .sheet-hex__inner {
   inset: 2px;
   clip-path: var(--hex-v);
   background: var(--leaf-hi) !important;
@@ -1249,7 +1282,7 @@ textarea:focus {
 }
 
 /* Модифікатор — головне число: великий, світлий, без засічок. */
-.character-view .ddb-hex__mod {
+.character-view .sheet-hex__mod {
   font-family: var(--sans);
   font-size: 30px;
   font-weight: 700;
@@ -1258,7 +1291,7 @@ textarea:focus {
 }
 
 /* Значення — прямокутний жетон із контрастом, а не крихітний шестикутник. */
-.character-view .ddb-hex__score {
+.character-view .sheet-hex__score {
   min-width: 34px;
   padding: 2px 8px;
   border: 1px solid var(--brass);
@@ -1273,22 +1306,22 @@ textarea:focus {
 }
 
 /* Малі шестикутники (майстерність, швидкість, ініціатива, КЗ). */
-.character-view .ddb-hex--small {
+.character-view .sheet-hex--small {
   width: 76px;
   height: 86px;
   background: var(--graphite) !important;
 }
 
-.character-view .ddb-hex--small .ddb-hex__mod,
-.character-view .ddb-hexstat__value {
+.character-view .sheet-hex--small .sheet-hex__mod,
+.character-view .sheet-hexstat__value {
   font-family: var(--sans);
   font-size: 22px;
   font-weight: 700;
   color: var(--ink);
 }
 
-.character-view .ddb-ability__label,
-.character-view .ddb-hexstat__label {
+.character-view .sheet-ability__label,
+.character-view .sheet-hexstat__label {
   max-width: 96px;
   font-family: var(--sans);
   font-size: 12px;
@@ -1298,7 +1331,7 @@ textarea:focus {
 }
 
 @media (max-width: 760px) {
-  .character-view .ddb-abilities {
+  .character-view .sheet-abilities {
     grid-template-columns: repeat(3, 96px);
   }
 }
@@ -1309,13 +1342,13 @@ textarea:focus {
 }
 
 /* Шапка, вкладки, робоча зона — рівні площини без градієнтів. */
-.character-view .ddb-top,
-.character-view .ddb-work,
-.character-view .ddb-tabs {
+.character-view .sheet-top,
+.character-view .sheet-work,
+.character-view .sheet-tabs {
   background: transparent !important;
 }
 
-.character-view .ddb-portrait {
+.character-view .sheet-portrait {
   clip-path: var(--hex-v);
   border: 0;
   background: var(--act) !important;
@@ -1323,7 +1356,7 @@ textarea:focus {
 }
 
 /* Картки листа — зі зрізаними кутами, як картки візарда. */
-.character-view .ddb-card {
+.character-view .sheet-card {
   --frame: var(--line);
   position: relative;
   border: 0 !important;
@@ -1333,7 +1366,7 @@ textarea:focus {
   isolation: isolate;
 }
 
-.character-view .ddb-card::before {
+.character-view .sheet-card::before {
   content: "";
   position: absolute;
   inset: 1px;
@@ -1342,7 +1375,7 @@ textarea:focus {
   background: var(--leaf);
 }
 
-.character-view .ddb-hp {
+.character-view .sheet-hp {
   background: var(--leaf) !important;
   border-color: var(--line) !important;
   border-radius: 0 !important;
@@ -1350,7 +1383,7 @@ textarea:focus {
 }
 
 /* Кнопки листа — як решта: зріз, малинова головна дія, червоне «Шкода». */
-.character-view .ddb-btn {
+.character-view .sheet-btn {
   --cut: 6px;
   border-radius: 0 !important;
   clip-path: var(--chamfer);
@@ -1359,19 +1392,21 @@ textarea:focus {
   color: var(--ink);
 }
 
-.character-view .ddb-btn--primary,
+.character-view .sheet-btn--primary,
 .character-view .button--primary {
   background: var(--act) !important;
   border-color: var(--act) !important;
   color: var(--act-ink) !important;
 }
 
-.character-view .ddb-hp__act--damage {
+.character-view .sheet-hp__act--damage {
   background: color-mix(in srgb, var(--wax) 18%, var(--leaf)) !important;
   border-color: var(--wax) !important;
+  /* --wax-soft у світлій темі — майже біле на світлому: напис зникав. */
+  color: var(--wax) !important;
 }
 
-.character-view .ddb-hp__act--heal {
+.character-view .sheet-hp__act--heal {
   background: color-mix(in srgb, var(--ok) 16%, var(--leaf)) !important;
   border-color: var(--ok) !important;
 }
@@ -1383,7 +1418,7 @@ textarea:focus {
 /* --- експертність ------------------------------------------------------ */
 
 /* Експертна навичка — подвійна позначка: золотий шестикутник замість крапки. */
-.character-view .ddb-skill.is-expert .ddb-skill__dot {
+.character-view .sheet-skill.is-expert .sheet-skill__dot {
   width: 10px;
   height: 11px;
   border: 0;
@@ -1393,7 +1428,7 @@ textarea:focus {
   box-shadow: none;
 }
 
-.character-view .ddb-skill.is-expert .ddb-skill__name {
+.character-view .sheet-skill.is-expert .sheet-skill__name {
   color: var(--brass);
 }
 
@@ -1425,5 +1460,5 @@ textarea:focus {
   font-weight: 700;
 }
 
-.ddb-skill__dis { color: var(--wax); font-weight: 700; font-size: 0.8em; }
+.sheet-skill__dis { color: var(--wax); font-weight: 700; font-size: 0.8em; }
 .chip__tag { opacity: .65; font-size: .75em; }
