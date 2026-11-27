@@ -165,3 +165,55 @@ def test_species_source_changes_natural_weapon_die(rules, compendium) -> None:
     assert _attacks(tabaxi, compendium)["Cat's Claws"]["damage"].startswith("1d6")
     with pytest.raises(ValidationError):
         tabaxi.set_species_source("PHB")
+
+
+# --- магічні таємниці й Книга давніх таємниць ---------------------------------
+
+
+def test_bard_magical_secrets_count_in_spells_known(rules, compendium) -> None:
+    """Магічні таємниці: 2 закляття будь-якого класу на 10 рівні, у межах відомих (PHB, p. 54)."""
+    from dndsheet.characters.api.class_choices import allowed_names, option_levels
+    from dndsheet.characters.application.rows import spell_rows
+
+    bard = rules.class_mechanics("bard")
+    assert bard.spells_known_at(9) == 12 and bard.spells_known_at(10) == 12, "дві з 14 — таємниці"
+    character = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("bard", 10)])
+    key = "feature:bard:Magical Secrets"
+    assert character.class_choice_slots[key] == 2
+    options = allowed_names(key, compendium, character)
+    assert {"Fireball", "Counterspell", "Eldritch Blast"} <= set(options)
+    assert "Wish" not in options, "лише рівні, які бард 10 уже чарує"
+    character.set_class_choice(key, ["Fireball", "Eldritch Blast"], options, option_levels(key, compendium, character))
+    rows = {row.name_en: row for row in spell_rows(character, _sheet(character))}
+    assert rows["Fireball"].level == 3 and rows["Fireball"].source == "secrets"
+    assert rows["Eldritch Blast"].level == 0 and "Харизма" in rows["Eldritch Blast"].note
+
+
+def test_lore_additional_secrets_and_book_of_ancient_secrets(rules, compendium) -> None:
+    from dndsheet.characters.api.class_choices import allowed_names
+
+    lore = make_character(rules, abilities=_scores(cha=13), classes=[CharacterClass("bard", 6, subclass_key="college-of-lore")])
+    assert lore.class_choice_slots["sub:college-of-lore:Additional Magical Secrets"] == 2
+    warlock = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 3, subclass_key="the-fiend")])
+    warlock.set_class_choice("warlock:Pact Boon", ["Pact of the Tome"], ["Pact of the Tome"])
+    warlock.set_class_choice("warlock:Eldritch Invocations", ["Book of Ancient Secrets"], ["Book of Ancient Secrets"])
+    key = "inv:book of ancient secrets:Rituals"
+    options = allowed_names(key, compendium, warlock)
+    assert {"Find Familiar", "Detect Magic"} <= set(options) and "Shield" not in options, "лише ритуали"
+    warlock.set_class_choice(key, ["Find Familiar", "Detect Magic"], options)
+    granted = {spell.name_en: spell for spell in _sheet(warlock).granted_spells}
+    assert granted["Find Familiar"].usage == "ritual only"
+
+
+def test_text_only_subclass_choices(rules, compendium) -> None:
+    from dndsheet.characters.api.class_choices import allowed_names
+
+    hunter = make_character(rules, abilities=_scores(dex=13, wis=13), classes=[CharacterClass("ranger", 7, subclass_key="hunter")])
+    slots = hunter.class_choice_slots
+    assert slots["sub:hunter:Hunter's Prey"] == 1 and slots["sub:hunter:Defensive Tactics"] == 1
+    assert "sub:hunter:Multiattack" not in slots
+    hunter.set_class_choice("sub:hunter:Hunter's Prey", ["Colossus Slayer"], allowed_names("sub:hunter:Hunter's Prey", compendium, hunter))
+    monk = make_character(rules, classes=[CharacterClass("monk", 6, subclass_key="way-of-the-four-elements")])
+    key = "sub:way-of-the-four-elements:Elemental Disciplines"
+    assert monk.class_choice_slots[key] == 2
+    assert "Fangs of the Fire Snake" in allowed_names(key, compendium, monk)

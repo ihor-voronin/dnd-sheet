@@ -32,6 +32,8 @@ from dndsheet.shared.rules import (
     FEAT_SPELLS,
     INVOCATION_SPELLS,
     BOON_CHOICES,
+    CLASS_FEATURE_CHOICES,
+    INVOCATION_CHOICES,
     STYLE_CHOICES,
     SUBCLASS_CHOICES,
     SUBCLASS_EXPERTISE,
@@ -43,6 +45,8 @@ FEAT_PREFIX = "feat:"
 STYLE_PREFIX = "style:"
 SUBCLASS_PREFIX = "sub:"
 BOON_PREFIX = "boon:"
+FEATURE_PREFIX = "feature:"
+INVOCATION_PREFIX = "inv:"
 
 #: Риси, що дають одну експертизу (TCoE, p. 79; XGtE, p. 74).
 FEAT_EXPERTISE = {"skill-expert": 1, "prodigy": 1}
@@ -94,16 +98,23 @@ def derived_groups(
     """Групи виборів від підкласів, дару угоди, рис і стилів: ключ → що й скільки обрати."""
     groups: dict[str, DerivedChoice] = {}
     for entry in classes:
+        # Вміння класу з вибором (Магічні таємниці барда), далі — підклас.
+        for level, choice in CLASS_FEATURE_CHOICES.get(entry.class_key, ()):
+            if entry.level >= level:
+                groups[f"{FEATURE_PREFIX}{entry.class_key}:{choice.group}"] = choice
         slug = subclass_slug(entry.subclass_key)
-        level, choices = SUBCLASS_CHOICES.get(slug, (0, ()))
-        if choices and entry.level >= level:
-            for choice in choices:
+        for level, choice in SUBCLASS_CHOICES.get(slug, ()):
+            if entry.level >= level:
                 groups[f"{SUBCLASS_PREFIX}{slug}:{choice.group}"] = choice
     for key, values in class_choices.items():
         if key.endswith(":Pact Boon"):
             for boon in values:
                 for choice in BOON_CHOICES.get(boon.casefold(), ()):
                     groups[f"{BOON_PREFIX}{boon.casefold()}:{choice.group}"] = choice
+        if key.endswith(":Eldritch Invocations"):
+            for invocation in values:
+                for choice in INVOCATION_CHOICES.get(invocation.casefold(), ()):
+                    groups[f"{INVOCATION_PREFIX}{invocation.casefold()}:{choice.group}"] = choice
     for feat in feats:
         slug = feat_slug(feat)
         for choice in FEAT_CHOICES.get(slug, ()):
@@ -172,8 +183,10 @@ def source_of(character: Any, key: str) -> GrantSource:  # noqa: ANN401 — Char
     kind, owner, _ = split_key(key)
     if kind == "feat":
         return GrantSource.of(SourceKind.FEAT, owner)
-    if kind == "boon":
+    if kind in ("boon", "inv"):
         return GrantSource.of(SourceKind.CLASS, "warlock")
+    if kind == "feature":
+        return GrantSource.of(SourceKind.CLASS, owner)
     if kind == "sub":
         entry = next((item for item in character.classes if subclass_slug(item.subclass_key) == owner), None)
         return GrantSource.of(SourceKind.CLASS, entry.class_key if entry else owner)
@@ -238,6 +251,11 @@ def _feat_casting(character: Any, feat: str, spell_class: str | None) -> Ability
     return CLASS_CASTING_ABILITY.get(spell_class or "")
 
 
+def _spell_level(character: Any, name: str) -> int:  # noqa: ANN401 — Character
+    """Рівень обраного закляття таємниць: домен довідника не читає, тож береться з рівнів, збережених під час вибору."""
+    return int(character.choice_spell_levels.get(name.casefold(), 1))
+
+
 def granted_spells(character: Any) -> list[tuple[str, int, str, str, Ability | None]]:  # noqa: ANN401
     """Закляття від рис, стилів і викликів: (назва, рівень, джерело, як чарується, характеристика)."""
     rows: list[tuple[str, int, str, str, Ability | None]] = []
@@ -253,6 +271,15 @@ def granted_spells(character: Any) -> list[tuple[str, int, str, str, Ability | N
         kind, owner, _ = split_key(key)
         usage = FEAT_CHOICE_SPELL_NOTE.get(owner, "") if choice.spell_level > 0 else ""
         spell_class = spell_class_for(key, choice, character.class_choices)
+        if choice.group.endswith("Magical Secrets"):
+            # Магічні таємниці: закляття барда з будь-якого списку, Харизма (PHB, p. 54).
+            for name in active.get(key, ()):
+                rows.append((name, _spell_level(character, name), "secrets", "", Ability.CHA))
+            continue
+        if kind == "inv":
+            # Книга давніх таємниць: ритуали будь-якого класу, лише як ритуал (PHB, p. 110).
+            rows.extend((name, choice.spell_level, "invocation", "ritual only", Ability.CHA) for name in active.get(key, ()))
+            continue
         if kind == "feat":
             source, ability = "feat", _feat_casting(character, by_slug.get(owner, owner), spell_class)
         elif kind == "boon":

@@ -758,7 +758,7 @@ export type ClassChoiceGroup = {
   class_key: string;
   group: string;
   /** Хто дав вибір, якщо не клас: риса чи бойовий стиль. */
-  origin?: { kind: "feat" | "style" | "sub" | "boon"; key: string; name_uk: string } | null;
+  origin?: { kind: "feat" | "style" | "sub" | "boon" | "feature" | "inv"; key: string; name_uk: string } | null;
   slots: number;
   chosen: string[];
   options: {

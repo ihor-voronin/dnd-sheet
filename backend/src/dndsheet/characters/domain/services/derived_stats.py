@@ -78,7 +78,7 @@ class GrantedSpellView:
 
     name_en: str
     spell_level: int
-    source: str  # "species" | "subclass" | "feat" | "fighting-style" | "invocation"
+    source: str  # "species" | "subclass" | "feat" | "fighting-style" | "invocation" | "pact-boon" | "secrets"
     prepared: bool = False
     #: Як чарується поза класом: «at will», «1/long rest», «ritual only».
     usage: str = ""

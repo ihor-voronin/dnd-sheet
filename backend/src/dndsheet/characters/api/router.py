@@ -29,6 +29,7 @@ from dndsheet.characters.api.serializers import (
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.background_info import enrich_background
 from dndsheet.characters.api.class_choices import (
+    option_levels,
     allowed_names,
     apply_choices,
     class_choices_payload,
@@ -669,12 +670,12 @@ def set_class_choice(
     if not isinstance(group, str) or ":" not in group:
         raise HTTPException(status_code=422, detail="group має бути «клас:група»")
     try:
+        current = _sheet_service(request).load(character_id)
         character = _sheet_service(request).set_class_choice(
             character_id,
             body,
-            allowed=allowed_names(
-                group, _compendium(request), _sheet_service(request).load(character_id)
-            ),
+            allowed=allowed_names(group, _compendium(request), current),
+            levels=option_levels(group, _compendium(request), current),
             expected_version=version,
         )
     except KeyError as exc:

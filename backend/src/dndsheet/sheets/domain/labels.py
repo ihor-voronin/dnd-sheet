@@ -179,6 +179,7 @@ SPELL_SOURCE_LABELS: dict[str, tuple[str, str]] = {
     "fighting-style": ("від бойового стилю", "fighting style"),
     "invocation": ("від виклику", "invocation"),
     "pact-boon": ("від дару угоди", "pact boon"),
+    "secrets": ("магічні таємниці", "magical secrets"),
 }
 
 

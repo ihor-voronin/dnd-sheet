@@ -29,6 +29,8 @@ from dndsheet.sheets.domain.labels import DEMO_SKILLS, LANGUAGE_LABELS
 
 #: Класи, з яких риси беруть закляття (назви — як у глосарії).
 CLASS_UK = {
+    "paladin": "Паладин",
+    "ranger": "Слідопит",
     "artificer": "Артифіцер",
     "bard": "Бард",
     "cleric": "Жрець",
@@ -105,7 +107,10 @@ def _derived_options(
     if choice.kind == "weapon":
         rows.extend(_plain(name, None, lock(ProficiencyKind.WEAPON, name, name)) for name in WEAPONS)
     if choice.kind == "fixed":
-        rows.extend(_plain(name, CLASS_UK.get(name)) for name in choice.options)
+        rows.extend(
+            _plain(name, CLASS_UK.get(name) or uk_text.name_uk("subclasses", name) or uk_text.name_uk("classes", name))
+            for name in choice.options
+        )
     if choice.kind == "optional":
         seen: dict[str, dict[str, Any]] = {}
         for entry in compendium.optional_features(choice.feature_type):
@@ -135,12 +140,18 @@ def _spell_options(
     )
     if spell_class is None:
         return []
-    classes = tuple(CLASS_UK) if spell_class == "*" else (spell_class,)
+    classes = (*CLASS_UK, "paladin", "ranger") if spell_class == "*" else (spell_class,)
+    # Магічні таємниці: від заговорів до найвищого рівня, який має клас (PHB, p. 54).
+    top = choice.spell_level
+    if choice.max_level_of and character is not None and character.has_class(choice.max_level_of):
+        definition = character.class_definition(choice.max_level_of)
+        top = definition.max_spell_level(character.class_level(choice.max_level_of))
     found: dict[str, Any] = {}
     for name in classes:
-        for entry in compendium.class_spells(name, max_level=choice.spell_level).spells:
+        for entry in compendium.class_spells(name, max_level=top).spells:
             data = entry.data or {}
-            if entry.spell_level != choice.spell_level:
+            level = entry.spell_level if entry.spell_level is not None else -1
+            if (level > top or level < 0) if choice.max_level_of else level != choice.spell_level:
                 continue
             if choice.schools and (entry.spell_school or "") not in choice.schools:
                 continue
@@ -155,6 +166,7 @@ def _spell_options(
             "prerequisite": None,
             "locked": None,
             "school": entry.spell_school,
+            "level": entry.spell_level,
         }
         for entry in sorted(found.values(), key=lambda item: item.name_en)
     ]
@@ -188,6 +200,15 @@ def _options(group_key: str, compendium: CompendiumService, character: Character
     return sorted(seen.values(), key=lambda item: item["name_en"])
 
 
+def option_levels(group_key: str, compendium: CompendiumService, character: Character) -> dict[str, int]:
+    """Рівні заклять серед варіантів групи — щоб домен знав рівень обраного."""
+    return {
+        item["name_en"]: int(item["level"])
+        for item in _options(group_key, compendium, character)
+        if isinstance(item.get("level"), int)
+    }
+
+
 def allowed_names(group_key: str, compendium: CompendiumService, character: Character) -> list[str]:
     """Варіанти, передумови яких персонаж уже має."""
     return [item["name_en"] for item in _options(group_key, compendium, character) if not item.get("locked")]
@@ -206,7 +227,7 @@ def class_choices_payload(character: Character, compendium: CompendiumService) -
     )
     for key, slots in ordered:
         kind, owner, group = derived_choices.split_key(key)
-        derived = kind in ("feat", "style", "sub", "boon")
+        derived = kind in ("feat", "style", "sub", "boon", "feature", "inv")
         rows.append(
             {
                 "key": key,
@@ -249,7 +270,9 @@ def apply_choices(character: Character, compendium: CompendiumService, choices: 
     for key in sorted(choices, key=lambda item: order.index(item) if item in order else len(order)):
         if key not in character.class_choice_slots:
             raise ValidationError(f"риса не дає вибору {key!r}")
-        character.set_class_choice(key, choices[key], allowed_names(key, compendium, character))
+        character.set_class_choice(
+            key, choices[key], allowed_names(key, compendium, character), option_levels(key, compendium, character)
+        )
 
 
 def _owner_uk(kind: str, owner: str) -> str:
@@ -257,5 +280,7 @@ def _owner_uk(kind: str, owner: str) -> str:
     name_en = owner.replace("-", " ").title()
     if kind == "sub":
         name_en = name_en.replace(" Of The ", " of the ").replace(" Of ", " of ")
+    if kind == "feature":
+        return uk_text.with_english(owner.title(), CLASS_UK.get(owner))
     layer = {"feat": "feats", "sub": "subclasses"}.get(kind, LAYER)
     return uk_text.with_english(name_en, uk_text.name_uk(layer, name_en))

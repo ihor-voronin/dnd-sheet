@@ -397,11 +397,18 @@ class ClassMechanics:
         return self.cantrips_known[level - 1] if len(self.cantrips_known) >= level else 0
 
     def spells_known_at(self, level: int) -> int | None:
-        """Ліміт відомих заклять; `None` — клас не має такого ліміту."""
+        """Ліміт відомих заклять зі списку класу; `None` — клас не має такого ліміту.
+
+        Магічні таємниці барда входять у колонку відомих (PHB, p. 54), але
+        обираються окремо й з будь-якого класу — тому зі списку барда їх менше.
+        """
         if not self.spells_known:
             return None
         _check_level(level)
-        return self.spells_known[level - 1] if len(self.spells_known) >= level else None
+        if len(self.spells_known) < level:
+            return None
+        known = self.spells_known[level - 1]
+        return known - magical_secrets_count(level) if self.key == "bard" else known
 
     def slots_at(self, level: int) -> tuple[int, ...]:
         _check_level(level)
@@ -988,6 +995,8 @@ class DerivedChoice:
     ritual: bool = False
     options: tuple[str, ...] = ()
     feature_type: str = ""
+    #: Будь-який рівень від заговорів до найвищого, який має цей клас (Магічні таємниці).
+    max_level_of: str = ""
 
 
 #: Класи, з яких Magic Initiate і Ritual Caster беруть закляття.
@@ -1084,27 +1093,100 @@ STYLE_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
 
 #: Підклас (останній сегмент ключа) → (рівень класу, вибори). Ефект — той самий
 #: механізм, що й у рис: володіння, експертиза, заговори, бойовий стиль.
-SUBCLASS_CHOICES: Mapping[str, tuple[int, tuple[DerivedChoice, ...]]] = {
+#: Варіанти Мисливця, тотемів і драконячого предка (PHB, p. 50, 93, 102).
+HUNTER_PREY = ("Colossus Slayer", "Giant Killer", "Horde Breaker")
+TOTEMS = ("Bear", "Eagle", "Elk", "Tiger", "Wolf")
+DRAGON_ANCESTORS = (
+    "Black (acid)", "Blue (lightning)", "Brass (fire)", "Bronze (lightning)", "Copper (acid)",
+    "Gold (fire)", "Green (poison)", "Red (fire)", "Silver (cold)", "White (cold)",
+)
+
+
+def _steps(group: str, kind: str, steps: tuple[tuple[int, int], ...], **extra: object) -> tuple[tuple[int, DerivedChoice], ...]:
+    """Вибір, кількість якого росте з рівнем: ((3, 2), (7, 3)) — 2 на 3 рівні, 3 на 7."""
+    return tuple((level, DerivedChoice(group, count, kind, **extra)) for level, count in steps)  # type: ignore[arg-type]
+
+
+#: Підклас (останній сегмент ключа) → ((рівень класу, вибір), …). Однакова група на
+#: вищому рівні замінює нижчу (кількість росте). Ефект — той самий механізм, що й у
+#: рис: володіння, експертиза, закляття, бойовий стиль; решта — вибір для листа,
+#: текст уміння вже у «Вміннях».
+SUBCLASS_CHOICES: Mapping[str, tuple[tuple[int, DerivedChoice], ...]] = {
     # Blessings of Knowledge: 2 мови й 2 навички з подвоєним бонусом (PHB, p. 59).
-    "knowledge-domain": (1, (
-        DerivedChoice("Languages", 2, "language"),
-        DerivedChoice("Skills", 2, "skill", options=("Arcana", "History", "Nature", "Religion")),
-    )),
+    "knowledge-domain": (
+        (1, DerivedChoice("Languages", 2, "language")),
+        (1, DerivedChoice("Skills", 2, "skill", options=("Arcana", "History", "Nature", "Religion"))),
+    ),
     # Acolyte of Nature: заговір друїда й навичка (PHB, p. 62).
-    "nature-domain": (1, (
-        DerivedChoice("Cantrip", 1, "spell", spell_level=0, spell_class="druid"),
-        DerivedChoice("Skill", 1, "skill", options=("Animal Handling", "Nature", "Survival")),
-    )),
-    # Bonus Proficiencies: три навички (PHB, p. 54).
-    "college-of-lore": (3, (DerivedChoice("Skills", 3, "skill"),)),
+    "nature-domain": (
+        (1, DerivedChoice("Cantrip", 1, "spell", spell_level=0, spell_class="druid")),
+        (1, DerivedChoice("Skill", 1, "skill", options=("Animal Handling", "Nature", "Survival"))),
+    ),
+    # Bonus Proficiencies: три навички; Additional Magical Secrets — 2 закляття
+    # будь-якого класу, що не рахуються у відомих (PHB, p. 54–55).
+    "college-of-lore": (
+        (3, DerivedChoice("Skills", 3, "skill")),
+        (6, DerivedChoice("Additional Magical Secrets", 2, "spell", spell_class="*", max_level_of="bard")),
+    ),
     # Fighting Style: Дуель або Бій двома зброями (XGtE, p. 15).
-    "college-of-swords": (3, (
-        DerivedChoice("Fighting Style", 1, "fixed", options=("Dueling", "Two-Weapon Fighting")),
-    )),
+    "college-of-swords": (
+        (3, DerivedChoice("Fighting Style", 1, "fixed", options=("Dueling", "Two-Weapon Fighting"))),
+    ),
     # Bonus Proficiency: навичка зі списку або мова (XGtE, p. 31).
-    "samurai": (3, (
-        DerivedChoice("Skill or Language", 1, "skill_or_language", options=("History", "Insight", "Performance", "Persuasion")),
-    )),
+    "samurai": (
+        (3, DerivedChoice("Skill or Language", 1, "skill_or_language", options=("History", "Insight", "Performance", "Persuasion"))),
+    ),
+    # Мисливець: по одному вибору на 3, 7, 11 і 15 рівнях (PHB, p. 93).
+    "hunter": (
+        (3, DerivedChoice("Hunter's Prey", 1, "fixed", options=HUNTER_PREY)),
+        (7, DerivedChoice("Defensive Tactics", 1, "fixed", options=("Escape the Horde", "Multiattack Defense", "Steel Will"))),
+        (11, DerivedChoice("Multiattack", 1, "fixed", options=("Volley", "Whirlwind Attack"))),
+        (15, DerivedChoice("Superior Hunter's Defense", 1, "fixed", options=("Evasion", "Stand Against the Tide", "Uncanny Dodge"))),
+    ),
+    # Тотемний воїн: дух на 3, аспект на 6, налаштування на 14 (PHB, p. 50; SCAG — лось і тигр).
+    "path-of-the-totem-warrior": (
+        (3, DerivedChoice("Totem Spirit", 1, "fixed", options=TOTEMS)),
+        (6, DerivedChoice("Aspect of the Beast", 1, "fixed", options=TOTEMS)),
+        (14, DerivedChoice("Totemic Attunement", 1, "fixed", options=TOTEMS)),
+    ),
+    # Драконячий предок: тип дракона задає тип урону (PHB, p. 102).
+    "draconic-bloodline": ((1, DerivedChoice("Dragon Ancestor", 1, "fixed", options=DRAGON_ANCESTORS)),),
+    # Аура бурі: пустеля, море чи тундра (XGtE, p. 10).
+    "path-of-the-storm-herald": ((3, DerivedChoice("Storm Aura", 1, "fixed", options=("Desert", "Sea", "Tundra"))),),
+    # Учень стихій: дисципліни на 3, 6, 11, 17 рівнях (PHB, p. 80).
+    "way-of-the-four-elements": _steps(
+        "Elemental Disciplines", "optional", ((3, 1), (6, 2), (11, 3), (17, 4)), feature_type="elemental discipline"
+    ),
+    # Арканний постріл: 2 на 3 рівні, далі +1 на 7, 10, 15, 18 (XGtE, p. 28).
+    "arcane-archer": _steps(
+        "Arcane Shot", "optional", ((3, 2), (7, 3), (10, 4), (15, 5), (18, 6)), feature_type="arcane shot"
+    ),
+    # Різьбяр рун: 2 руни на 3 рівні, далі +1 на 7, 10, 15 (TCoE, p. 44).
+    "rune-knight": _steps("Runes", "optional", ((3, 2), (7, 3), (10, 4), (15, 5)), feature_type="rune"),
+}
+
+#: Магічні таємниці барда: 2 закляття будь-якого класу на 10, 14 і 18 рівнях; вони
+#: входять у кількість відомих (PHB, p. 54) — тому ліміт зі списку барда менший.
+MAGICAL_SECRETS: tuple[tuple[int, int], ...] = ((10, 2), (14, 4), (18, 6))
+
+
+def magical_secrets_count(level: int) -> int:
+    return max((count for threshold, count in MAGICAL_SECRETS if level >= threshold), default=0)
+
+
+#: Вміння класу з вибором поза таблицею виборів: клас → ((рівень, вибір), …).
+CLASS_FEATURE_CHOICES: Mapping[str, tuple[tuple[int, DerivedChoice], ...]] = {
+    "bard": tuple(
+        (level, DerivedChoice("Magical Secrets", count, "spell", spell_class="*", max_level_of="bard"))
+        for level, count in MAGICAL_SECRETS
+    ),
+}
+
+#: Виклик → вибори: Книга давніх таємниць — 2 ритуали 1 рівня будь-якого класу (PHB, p. 110).
+INVOCATION_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
+    "book of ancient secrets": (
+        DerivedChoice("Rituals", 2, "spell", spell_level=1, spell_class="*", ritual=True),
+    ),
 }
 
 #: Підкласи, чиї обрані навички мають подвоєний бонус (Blessings of Knowledge).

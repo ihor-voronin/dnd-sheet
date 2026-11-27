@@ -282,6 +282,7 @@ const SPELL_SOURCE_TAGS: Record<string, string> = {
   "fighting-style": "від бойового стилю",
   invocation: "від виклику",
   "pact-boon": "від дару угоди",
+  secrets: "магічні таємниці",
 };
 
 export function SpellsKnownList({

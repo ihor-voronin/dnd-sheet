@@ -38,6 +38,20 @@ const GROUP_LABELS: Record<string, string> = {
   "Damage Type": "Тип урону",
   Skills: "Навички",
   "Skill or Language": "Навичка або мова",
+  "Magical Secrets": "Магічні таємниці",
+  "Additional Magical Secrets": "Додаткові магічні таємниці",
+  "Hunter's Prey": "Здобич мисливця",
+  "Defensive Tactics": "Захисна тактика",
+  Multiattack: "Мультиатака",
+  "Superior Hunter's Defense": "Вищий захист мисливця",
+  "Totem Spirit": "Тотемний дух",
+  "Aspect of the Beast": "Аспект звіра",
+  "Totemic Attunement": "Тотемне налаштування",
+  "Dragon Ancestor": "Драконячий предок",
+  "Storm Aura": "Аура бурі",
+  "Elemental Disciplines": "Стихійні дисципліни",
+  "Arcane Shot": "Арканний постріл",
+  Runes: "Руни",
 };
 
 /** Хто дав вибір — для підказки «… дає ще N на вибір». */
@@ -46,6 +60,8 @@ const ORIGIN_GIVES: Record<string, string> = {
   style: "Бойовий стиль дає",
   sub: "Підклас дає",
   boon: "Дар угоди дає",
+  feature: "Вміння класу дає",
+  inv: "Виклик дає",
 };
 
 /** Класи, з яких риси беруть закляття. */
@@ -88,12 +104,28 @@ function ChoiceGroup({
 }) {
   const [picked, setPicked] = useState<string[]>(group.chosen);
   const [open, setOpen] = useState(group.chosen.length < group.slots);
+  const [query, setQuery] = useState("");
   useEffect(() => setPicked(group.chosen), [group.chosen]);
 
   const pending = group.slots - group.chosen.length;
   const dirty = picked.join("|") !== group.chosen.join("|");
   const label = groupLabel(group);
   const text = new Map(group.options.map((option) => [option.name_en, option]));
+  // Довгі списки (Магічні таємниці — сотні заклять): пошук і перші 40 збігів.
+  const searchable = group.options.length > 30;
+  const needle = query.trim().toLocaleLowerCase();
+  const matching = group.options.filter(
+    (option) =>
+      !needle ||
+      option.name_en.toLocaleLowerCase().includes(needle) ||
+      (option.name_uk ?? "").toLocaleLowerCase().includes(needle),
+  );
+  const shown = searchable
+    ? [
+        ...group.options.filter((option) => picked.includes(option.name_en)),
+        ...matching.filter((option) => !picked.includes(option.name_en)).slice(0, 40),
+      ]
+    : group.options;
 
   function toggle(value: string) {
     setPicked((current) => {
@@ -131,8 +163,19 @@ function ChoiceGroup({
       ) : null}
       {open && group.options.length ? (
         <>
+          {searchable ? (
+            <label className="search-field">
+              <span className="visually-hidden">Пошук варіанта</span>
+              <input
+                type="search"
+                value={query}
+                placeholder={`Пошук серед ${group.options.length}: «Fireball», «Вогняна куля»…`}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
+          ) : null}
           <div className="chip-row">
-            {group.options.map((option) => (
+            {shown.map((option) => (
               <button
                 key={option.name_en}
                 type="button"
@@ -158,6 +201,9 @@ function ChoiceGroup({
               </button>
             ))}
           </div>
+          {searchable && matching.length > 40 ? (
+            <p className="hint">Показано 40 з {matching.length} — уточніть пошук.</p>
+          ) : null}
           {picked.map((name) =>
             text.get(name)?.text_en ? (
               <p key={name} className="hint">

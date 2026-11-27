@@ -321,6 +321,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
         "class_choices": {key: list(values) for key, values in character.class_choices.items()},
         "species_feat": character.species_feat,
         "species_source": character.species_source,
+        "choice_spell_levels": dict(character.choice_spell_levels),
         "asi_taken": character.asi_taken,
         "hp": {
             "current": character.hp.current,
@@ -380,6 +381,9 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
         },
         species_feat=record.get("species_feat") or None,
         species_source=record.get("species_source") or None,
+        choice_spell_levels={
+            str(key): int(value) for key, value in (record.get("choice_spell_levels") or {}).items()
+        },
         asi_taken=int(record.get("asi_taken") or 0),
         hp=HitPointState(
             current=_hp_current(hp, legacy=legacy),

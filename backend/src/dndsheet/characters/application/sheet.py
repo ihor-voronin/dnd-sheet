@@ -264,14 +264,15 @@ class SheetService:
         payload: Mapping[str, Any],
         *,
         allowed: list[str],
+        levels: Mapping[str, int] | None = None,
         expected_version: int | None = None,
     ) -> Character:
-        """Обрати бойовий стиль, втаємничення тощо; `allowed` — з довідника."""
+        """Обрати бойовий стиль, втаємничення тощо; `allowed` і рівні заклять — з довідника."""
         character = self._load_versioned(character_id, expected_version)
         raw = payload.get("values") or []
         if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
             raise ValidationError("values має бути списком назв")
-        character.set_class_choice(str(payload.get("group")), raw, allowed)
+        character.set_class_choice(str(payload.get("group")), raw, allowed, levels)
         self.characters.save(character)
         return character
 

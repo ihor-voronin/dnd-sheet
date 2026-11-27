@@ -104,6 +104,9 @@ class Character:
     species_feat: str | None = None
     #: Книга, за якою граєте вид («MPMM», «VGM»); порожньо — книга запису виду.
     species_source: str | None = None
+    #: Рівні заклять, обраних у виборах (Магічні таємниці): назва (нижній регістр) → рівень.
+    #: Домен довідника не читає, тож рівень приходить разом із вибором.
+    choice_spell_levels: dict[str, int] = field(default_factory=dict)
     #: Скільки разів гравець уже взяв покращення характеристик або рису.
     #: Їх дають рівні з рисою «Ability Score Improvement», тож кількість
     #: використаних мусить бути не більшою за кількість таких рівнів.
@@ -324,7 +327,13 @@ class Character:
         self.expertise = self.expertise[: self.expertise_slots]
         self.bump_version()
 
-    def set_class_choice(self, group_key: str, values: Iterable[str], allowed: Iterable[str]) -> None:
+    def set_class_choice(
+        self,
+        group_key: str,
+        values: Iterable[str],
+        allowed: Iterable[str],
+        levels: Mapping[str, int] | None = None,
+    ) -> None:
         """Обрати варіанти групи; `allowed` — назви з довідника або книги."""
         slots = self.class_choice_slots.get(group_key, 0)
         if not slots:
@@ -339,6 +348,12 @@ class Character:
                 chosen.append(value)
         if len(chosen) > slots:
             raise ValidationError(f"{group_key}: можна обрати {slots}, надіслано {len(chosen)}")
+        if levels:
+            known = {name.casefold(): int(level) for name, level in levels.items()}
+            self.choice_spell_levels = {
+                **self.choice_spell_levels,
+                **{value.casefold(): known[value.casefold()] for value in chosen if value.casefold() in known},
+            }
         updated = {**self.class_choices, group_key: tuple(chosen)}
         # Інший клас «Учня магії» — інший список: обрані з попереднього закляття скидаються.
         if group_key.endswith(":Spell Class") and tuple(chosen) != self.class_choices.get(group_key, ()):
