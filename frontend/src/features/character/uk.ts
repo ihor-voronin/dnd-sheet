@@ -687,6 +687,8 @@ const ITEMS: Record<string, string> = {
   warhammer: "Бойовий молот",
   whip: "Батіг",
   "holy symbol": "Священний символ",
+  "arcane focus": "Арканний осередок",
+  "druidic focus": "Друїдичний осередок",
   "prayer book": "Молитовник",
   incense: "Пахощі",
   vestments: "Обрядова одежа",
@@ -796,7 +798,8 @@ export function titleCaseKey(key: string): string {
 export function proficiencyText(kind: string, value: string): string {
   const label = proficiencyValue(kind, value);
   if (label !== value || (kind !== "weapon" && kind !== "armor")) return label;
-  const uk = ukItem(value);
+  // У класів зброя у множині («quarterstaffs», «light crossbows»), у словнику — в однині.
+  const uk = ukItem(value) ?? (value.endsWith("s") ? ukItem(value.slice(0, -1)) : undefined);
   return uk ? uk.charAt(0).toLowerCase() + uk.slice(1) : value;
 }
 

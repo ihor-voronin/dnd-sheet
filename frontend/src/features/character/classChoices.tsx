@@ -84,7 +84,7 @@ const CLASS_LABELS: Record<string, string> = {
 };
 
 /** Книги поза PHB: опційні варіанти, ведучий може їх не дозволяти. */
-const SOURCE_TAGS: Record<string, string> = { tcoe: "TCoE", xgte: "XGtE" };
+const SOURCE_TAGS: Record<string, string> = { tcoe: "Таша", xgte: "Ксанатар" };
 
 type Option = ClassChoiceGroup["options"][number];
 /** Назва варіанта: переклад із сервера, далі словники інтерфейсу (інструменти, мови, зброя). */

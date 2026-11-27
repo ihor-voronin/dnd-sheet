@@ -40,7 +40,7 @@ from dndsheet.characters.api.class_choices import (
     feat_probe_groups,
 )
 from dndsheet.characters.api.school_limits import check_schools
-from dndsheet.characters.api import classes_uk, uk_text
+from dndsheet.characters.api import classes_uk, subclasses_uk, uk_text
 from dndsheet.characters.api.uk_text import with_english
 from dndsheet.characters.api.features import (
     class_texts_all,
@@ -148,6 +148,43 @@ def _attacks(request: Request, character, computed) -> list[dict[str, Any]]:  # 
     return attacks_for(character, computed, _compendium(request), cache)
 
 
+def _background_item_names(payload: dict) -> None:
+    """Речі зі спорядження передісторії («insignia of rank») — українською з її ж перекладу.
+
+    У довіднику предметів таких записів немає: це рядки з тексту передісторії, і
+    переклад для них уже є в `equipment_rows` (той самий, що бачить візард).
+    """
+    names: dict[str, str] = {}
+    for row in (payload.get("background_details") or {}).get("equipment_rows") or []:
+        if row.get("text_uk"):
+            names[str(row.get("text", "")).casefold()] = row["text_uk"]
+        for choice, choice_uk in zip(row.get("choices") or [], row.get("choices_uk") or []):
+            if choice_uk:
+                names[str(choice).casefold()] = choice_uk
+    for item in payload["inventory"]["items"]:
+        uk = names.get(str(item.get("name_en", "")).casefold())
+        if uk:
+            item["name_uk"] = uk
+
+
+def _subclass_names(payload: dict, compendium: CompendiumService) -> None:
+    """Назва підкласу з книги й переклад: «Школа втілення (School of Evocation)».
+
+    У персонажа лише ключ («phb-2014/subclass/school-of-evocation»); зробити з
+    нього назву на екрані — це «School Of Evocation» англійською.
+    """
+    for entry in payload["character"]["classes"]:
+        key = entry.get("subclass")
+        if not key:
+            continue
+        try:
+            name_en = compendium.entry(key).name_en
+        except DomainError:
+            name_en = " ".join(word.capitalize() for word in key.rsplit("/", 1)[-1].split("-"))
+        entry["subclass_name"] = name_en
+        entry["subclass_name_uk"] = subclasses_uk.name_uk(name_en)
+
+
 def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Character
     """Повний лист: числа, лічильники, атаки й описи вмінь."""
     computed = DerivedStatsCalculator().compute(character)
@@ -155,6 +192,7 @@ def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Cha
         character, computed, _attacks(request, character, computed)
     )
     compendium = _compendium(request)
+    _subclass_names(payload, compendium)
     enrich_spells(payload["spells"], compendium, getattr(request.app.state, "spell_cache", {}))
     _elemental_affinity(payload["spells"], character, computed)
     enrich_features(
@@ -169,6 +207,7 @@ def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Cha
         compendium,
         getattr(request.app.state, "background_cache", {}),
     )
+    _background_item_names(payload)
     payload["class_choices"] = class_choices_payload(character, compendium)
     # Книга виду — лише там, де від неї залежать числа (кігті табаксі: VGM 1d4, MPMM 1d6).
     natural = natural_weapon_for(character.species_key, character.subspecies_key)

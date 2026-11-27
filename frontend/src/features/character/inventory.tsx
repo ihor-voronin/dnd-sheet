@@ -23,7 +23,7 @@ import {
   searchItems,
 } from "../../api";
 import type { CompendiumEntry, ItemBody, ItemSearchResult } from "../../api";
-import { ITEM_KIND_LABELS } from "../../labels";
+import { ITEM_KIND_LABELS, SOURCE_SHORT } from "../../labels";
 import { itemKey, itemLabel, weaponDamage, weaponNotes } from "./uk";
 import { RuleText } from "./panels";
 import type { SheetItem } from "../wizard/types";
@@ -91,17 +91,8 @@ const KNOWN_TYPES = new Set(TYPE_FILTERS.map((filter) => filter.value));
 const OTHER = "інше";
 
 /** Скорочені назви джерел для чипів; решта показується кодом книги. */
-const SOURCE_LABELS: Record<string, string> = {
-  "basic-rules-2014": "Базові правила",
-  "phb-2014": "Книга гравця",
-  "dmg-2014": "Посібник Майстра",
-  xgte: "Ксантар",
-  tcoe: "Таша",
-  egtw: "Уайлдмаунт",
-  idrotf: "Крижаний пік",
-  toa: "Гробниця",
-  gotg: "Велетні",
-};
+/** Назви книг — спільні для всього застосунку (`labels.SOURCE_SHORT`). */
+const SOURCE_LABELS = SOURCE_SHORT;
 
 interface Draft {
   name_en: string;
@@ -1089,7 +1080,7 @@ export function InventoryPanel({
                       onClick={() => void toggleDetail(index)}
                       title={isOpen ? "Згорнути опис" : "Показати опис"}
                     >
-                      {itemLabel(item.name_en)}
+                      {item.name_uk ?? itemLabel(item.name_en)}
                       {item.quantity > 1 ? ` × ${item.quantity}` : ""}
                       <span className="item-name__caret">{isOpen ? "▴" : "▾"}</span>
                     </button>

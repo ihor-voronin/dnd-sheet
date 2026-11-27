@@ -402,11 +402,16 @@ export const ALIGNMENT_HINTS: Record<string, string> = {
 export const SOURCE_SHORT: Record<string, string> = {
   "phb-2014": "Книга гравця",
   "basic-rules-2014": "Базові правила",
-  "dmg-2014": "Книга майстра",
+  "dmg-2014": "Посібник Майстра",
   tcoe: "Таша",
+  xgte: "Ксанатар",
   xge: "Ксанатар",
+  phb: "Книга гравця",
+  idrotf: "Крижаний пік",
+  toa: "Гробниця",
+  gotg: "Велетні",
   scag: "Узбережжя Мечів",
-  egtw: "Ексендрія",
+  egtw: "Уайлдмаунт",
   erftlw: "Еберон",
   ggtr: "Равніка",
   motm: "Мордекайнен (народи)",
@@ -426,7 +431,7 @@ export const SOURCE_SHORT: Record<string, string> = {
 
 export function sourceLabel(code: string | null | undefined): string {
   if (!code) return "";
-  return SOURCE_SHORT[code] ?? code.toUpperCase();
+  return SOURCE_SHORT[code] ?? SOURCE_SHORT[code.toLowerCase()] ?? code.toUpperCase();
 }
 
 /** Ціна наступного +1 у розподілі очок (PHB, p. 13). */

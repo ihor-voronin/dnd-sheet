@@ -152,6 +152,35 @@ ITEM_KINDS = {
     "consumable": "витратне",
 }
 
+#: Назва в тексті книги → назва запису довідника (таблиці SRD): «Leather Armor» → «Leather».
+ITEM_ALIASES = {
+    "leather armor": "leather",
+    "studded leather armor": "studded leather",
+    "padded armor": "padded",
+    "hide armor": "hide",
+    "half plate armor": "half plate",
+    "plate armor": "plate",
+    "splint armor": "splint",
+    "light crossbow": "crossbow, light",
+    "hand crossbow": "crossbow, hand",
+    "heavy crossbow": "crossbow, heavy",
+}
+
+#: Спорядження, якого в довіднику предметів немає (набори, осередки) — як на екрані.
+GEAR_UK = {
+    "explorer's pack": "Набір дослідника",
+    "priest's pack": "Набір священника",
+    "burglar's pack": "Набір зломщика",
+    "diplomat's pack": "Набір дипломата",
+    "entertainer's pack": "Набір артиста",
+    "scholar's pack": "Набір учня",
+    "dungeoneer's pack": "Набір підземельника",
+    "arcane focus": "Арканний осередок",
+    "druidic focus": "Друїдичний осередок",
+    "holy symbol": "Священний символ",
+    "component pouch": "Сумка для компонентів",
+}
+
 #: Атаки без предмета в довіднику.
 SPECIAL_NAMES = {
     "unarmed strike": "Удар без зброї",
@@ -328,8 +357,12 @@ def build_print_view(
     }
 
     def _item_by_name(name_en: str) -> str | None:
-        if name_en.casefold() in SPECIAL_NAMES:
-            return SPECIAL_NAMES[name_en.casefold()]
+        lowered = name_en.casefold()
+        if lowered in SPECIAL_NAMES:
+            return SPECIAL_NAMES[lowered]
+        if lowered in GEAR_UK:
+            return GEAR_UK[lowered]
+        name_en = ITEM_ALIASES.get(lowered, name_en)
         entry_id = by_name.get(name_en.casefold())
         if entry_id is None:
             # Предмет без запису в інвентарі (атака еталону, природна зброя):
@@ -343,7 +376,7 @@ def build_print_view(
         f"{_uk(display_name(entry['name_en']))} {entry['level']}" for entry in classes
     )
     subclasses = [
-        _uk(display_name(entry["subclass"].split("/")[-1].replace("-", " ").title()))
+        entry.get("subclass_name_uk") or entry.get("subclass_name") or entry["subclass"].rsplit("/", 1)[-1]
         for entry in classes
         if entry.get("subclass")
     ]
@@ -503,11 +536,20 @@ def _proficiencies(
         elif kind == "tool":
             label = TOOLS.get(key, value)
         else:
-            label = TRAINING.get(key) or item_name(value.title())["title"].lower()
+            label = TRAINING.get(key) or _weapon_label(value, item_name)
         if label not in groups[kind]:
             groups[kind].append(label)
     titles = {"armor": "Броня", "weapon": "Зброя", "tool": "Інструменти", "language": "Мови"}
     return [(titles[kind], ", ".join(values)) for kind, values in groups.items() if values]
+
+
+def _weapon_label(value: str, item_name: Callable[..., dict[str, str]]) -> str:
+    """Володіння конкретною зброєю: «quarterstaffs» у класу — це «quarterstaff» у довіднику."""
+    for candidate in (value, value[:-1] if value.endswith("s") else value):
+        pair = item_name(candidate.title())
+        if pair["en"]:
+            return pair["title"].lower()
+    return value
 
 
 def _features(
@@ -721,7 +763,11 @@ def _inventory(sheet: Mapping[str, Any], item_name: Callable[..., dict[str, str]
         notes = re.sub(r"^від (класу|передісторії)( · )?", "", notes).strip()
         items.append(
             {
-                **item_name(item["name_en"], item.get("entry_id")),
+                **(
+                    {"title": item["name_uk"], "en": ""}
+                    if item.get("name_uk")
+                    else item_name(item["name_en"], item.get("entry_id"))
+                ),
                 "kind": ITEM_KINDS.get(item.get("kind", ""), item.get("kind", "")),
                 "quantity": item.get("quantity", 1),
                 "weight": item.get("weight_lb") or 0,

@@ -209,7 +209,8 @@ function CharacterPage({
           ← до списку
         </button>
       </p>
-      <CharacterView initial={data.sheet} initialTab={tab} />
+      {/* key: інший персонаж — новий лист, а не стан попереднього (версії різних листів не порівнюються). */}
+      <CharacterView key={id} initial={data.sheet} initialTab={tab} />
     </>
   );
 }

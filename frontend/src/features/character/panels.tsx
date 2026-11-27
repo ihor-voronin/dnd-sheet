@@ -16,9 +16,9 @@ import {
   damageTypeLabel,
   durationLabel,
   modifierLabel,
-  proficiencyValue,
   rangeLabel,
   schoolLabel,
+  sourceLabel,
 } from "../../labels";
 import type { SheetViewPayload } from "../wizard/types";
 import {
@@ -35,6 +35,7 @@ import {
   withEnglish,
   weaponDamage,
   weaponNotes,
+  proficiencyText,
 } from "./uk";
 
 export function AttacksTable({ attacks }: { attacks: SheetViewPayload["attacks"] }) {
@@ -499,7 +500,7 @@ export function FeatsList({
             <summary className="feature__summary">
               <span className="feature-name">{feat.name_uk ? withEnglish(feat.name_en, feat.name_uk) : featLabel(feat.name_en)}</span>
               <span className="feature-meta">
-                риса{feat.source_id ? ` · ${feat.source_id}` : ""}
+                риса{feat.source_id ? ` · ${sourceLabel(feat.source_id)}` : ""}
               </span>
               <span className="feature__chevron" aria-hidden>
                 ▾
@@ -658,7 +659,7 @@ export function ProficienciesList({
     <ul className="plain-list">
       {proficiencies.map((item, index) => (
         <li key={`${item.kind}-${item.value}-${index}`}>
-          {PROFICIENCY_LABELS[item.kind] ?? item.kind}: {proficiencyValue(item.kind, item.value)}
+          {PROFICIENCY_LABELS[item.kind] ?? item.kind}: {proficiencyText(item.kind, item.value)}
           {showSource ? (
             <span className="short">
               {" "}

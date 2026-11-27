@@ -144,7 +144,8 @@ def plan_payload(
                 "name_en": name_of(key) or key,
                 **(
                     {"name_uk": uk_name}
-                    if (uk_name := classes_uk.name_uk(name_of(key) or key))
+                    # Ресурс підкласу (Удача Темного) — у шарі перекладу підкласів.
+                    if (uk_name := classes_uk.name_uk(name_of(key) or key) or subclasses_uk.name_uk(name_of(key) or key))
                     else {}
                 ),
             }

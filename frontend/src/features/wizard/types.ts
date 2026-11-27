@@ -364,6 +364,8 @@ export interface RestReport {
 
 export interface SheetItem {
   name_en: string;
+  /** Українська назва речі з передісторії («знаки розрізнення») — дає бекенд. */
+  name_uk?: string;
   kind: string;
   quantity: number;
   weight_lb: number;
@@ -493,6 +495,9 @@ export interface SheetCharacter {
     name_en: string;
     level: number;
     subclass: string | null;
+    /** Назва підкласу з книги й переклад (бекенд бере їх із довідника). */
+    subclass_name?: string;
+    subclass_name_uk?: string | null;
     hit_die: number;
     /** Клас узято всупереч вимогам мультикласу (правило дому). */
     requirements_ignored?: boolean;

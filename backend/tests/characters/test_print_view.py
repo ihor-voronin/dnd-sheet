@@ -35,3 +35,21 @@ def test_damage_and_weapon_notes() -> None:
 def test_ukrainian_alphabet_order() -> None:
     words = ["Історія", "Акробатика", "Виживання", "Обман"]
     assert sorted(words, key=uk_sort_key) == ["Акробатика", "Виживання", "Історія", "Обман"]
+
+
+def test_background_items_get_their_translation() -> None:
+    """Речі з передісторії («insignia of rank») беруть переклад із рядків її спорядження."""
+    from dndsheet.characters.api.router import _background_item_names
+
+    payload = {
+        "background_details": {
+            "equipment_rows": [
+                {"text": "an insignia of rank", "choices": [], "text_uk": "знаки розрізнення"},
+                {"text": "bone dice", "choices": ["bone dice", "deck of cards"], "choices_uk": ["кістки з кості", "колода карт"]},
+            ]
+        },
+        "inventory": {"items": [{"name_en": "An insignia of rank"}, {"name_en": "deck of cards"}, {"name_en": "Longsword"}]},
+    }
+    _background_item_names(payload)
+    names = [item.get("name_uk") for item in payload["inventory"]["items"]]
+    assert names == ["знаки розрізнення", "колода карт", None]

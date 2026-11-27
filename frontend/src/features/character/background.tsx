@@ -6,15 +6,15 @@
  * з нотаток: це частина «хто я», а не замітки під час гри.
  */
 
-import { ALIGNMENT_LABELS, proficiencyValue } from "../../labels";
+import { ALIGNMENT_LABELS, sourceLabel } from "../../labels";
 import type { BackgroundDetails } from "../wizard/types";
 import { NoteArea, notesStatusText } from "./notes";
 import type { NoteStatus } from "./notes";
 import { RuleText } from "./panels";
-import { itemLabel, ukBackground, withEnglish } from "./uk";
+import { itemLabel, proficiencyText, ukBackground, withEnglish } from "./uk";
 
 function joinOrDash(values: string[], kind: string, any: number): string {
-  const labels = values.map((value) => proficiencyValue(kind, value));
+  const labels = values.map((value) => proficiencyText(kind, value));
   if (any > 0) {
     labels.push(`${any} на вибір`);
   }
@@ -60,7 +60,7 @@ export function BackgroundPanel({
     <div className="background-panel">
       <h3 className="sheet-work__title">
         <span>Передісторія</span>
-        <span className="short">{details.source_id === "custom" ? "власна" : details.source_id || "2014"}</span>
+        <span className="short">{details.source_id === "custom" ? "власна" : sourceLabel(details.source_id) || "2014"}</span>
       </h3>
 
       <section className="bg-card">

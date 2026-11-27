@@ -417,7 +417,7 @@ export function CharacterView({
     ? character.classes
         .map(
           (item) =>
-            `${termLabel(item.name_en)} ${item.level}${item.subclass ? ` · ${withEnglish(subclassLabel(item.subclass), ukSubclass(item.subclass))}` : ""}`,
+            `${termLabel(item.name_en)} ${item.level}${item.subclass ? ` · ${withEnglish(item.subclass_name ?? subclassLabel(item.subclass), item.subclass_name_uk ?? ukSubclass(item.subclass))}` : ""}`,
         )
         .join(" / ")
     : "клас не вказано";
