@@ -1,0 +1,4 @@
+# Корпус довідника — тексти книг (copyright): у публічному репозиторії лише шифр git-crypt.
+# CI розблоковує його ключем із GitHub Secrets (GIT_CRYPT_KEY), щоб гнати тести й збирати образ.
+* filter=git-crypt diff=git-crypt
+.gitattributes !filter !diff

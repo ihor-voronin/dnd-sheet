@@ -29,9 +29,9 @@ deploy/terraform/terraform.tfvars
 .tmp/
 
 # --- База знань: сирі тексти книг (copyright) і сесія ---
+# Корпус (content/compendium, bestiary, index) — у git, але зашифрований git-crypt:
+# правила в їхніх .gitattributes. Сирі тексти книг і сесія — лише локально.
 content/raw/
-content/compendium/
-content/bestiary/
 content/.session/
 
 # --- Згенеровані артефакти ---
@@ -55,8 +55,6 @@ ingest-status*.txt
 *.bak.*
 
 
-# --- Похідні індекси з корпусу (збираються скриптами) ---
-content/index/
 
 
 # --- Тимчасові теки тестів (пісочниця не дає писати в %TEMP%) ---

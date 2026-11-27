@@ -10,10 +10,14 @@ default_stages: ["pre-commit"]
 default_language_version:
   node: lts
 default_install_hook_types: ["pre-commit", "commit-msg"]
+# Зашифровані git-crypt файли (секрети й корпус книг) у робочій копії — відкритий текст;
+# форматери й лінтери їх не чіпають. Що вони справді зашифровані — перевіряє secrets-encrypted.
 exclude: |
   (?x)^(
     frontend/src/contract/.*|
-    deploy/terraform/\.terraform\.lock\.hcl
+    deploy/terraform/\.terraform\.lock\.hcl|
+    deploy/secrets/.*|
+    content/(compendium|bestiary|index)/.*
   )$
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -27,11 +31,8 @@ repos:
         args: ["--assume-in-merge"]
       - id: end-of-file-fixer
         alias: format-end-of-line
-        # Секрети зашифровані git-crypt: у робочій копії — текст, у git — шифр;
-        # будь-яка «правка» тут змінила б зашифрований вміст.
-        exclude: ^deploy/secrets/
       - id: trailing-whitespace
-        exclude: ^deploy/secrets/|\.md$
+        exclude: \.md$
       - id: fix-byte-order-marker
         # Windows PowerShell 5 читає .ps1 без BOM як cp1251 — BOM там потрібен.
         exclude: \.ps1$
@@ -52,14 +53,13 @@ repos:
         alias: format-ruff
 
   # Секрети в коді: TruffleHog з образу Docker (бінарника під Windows немає в winget).
-  # deploy/secrets/ у робочій копії розшифрований — там секрети за задумом, у git вони шифр.
+  # Зашифровані git-crypt файли виключені вище: у робочій копії там секрети за задумом.
   - repo: local
     hooks:
       - id: trufflehog
         name: trufflehog — секрети в змінених файлах
         language: docker_image
         entry: trufflesecurity/trufflehog:3.90.0 filesystem --fail --no-update --log-level=-1
-        exclude: ^deploy/secrets/
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1-1
@@ -80,11 +80,11 @@ repos:
   - repo: local
     hooks:
       - id: secrets-encrypted
-        name: deploy/secrets — у коміт лише зашифрованим (git-crypt)
+        name: git-crypt — секрети й корпус у git лише зашифровані
         entry: python scripts/check_secrets_encrypted.py
-        language: python
-        files: ^deploy/secrets/
-        pass_filenames: true
+        language: system
+        always_run: true
+        pass_filenames: false
 
       # Prettier і плагін сортування імпортів — з frontend/node_modules (версії як у GloPros):
       # node-середовище pre-commit на Windows не дає prettier знайти плагін за назвою.
@@ -116,4 +116,3 @@ repos:
         language: system
         entry: terraform fmt
         files: \.(tf|tfvars)$
-        exclude: ^deploy/secrets/

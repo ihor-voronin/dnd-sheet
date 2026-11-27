@@ -1,47 +1,75 @@
 #!/usr/bin/env python3
-"""Хук pre-commit: файли з deploy/secrets/ ідуть у коміт лише зашифрованими.
+"""Хук pre-commit і крок CI: усе, що має шифрувати git-crypt, в індексі — зашифроване.
 
-git-crypt шифрує їх фільтром `clean` під час `git add`. Якщо фільтр не спрацював
-(git-crypt не встановлено, репозиторій не розблоковано, правило в
-.gitattributes зламане), у git потрапив би відкритий текст — і в GitHub теж.
-Тому перевіряємо саме те, що стоїть в індексі: зашифрований blob git-crypt
-починається з `\\0GITCRYPT\\0`.
+git-crypt шифрує файли фільтром `clean` під час `git add` — це секрети деплою
+(deploy/secrets/) і корпус довідника з текстами книг (content/compendium,
+bestiary, index). Якщо фільтр не спрацював (git-crypt не встановлено,
+репозиторій не розблоковано, зламане правило в .gitattributes), у публічний
+GitHub пішов би відкритий текст.
 
-    python scripts/check_secrets_encrypted.py deploy/secrets/prod.env ...
+Перевіряємо саме індекс: кожен файл з атрибутом `filter=git-crypt` має бути
+blob-ом, що починається з `\\0GITCRYPT\\0`. Файли беремо з `git ls-files`, а не
+від pre-commit: так перевірка не залежить від exclude і однакова локально й у CI.
+
+    python scripts/check_secrets_encrypted.py
 """
 
 from __future__ import annotations
 
 import subprocess
 import sys
-from collections.abc import Sequence
 
 MAGIC = b"\x00GITCRYPT\x00"
-#: Сам файл з правилом шифрування лишається відкритим — інакше git не знав би, що шифрувати.
-PLAIN = {".gitattributes"}
 
 
-def staged_blob(path: str) -> bytes | None:
-    result = subprocess.run(["git", "cat-file", "blob", f":{path}"], capture_output=True, check=False)
-    return result.stdout if result.returncode == 0 else None
+def git(*args: str, data: bytes | None = None) -> bytes:
+    return subprocess.run(["git", *args], input=data, capture_output=True, check=True).stdout
 
 
-def main(paths: Sequence[str] = sys.argv[1:]) -> int:
-    leaked = []
+def encrypted_paths() -> list[str]:
+    """Файли індексу, які за .gitattributes мають бути зашифровані."""
+    listed = git("ls-files", "-z").split(b"\0")
+    paths = b"\0".join(path for path in listed if path)
+    attributes = git("check-attr", "-z", "--stdin", "--cached", "filter", data=paths).split(b"\0")
+    # Формат -z: шлях, атрибут, значення — трійками.
+    return [
+        attributes[index].decode("utf-8")
+        for index in range(0, len(attributes) - 2, 3)
+        if attributes[index + 2] == b"git-crypt"
+    ]
+
+
+def leaked(paths: list[str]) -> list[str]:
+    """Шляхи, чий blob в індексі не починається з підпису git-crypt."""
+    if not paths:
+        return []
+    request = "".join(f":{path}\n" for path in paths).encode("utf-8")
+    process = subprocess.run(["git", "cat-file", "--batch"], input=request, capture_output=True, check=True)
+    out = process.stdout
+    bad: list[str] = []
+    position = 0
     for path in paths:
-        if path.replace("\\", "/").rsplit("/", 1)[-1] in PLAIN:
+        newline = out.index(b"\n", position)
+        header = out[position:newline].split()
+        position = newline + 1
+        if len(header) < 3 or header[1] != b"blob":  # missing — файл видаляють
             continue
-        blob = staged_blob(path)
-        if blob is None:  # файл видаляють або він не в індексі — нічого не потрапить у git
-            continue
-        if not blob.startswith(MAGIC):
-            leaked.append(path)
-    if leaked:
+        size = int(header[2])
+        if not out[position : position + size].startswith(MAGIC):
+            bad.append(path)
+        position += size + 1  # вміст і завершальний \n
+    return bad
+
+
+def main() -> int:
+    bad = leaked(encrypted_paths())
+    if bad:
         sys.stderr.write(
-            "Ці файли йдуть у коміт НЕзашифрованими (git-crypt не спрацював):\n"
-            + "".join(f"  {path}\n" for path in leaked)
+            "Ці файли мають іти в git зашифрованими (git-crypt), але в індексі — відкритий текст:\n"
+            + "".join(f"  {path}\n" for path in bad[:20])
+            + (f"  … і ще {len(bad) - 20}\n" if len(bad) > 20 else "")
             + "Приберіть з індексу (git restore --staged <файл>), перевірте `git-crypt status`\n"
-            "і правило в deploy/secrets/.gitattributes, потім додайте знову.\n"
+            "і правило в .gitattributes, потім додайте знову.\n"
         )
         return 1
     return 0
