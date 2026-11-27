@@ -147,7 +147,7 @@ def spell_rows(character: Character, computed: ComputedSheet) -> tuple[SpellRow,
             SpellRow(
                 name_en=granted.name_en,
                 level=granted.spell_level,
-                class_key=None,
+                class_key=granted.class_key,
                 prepared=granted.prepared,
                 always_prepared=granted.prepared,
                 source=granted.source if granted.source in _GRANTED_SOURCES else "subclass",

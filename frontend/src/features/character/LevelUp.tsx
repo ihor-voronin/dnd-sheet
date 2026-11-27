@@ -138,7 +138,11 @@ export function LevelUpWizard({
       : [];
   // Що обирається просто тут: заговори, відомі закляття (бард, чаклун…) і
   // 2 закляття в книгу мага (PHB, p. 114). Ті, хто готує, лише готують на листі.
-  const ownSpells = (sheet.data?.sheet.spells ?? []).filter((spell) => spell.class_key === plan?.class_key);
+  // Лише закляття, обрані класом: доменні й подібні (підклас) мають той самий
+  // class_key, але в ліміти відомих не входять.
+  const ownSpells = (sheet.data?.sheet.spells ?? []).filter(
+    (spell) => spell.class_key === plan?.class_key && spell.source === "class",
+  );
   const pickCantrips = gain.cantrips;
   const pickLeveled = !plan
     ? 0

@@ -123,3 +123,29 @@ def cleric_5(rules) -> Character:  # noqa: ANN001
 
 
 SAMPLES = {"wizard-4": wizard_4, "warlock-5": warlock_5, "cleric-5": cleric_5}
+
+
+def multiclass_14(rules) -> Character:  # noqa: ANN001
+    """Маг 4 / чаклун 5 / жрець 5: комірки за рівнем заклинателя 9 і окремо — угода."""
+    wizard = wizard_4(rules).spells
+    warlock = warlock_5(rules).spells
+    cleric = cleric_5(rules).spells
+    return Character(
+        id="sample-multiclass-14",
+        name="Сайлас Триєдиний",
+        abilities=_scores(str=8, dex=12, con=14, int=16, wis=14, cha=15),
+        rules=rules,
+        species_key="human",
+        background_key="sage",
+        classes=[
+            CharacterClass(class_key="wizard", level=4, subclass_key="phb-2014/subclass/school-of-evocation"),
+            CharacterClass(class_key="warlock", level=5, subclass_key="phb-2014/subclass/the-fiend"),
+            CharacterClass(class_key="cleric", level=5, subclass_key="phb-2014/subclass/life-domain"),
+        ],
+        chosen=_skills("wizard", Skill.ARCANA, Skill.INVESTIGATION),
+        spells=wizard + warlock + cleric,
+        inventory=Inventory(items=(InventoryItem(name_en="quarterstaff", kind=ItemKind.WEAPON, weight_lb=4),), money=Money(gp=120)),
+    )
+
+
+SAMPLES["multiclass-14"] = multiclass_14

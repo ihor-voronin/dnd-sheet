@@ -85,6 +85,9 @@ class GrantedSpellView:
     usage: str = ""
     #: Характеристика чарування поза класом (Учень магії — клас риси).
     ability: Ability | None = None
+    #: Клас, чий підклас дав закляття: у мультикласі від нього залежать
+    #: складність рятівного кидка й бонус атаки (домен жреця — від Мудрості).
+    class_key: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -577,7 +580,11 @@ class DerivedStatsCalculator:
                 spell_level = definition.max_spell_level(class_level) or 1
                 views.extend(
                     GrantedSpellView(
-                        name_en=name, spell_level=spell_level, source="subclass", prepared=True
+                        name_en=name,
+                        spell_level=spell_level,
+                        source="subclass",
+                        prepared=True,
+                        class_key=entry.class_key,
                     )
                     for name in names
                 )

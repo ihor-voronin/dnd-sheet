@@ -496,6 +496,8 @@ def test_cleric_domain_spells_reach_the_sheet(client: TestClient) -> None:
     }
     assert set(granted) == {"bless", "cure wounds"}
     assert all(item["always_prepared"] for item in granted.values())
+    # Клас підкласу — щоб у мультикласі брати складність і атаку від Мудрості жреця.
+    assert all(item["class_key"] == "cleric" for item in granted.values())
 
 
 def test_2022_species_requires_ability_spread(client: TestClient) -> None:
