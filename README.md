@@ -95,6 +95,7 @@ docker compose up -d --build
 ## Швидкий старт (Windows / PowerShell)
 
 > Детальна інструкція — встановлення, запуск, тести, діагностика проблем: **[RUN.md](RUN.md)**.
+> Продакшн (https://dnd.voronin.app): Terraform, сервер і секрети — **[docs/deploy.md](docs/deploy.md)**.
 
 ```powershell
 cd dnd-sheet
