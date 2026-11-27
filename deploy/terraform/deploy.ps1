@@ -17,6 +17,19 @@ if ([System.Text.Encoding]::ASCII.GetString($head) -eq "`0GITCRYPT") {
     throw "deploy/secrets/prod.env зашифрований — спершу git-crypt unlock (див. deploy/README.md)."
 }
 
+# Токен Cloudflare (запис DNS) — лише локально, у deploy/local/cloudflare.env.
+$cloudflareEnv = Join-Path $root "deploy\local\cloudflare.env"
+if (Test-Path $cloudflareEnv) {
+    foreach ($line in Get-Content $cloudflareEnv) {
+        if ($line -match '^\s*([A-Z_]+)\s*=\s*(.*?)\s*$') {
+            Set-Item -Path "Env:$($Matches[1])" -Value ($Matches[2].Trim("'`""))
+        }
+    }
+}
+if (-not $env:CLOUDFLARE_API_TOKEN) {
+    throw "Немає CLOUDFLARE_API_TOKEN: впишіть токен у deploy/local/cloudflare.env (див. deploy/README.md)."
+}
+
 if (-not $NoBuild) {
     Push-Location $root
     try { docker compose build app } finally { Pop-Location }

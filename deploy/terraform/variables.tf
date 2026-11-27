@@ -44,9 +44,13 @@ variable "env_file" {
 }
 
 variable "domain" {
-  description = "Домен сайту. Порожньо — сайт на IP по HTTP; з доменом Caddy сам вмикає HTTPS."
+  description = "Адреса сайту (запис A в Cloudflare веде на сервер; Caddy сам отримує сертифікат HTTPS)."
   type        = string
-  default     = ""
+}
+
+variable "cloudflare_zone" {
+  description = "Зона в Cloudflare, де живе домен (напр. voronin.app). Токен — у змінній CLOUDFLARE_API_TOKEN (deploy.ps1 бере її з deploy/local/cloudflare.env)."
+  type        = string
 }
 
 variable "disable_password_login" {

@@ -53,15 +53,18 @@ git-crypt add-gpg-user --trusted <відбиток ключа>
    вхід по SSH лише ключем;
 2. **image** — образ збирається на цьому компʼютері (корпус довідника не в git)
    і їде на сервер через `docker save` / `docker load`;
-3. **app** — `compose.yml` з Caddy, `.env` з `secrets/prod.env`, запуск і
-   перевірка `/healthz`.
+3. **dns** — запис A `dnd.voronin.app` → IP сервера в Cloudflare
+   ([`terraform/dns.tf`](terraform/dns.tf)), без проксі Cloudflare;
+4. **app** — `compose.yml` з Caddy (сам отримує сертифікат Let's Encrypt і
+   переводить HTTP на HTTPS; голий IP веде на домен), `.env` з
+   `secrets/prod.env`, запуск і перевірка: застосунок healthy, HTTPS відповідає.
 
 Кожен крок повторюється лише тоді, коли змінилося те, від чого він залежить:
 новий образ, конфіг, `.env` чи скрипт сервера.
 
 Локально, поза git (`deploy/local/`): доступи до панелі й сервера
-(`racknerd.env`), ключ деплою (`ssh/id_ed25519`), стан Terraform і тимчасовий
-`image.tar`. Адреса сервера — у `terraform/terraform.tfvars` (теж поза git;
+(`racknerd.env`), токен Cloudflare (`cloudflare.env`), ключ деплою
+(`ssh/id_ed25519`), стан Terraform і тимчасовий `image.tar`. Адреса сервера — у `terraform/terraform.tfvars` (теж поза git;
 приклад — `terraform.tfvars.example`).
 
 ### Перший запуск
@@ -78,7 +81,11 @@ git-crypt add-gpg-user --trusted <відбиток ключа>
    ssh -i deploy\local\ssh\id_ed25519 root@<IP> "cat /etc/os-release | head -2"
    ```
 
-3. Деплой (Terraform покаже план і спитає `yes`):
+3. Токен Cloudflare: dash.cloudflare.com → My Profile → API Tokens →
+   Create Token → шаблон «Edit zone DNS», зона `voronin.app`; додати право
+   Zone · Zone · Read. Вписати в `deploy/local/cloudflare.env`.
+
+4. Деплой (Terraform покаже план і спитає `yes`):
 
    ```powershell
    .\deploy\terraform\deploy.ps1
@@ -95,12 +102,10 @@ git-crypt add-gpg-user --trusted <відбиток ключа>
 .\deploy\terraform\deploy.ps1 -Plan      # подивитися, що зміниться
 ```
 
-Без домену сайт працює по HTTP на IP. Вхід через Telegram потребує домену з
-HTTPS, а вхід «за іменем» на сервері вимкнений (`DNDSHEET_DEV_LOGIN=0`) —
-тож поки що на сайті доступні довідник і посилання «поділитися». Коли буде
-домен: `domain = "..."` у `terraform.tfvars`, запис A на IP сервера,
-`/setdomain` у @BotFather, токен бота в `secrets/prod.env` — і `deploy.ps1`;
-Caddy сам отримає сертифікат.
+Вхід «за іменем» на сервері вимкнений (`DNDSHEET_DEV_LOGIN=0`), тож без
+бота на сайті доступні довідник і посилання «поділитися». Щоб увімкнути вхід
+через Telegram: бот у @BotFather, там же `/setdomain` → `dnd.voronin.app`,
+назва й токен бота в `secrets/prod.env` — і `deploy.ps1 -NoBuild`.
 
 ## Перед комітом
 

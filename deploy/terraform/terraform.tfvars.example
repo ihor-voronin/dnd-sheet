@@ -1,3 +1,4 @@
-# Скопіюйте в terraform.tfvars (він у .gitignore) і впишіть адресу сервера.
-server_ip = "203.0.113.10"
-# domain  = "dnd.example.com"   # коли зʼявиться — Caddy сам увімкне HTTPS
+# Скопіюйте в terraform.tfvars (він у .gitignore).
+server_ip       = "203.0.113.10"
+domain          = "dnd.example.com"
+cloudflare_zone = "example.com"

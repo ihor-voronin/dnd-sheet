@@ -17,12 +17,13 @@ locals {
   bootstrap = replace(file("${local.files}/bootstrap.sh"), "\r\n", "\n")
   compose   = replace(file("${local.files}/compose.yml"), "\r\n", "\n")
   caddyfile = templatefile("${local.files}/Caddyfile.tftpl", {
-    site_address = var.domain != "" ? var.domain : ":80"
+    domain    = var.domain
+    server_ip = var.server_ip
   })
   env = sensitive(replace(file(var.env_file), "\r\n", "\n"))
 
   image_tar = abspath("${path.module}/../local/image.tar")
-  site_url  = var.domain != "" ? "https://${var.domain}/" : "http://${var.server_ip}/"
+  site_url  = "https://${var.domain}/"
 }
 
 resource "terraform_data" "bootstrap" {
@@ -85,7 +86,8 @@ resource "terraform_data" "app" {
     sha256(local.caddyfile),
     sha256(local.env),
   ]
-  depends_on = [terraform_data.image]
+  # Запис DNS — до запуску Caddy: інакше Let's Encrypt не знайде сервер за доменом.
+  depends_on = [terraform_data.image, cloudflare_dns_record.site]
 
   connection {
     type        = "ssh"
@@ -115,8 +117,10 @@ resource "terraform_data" "app" {
       "chmod 600 ${local.remote_dir}/.env",
       "cd ${local.remote_dir} && DNDSHEET_IMAGE=${var.image} docker compose -f compose.yml up -d --remove-orphans",
       "docker image prune -f",
-      # Сайт мусить відповісти через Caddy; інакше — показати журнал і впасти.
-      "for i in $(seq 1 45); do curl -fsS http://127.0.0.1/healthz >/dev/null 2>&1 && echo 'healthz: OK' && exit 0; sleep 2; done; cd ${local.remote_dir} && docker compose -f compose.yml logs --tail 60 app caddy; exit 1",
+      # Застосунок мусить стати healthy (HEALTHCHECK образу); інакше — журнал і помилка.
+      "for i in $(seq 1 45); do [ \"$(docker inspect -f '{{.State.Health.Status}}' dndsheet-app)\" = healthy ] && echo 'app: healthy' && break; sleep 2; done; [ \"$(docker inspect -f '{{.State.Health.Status}}' dndsheet-app)\" = healthy ] || { cd ${local.remote_dir} && docker compose -f compose.yml logs --tail 60 app; exit 1; }",
+      # HTTPS через Caddy: перший сертифікат може зайняти хвилину — тут лише попередження.
+      "for i in $(seq 1 30); do curl -fsS --resolve ${var.domain}:443:127.0.0.1 https://${var.domain}/healthz >/dev/null 2>&1 && echo 'https: OK' && exit 0; sleep 3; done; echo 'https: ще немає сертифіката — дивіться docker logs dndsheet-caddy'; docker logs --tail 30 dndsheet-caddy",
     ]
   }
 }
