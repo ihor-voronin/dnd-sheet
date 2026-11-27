@@ -505,7 +505,9 @@ export interface SheetViewPayload {
   character: SheetCharacter;
   abilities: Record<string, SheetAbility>;
   proficiency_bonus: number;
-  saving_throws: Record<string, { value: number; proficient: boolean }>;
+  saving_throws: Record<string, { value: number; proficient: boolean; disadvantage?: boolean }>;
+  /** Броня/щит без володіння: завада на СИЛ/СПР, чарувати не можна. */
+  armor_untrained?: string[];
   skills: Record<string, { value: number; proficient: boolean; expertise?: boolean; disadvantage?: boolean }>;
   /** Експертиза: скільки дали рівні, що обрано, з чого можна обрати. */
   expertise?: { slots: number; chosen: string[]; options: string[] };
@@ -660,6 +662,8 @@ export interface LevelUpPlan {
   requirements: string[];
   /** Новий клас барда/слідопита/плута дає одну навичку (PHB, p. 164). */
   skill_options?: string[];
+  /** Бард при мультикласі: один музичний інструмент. */
+  tool_options?: string[];
 }
 
 export interface LevelUpView {

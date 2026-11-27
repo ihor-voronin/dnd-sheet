@@ -309,3 +309,56 @@ def test_invocation_prerequisites(rules) -> None:
     warlock.learn_spell(KnownSpell(name_en="Eldritch Blast", level=0, class_key="warlock"))
     assert missing_prerequisite("Pact of the Blade, Level 5 Warlock", warlock, "warlock") is None
     assert missing_prerequisite("Spell: eldritch blast cantrip", warlock, "warlock") is None
+
+
+def test_armor_without_proficiency(rules) -> None:
+    mail = InventoryItem(name_en="Chain mail", kind=ItemKind.ARMOR, equipped=True, armor_base=16)
+    wizard = make_character(
+        rules, abilities=_scores(str=15, dex=14), classes=[CharacterClass("wizard", 1)], inventory=Inventory(items=(mail,))
+    )
+    sheet = _sheet(wizard)
+    assert sheet.armor_untrained == ("Chain mail",)
+    assert sheet.armor_class == 16  # важка броня: без Спритності, навіть коли dex_cap не задано
+    assert any("Без володіння" in warning for warning in sheet.warnings)
+    fighter = make_character(
+        rules, abilities=_scores(str=15), classes=[CharacterClass("fighter", 1)], inventory=Inventory(items=(mail,))
+    )
+    assert _sheet(fighter).armor_untrained == ()
+
+
+def test_multiclass_bard_gives_one_instrument(rules) -> None:
+    from dndsheet.characters.domain.proficiencies import GrantSource, Proficiency, SourceKind
+    from dndsheet.shared.errors import ValidationError
+
+    character = make_character(
+        rules, abilities=_scores(str=13, cha=13), classes=[CharacterClass("fighter", 1), CharacterClass("bard", 1)]
+    )
+
+    def tool(name: str) -> Proficiency:
+        return Proficiency(kind=ProficiencyKind.TOOL, value=name, source=GrantSource.of(SourceKind.CLASS, "bard"))
+
+    with pytest.raises(ValidationError):
+        character.pick(tool("smith's tools"))
+    character.pick(tool("lute"))
+    assert character.all_proficiencies().has(ProficiencyKind.TOOL, "lute")
+    with pytest.raises(ValidationError):
+        character.pick(tool("flute"))
+
+
+def test_eldritch_knight_spell_schools(rules) -> None:
+    from dndsheet.api.app import create_app
+    from dndsheet.characters.api.school_limits import check_schools
+    from dndsheet.characters.domain.spells import KnownSpell
+    from dndsheet.shared.errors import ValidationError
+
+    compendium = create_app().state.compendium
+    knight = make_character(
+        rules, abilities=_scores(str=15, int=13), classes=[CharacterClass("fighter", 3, subclass_key="eldritch-knight")]
+    )
+    knight.learn_spell(KnownSpell(name_en="Shield", level=1, class_key="fighter"))
+    # Одне закляття будь-якої школи на 3 рівні — дозволено (Sleep — зачарування).
+    check_schools(knight, compendium, "fighter", [{"name_en": "Sleep", "level": 1}])
+    knight.learn_spell(KnownSpell(name_en="Sleep", level=1, class_key="fighter"))
+    with pytest.raises(ValidationError):
+        check_schools(knight, compendium, "fighter", [{"name_en": "Charm Person", "level": 1}])
+    check_schools(knight, compendium, "fighter", [{"name_en": "Magic Missile", "level": 1}])

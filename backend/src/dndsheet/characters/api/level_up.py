@@ -30,7 +30,7 @@ from dndsheet.compendium.api.serializers import entry_brief
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.shared.kernel import Skill
-from dndsheet.shared.rules import MULTICLASS_SKILLS, feat_ability_options
+from dndsheet.shared.rules import MULTICLASS_SKILLS, MUSICAL_INSTRUMENTS, feat_ability_options
 
 
 def level_up_payload(
@@ -63,6 +63,8 @@ def level_up_payload(
                     current_subclass=_current_subclass(character, plan.class_key),
                 ),
                 "skill_options": _multiclass_skills(character, plan),
+                # Бард при мультикласі: один музичний інструмент (PHB, p. 164).
+                "tool_options": list(MUSICAL_INSTRUMENTS) if plan.is_new_class and plan.class_key == "bard" else [],
             }
             for plan in plans
         ],

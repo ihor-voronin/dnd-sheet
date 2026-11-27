@@ -84,6 +84,8 @@ def attacks_for(
         if item.notes:
             view = replace(view, notes=item.notes.strip())
         view = _fighting_style(view, profile.properties.casefold(), character)
+        if computed.armor_untrained:
+            view = replace(view, notes=", ".join(filter(None, [view.notes, "завада: броня без володіння"])))
         attacks.append(
             {
                 "name_en": view.name_en,

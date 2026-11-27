@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from dndsheet.characters.domain.proficiencies import GrantSource, SourceKind
+from dndsheet.shared.rules import armor_category
 
 
 class ModifierKind(StrEnum):
@@ -185,7 +186,7 @@ def _rule_modifiers(character) -> list[Modifier]:  # noqa: ANN001, C901 — та
     proficiency = proficiency_bonus(total_level)
     armor = character.inventory.worn_armor
     shield = character.inventory.worn_shield
-    heavy_armor = armor is not None and armor.dex_cap == 0
+    heavy_armor = armor_category(armor) == "heavy"
 
     def add(kind: ModifierKind, value: int, kind_src: SourceKind, key_src: str, key=None, note=None):  # noqa: ANN001, ANN202
         if value:

@@ -29,6 +29,7 @@ from dndsheet.characters.api.serializers import (
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.background_info import enrich_background
 from dndsheet.characters.api.class_choices import allowed_names, class_choices_payload
+from dndsheet.characters.api.school_limits import check_schools
 from dndsheet.characters.api import classes_uk, uk_text
 from dndsheet.characters.api.uk_text import with_english
 from dndsheet.characters.api.features import (
@@ -494,6 +495,10 @@ def add_spell(
     body = dict(payload or {})
     version = _pop_version(body)
     try:
+        if body.get("class_key") and not body.get("custom"):
+            check_schools(
+                _sheet_service(request).load(character_id), _compendium(request), str(body["class_key"]), [body]
+            )
         character = _sheet_service(request).add_spell(
             character_id, body, expected_version=version
         )
@@ -657,6 +662,17 @@ def level_up(
     body = dict(payload or {})
     version = _pop_version(body)
     try:
+        current = _sheet_service(request).load(character_id)
+        class_key = str(body.get("class_key") or "").casefold()
+        check_schools(
+            current,
+            _compendium(request),
+            class_key,
+            [item for item in body.get("spells") or [] if isinstance(item, dict)],
+            removing=body.get("replace_spell"),
+            level=current.class_level(class_key) + 1,
+            subclass_key=body.get("subclass_key"),
+        )
         character, report = _level_up_service(request).apply(
             character_id, body, expected_version=version
         )

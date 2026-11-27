@@ -42,7 +42,7 @@ from dndsheet.shared.kernel import (
     Skill,
     proficiency_bonus,
 )
-from dndsheet.shared.rules import ClassMechanics
+from dndsheet.shared.rules import ClassMechanics, armor_category, armor_dex_cap
 
 SHIELD_AC_BONUS = 2
 UNARMORED_BASE = 10
@@ -119,6 +119,8 @@ class ComputedSheet:
     skill_expertise: dict[Skill, bool] = field(default_factory=dict)
     passive_investigation: int = 10
     passive_insight: int = 10
+    #: Вдягнене без володіння (PHB, p. 144): завада на СИЛ/СПР і заборона чарувати.
+    armor_untrained: tuple[str, ...] = ()
 
     # --- зручні похідні для рендерів --------------------------------------
 
@@ -149,6 +151,20 @@ class DerivedStatsCalculator:
         proficiency = proficiency_bonus(total_level)
         proficiencies = character.all_proficiencies()
         warnings: list[str] = []
+        worn = (
+            (character.inventory.worn_armor, armor_category(character.inventory.worn_armor)),
+            (character.inventory.worn_shield, "shield"),
+        )
+        armor_untrained = tuple(
+            item.name_en
+            for item, kind in worn
+            if item is not None and not proficiencies.has(ProficiencyKind.ARMOR, kind)
+        )
+        if armor_untrained:
+            warnings.append(
+                f"Без володіння: {', '.join(armor_untrained)} — завада на перевірки, рятівні кидки й "
+                "атаки Сили та Спритності; чарувати закляття не можна (PHB, p. 144)"
+            )
 
         saving_proficiency = {
             ability: proficiencies.has(ProficiencyKind.SAVING_THROW, ability.value)
@@ -267,6 +283,7 @@ class DerivedStatsCalculator:
             feats=character.feats,
             overridden=frozenset(applied),
             warnings=tuple(warnings),
+            armor_untrained=armor_untrained,
         )
 
     # --- частини ------------------------------------------------------------
@@ -296,7 +313,9 @@ class DerivedStatsCalculator:
         dexterity = modifiers[Ability.DEX]
         if armor is not None and armor.armor_base is not None:
             parts.append(ArmorClassPart(label=f"armor:{armor.name_en}", value=armor.armor_base))
-            capped = dexterity if armor.dex_cap is None else min(dexterity, armor.dex_cap)
+            # Межа — за категорією броні: предмет із власного спорядження може не мати dex_cap.
+            cap = armor_dex_cap(armor)
+            capped = dexterity if cap is None else min(dexterity, cap)
             if capped:
                 parts.append(ArmorClassPart(label="dexterity", value=capped))
         else:

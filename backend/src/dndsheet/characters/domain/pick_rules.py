@@ -20,7 +20,7 @@ from dndsheet.characters.domain.proficiencies import (
 )
 from dndsheet.shared.errors import NotFoundError, ValidationError
 from dndsheet.shared.kernel import Skill
-from dndsheet.shared.rules import MULTICLASS_SKILLS
+from dndsheet.shared.rules import MULTICLASS_SKILLS, MUSICAL_INSTRUMENTS
 
 #: Підписи, які не є володінням, а описують вибір («three musical instruments
 #: of your choice»). Такий вибір робить гравець, і він приходить як `pick`.
@@ -55,6 +55,14 @@ def validate_pick(
         definition = rules.class_mechanics(source.key)
         if definition is None:
             raise NotFoundError(f"немає правил класу {source.key!r}")
+        if pick.kind is ProficiencyKind.TOOL and multiclass and any(
+            "musical instrument" in tool.casefold() for tool in definition.multiclass_tools
+        ):
+            if pick.value.strip().casefold() not in MUSICAL_INSTRUMENTS:
+                raise ValidationError(f"{pick.value!r} — не музичний інструмент")
+            if count_picks(existing, ProficiencyKind.TOOL, source) >= 1:
+                raise ValidationError(f"клас {definition.name_en!r} дає при мультикласі один інструмент")
+            return
         if pick.kind is not ProficiencyKind.SKILL:
             raise ValidationError(
                 f"клас {definition.name_en!r} дає володіння навичками — оберіть навичку"

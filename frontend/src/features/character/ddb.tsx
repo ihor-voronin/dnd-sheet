@@ -103,7 +103,14 @@ export function SavePills({
               className="ddb-save__dot"
               title={save.proficient ? "володіє рятівним кидком" : "без володіння"}
             />
-            <span className="ddb-save__name">{ABILITY_SHORT[code]}</span>
+            <span className="ddb-save__name">
+              {ABILITY_SHORT[code]}
+              {save.disadvantage ? (
+                <span className="ddb-skill__dis" title="Завада (disadvantage): броня без володіння">
+                  {" "}З
+                </span>
+              ) : null}
+            </span>
             <span className="ddb-save__value">
               {render(`save:${code}`, save.value, `Рятівний кидок ${abilityLabel(code)}`)}
             </span>

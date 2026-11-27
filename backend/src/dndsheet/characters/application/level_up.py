@@ -161,6 +161,19 @@ class LevelUpService:
                 )
             )
 
+        # 1в. музичний інструмент барда при мультикласі (PHB, p. 164)
+        tool = _optional_text(payload.get("tool"))
+        if tool is not None:
+            if not plan.is_new_class:
+                raise ValidationError(f"{plan.class_name}: цей рівень не дає інструмента на вибір")
+            character.pick(
+                Proficiency(
+                    kind=ProficiencyKind.TOOL,
+                    value=tool.casefold(),
+                    source=GrantSource.of(SourceKind.CLASS, plan.class_key),
+                )
+            )
+
         # 1а. позначка «взято без вимог» — уже після появи класу в списку
         if waived:
             character.waive_multiclass_requirements(plan.class_key, plan.requirements)

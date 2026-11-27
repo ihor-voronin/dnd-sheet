@@ -21,7 +21,7 @@ from dndsheet.characters.domain.services.derived_stats import ComputedSheet
 from dndsheet.characters.domain.services.feature_resources import resources_for
 from dndsheet.characters.domain.services.spell_slots import Spellcasting
 from dndsheet.characters.domain.wizard import STEP_ORDER, Draft, WizardStep
-from dndsheet.shared.kernel import Ability
+from dndsheet.shared.kernel import SKILL_ABILITY, Ability, Skill
 from dndsheet.shared.rules import stealth_disadvantage
 
 
@@ -47,6 +47,7 @@ def computed_sheet(
             ability.value: {
                 "value": computed.saving_throws[ability],
                 "proficient": computed.saving_throw_proficiency[ability],
+                "disadvantage": bool(computed.armor_untrained) and ability in (Ability.STR, Ability.DEX),
             }
             for ability in Ability
         },
@@ -56,7 +57,8 @@ def computed_sheet(
                 "proficient": computed.skill_proficiency[skill],
                 "expertise": computed.skill_expertise.get(skill, False),
                 # Завада на Скритність у важкій і частині середньої броні (PHB, p. 145).
-                "disadvantage": skill == "stealth" and stealth_disadvantage(character.inventory.worn_armor),
+                "disadvantage": (skill == "stealth" and stealth_disadvantage(character.inventory.worn_armor))
+                or (bool(computed.armor_untrained) and SKILL_ABILITY[Skill(skill)] in (Ability.STR, Ability.DEX)),
             }
             for skill, value in computed.skills.items()
         },
@@ -123,6 +125,7 @@ def computed_sheet(
         ],
         "attacks": attacks or [],
         "spellcasting": spellcasting(computed.spellcasting),
+        "armor_untrained": list(computed.armor_untrained),
         "spells": spells(character, computed),
         "proficiencies": proficiencies(computed.proficiencies),
         "carrying": {

@@ -28,6 +28,7 @@ import {
   ABILITY_LABELS,
   abilityCodesUk,
   abilityGenitive,
+  schoolLabel,
   abilityModifier,
   classGuide,
   modifierLabel,
@@ -38,7 +39,7 @@ import {
 import type { LevelUpPlan, LevelUpReport, LevelUpView } from "../wizard/types";
 import { SubclassBrief } from "../wizard/SubclassBrief";
 import { RuleText } from "./panels";
-import { featLabel, featureLabel, spellLabel, termLabel, ukSubclass, withEnglish } from "./uk";
+import { featLabel, featureLabel, itemLabel, spellLabel, termLabel, ukSubclass, withEnglish } from "./uk";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"] as const;
 type AbilityCode = (typeof ABILITIES)[number];
@@ -105,6 +106,7 @@ export function LevelUpWizard({
   const [featId, setFeatId] = useState<string | null>(null);
   const [featAbility, setFeatAbility] = useState<string | null>(null);
   const [skill, setSkill] = useState<string | null>(null);
+  const [tool, setTool] = useState<string | null>(null);
   const [replaceSpell, setReplaceSpell] = useState<{ from: string; to: string }>({ from: "", to: "" });
   const [newSpells, setNewSpells] = useState<string[]>([]);
   const [spellQuery, setSpellQuery] = useState("");
@@ -174,6 +176,7 @@ export function LevelUpWizard({
     setAsiMode("two");
     setFeatId(null);
     setSkill(null);
+    setTool(null);
     setReplaceSpell({ from: "", to: "" });
     setNewSpells([]);
     // Підклас не обирається за гравця: раніше перший варіант ставав
@@ -273,6 +276,10 @@ export function LevelUpWizard({
         .filter((entry) => newSpells.includes(entry.name_en))
         .map((entry) => ({ name_en: entry.name_en, level: Number(entry.data.level ?? 0), entry_id: entry.id }));
       body.spells = learned;
+      if (plan.tool_options?.length) {
+        if (!tool) throw new Error("оберіть музичний інструмент, яким володітимете");
+        body.tool = tool;
+      }
       if (replaceSpell.from) {
         if (!replaceSpell.to.trim()) throw new Error("впишіть, яке закляття стає на місце забутого");
         body.replace_spell = replaceSpell.from;
@@ -647,6 +654,21 @@ export function LevelUpWizard({
               </section>
             ) : null}
 
+            {plan.tool_options?.length ? (
+              <section className="wizard-block">
+                <h3>{nextStep()}. Музичний інструмент</h3>
+                <p className="hint">Мультиклас у барда дає володіння одним музичним інструментом (PHB, с. 164).</p>
+                <select className="select" value={tool ?? ""} onChange={(event) => setTool(event.target.value || null)}>
+                  <option value="">— оберіть інструмент —</option>
+                  {plan.tool_options.map((name) => (
+                    <option key={name} value={name}>
+                      {itemLabel(name)}
+                    </option>
+                  ))}
+                </select>
+              </section>
+            ) : null}
+
             {knownSpells.length ? (
               <section className="wizard-block">
                 <h3>{nextStep()}. Заміна закляття (за бажанням)</h3>
@@ -696,6 +718,14 @@ export function LevelUpWizard({
                         ? `${plan.class_key === "wizard" ? "У книгу заклять (spellbook)" : "Відомих заклять"}: ${pickedOf(false).length} з ${pickLeveled}, до ${plan.max_spell_level}-го рівня.`
                         : ""}
                     </p>
+                    {plan.class_key === "fighter" || plan.class_key === "rogue" ? (
+                      <p className="hint">
+                        {plan.class_key === "fighter"
+                          ? "Містичний лицар (Eldritch Knight) вивчає закляття огородження й вивернення"
+                          : "Таємний пройдисвіт (Arcane Trickster) вивчає закляття зачарування й ілюзії"}
+                        ; лише на 3, 8, 14 і 20 рівнях можна взяти одне будь-якої школи (PHB, с. 75, 98).
+                      </p>
+                    ) : null}
                     <label className="search-field">
                       <span className="visually-hidden">Пошук закляття</span>
                       <input
@@ -732,6 +762,7 @@ export function LevelUpWizard({
                               }
                             >
                               {spellLabel(entry.name_en)} · {cantrip ? "заговір" : `${Number(entry.data.level)} рів.`}
+                              {entry.data.school ? ` · ${schoolLabel(String(entry.data.school))}` : ""}
                             </button>
                           );
                         })}

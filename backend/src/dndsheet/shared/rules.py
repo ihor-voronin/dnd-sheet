@@ -928,3 +928,36 @@ def stealth_disadvantage(armor: Any) -> bool:
         return False
     name = armor.name_en.strip().casefold().removesuffix(" armor")
     return name in _NOISY_ARMOR
+
+
+#: Категорія броні за назвою (PHB, p. 145); магічні («Plate Armor +1», «Elven
+#: Chain») — за базовою назвою всередині. Довше — раніше: «studded leather»
+#: перш ніж «leather».
+_ARMOR_CATEGORY: tuple[tuple[str, str], ...] = (
+    ("studded leather", "light"), ("padded", "light"), ("leather", "light"),
+    ("chain shirt", "medium"), ("elven chain", "medium"), ("scale mail", "medium"),
+    ("half plate", "medium"), ("breastplate", "medium"), ("spiked armor", "medium"), ("hide", "medium"),
+    ("ring mail", "heavy"), ("chain mail", "heavy"), ("splint", "heavy"), ("plate", "heavy"),
+)
+
+
+def armor_category(armor: Any) -> str | None:
+    """«light» / «medium» / «heavy» для вдягненої броні; без назви в таблиці — з межі Спритності."""
+    if armor is None:
+        return None
+    name = armor.name_en.strip().casefold()
+    for base, category in _ARMOR_CATEGORY:
+        if base in name:
+            return category
+    return {None: "light", 2: "medium", 0: "heavy"}.get(armor.dex_cap, "medium")
+
+
+def armor_dex_cap(armor: Any) -> int | None:
+    """Межа Спритності за категорією: легка — без межі, середня — 2, важка — 0."""
+    return {"light": None, "medium": 2, "heavy": 0}[armor_category(armor) or "light"]
+
+
+#: Музичні інструменти (PHB, p. 154): бард при мультикласі обирає один (p. 164).
+MUSICAL_INSTRUMENTS = (
+    "bagpipes", "drum", "dulcimer", "flute", "horn", "lute", "lyre", "pan flute", "shawm", "viol",
+)

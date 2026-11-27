@@ -403,6 +403,12 @@ export function CharacterView({
           <h3 className="ddb-work__title">
             <span>Чарування</span>
           </h3>
+          {sheet.armor_untrained?.length ? (
+            <p className="hint hint--warn">
+              Поки вдягнено {sheet.armor_untrained.join(", ")} без володіння, чарувати закляття не можна
+              (PHB, с. 144).
+            </p>
+          ) : null}
           <CastingBlock
             casting={casting}
             resources={sheet.resources}
@@ -685,6 +691,15 @@ export function CharacterView({
         </div>
 
         <div className="ddb-col ddb-col--mid">
+          {sheet.warnings?.length ? (
+            <div className="sheet-warnings" role="status">
+              {sheet.warnings.map((warning) => (
+                <p key={warning} className="hint hint--warn">
+                  {warning}
+                </p>
+              ))}
+            </div>
+          ) : null}
           <div className="ddb-hexrow">
             <HexStat
               label="Ініціатива"
