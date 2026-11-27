@@ -16,14 +16,20 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   fetchCharacter,
+  fetchEntry,
   fetchFeats,
   fetchLevelUp,
   levelUpCharacter,
 } from "../../api";
+import type { FeatEntry } from "../wizard/types";
+import { ActiveGloss, GlossProvider, Term } from "../../components/Term";
 import {
   ABILITY_LABELS,
   abilityGenitive,
+  abilityModifier,
+  classGuide,
   modifierLabel,
+  sourceLabel,
   subclassLabel,
 } from "../../labels";
 import type { LevelUpPlan, LevelUpReport, LevelUpView } from "../wizard/types";
@@ -119,9 +125,16 @@ export function LevelUpWizard({
     setSubclassKey(null);
     setAsiMode("two");
     setFeatId(null);
-    const first = plan?.subclass?.options[0]?.id ?? null;
-    setSubclassKey(first);
-    if (plan) setHpRoll(Math.max(1, plan.hp.average));
+    // Підклас не обирається за гравця: раніше перший варіант ставав
+    // «вибраним» сам, і його легко було не помітити.
+    setSubclassKey(null);
+    const guide = classGuide(classKey);
+    if (guide) {
+      setAsiFirst(guide.primary[0] as AbilityCode);
+      setAsiSecond((guide.primary[1] ?? "con") as AbilityCode);
+    }
+    // Кидок — число на кубику, без Статури: її додаємо окремо.
+    if (plan) setHpRoll(Math.max(1, Math.ceil(plan.hit_die / 2)));
   }, [classKey, plan?.subclass?.options]);
 
   const totals = useMemo(() => {
@@ -138,10 +151,37 @@ export function LevelUpWizard({
   function abilityOptions(skip?: AbilityCode) {
     return ABILITIES.filter((code) => code !== skip).map((code) => {
       const value = totals.ability(code);
-      const room = value ? value.total < 20 : true;
-      return { code, value, room };
+      const step = asiMode === "two" ? 2 : 1;
+      // Межа 20 — після покращення: 19 + 2 уже не можна, а 19 + 1 можна.
+      const room = value ? value.total + step <= 20 : true;
+      const after = value ? Math.min(20, value.total + step) : null;
+      const change =
+        value && after !== null
+          ? ` ${value.total} → ${after} (${modifierLabel(value.modifier)} → ${modifierLabel(abilityModifier(after))})`
+          : "";
+      const key = classGuide(classKey)?.primary.includes(code);
+      return { code, value, room, change, key };
     });
   }
+
+  // Обрана характеристика впирається в 20 — перемикаємо на першу, де є місце,
+  // інакше сервер відмовить, а гравець не зрозуміє чому.
+  useEffect(() => {
+    const options = abilityOptions(asiMode === "split" ? asiSecond : undefined);
+    const current = options.find((option) => option.code === asiFirst);
+    if (current && !current.room) {
+      const next = options.find((option) => option.room);
+      if (next) setAsiFirst(next.code);
+    }
+    if (asiMode === "split") {
+      const second = abilityOptions(asiFirst).find((option) => option.code === asiSecond);
+      if (second && !second.room) {
+        const next = abilityOptions(asiFirst).find((option) => option.room);
+        if (next) setAsiSecond(next.code);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asiMode, asiFirst, asiSecond, sheet.data]);
 
   async function submit() {
     if (!plan || !view) return;
@@ -176,7 +216,7 @@ export function LevelUpWizard({
       const result = await levelUpCharacter(characterId, body);
       onDone(result.level_up);
     } catch (failure) {
-      setError(messageOf(failure));
+      setError(humanError(messageOf(failure)));
       setBusy(false);
     }
   }
@@ -214,7 +254,8 @@ export function LevelUpWizard({
   const nextStep = () => ++step;
 
   return (
-    <section className="wizard levelup">
+    <GlossProvider>
+    <section className="wizard levelup wizard--layout wizard--levelup">
       <header className="wizard-header">
         <div>
           <h1>Підвищення рівня</h1>
@@ -237,11 +278,16 @@ export function LevelUpWizard({
                 className={`chip ${classKey === item.class_key ? "chip--active" : ""}`}
                 onClick={() => setClassKey(item.class_key)}
               >
-                {planTitle(item)}
+                <span>{planTitle(item)}</span>
+                <span className="chip__sub">{planPreview(item)}</span>
               </button>
             ))}
           </div>
-          <p className="hint">Новий клас — мультиклас; він вимагає 13 у ключовій характеристиці.</p>
+          <p className="hint">
+            Зазвичай рівень беруть у своєму класі. Новий клас — це{" "}
+            <Term k="multiclass">мультиклас</Term>: потрібно 13 в основній характеристиці і
+            старого, і нового класу, а новий клас дає лише частину володінь.
+          </p>
           {fresh.some((item) => !item.allowed) ? (
             <span className="levelup-ignore">
               <input
@@ -286,8 +332,11 @@ export function LevelUpWizard({
             <section className="wizard-block">
               <h3>{nextStep()}. Хіти</h3>
               <p className="hint">
-                Клас дає d{plan.hit_die}, Статура {modifierLabel(plan.constitution_modifier)}.
-                Середнє за правилом «половина дайса + 1».
+                Максимум <Term k="hit_points">хітів</Term> росте з кожним рівнем: результат{" "}
+                <Term k="hit_die">хіт-дайса</Term> d{plan.hit_die} + модифікатор Статури (
+                {modifierLabel(plan.constitution_modifier)}), щонайменше 1. Середнє (
+                {Math.floor(plan.hit_die / 2) + 1}) надійніше; кидок може дати більше або менше.
+                Вибір остаточний.
               </p>
               <div className="levelup-row">
                 <label className="radio">
@@ -304,7 +353,7 @@ export function LevelUpWizard({
                     checked={hpMode === "roll"}
                     onChange={() => setHpMode("roll")}
                   />
-                  кидок d{plan.hit_die}:
+                  кидок d{plan.hit_die} (число на кубику):
                 </label>
                 <input
                   type="number"
@@ -337,8 +386,8 @@ export function LevelUpWizard({
                           <RuleText text={item.text_uk || item.text || ""} />
                         ) : (
                           <p className="hint">
-                            Тексту цього вміння в корпусі немає — назва й рівень
-                            є, пояснення шукайте в книзі.
+                            Опису цього вміння в довіднику немає — подивіться в
+                            книзі гравця, розділ класу.
                           </p>
                         )}
                       </details>
@@ -350,13 +399,22 @@ export function LevelUpWizard({
               )}
             </section>
 
+            {plan.features.some((item) => item.name_en === "Expertise") ? (
+              <p className="hint hint--warn">
+                Цей рівень дає <Term k="expertise">експертність</Term> у двох навичках. Оберіть їх
+                одразу після підвищення: лист персонажа → блок «Навички» → «Експертність».
+              </p>
+            ) : null}
+
             {plan.subclass?.required ? (
               <section className="wizard-block">
                 <h3>
                   {nextStep()}. {plan.subclass.title ? termLabel(plan.subclass.title) : "Підклас"}
                 </h3>
                 <p className="hint">
-                  Цей рівень дає підклас. Його вміння зʼявляться на листі одразу.
+                  Цей рівень дає <Term k="subclass">підклас</Term> — спеціалізацію на всю гру,
+                  змінити її потім не можна. Розгорніть варіант, щоб побачити, що він дасть
+                  зараз і на наступних рівнях.
                 </p>
                 <div className="levelup-grid">
                   {plan.subclass.options.map((option) => (
@@ -399,10 +457,14 @@ export function LevelUpWizard({
 
             {plan.asi.pending ? (
               <section className="wizard-block">
-                <h3>{nextStep()}. Покращення характеристик</h3>
+                <h3>
+                  {nextStep()}. <Term k="ability_score_improvement">Покращення характеристик</Term>
+                </h3>
                 <p className="hint">
                   Рівні дали {plan.asi.slots} {plural(plan.asi.slots, "покращення", "покращення", "покращень")},
-                  використано {plan.asi.taken}. Або +2 до однієї характеристики, або +1 до двох, або риса.
+                  використано {plan.asi.taken}. Оберіть +2 до однієї характеристики, +1 до двох або{" "}
+                  <Term k="feat">рису</Term>. Порада: доводьте до парного числа — саме тоді росте{" "}
+                  <Term k="modifier">модифікатор</Term>.
                 </p>
                 <div className="levelup-row">
                   <label className="radio">
@@ -441,8 +503,8 @@ export function LevelUpWizard({
                       {abilityOptions(asiMode === "split" ? asiSecond : undefined).map((option) => (
                         <option key={option.code} value={option.code} disabled={!option.room}>
                           {ABILITY_LABELS[option.code]}
-                          {option.value ? ` ${option.value.total}` : ""}
-                          {option.room ? "" : " — межа 20"}
+                          {option.room ? option.change : ` — ${option.value?.total ?? ""}: більше 20 не буде`}
+                          {option.key ? " · основна для класу" : ""}
                         </option>
                       ))}
                     </select>
@@ -455,8 +517,8 @@ export function LevelUpWizard({
                         {abilityOptions(asiFirst).map((option) => (
                           <option key={option.code} value={option.code} disabled={!option.room}>
                             {ABILITY_LABELS[option.code]}
-                            {option.value ? ` ${option.value.total}` : ""}
-                            {option.room ? "" : " — межа 20"}
+                            {option.room ? option.change : ` — ${option.value?.total ?? ""}: більше 20 не буде`}
+                            {option.key ? " · основна для класу" : ""}
                           </option>
                         ))}
                       </select>
@@ -468,23 +530,15 @@ export function LevelUpWizard({
                     {feats.error ? (
                       <p className="status status--error">{messageOf(feats.error)}</p>
                     ) : null}
-                    <div className="levelup-feat-list">
-                      {(feats.data ?? []).map((feat) => (
-                        <label key={feat.id} className={`chip chip--row ${featId === feat.id ? "chip--active" : ""}`}>
-                          <input
-                            type="radio"
-                            name="feat"
-                            checked={featId === feat.id}
-                            onChange={() => setFeatId(feat.id)}
-                          />
-                          <span>{feat.name_uk || feat.name_en}</span>
-                          <span className="meta">{feat.source_id}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <p className="hint">
-                      Числові ефекти риси (наприклад, +1 до характеристики) вписуються
-                      в лист вручну — як виправлення поля.
+                    <FeatPicker
+                      feats={feats.data ?? []}
+                      value={featId}
+                      onChange={setFeatId}
+                    />
+                    <p className="hint hint--warn">
+                      Числові ефекти риси (+1 до характеристики, +2 хіти за рівень тощо)
+                      застосунок поки не додає сам. Після підвищення впишіть їх на листі як
+                      виправлення відповідного поля — ми нагадаємо.
                     </p>
                   </div>
                 )}
@@ -550,7 +604,8 @@ export function LevelUpWizard({
                 </li>
                 {plan.proficiency_bonus.after !== plan.proficiency_bonus.before ? (
                   <li>
-                    бонус майстерності {modifierLabel(plan.proficiency_bonus.before)} →{" "}
+                    <Term k="proficiency_bonus">бонус майстерності</Term>{" "}
+                    {modifierLabel(plan.proficiency_bonus.before)} →{" "}
                     {modifierLabel(plan.proficiency_bonus.after)}
                   </li>
                 ) : null}
@@ -558,13 +613,13 @@ export function LevelUpWizard({
                   .filter((row) => row.before !== row.after)
                   .map((row) => (
                     <li key={row.level}>
-                      слоти {row.level} рівня: {row.before} → {row.after}
+                      <Term k="spell_slot">слоти</Term> {row.level} рівня: {row.before} → {row.after}
                     </li>
                   ))}
                 {plan.pact.after ? (
                   <li>
-                    Pact Magic: {plan.pact.before?.[0] ?? 0} → {plan.pact.after[0]} слотів{" "}
-                    {plan.pact.after[1]} рівня
+                    <Term k="pact_magic">магія пакту</Term>: {plan.pact.before?.[0] ?? 0} →{" "}
+                    {plan.pact.after[0]} слотів {plan.pact.after[1]} рівня
                   </li>
                 ) : null}
                 {plan.asi.pending ? (
@@ -591,10 +646,21 @@ export function LevelUpWizard({
                   </li>
                 ) : null}
               </ul>
+              <p className="hint">
+                Підвищення не можна скасувати в застосунку — перевірте список вище.
+                {plan.max_spell_level > 0 && gain.cantrips + gain.leveled
+                  ? " Нові закляття оберете на листі одразу після цього."
+                  : ""}
+              </p>
+              {error ? (
+                <p className="status status--error" role="alert">
+                  Рівень не піднято: {error}
+                </p>
+              ) : null}
               <button
                 type="button"
-                className="button button--primary"
-                disabled={busy}
+                className="button button--primary button--seal"
+                disabled={busy || Boolean(plan.subclass?.required && !subclassKey) || (plan.asi.pending && asiMode === "feat" && !featId)}
                 onClick={() => void submit()}
               >
                 {busy
@@ -609,6 +675,131 @@ export function LevelUpWizard({
           <p className="hint">Оберіть клас — і покажемо, що дасть рівень.</p>
         )}
       </div>
+      <aside className="margin" aria-label="Пояснення">
+        <ActiveGloss
+          fallback={
+            <p className="margin__tip">
+              Слова з пунктиром — терміни. Натисніть, і тут зʼявиться пояснення.
+            </p>
+          }
+        />
+      </aside>
     </section>
+    </GlossProvider>
+  );
+}
+
+/** Відповідь сервера людською мовою: «dex: підсумок…» → «Спритність: …». */
+function humanError(raw: string): string {
+  const match = raw.match(/^(str|dex|con|int|wis|cha): підсумок не може бути більшим за 20 \((\d+) \+ (\d+) бонус виду \+ (\d+)\)/);
+  if (match) {
+    const [, code, base, bonus, amount] = match;
+    const total = Number(base) + Number(bonus);
+    return `${ABILITY_LABELS[code]} уже ${total}, а +${amount} дасть ${total + Number(amount)} — більше 20 не можна. Оберіть іншу характеристику або +1 і +1.`;
+  }
+  return raw;
+}
+
+/** Підпис під чипом класу: що дасть саме цей рівень — ще до кліку. */
+function planPreview(plan: LevelUpPlan): string {
+  const parts: string[] = [];
+  if (plan.subclass?.required) parts.push("підклас");
+  if (plan.asi.pending) parts.push("покращення характеристик");
+  if (plan.proficiency_bonus.after !== plan.proficiency_bonus.before) parts.push("бонус майстерності");
+  const named = plan.features
+    .filter((item) => item.name_en !== "Ability Score Improvement")
+    .map((item) => item.name_uk || item.name_en);
+  parts.push(...named.slice(0, 2));
+  if (named.length > 2) parts.push(`ще ${named.length - 2}`);
+  return parts.length ? parts.join(", ") : "лише хіти";
+}
+
+/** Риси: пошук, книга, вимоги й текст на розгортання. */
+function FeatPicker({
+  feats,
+  value,
+  onChange,
+}: {
+  feats: FeatEntry[];
+  value: string | null;
+  onChange: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLocaleLowerCase();
+  const list = feats.filter(
+    (feat) =>
+      !needle ||
+      feat.name_en.toLocaleLowerCase().includes(needle) ||
+      (feat.name_uk ?? "").toLocaleLowerCase().includes(needle),
+  );
+  return (
+    <div className="feat-picker">
+      <label className="search-field">
+        <span className="visually-hidden">Пошук риси</span>
+        <input
+          type="search"
+          value={query}
+          placeholder="Пошук риси: «Tough», «Пильний»…"
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </label>
+      <ul className="option-list">
+        {list.map((feat) => (
+          <FeatOption
+            key={feat.id}
+            feat={feat}
+            active={value === feat.id}
+            onPick={() => onChange(feat.id)}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function FeatOption({ feat, active, onPick }: { feat: FeatEntry; active: boolean; onPick: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [entry, setEntry] = useState<{ text: string; prerequisite: string | null } | null>(null);
+  useEffect(() => {
+    if (!open || entry) return;
+    let alive = true;
+    void fetchEntry(feat.id)
+      .then((full) => {
+        const prerequisite = full.data?.prerequisite;
+        if (alive) {
+          setEntry({
+            text: full.text_uk || full.text_en || "",
+            prerequisite: typeof prerequisite === "string" ? prerequisite : null,
+          });
+        }
+      })
+      .catch(() => {
+        if (alive) setEntry({ text: "", prerequisite: null });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [open, entry, feat.id]);
+  return (
+    <li className={`option ${active ? "option--active" : ""}`}>
+      <div className="option__head">
+        <button type="button" className="option__pick" aria-pressed={active} onClick={onPick}>
+          <span className="option__mark" aria-hidden="true">{active ? "✓" : ""}</span>
+          <span className="option__name">
+            {feat.name_uk ? `${feat.name_uk} (${feat.name_en})` : feat.name_en}
+          </span>
+        </button>
+        <span className="option__meta">{sourceLabel(feat.source_id)}</span>
+      </div>
+      <details className="option__details" onToggle={(event) => setOpen(event.currentTarget.open)}>
+        <summary>Що дає</summary>
+        {!entry ? <p className="meta">Читаємо опис…</p> : null}
+        {entry?.prerequisite ? (
+          <p className="tag tag--key">Вимога: {entry.prerequisite}</p>
+        ) : null}
+        {entry?.text ? <RuleText text={entry.text} /> : null}
+        {entry && !entry.text ? <p className="meta">Опису в довіднику немає.</p> : null}
+      </details>
+    </li>
   );
 }

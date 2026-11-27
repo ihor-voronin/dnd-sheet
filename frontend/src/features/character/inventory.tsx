@@ -332,6 +332,24 @@ function isStatLine(text: string): boolean {
  * фільтри за типом, магічністю, книгою й пошуком, що й інвентар листа, без
  * копії цієї логіки.
  */
+/** Інші назви, якими предмет шукають (переклад книги ≠ словник предметів). */
+const SEARCH_ALIASES: Record<string, string> = {
+  rapier: "шпага",
+  leather: "шкіряний обладунок leather armor",
+  "studded leather": "проклепана шкіряна броня studded leather armor",
+  "crossbow, light": "легкий арбалет light crossbow",
+  "crossbow, heavy": "важкий арбалет heavy crossbow",
+  "crossbow, hand": "ручний арбалет hand crossbow",
+  "crossbow bolts (20)": "болти арбалетні",
+  "thieves' tools": "набір злодія відмички",
+  "component pouch": "мішечок компонентів",
+  amulet: "священний символ holy symbol",
+  "sprig of mistletoe": "друїдський фокус druidic focus",
+  crystal: "магічний фокус arcane focus",
+  orb: "магічний фокус arcane focus",
+  wand: "магічний фокус arcane focus",
+};
+
 export function ItemCatalogBrowser({
   onAdd,
   onCustom,
@@ -410,7 +428,9 @@ export function ItemCatalogBrowser({
       if (source && entry.source_id !== source) return false;
       if (magical !== "any" && Boolean(data.magical) !== (magical === "yes")) return false;
       if (!wanted) return true;
-      const haystack = itemKey(`${entry.name_en} ${itemLabel(entry.name_en)}`);
+      const haystack = itemKey(
+        `${entry.name_en} ${itemLabel(entry.name_en)} ${SEARCH_ALIASES[itemKey(entry.name_en)] ?? ""}`,
+      );
       return haystack.includes(wanted);
     });
   }, [entries, magical, query, source, types]);

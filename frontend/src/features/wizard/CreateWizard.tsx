@@ -7,7 +7,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { STEP_LABELS, STEP_ORDER } from "../../labels";
+import { ActiveGloss, GlossProvider, Term } from "../../components/Term";
+import {
+  ABILITY_SHORT,
+  STEP_LABELS,
+  STEP_ORDER,
+  abilityModifier,
+  classGuide,
+  modifierLabel,
+} from "../../labels";
 import { finishDraft, readDraft, readStep, startWizard, writeStep } from "../../api";
 import {
   AbilitiesStep,
@@ -25,7 +33,9 @@ import type {
   SpeciesView,
   SpellsOptions,
   StepView,
+  DraftView,
 } from "./types";
+import { speciesLabel, termLabel } from "../character/uk";
 
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -43,6 +53,7 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(true);
+  const [classEquipment, setClassEquipment] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,7 +148,28 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
     }
   }
 
+  // Стартове спорядження класу живе в тексті глави класу (крок «Клас» уже
+  // його має) — на кроці «Спорядження» показуємо той самий текст.
+  const classKey = view?.draft.answers.class?.class_key ?? null;
+  useEffect(() => {
+    if (step !== "equipment" || !draftId || !classKey) return;
+    let alive = true;
+    void readStep<{ classes: ClassView[] }>(draftId, "class")
+      .then((payload) => {
+        const found = payload.options.classes.find((item) => item.key === classKey);
+        const row = found?.feature_texts?.find((feature) => feature.name_en === "Equipment");
+        if (alive) setClassEquipment(row ? row.text_uk || row.text : null);
+      })
+      .catch(() => {
+        if (alive) setClassEquipment(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [step, draftId, classKey]);
+
   async function restart() {
+    if (!window.confirm("Почати створення заново? Поточну чернетку буде відкладено.")) return;
     window.localStorage.removeItem(DRAFT_KEY);
     setStarting(true);
     setError(null);
@@ -158,7 +190,8 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
   if (!view) {
     return (
       <p className="status status--error">
-        Не вдалося почати створення: {error ?? "невідома помилка"}
+        Не вдалося почати створення: {error ?? "невідома помилка"}. Оновіть сторінку; якщо не
+        допоможе — перевірте, чи запущено сервер застосунку.
       </p>
     );
   }
@@ -171,121 +204,216 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
   const isLastStep = index === STEP_ORDER.length - 1;
 
   return (
-    <section className="wizard">
-      <header className="wizard-header">
-        <div>
-          <h1>Створення персонажа</h1>
-          <p className="meta">
-            {view.draft.name || "без імені"} · ревізія {view.draft.revision} · правила 2014
-          </p>
+    <GlossProvider>
+      <section className="wizard wizard--layout">
+        <header className="wizard-header">
+          <div>
+            <h1>Створення персонажа</h1>
+            <p className="meta">
+              {view.draft.name || "Без імені"} · правила Книги гравця (2014) · чернетка
+              зберігається сама
+            </p>
+          </div>
           <button type="button" className="link-button" onClick={() => void restart()}>
-            почати заново
+            Почати заново
           </button>
-        </div>
-        <ol className="wizard-progress">
-          {STEP_ORDER.map((name, position) => {
-            const status = statuses.get(name);
-            const classes = [
-              "step-chip",
-              name === step ? "step-chip--active" : "",
-              status?.complete ? "step-chip--done" : "",
-              status?.unlocked ? "" : "step-chip--locked",
-              status?.optional ? "step-chip--optional" : "",
-            ]
-              .filter(Boolean)
-              .join(" ");
-            return (
-              <li key={name}>
+        </header>
+
+        <nav className="step-rail" aria-label="Кроки створення">
+          <ol>
+            {STEP_ORDER.map((name, position) => {
+              const status = statuses.get(name);
+              const classes = [
+                "step-chip",
+                name === step ? "step-chip--active" : "",
+                status?.complete ? "step-chip--done" : "",
+                status?.unlocked ? "" : "step-chip--locked",
+                status?.optional ? "step-chip--optional" : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              return (
+                <li key={name}>
+                  <button
+                    type="button"
+                    className={classes}
+                    aria-current={name === step ? "step" : undefined}
+                    disabled={!status?.unlocked || busy}
+                    title={status?.unlocked ? undefined : "Спершу завершіть попередні кроки"}
+                    onClick={() => draftId && void load(draftId, name)}
+                  >
+                    <span className="step-index">{status?.complete ? "✓" : position + 1}</span>
+                    <span>
+                      {STEP_LABELS[name]}
+                      {status?.optional ? <span className="step-note"> необовʼязково</span> : null}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+
+        <div className="wizard-main">
+          {error ? (
+            <p className="status status--error" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="wizard-body">
+            {step === "species" ? (
+              <SpeciesStep
+                answers={view.answers}
+                options={view.options as { species: SpeciesView[] }}
+                busy={busy}
+                onSubmit={submit}
+              />
+            ) : null}
+            {step === "class" ? (
+              <ClassStep
+                answers={view.answers}
+                options={view.options as { classes: ClassView[]; hint?: string }}
+                busy={busy}
+                onSubmit={submit}
+              />
+            ) : null}
+            {step === "abilities" ? (
+              <AbilitiesStep
+                answers={view.answers}
+                options={view.options as AbilitiesOptions}
+                busy={busy}
+                onSubmit={submit}
+                classKey={classKey}
+              />
+            ) : null}
+            {step === "background" ? (
+              <BackgroundStep
+                answers={view.answers}
+                options={view.options as BackgroundOptions}
+                busy={busy}
+                onSubmit={submit}
+              />
+            ) : null}
+            {step === "equipment" ? (
+              <EquipmentStep
+                answers={view.answers}
+                options={view.options as EquipmentOptions}
+                busy={busy}
+                onSubmit={submit}
+                classEquipment={classEquipment}
+              />
+            ) : null}
+            {step === "spells" ? (
+              <SpellsStep
+                answers={view.answers}
+                options={view.options as SpellsOptions}
+                busy={busy}
+                onSubmit={submit}
+              />
+            ) : null}
+          </div>
+
+          <footer className="wizard-footer">
+            <div>
+              {previous ? (
                 <button
                   type="button"
-                  className={classes}
-                  disabled={!status?.unlocked || busy}
-                  onClick={() => draftId && void load(draftId, name)}
+                  className="button"
+                  disabled={busy}
+                  onClick={() => draftId && void load(draftId, previous)}
                 >
-                  <span className="step-index">{position + 1}</span>
-                  {STEP_LABELS[name]}
+                  ← Назад: {STEP_LABELS[previous].toLowerCase()}
                 </button>
+              ) : null}
+            </div>
+            <div className="wizard-actions">
+              {busy ? <span className="meta">Зберігаємо…</span> : null}
+              {view.draft.ready_to_finish && !isLastStep ? (
+                <button type="button" className="button button--primary" disabled={busy} onClick={() => void finish()}>
+                  Створити персонажа
+                </button>
+              ) : null}
+            </div>
+          </footer>
+        </div>
+
+        <aside className="margin" aria-label="Ваш персонаж і пояснення">
+          <ActiveGloss
+            fallback={
+              <p className="margin__tip">
+                Слова з пунктиром — <Term k="proficiency">терміни</Term>. Натисніть, і тут
+                зʼявиться пояснення.
+              </p>
+            }
+          />
+          <DraftSummary draft={view.draft} />
+        </aside>
+      </section>
+    </GlossProvider>
+  );
+}
+
+const SUMMARY_ABILITIES = ["str", "dex", "con", "int", "wis", "cha"] as const;
+
+/** «Ваш персонаж зараз»: що вже обрано — щоб не тримати це в голові між кроками. */
+function DraftSummary({ draft }: { draft: DraftView }) {
+  const answers = draft.answers;
+  const species = answers.species;
+  const classAnswer = answers.class;
+  const scores = answers.abilities?.scores ?? {};
+  const spread = species?.ability_spread ?? {};
+  const guide = classGuide(classAnswer?.class_key);
+  const hasScores = SUMMARY_ABILITIES.some((code) => scores[code]);
+  const items = answers.equipment?.items ?? [];
+  const spells = answers.spells?.spells ?? [];
+  const missing: string[] = [];
+  if (!items.some((item) => item.kind === "weapon")) missing.push("немає зброї");
+  if (!items.some((item) => item.kind === "armor") && guide && guide.primary[0] !== "dex") {
+    missing.push("немає броні");
+  }
+
+  return (
+    <section className="summary">
+      <h2 className="summary__title">{draft.name || "Ваш персонаж"}</h2>
+      <dl className="facts facts--compact">
+        <div className="facts__row">
+          <dt>Вид</dt>
+          <dd>{species?.species_key ? speciesLabel(species.subspecies_key ?? species.species_key) : "—"}</dd>
+        </div>
+        <div className="facts__row">
+          <dt>Клас</dt>
+          <dd>{classAnswer?.class_key ? termLabel(classAnswer.class_key) : "—"}</dd>
+        </div>
+        <div className="facts__row">
+          <dt>Передісторія</dt>
+          <dd>
+            {answers.background?.custom_background?.name ||
+              (answers.background?.background_key ? termLabel(answers.background.background_key) : "—")}
+          </dd>
+        </div>
+      </dl>
+      {hasScores ? (
+        <ul className="summary__abilities" aria-label="Характеристики без бонусу виду">
+          {SUMMARY_ABILITIES.map((code) => {
+            const value = (scores[code] ?? 0) + (spread[code] ?? 0);
+            const key = guide?.primary.includes(code);
+            return (
+              <li key={code} className={key ? "summary__ability--key" : undefined}>
+                <span className="summary__abbr">{ABILITY_SHORT[code].toLowerCase()}</span>
+                <span className="summary__score">{value || "—"}</span>
+                <span className="summary__mod">{value ? modifierLabel(abilityModifier(value)) : ""}</span>
               </li>
             );
           })}
-        </ol>
-      </header>
-
-      {error ? <p className="status status--error">{error}</p> : null}
-
-      <div className="wizard-body">
-        {step === "species" ? (
-          <SpeciesStep
-            answers={view.answers}
-            options={view.options as { species: SpeciesView[] }}
-            busy={busy}
-            onSubmit={submit}
-          />
-        ) : null}
-        {step === "class" ? (
-          <ClassStep
-            answers={view.answers}
-            options={view.options as { classes: ClassView[]; hint?: string }}
-            busy={busy}
-            onSubmit={submit}
-          />
-        ) : null}
-        {step === "abilities" ? (
-          <AbilitiesStep
-            answers={view.answers}
-            options={view.options as AbilitiesOptions}
-            busy={busy}
-            onSubmit={submit}
-          />
-        ) : null}
-        {step === "background" ? (
-          <BackgroundStep
-            answers={view.answers}
-            options={view.options as BackgroundOptions}
-            busy={busy}
-            onSubmit={submit}
-          />
-        ) : null}
-        {step === "equipment" ? (
-          <EquipmentStep
-            answers={view.answers}
-            options={view.options as EquipmentOptions}
-            busy={busy}
-            onSubmit={submit}
-          />
-        ) : null}
-        {step === "spells" ? (
-          <SpellsStep
-            answers={view.answers}
-            options={view.options as SpellsOptions}
-            busy={busy}
-            onSubmit={submit}
-          />
-        ) : null}
-      </div>
-
-      <footer className="wizard-footer">
-        <div>
-          {previous ? (
-            <button
-              type="button"
-              className="button"
-              disabled={busy}
-              onClick={() => draftId && void load(draftId, previous)}
-            >
-              ← Назад
-            </button>
-          ) : null}
-        </div>
-        <div className="wizard-actions">
-          {busy ? <span className="meta">Зберігаємо…</span> : null}
-          {view.draft.ready_to_finish && !isLastStep ? (
-            <button type="button" className="button button--primary" disabled={busy} onClick={() => void finish()}>
-              Створити персонажа
-            </button>
-          ) : null}
-        </div>
-      </footer>
+        </ul>
+      ) : null}
+      <p className="meta">
+        Предметів: {items.length} · заклять: {spells.length}
+      </p>
+      {answers.equipment?.submitted && missing.length ? (
+        <p className="summary__warn">Перевірте: {missing.join(", ")}.</p>
+      ) : null}
     </section>
   );
 }

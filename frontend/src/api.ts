@@ -249,6 +249,18 @@ export function prepareCharacterSpells(
   });
 }
 
+/** Експертність: навички (або злодійські інструменти) з подвоєним бонусом. */
+export function setCharacterExpertise(
+  id: string,
+  expertise: string[],
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/expertise`, {
+    method: "POST",
+    body: JSON.stringify({ expertise, version }),
+  });
+}
+
 // --- інвентар -------------------------------------------------------------
 
 export interface ItemBody {

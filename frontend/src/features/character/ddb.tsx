@@ -145,7 +145,11 @@ export function SkillTable({
         const value = skills[skill];
         if (!value) return null;
         return (
-          <li key={skill} className={`ddb-skill${value.proficient ? " is-prof" : ""}`}>
+          <li
+            key={skill}
+            className={`ddb-skill${value.proficient ? " is-prof" : ""}${value.expertise ? " is-expert" : ""}`}
+            title={value.expertise ? "Експертність: бонус майстерності подвоєно" : undefined}
+          >
             <span className="ddb-skill__abil">{ABILITY_SHORT[SKILL_ABILITY[skill]] ?? ""}</span>
             <span className="ddb-skill__dot" aria-hidden />
             <span className="ddb-skill__name">{skillLabel(skill)}</span>

@@ -21,6 +21,7 @@ import {
   fetchRenderers,
   patchCharacter,
   prepareCharacterSpells,
+  setCharacterExpertise,
   removeCharacterItem,
   removeCharacterSpell,
   restCharacter,
@@ -52,6 +53,7 @@ import { InventoryPanel } from "./inventory";
 import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
 import { BackgroundPanel } from "./background";
+import { ExpertisePicker } from "./expertise";
 import { ActionPanel } from "./actions";
 import { AddSpellForm, SpellsPreparePanel } from "./spells";
 import { speciesLabel, termLabel, ukSubclass, withEnglish } from "./uk";
@@ -378,12 +380,12 @@ export function CharacterView({
     { label: "Пасивна спостережливість", value: sheet.passive_perception },
     {
       label: "Пасивне розслідування",
-      value: 10 + (sheet.skills.investigation?.value ?? 0),
+      value: sheet.passive_investigation ?? 10 + (sheet.skills.investigation?.value ?? 0),
       note: "10 + навичка",
     },
     {
       label: "Пасивна проникливість",
-      value: 10 + (sheet.skills.insight?.value ?? 0),
+      value: sheet.passive_insight ?? 10 + (sheet.skills.insight?.value ?? 0),
       note: "10 + навичка",
     },
   ];
@@ -684,6 +686,15 @@ export function CharacterView({
               <span>Навички</span>
             </h2>
             <SkillTable skills={sheet.skills} render={overrideNumber} />
+            {sheet.expertise && sheet.expertise.slots > 0 ? (
+              <ExpertisePicker
+                expertise={sheet.expertise}
+                busy={busy}
+                onSave={(values) =>
+                  run(setCharacterExpertise(id, values, versionRef.current))
+                }
+              />
+            ) : null}
             <details className="reckoning">
               <summary>Звідки числа</summary>
               <ul className="reckoning-list">

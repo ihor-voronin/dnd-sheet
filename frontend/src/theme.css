@@ -1,0 +1,1426 @@
+/* «Стіл гравця» — шестикутники, зрізані кути, темне тло.
+ *
+ * Натхнення — цифрові листи на кшталт D&D Beyond: темний стіл, малиновий
+ * акцент дій, характеристики в шестикутних рамках. Своє: палітра, шрифти
+ * Alegreya, латунний пунктир термінів і маргіналія з поясненнями.
+ *
+ * Темна тема — типова для всього застосунку; світла — [data-theme="day"].
+ * styles.css і ddb.css посилаються лише на ці токени.
+ *
+ *   --act   малиновий: дії, обране, фокус (назва --patina лишилась як псевдонім)
+ *   --wax   червоний: хіти, обовʼязкове, незворотне
+ *   --brass золото: терміни, змінені числа, рамки шестикутників
+ */
+
+:root {
+  --paper: #11141b;
+  --leaf: #191d27;
+  --leaf-hi: #212634;
+  --line: #2f3646;
+  --line-soft: #252b38;
+  --graphite: #9aa3b5;
+  --ink: #eef0f5;
+  --act: #d6404a;
+  --act-ink: #ffffff;
+  --act-soft: #3a1c22;
+  --brass: #d1a654;
+  --brass-soft: #3a3020;
+  --wax: #ff6b73;
+  --wax-soft: #f3a6ab;
+  --ok: #6fc79a;
+  --patina: var(--act);
+  --patina-ink: var(--act-ink);
+  --patina-soft: var(--act-soft);
+
+  /* старі назви — щоб styles.css і компоненти працювали без перейменувань */
+  --surface: var(--leaf);
+  --canvas: var(--paper);
+  --panel: var(--leaf-hi);
+  --muted: var(--graphite);
+  --accent: var(--patina);
+  --accent-deep: var(--ink);
+  --brand: var(--wax);
+  --gold: var(--brass);
+
+  --serif: "Alegreya", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --sans: "Alegreya Sans", "Segoe UI", "Noto Sans", system-ui, sans-serif;
+  --caps: "Alegreya Sans SC", var(--sans);
+
+  /* шкала 1.2 від 17 px */
+  --t-xs: 0.8235rem; /* 14 */
+  --t-sm: 0.9rem;
+  --t-md: 1.0625rem; /* 17 */
+  --t-lg: 1.25rem; /* 20 */
+  --t-xl: 1.5rem; /* 24 */
+  --t-2xl: 1.8125rem; /* 29 */
+  --t-3xl: 2.1875rem; /* 35 */
+
+  --r-field: 2px;
+  --r-card: 8px;
+  --gap: 16px;
+
+  color-scheme: dark;
+  font-family: var(--sans);
+  font-size: 106.25%; /* 17 px */
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+[data-theme="day"] {
+  --paper: #eceef2;
+  --leaf: #ffffff;
+  --leaf-hi: #f6f7f9;
+  --line: #d3d8e0;
+  --line-soft: #e4e7ec;
+  --graphite: #5a6375;
+  --ink: #161a23;
+  --act: #b3242e;
+  --act-ink: #ffffff;
+  --act-soft: #f8e4e5;
+  --brass: #8a6420;
+  --brass-soft: #f2e8d4;
+  --wax: #a51d2a;
+  --wax-soft: #f6e0e2;
+  --ok: #2f7a4f;
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+html,
+body,
+html.board,
+body.board {
+  background-color: var(--paper);
+}
+
+/* Ледь помітна сітка шестикутників — «стіл», на якому лежать картки. */
+body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97' viewBox='0 0 56 97'%3E%3Cpath d='M28 0 56 16v32L28 64 0 48V16zM28 64v33' fill='none' stroke='%23ffffff' stroke-opacity='.035' stroke-width='1'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+}
+
+[data-theme="day"] body,
+html[data-theme="day"] body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97' viewBox='0 0 56 97'%3E%3Cpath d='M28 0 56 16v32L28 64 0 48V16zM28 64v33' fill='none' stroke='%23000000' stroke-opacity='.045' stroke-width='1'/%3E%3C/svg%3E");
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--serif);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+h1 {
+  font-size: var(--t-3xl);
+}
+
+h2 {
+  font-size: var(--t-2xl);
+}
+
+h3 {
+  font-size: var(--t-xl);
+}
+
+h4 {
+  font-size: var(--t-lg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--patina);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* --- рамка застосунку -------------------------------------------------- */
+
+.app {
+  max-width: 1320px;
+}
+
+.badge {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: none;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.meta,
+.choice-meta {
+  color: var(--graphite);
+}
+
+/* --- кнопки й поля ----------------------------------------------------- */
+
+.button {
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+  background: var(--leaf);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-md);
+  font-weight: 500;
+  padding: 8px 16px;
+  box-shadow: none;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--patina);
+  background: var(--leaf);
+}
+
+.button--primary {
+  border-color: var(--patina);
+  background: var(--patina);
+  color: var(--patina-ink);
+}
+
+.button--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--patina) 88%, var(--ink));
+  color: var(--patina-ink);
+}
+
+.button--seal {
+  border-color: var(--wax);
+  background: var(--wax);
+  color: #fff;
+}
+
+.button--seal:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wax) 88%, var(--ink));
+}
+
+.button--quiet {
+  border-style: dashed;
+  background: transparent;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.link-button {
+  color: var(--patina);
+  font-family: var(--sans);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+input,
+select,
+textarea {
+  font-family: var(--sans);
+  font-size: var(--t-md);
+  color: var(--ink);
+  background: var(--leaf);
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--patina);
+  outline: none;
+}
+
+.field__hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.search-field {
+  display: block;
+  margin: 4px 0 12px;
+}
+
+.search-field input {
+  width: 100%;
+  max-width: 520px;
+  padding: 9px 12px;
+}
+
+/* --- чипи й варіанти --------------------------------------------------- */
+
+.chip {
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+  background: var(--leaf);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-sm);
+}
+
+.chip:hover:not(:disabled) {
+  border-color: var(--patina);
+}
+
+.chip--active,
+.chip--active:hover:not(:disabled) {
+  border-color: var(--patina);
+  background: var(--patina-soft);
+  color: var(--ink);
+  box-shadow: inset 3px 0 0 var(--patina);
+}
+
+.chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chip__sub {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+}
+
+.choice-grid {
+  gap: 10px;
+}
+
+.choice {
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--leaf);
+  box-shadow: none;
+  font-family: var(--sans);
+  text-align: left;
+}
+
+.choice strong {
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.choice:hover {
+  border-color: var(--patina);
+  transform: none;
+  box-shadow: none;
+}
+
+.choice--active {
+  border-color: var(--patina);
+  background: var(--patina-soft);
+  box-shadow: inset 4px 0 0 var(--patina);
+}
+
+.choice-meta--lead {
+  color: var(--ink);
+}
+
+.choice-meta--source {
+  color: var(--brass);
+  font-size: var(--t-xs);
+}
+
+/* --- блоки й картки ---------------------------------------------------- */
+
+.wizard-block,
+.species-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--leaf);
+  box-shadow: none;
+}
+
+.species-card__head h3 {
+  font-size: var(--t-2xl);
+}
+
+.class-card__guide {
+  margin: 0 0 8px;
+  color: var(--graphite);
+  font-style: italic;
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+}
+
+.lead {
+  max-width: 68ch;
+  margin: 0 0 14px;
+  font-size: var(--t-md);
+}
+
+.hint {
+  border: 0;
+  border-left: 2px solid var(--line);
+  border-radius: 0;
+  background: none;
+  padding: 2px 0 2px 12px;
+  color: var(--graphite);
+  max-width: 72ch;
+}
+
+.hint--warn {
+  border-left-color: var(--wax);
+  background: none;
+  color: var(--ink);
+}
+
+.hint--quiet {
+  border-left: 0;
+  padding-left: 0;
+  font-size: var(--t-xs);
+}
+
+.tag {
+  display: inline-block;
+  margin: 0 6px 0 0;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.tag--key {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+/* Текст книги — serif: гравець бачить, де слова правил, а де застосунку. */
+.reckoning,
+.species-description,
+.rule-text,
+.option__details {
+  font-family: var(--serif);
+  line-height: 1.6;
+}
+
+.reckoning p,
+.option__details p {
+  max-width: 68ch;
+}
+
+.reckoning summary,
+.option__details summary {
+  font-family: var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* --- список «назва — значення» ---------------------------------------- */
+
+.facts {
+  display: grid;
+  gap: 0;
+  margin: 8px 0 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.facts__row {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) 1fr;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.facts dt {
+  color: var(--graphite);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.facts--compact .facts__row {
+  grid-template-columns: 96px 1fr;
+  padding: 4px 0;
+}
+
+/* --- терміни й маргіналія --------------------------------------------- */
+
+.term {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted var(--brass);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+.term:hover,
+.term--active {
+  color: var(--brass);
+}
+
+.gloss {
+  max-width: 320px;
+}
+
+.gloss__title {
+  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.gloss__en {
+  color: var(--graphite);
+  font-family: var(--sans);
+  font-size: var(--t-sm);
+  font-weight: 400;
+}
+
+.gloss__what,
+.gloss__play {
+  margin: 0 0 8px;
+}
+
+.gloss__play {
+  color: var(--graphite);
+}
+
+.hint-content.gloss {
+  border: 1px solid var(--line);
+  background: var(--leaf);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+/* Три колонки: кроки · вибір · поля. Ліве вирівнювання всюди. */
+.wizard--layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) 300px;
+  grid-template-areas:
+    "head head head"
+    "rail main margin";
+  gap: 20px 32px;
+  align-items: start;
+}
+
+.wizard--layout > .wizard-header {
+  grid-area: head;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.wizard--layout > .wizard-header h1 {
+  margin: 0;
+}
+
+.step-rail {
+  grid-area: rail;
+  position: sticky;
+  top: 16px;
+}
+
+.step-rail ol {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-rail .step-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-left: 2px solid var(--line);
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-md);
+  text-align: left;
+}
+
+.step-rail .step-chip--active {
+  border-left-color: var(--patina);
+  background: var(--patina-soft);
+  font-weight: 600;
+}
+
+.step-rail .step-chip--done .step-index {
+  border-color: var(--patina);
+  color: var(--patina);
+}
+
+.step-rail .step-chip--locked {
+  color: var(--graphite);
+  opacity: 0.6;
+}
+
+.step-rail .step-chip--optional::after {
+  content: none;
+}
+
+.step-index {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--leaf);
+  color: var(--graphite);
+  font-size: var(--t-xs);
+}
+
+.step-rail .step-chip--active .step-index {
+  border-color: var(--patina);
+  background: var(--patina);
+  color: var(--patina-ink);
+}
+
+.step-note {
+  display: block;
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  font-weight: 400;
+}
+
+.wizard-main,
+.wizard--levelup > .wizard-body {
+  grid-area: main;
+  min-width: 0;
+}
+
+.wizard--levelup {
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-areas:
+    "head head"
+    "main margin";
+}
+
+.wizard--levelup > .status {
+  grid-area: main;
+}
+
+.margin {
+  grid-area: margin;
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 18px;
+  padding-left: 20px;
+  border-left: 2px solid var(--brass);
+  font-size: var(--t-sm);
+}
+
+.margin__tip {
+  margin: 0;
+  color: var(--graphite);
+}
+
+.summary__title {
+  margin: 0 0 6px;
+  font-size: var(--t-xl);
+}
+
+.summary__abilities {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summary__abilities li {
+  display: grid;
+  justify-items: center;
+  padding: 6px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+  background: var(--leaf);
+}
+
+.summary__ability--key {
+  border-color: var(--brass) !important;
+}
+
+.summary__abbr {
+  font-family: var(--caps);
+  color: var(--graphite);
+}
+
+.summary__score {
+  font-family: var(--serif);
+  font-size: var(--t-xl);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.summary__mod {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+}
+
+.summary__warn {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--wax);
+}
+
+/* --- характеристики ---------------------------------------------------- */
+
+.ability-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.ability-table th,
+.ability-table td {
+  border-bottom: 1px solid var(--line-soft);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.ability-table thead th {
+  color: var(--graphite);
+  font-family: var(--sans);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+}
+
+.ability-name {
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.ability-role {
+  display: block;
+  margin-top: 2px;
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  font-weight: 400;
+  max-width: 46ch;
+}
+
+.ability-row--primary th {
+  box-shadow: inset 3px 0 0 var(--brass);
+}
+
+.ability-mod {
+  font-weight: 600;
+}
+
+/* --- варіанти з описом (закляття, риси) -------------------------------- */
+
+.option-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--leaf);
+  padding: 8px 12px;
+}
+
+.option--active {
+  border-color: var(--patina);
+  box-shadow: inset 3px 0 0 var(--patina);
+}
+
+.option__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.option__pick {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option__pick:disabled {
+  color: var(--graphite);
+  cursor: not-allowed;
+}
+
+.option__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+  color: var(--patina);
+  font-family: var(--sans);
+  font-size: 13px;
+}
+
+.option--active .option__mark {
+  border-color: var(--patina);
+}
+
+.option__meta {
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.option__details summary {
+  margin-top: 4px;
+  color: var(--patina);
+  font-size: var(--t-sm);
+}
+
+.feat-picker .option-list {
+  max-height: 480px;
+  overflow: auto;
+}
+
+/* --- лист: нічна сесія без неону -------------------------------------- */
+
+.character-view {
+  background: color-mix(in srgb, var(--paper) 92%, transparent) !important;
+  border-color: var(--line) !important;
+}
+
+.character-view,
+.character-view * {
+  text-shadow: none !important;
+}
+
+/* Неон і світіння прибираємо, але НЕ фон: шестикутники малюються заливкою. */
+.character-view [class*="ddb-"] {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+
+.character-view h1,
+.character-view h2,
+.character-view h3 {
+  font-family: var(--serif);
+}
+
+.character-view [class*="kicker"],
+.character-view [class*="label"] {
+  letter-spacing: 0.02em;
+}
+
+/* --- телефон ----------------------------------------------------------- */
+
+@media (max-width: 1080px) {
+  .wizard--layout,
+  .wizard--levelup {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "head"
+      "rail"
+      "main"
+      "margin";
+  }
+
+  .step-rail {
+    position: static;
+  }
+
+  .step-rail ol {
+    display: flex;
+    overflow-x: auto;
+    gap: 4px;
+  }
+
+  .step-rail .step-chip {
+    border-left: 0;
+    border-bottom: 2px solid var(--line);
+    white-space: nowrap;
+  }
+
+  .step-rail .step-chip--active {
+    border-bottom-color: var(--patina);
+  }
+
+  .step-note {
+    display: none;
+  }
+
+  .margin {
+    position: static;
+    padding: 12px 16px;
+    border-left: 0;
+    border-top: 2px solid var(--brass);
+    background: var(--leaf);
+  }
+
+  .facts__row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --- мотиви: шестикутник і зрізаний кут -------------------------------- */
+
+:root {
+  --hex: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
+  --hex-v: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  --cut: 10px;
+  --chamfer: polygon(
+    var(--cut) 0,
+    calc(100% - var(--cut)) 0,
+    100% var(--cut),
+    100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%,
+    var(--cut) 100%,
+    0 calc(100% - var(--cut)),
+    0 var(--cut)
+  );
+}
+
+/* Картки зі зрізаними кутами. Рамка — тлом, щоб діагональ теж мала лінію. */
+.choice,
+.wizard-block,
+.species-card,
+.option,
+.summary,
+.status {
+  --frame: var(--line);
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: var(--chamfer);
+  /* тло елемента — колір рамки; ::before кладе картку на 1 px усередині */
+  background: var(--frame) !important;
+  isolation: isolate;
+}
+
+.choice::before,
+.wizard-block::before,
+.species-card::before,
+.option::before,
+.summary::before,
+.status::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  clip-path: var(--chamfer);
+  background: var(--card-bg, var(--leaf));
+}
+
+.choice,
+.option {
+  padding: 12px 14px;
+}
+
+.wizard-block,
+.species-card,
+.summary,
+.status {
+  padding: 18px 20px;
+}
+
+.choice:hover,
+.option:hover {
+  --frame: color-mix(in srgb, var(--act) 60%, var(--line));
+}
+
+.choice--active,
+.option--active {
+  --frame: var(--act);
+  --card-bg: color-mix(in srgb, var(--act) 12%, var(--leaf));
+  box-shadow: none;
+}
+
+.summary {
+  --frame: var(--brass);
+}
+
+.status--error {
+  --frame: var(--wax);
+}
+
+/* Кнопки — теж зі зрізом, малинова дія. */
+.button {
+  --cut: 7px;
+  border-radius: 0;
+  clip-path: var(--chamfer);
+}
+
+.button--primary,
+.button--seal {
+  border: 0;
+  padding: 9px 20px;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+/* Номер кроку — шестикутник. */
+.step-index {
+  width: 30px;
+  height: 26px;
+  border: 0;
+  border-radius: 0;
+  clip-path: var(--hex);
+  background: var(--line);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.step-rail .step-chip--done .step-index {
+  background: var(--brass);
+  color: var(--paper);
+}
+
+.step-rail .step-chip--active .step-index {
+  background: var(--act);
+  color: var(--act-ink);
+}
+
+.step-rail .step-chip--active {
+  border-left-color: var(--act);
+  background: linear-gradient(90deg, var(--act-soft), transparent);
+}
+
+/* Характеристики в маргіналії — шестикутні медальйони. */
+.summary__abilities li {
+  position: relative;
+  aspect-ratio: 1 / 1.08;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  clip-path: var(--hex-v);
+  background: var(--line);
+  align-content: center;
+  gap: 0;
+}
+
+.summary__abilities li::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: 0;
+  clip-path: var(--hex-v);
+  background: var(--leaf-hi);
+}
+
+.summary__abilities li > * {
+  position: relative;
+  z-index: 1;
+}
+
+.summary__ability--key {
+  background: var(--brass) !important;
+  border: 0 !important;
+}
+
+/* Модифікатор у таблиці характеристик — шестикутний жетон. */
+.ability-mod {
+  text-align: center;
+}
+
+.ability-table tbody .ability-mod {
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+}
+
+/* Число всередині шестикутника, а не поруч: рамка — тло самого жетона. */
+.hex-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 46px;
+  background:
+    no-repeat center / 100% 100%
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 46'%3E%3Cpath d='M14 1.5h28L54.5 23 42 44.5H14L1.5 23z' fill='%23212634' stroke='%23d1a654' stroke-width='1.5'/%3E%3C/svg%3E");
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ability-table td.ability-mod {
+  vertical-align: top;
+  padding-top: 4px;
+}
+
+.ability-row--primary th {
+  box-shadow: inset 3px 0 0 var(--act);
+}
+
+/* Заголовок блоку з маленьким шестикутником — «печатка» розділу. */
+.wizard-block > h3::before,
+.species-card__head h3::before {
+  content: "";
+  display: inline-block;
+  width: 0.62em;
+  height: 0.7em;
+  margin-right: 0.45em;
+  clip-path: var(--hex-v);
+  background: var(--act);
+  vertical-align: 0.02em;
+}
+
+/* Чипи: обране — малиновим. */
+.chip--active,
+.chip--active:hover:not(:disabled) {
+  border-color: var(--act);
+  background: var(--act-soft);
+  box-shadow: inset 3px 0 0 var(--act);
+}
+
+.tag--key {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+/* Підписи чисел на листі — вузькі капітелі, як на ігрових листах. */
+.summary__abbr,
+.stat-label,
+.ability-card__name {
+  font-family: var(--caps);
+  letter-spacing: 0.06em;
+}
+
+.margin {
+  border-left-color: var(--line);
+}
+
+@supports not (clip-path: polygon(0 0)) {
+  .choice,
+  .wizard-block,
+  .species-card,
+  .option,
+  .summary,
+  .status {
+    border: 1px solid var(--frame) !important;
+  }
+}
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.topbar .badge {
+  margin: 0;
+}
+
+/* --- дрібні виправлення після огляду ---------------------------------- */
+
+/* Візард і рівень лежать прямо на «столі»: рамку дають картки, не обгортка. */
+.wizard {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+/* Список і демо — картки зі зрізаними кутами, як решта. */
+.saved,
+.demo {
+  border: 0;
+  border-radius: 0;
+  clip-path: var(--chamfer);
+  background: var(--leaf);
+}
+
+/* «Необовʼязково» вже є підписом у кроці — старий ::after не потрібен. */
+.step-rail .step-chip.step-chip--optional::after,
+.step-rail .step-chip--optional:not(.step-chip--done):not(.step-chip--active)::after {
+  content: none;
+}
+
+/* Назви — звичайним регістром: великі літери лишаємо лише коротким міткам. */
+.species-card__head h3,
+.wizard-block > h3 {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.species-traits .reckoning summary,
+.reckoning summary {
+  font-size: var(--t-sm);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+
+.species-card__subs h4,
+.species-card__h4 {
+  color: var(--brass);
+  font-family: var(--caps);
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: none;
+}
+
+.wizard-header .meta {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: var(--t-sm);
+}
+
+/* --- лист персонажа: шестикутники й зрізані кути ---------------------- */
+
+/* Характеристика: латунна рамка-шестикутник, модифікатор великим, значення
+ * — у «жетоні» знизу. Малі шестикутники (ініціатива, майстерність…) —
+ * сірою рамкою, щоб характеристики лишались головними. */
+/* Сітка: колонка ширша за шестикутник, щоб сусіди не злипались. */
+.character-view .ddb-abilities {
+  grid-template-columns: repeat(6, 96px);
+  gap: 14px 10px;
+}
+
+.character-view .ddb-hex {
+  width: 88px;
+  height: 100px;
+  clip-path: var(--hex-v);
+  background: var(--brass) !important;
+}
+
+.character-view .ddb-hex__inner {
+  inset: 2px;
+  clip-path: var(--hex-v);
+  background: var(--leaf-hi) !important;
+  gap: 6px;
+}
+
+/* Модифікатор — головне число: великий, світлий, без засічок. */
+.character-view .ddb-hex__mod {
+  font-family: var(--sans);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* Значення — прямокутний жетон із контрастом, а не крихітний шестикутник. */
+.character-view .ddb-hex__score {
+  min-width: 34px;
+  padding: 2px 8px;
+  border: 1px solid var(--brass);
+  border-radius: 3px;
+  clip-path: none;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Малі шестикутники (майстерність, швидкість, ініціатива, КЗ). */
+.character-view .ddb-hex--small {
+  width: 76px;
+  height: 86px;
+  background: var(--graphite) !important;
+}
+
+.character-view .ddb-hex--small .ddb-hex__mod,
+.character-view .ddb-hexstat__value {
+  font-family: var(--sans);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.character-view .ddb-ability__label,
+.character-view .ddb-hexstat__label {
+  max-width: 96px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
+}
+
+@media (max-width: 760px) {
+  .character-view .ddb-abilities {
+    grid-template-columns: repeat(3, 96px);
+  }
+}
+
+.character-view .hitdie__face {
+  background: var(--brass) !important;
+  color: var(--paper);
+}
+
+/* Шапка, вкладки, робоча зона — рівні площини без градієнтів. */
+.character-view .ddb-top,
+.character-view .ddb-work,
+.character-view .ddb-tabs {
+  background: transparent !important;
+}
+
+.character-view .ddb-portrait {
+  clip-path: var(--hex-v);
+  border: 0;
+  background: var(--act) !important;
+  color: var(--act-ink);
+}
+
+/* Картки листа — зі зрізаними кутами, як картки візарда. */
+.character-view .ddb-card {
+  --frame: var(--line);
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: var(--chamfer);
+  background: var(--frame) !important;
+  isolation: isolate;
+}
+
+.character-view .ddb-card::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  clip-path: var(--chamfer);
+  background: var(--leaf);
+}
+
+.character-view .ddb-hp {
+  background: var(--leaf) !important;
+  border-color: var(--line) !important;
+  border-radius: 0 !important;
+  clip-path: var(--chamfer);
+}
+
+/* Кнопки листа — як решта: зріз, малинова головна дія, червоне «Шкода». */
+.character-view .ddb-btn {
+  --cut: 6px;
+  border-radius: 0 !important;
+  clip-path: var(--chamfer);
+  background: var(--leaf-hi) !important;
+  border-color: var(--line) !important;
+  color: var(--ink);
+}
+
+.character-view .ddb-btn--primary,
+.character-view .button--primary {
+  background: var(--act) !important;
+  border-color: var(--act) !important;
+  color: var(--act-ink) !important;
+}
+
+.character-view .ddb-hp__act--damage {
+  background: color-mix(in srgb, var(--wax) 18%, var(--leaf)) !important;
+  border-color: var(--wax) !important;
+}
+
+.character-view .ddb-hp__act--heal {
+  background: color-mix(in srgb, var(--ok) 16%, var(--leaf)) !important;
+  border-color: var(--ok) !important;
+}
+
+.character-view .slot-track__box.is-ready {
+  background: var(--act) !important;
+}
+
+/* --- експертність ------------------------------------------------------ */
+
+/* Експертна навичка — подвійна позначка: золотий шестикутник замість крапки. */
+.character-view .ddb-skill.is-expert .ddb-skill__dot {
+  width: 10px;
+  height: 11px;
+  border: 0;
+  border-radius: 0;
+  clip-path: var(--hex-v);
+  background: var(--brass);
+  box-shadow: none;
+}
+
+.character-view .ddb-skill.is-expert .ddb-skill__name {
+  color: var(--brass);
+}
+
+.expertise {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.expertise__head {
+  margin: 0 0 8px;
+}
+
+.expertise--pending .expertise__head {
+  color: var(--brass);
+  font-weight: 700;
+}
+
+/* Стартове спорядження класу: рядки вибору (a)/(b)/(c). */
+.start-rows {
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 14px;
+  padding-left: 22px;
+}
+
+.start-rows li::marker {
+  color: var(--brass);
+  font-weight: 700;
+}

@@ -214,14 +214,39 @@ function LevelUpPage({ id, navigate }: { id: string; navigate: (next: Route) => 
   );
 }
 
+const THEME_KEY = "dndsheet.theme";
+
+/** Темна тема — типова; світлу гравець вмикає сам, вибір памʼятає браузер. */
+function useTheme(): ["night" | "day", () => void] {
+  const [theme, setTheme] = useState<"night" | "day">(() => {
+    try {
+      return window.localStorage.getItem(THEME_KEY) === "day" ? "day" : "night";
+    } catch {
+      return "night";
+    }
+  });
+  useEffect(() => {
+    if (theme === "day") document.documentElement.dataset.theme = "day";
+    else delete document.documentElement.dataset.theme;
+    try {
+      window.localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // приватний режим — тема просто не запамʼятається
+    }
+  }, [theme]);
+  return [theme, () => setTheme((current) => (current === "day" ? "night" : "day"))];
+}
+
 function Shell() {
   const [route, navigate] = useRoute();
+  const [theme, toggleTheme] = useTheme();
 
   // Лист персонажа має темну «дошку» на всю ширину; решта застосунку світла.
   // Клас ставимо і на <html>, інакше за межами body видно світлий canvas.
   useEffect(() => {
     document.body.classList.toggle("board", route.name === "character");
     document.documentElement.classList.toggle("board", route.name === "character");
+    // Нічна сесія = ті самі токени theme.css, лише інші значення.
     return () => {
       document.body.classList.remove("board");
       document.documentElement.classList.remove("board");
@@ -230,9 +255,14 @@ function Shell() {
 
   return (
     <main className={route.name === "character" ? "app app--board" : "app"}>
-      <p className="badge">
-        Правила 2014 · {route.name === "create" ? "створення персонажа" : "листок персонажа"} · сервер рахує все
-      </p>
+      <div className="topbar">
+        <p className="badge">
+          Книга гравця 2014 · {route.name === "create" ? "створення персонажа" : route.name === "levelup" ? "підвищення рівня" : "лист персонажа"}
+        </p>
+        <button type="button" className="link-button theme-toggle" onClick={toggleTheme}>
+          {theme === "day" ? "Темна тема" : "Світла тема"}
+        </button>
+      </div>
       {route.name === "home" ? (
         <>
           <CharactersList navigate={navigate} />

@@ -1,19 +1,5 @@
 :root {
-  --ink: #1b1a18;
-  --muted: #6f6a63;
-  --line: #ded9d1;
-  --line-soft: #efece6;
-  --surface: #ffffff;
-  --canvas: #f1efeb;
-  --panel: #fbf9f6;
-  --accent: #a3241f;
-  --accent-deep: #58180d;
-  --brand: #b02b2c;
-  --gold: #a9863f;
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
-  font-family: "Segoe UI", "Noto Sans", "DejaVu Sans", system-ui, sans-serif;
-  color: var(--ink);
-  background: var(--canvas);
+  /* токени — у theme.css */
 }
 
 * {
@@ -34,9 +20,9 @@ body {
   display: inline-block;
   margin: 0 0 18px;
   padding: 4px 11px;
-  border: 1px solid #e2d7bf;
+  border: 1px solid var(--graphite);
   border-radius: 3px;
-  background: #fffdf8;
+  background: var(--leaf);
   color: var(--gold);
   font-size: 10.5px;
   font-weight: 600;
@@ -53,8 +39,8 @@ body {
 }
 
 .status--error {
-  color: #8b2f2f;
-  border-color: #e3bcbc;
+  color: var(--wax);
+  border-color: var(--wax-soft);
 }
 
 .sheet {
@@ -135,7 +121,7 @@ body {
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfbfa;
+  background: var(--leaf);
 }
 
 .field-label {
@@ -176,7 +162,7 @@ body {
   font-size: 9.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #9a9a9e;
+  color: var(--graphite);
 }
 
 .field-origin--computed {
@@ -184,7 +170,7 @@ body {
 }
 
 .field-origin--override {
-  color: #8a6a2f;
+  color: var(--brass);
 }
 
 .hint-trigger {
@@ -212,8 +198,8 @@ body {
   max-width: 280px;
   padding: 7px 10px;
   border-radius: 7px;
-  background: #232325;
-  color: #f6f6f4;
+  background: var(--ink);
+  color: var(--paper);
   font-size: 12px;
   line-height: 1.35;
   box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
@@ -226,7 +212,7 @@ body {
 }
 
 .hint-arrow {
-  fill: #232325;
+  fill: var(--ink);
 }
 
 /* ------------------------------------------------------------------ */
@@ -319,11 +305,11 @@ body {
 .step-chip--active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--leaf);
 }
 
 .step-chip--active .step-index {
-  background: rgb(255 255 255 / 22%);
+  background: color-mix(in srgb, var(--leaf) 22%, transparent);
 }
 
 .step-chip--locked {
@@ -344,7 +330,7 @@ body {
   width: 17px;
   height: 17px;
   border-radius: 50%;
-  background: #ececea;
+  background: var(--line);
   font-size: 10px;
   font-weight: 700;
 }
@@ -375,7 +361,7 @@ body {
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fbfbfa;
+  background: var(--leaf);
 }
 
 .wizard-block h3 {
@@ -457,7 +443,7 @@ body {
  * не прокручувати його щоразу. */
 .species-card {
   border: 1px solid var(--line);
-  border-left: 3px solid #b9a7d6;
+  border-left: 3px solid var(--graphite);
   border-radius: 9px;
   background: var(--surface);
   padding: 12px 14px 14px;
@@ -540,17 +526,17 @@ body {
    чужорідним; кнопки й чипи беруть кольори візарда самі. */
 .wizard-step .inv-search__input {
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--leaf);
   color: inherit;
 }
 
 .wizard-step .inv-search__input::placeholder {
-  color: #9a9a94;
+  color: var(--graphite);
 }
 
 .wizard-step .inv-catalog {
   border: 1px solid var(--line);
-  background: #fbfbfa;
+  background: var(--leaf);
 }
 
 .wizard-step .inv-catalog__name {
@@ -575,7 +561,7 @@ body {
 }
 
 .choice:hover {
-  border-color: #b9b9b4;
+  border-color: var(--graphite);
 }
 
 .choice--active {
@@ -608,13 +594,13 @@ body {
 .chip--active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--leaf);
 }
 
 /* На активному чипі підпис («+1 МУД, +2 СПР») має читатися. */
 .chip--active .meta,
 .chip--active .choice-meta {
-  color: rgb(255 255 255 / 85%);
+  color: color-mix(in srgb, var(--leaf) 85%, transparent);
 }
 
 .chip--row {
@@ -646,7 +632,7 @@ body {
 
 .button {
   padding: 8px 14px;
-  border: 1px solid #cfc9c0;
+  border: 1px solid var(--graphite);
   border-radius: 4px;
   background: var(--surface);
   color: var(--ink);
@@ -661,7 +647,7 @@ body {
 
 .button:hover:not(:disabled) {
   border-color: var(--accent);
-  background: #fdf9f6;
+  background: var(--leaf);
   color: var(--accent-deep);
 }
 
@@ -673,13 +659,13 @@ body {
 .button--primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--leaf);
 }
 
 .button--primary:hover:not(:disabled) {
-  background: #8a1c18;
-  border-color: #8a1c18;
-  color: #fff;
+  background: var(--wax);
+  border-color: var(--wax);
+  color: var(--leaf);
 }
 
 .button-row,
@@ -724,7 +710,7 @@ body {
 }
 
 .hint--warn {
-  color: #8a6a2f;
+  color: var(--brass);
 }
 
 .plain-list {
@@ -777,8 +763,8 @@ body {
   padding: 0 0 6px;
   border-radius: 8px;
   box-shadow:
-    0 1px 2px rgb(28 20 12 / 8%),
-    0 14px 36px rgb(28 20 12 / 7%);
+    0 1px 2px color-mix(in srgb, var(--ink) 8%, transparent),
+    0 14px 36px color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .character-view > :not(.sheet-banner) {
@@ -806,7 +792,7 @@ body {
   border-bottom: 3px solid var(--brand);
   border-radius: 8px 8px 0 0;
   background:
-    linear-gradient(180deg, #fffdf9 0%, #ffffff 100%);
+    linear-gradient(180deg, var(--leaf) 0%, var(--leaf) 100%);
 }
 
 .banner-kicker {
@@ -825,7 +811,7 @@ body {
   font-weight: 700;
   letter-spacing: -0.005em;
   line-height: 1.1;
-  color: #241a12;
+  color: var(--ink);
 }
 
 .banner-sub {
@@ -867,14 +853,14 @@ body {
 
 .stat--ac {
   grid-column: span 2;
-  background: linear-gradient(180deg, #f7f4ee 0%, #fffdf9 100%);
-  border-color: #d9d2c4;
+  background: linear-gradient(180deg, var(--paper) 0%, var(--leaf) 100%);
+  border-color: var(--graphite);
 }
 
 .stat--hp {
   grid-column: span 2;
-  border-color: #e3c3c0;
-  background: linear-gradient(180deg, #fdf2f1 0%, #fffafa 100%);
+  border-color: var(--wax-soft);
+  background: linear-gradient(180deg, var(--wax-soft) 0%, var(--wax-soft) 100%);
 }
 
 .stat--wide {
@@ -906,17 +892,17 @@ body {
   font-size: 26px;
   font-weight: 700;
   line-height: 1.15;
-  color: #241a12;
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 
 .stat--hp .stat-value {
   font-size: 30px;
-  color: #8c1b18;
+  color: var(--wax);
 }
 
 .stat-slash {
-  color: #c8a8a5;
+  color: var(--graphite);
   font-weight: 400;
 }
 
@@ -987,7 +973,7 @@ body {
   padding: 10px 6px 8px;
   border: 1px solid var(--line);
   border-radius: 4px;
-  background: linear-gradient(180deg, #fffdf9 0%, #ffffff 62%);
+  background: linear-gradient(180deg, var(--leaf) 0%, var(--leaf) 62%);
   text-align: center;
 }
 
@@ -1004,7 +990,7 @@ body {
   font-size: 30px;
   font-weight: 700;
   line-height: 1.05;
-  color: #241a12;
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1048,7 +1034,7 @@ body {
 }
 
 .skill-mark {
-  color: #b9b3a9;
+  color: var(--graphite);
   font-size: 10px;
   line-height: 1.6;
 }
@@ -1062,7 +1048,7 @@ body {
 .skill-value {
   text-align: right;
   font-weight: 600;
-  color: #241a12;
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1114,7 +1100,7 @@ body {
 }
 
 .export-bar .button--primary {
-  color: #fff;
+  color: var(--leaf);
 }
 
 
@@ -1146,7 +1132,7 @@ body {
 
 .tab:hover {
   color: var(--accent-deep);
-  background: #faf7f3;
+  background: var(--paper);
 }
 
 .tab--active {
@@ -1194,7 +1180,7 @@ body {
 }
 
 .numfield__btn:hover:not(:disabled) {
-  background: #f2eee8;
+  background: var(--line);
   color: var(--accent);
 }
 
@@ -1261,8 +1247,8 @@ body {
 }
 
 .editable--override .editable-value {
-  color: #8a6a2f;
-  border-bottom-color: #c9a86a;
+  color: var(--brass);
+  border-bottom-color: var(--brass);
 }
 
 .editable-reset {
@@ -1672,5 +1658,5 @@ body {
 }
 
 .levelup-warning {
-  color: #a8641a;
+  color: var(--brass);
 }

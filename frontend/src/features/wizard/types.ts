@@ -506,11 +506,15 @@ export interface SheetViewPayload {
   abilities: Record<string, SheetAbility>;
   proficiency_bonus: number;
   saving_throws: Record<string, { value: number; proficient: boolean }>;
-  skills: Record<string, { value: number; proficient: boolean }>;
+  skills: Record<string, { value: number; proficient: boolean; expertise?: boolean }>;
+  /** Експертність: скільки дали рівні, що обрано, з чого можна обрати. */
+  expertise?: { slots: number; chosen: string[]; options: string[] };
   armor_class: { value: number; parts: { label: string; value: number }[] };
   initiative: number;
   speed: number;
   passive_perception: number;
+  passive_investigation?: number;
+  passive_insight?: number;
   darkvision: number;
   resistances: string[];
   hit_points: {

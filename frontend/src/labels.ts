@@ -125,7 +125,7 @@ export const ITEM_KIND_LABELS: Record<string, string> = {
 
 export const METHOD_LABELS: Record<string, string> = {
   standard_array: "Стандартний набір",
-  point_buy: "Point buy",
+  point_buy: "Розподіл очок",
   rolls: "Кидки 4d6",
   manual: "Вручну",
 };
@@ -314,4 +314,106 @@ export function modifierLabel(value: number): string {
 
 export function abilityModifier(total: number): number {
   return Math.floor((total - 10) / 2);
+}
+
+/** Опис класу для новачка: роль, складність і основні характеристики.
+ *
+ * Основні характеристики — з розділу «Quick Build» кожного класу (PHB,
+ * гл. 3): перша — головна, друга — бажана. `standard` — рекомендований
+ * розклад стандартного набору 15/14/13/12/10/8 для кнопки «Розкласти за
+ * класом» (порядок: str, dex, con, int, wis, cha).
+ */
+export interface ClassGuide {
+  saves: string[];
+  role: string;
+  complexity: "простий" | "середній" | "складний";
+  primary: string[];
+  standard: Record<string, number>;
+}
+
+export const CLASS_GUIDE: Record<string, ClassGuide> = {
+  barbarian: { saves: ["str","con"], role: "ближній бій, витривалість", complexity: "простий", primary: ["str", "con"],
+    standard: { str: 15, dex: 13, con: 14, int: 8, wis: 12, cha: 10 } },
+  bard: { saves: ["dex","cha"], role: "підтримка, магія, спілкування", complexity: "середній", primary: ["cha", "dex"],
+    standard: { str: 8, dex: 14, con: 13, int: 10, wis: 12, cha: 15 } },
+  cleric: { saves: ["wis","cha"], role: "лікування, підтримка, божественна магія", complexity: "середній", primary: ["wis", "con"],
+    standard: { str: 13, dex: 10, con: 14, int: 8, wis: 15, cha: 12 } },
+  druid: { saves: ["int","wis"], role: "магія природи, перевтілення", complexity: "складний", primary: ["wis", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 12, wis: 15, cha: 10 } },
+  fighter: { saves: ["str","con"], role: "ближній або дальній бій, броня", complexity: "простий", primary: ["str", "con"],
+    standard: { str: 15, dex: 13, con: 14, int: 8, wis: 12, cha: 10 } },
+  monk: { saves: ["str","dex"], role: "рукопашний бій, рухливість", complexity: "середній", primary: ["dex", "wis"],
+    standard: { str: 10, dex: 15, con: 13, int: 8, wis: 14, cha: 12 } },
+  paladin: { saves: ["wis","cha"], role: "ближній бій, захист, лікування", complexity: "середній", primary: ["str", "cha"],
+    standard: { str: 15, dex: 8, con: 13, int: 10, wis: 12, cha: 14 } },
+  ranger: { saves: ["str","dex"], role: "дальній бій, розвідка, природа", complexity: "середній", primary: ["dex", "wis"],
+    standard: { str: 10, dex: 15, con: 13, int: 8, wis: 14, cha: 12 } },
+  rogue: { saves: ["dex","int"], role: "скритність, навички, точні удари", complexity: "простий", primary: ["dex", "int"],
+    standard: { str: 8, dex: 15, con: 13, int: 14, wis: 12, cha: 10 } },
+  sorcerer: { saves: ["con","cha"], role: "бойова магія, вроджена сила", complexity: "середній", primary: ["cha", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 10, wis: 12, cha: 15 } },
+  warlock: { saves: ["wis","cha"], role: "магія пакту, заговори", complexity: "середній", primary: ["cha", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 12, wis: 10, cha: 15 } },
+  wizard: { saves: ["int","wis"], role: "найширша магія, контроль", complexity: "складний", primary: ["int", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 15, wis: 12, cha: 10 } },
+  artificer: { saves: ["con","int"], role: "винахідник, магічні предмети", complexity: "складний", primary: ["int", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 15, wis: 12, cha: 10 } },
+};
+
+export function classGuide(key: string | null | undefined): ClassGuide | undefined {
+  if (!key) return undefined;
+  const slug = key.toLowerCase().split("/").pop() ?? key;
+  return CLASS_GUIDE[slug];
+}
+
+/** Світогляд: одне речення, щоб вибір мав сенс. */
+export const ALIGNMENT_HINTS: Record<string, string> = {
+  "lawful good": "чинить правильно і шанує порядок, обіцянки, закон",
+  "neutral good": "робить добро, не привʼязуючись ні до правил, ні до бунту",
+  "chaotic good": "робить добро за власним сумлінням, правила — не головне",
+  "lawful neutral": "живе за кодексом, традицією чи наказом",
+  neutral: "уникає крайнощів, діє за обставинами",
+  "chaotic neutral": "цінує свободу понад усе, непередбачуваний",
+  "lawful evil": "бере своє методично, в межах власного кодексу",
+  "neutral evil": "думає лише про себе, без принципів",
+  "chaotic evil": "руйнує і ламає заради власних примх",
+};
+
+/** Коди книг, які найчастіше бачить гравець, — людськими назвами. */
+export const SOURCE_SHORT: Record<string, string> = {
+  "phb-2014": "Книга гравця",
+  "basic-rules-2014": "Базові правила",
+  "dmg-2014": "Книга майстра",
+  tcoe: "Таша",
+  xge: "Ксанатар",
+  scag: "Узбережжя Мечів",
+  egtw: "Ексендрія",
+  erftlw: "Еберон",
+  ggtr: "Равніка",
+  motm: "Мордекайнен (народи)",
+  mtof: "Мордекайнен (вороги)",
+  vgtm: "Воло",
+  ftod: "Скарбниця драконів",
+  "ps-amonkhet": "Амонхет",
+  "ps-kaladesh": "Каладеш",
+  "ps-ixalan": "Іксалан",
+  "ps-innistrad": "Іннистрад",
+  "ps-zendikar": "Зендікар",
+  "ps-dominaria": "Домінарія",
+  sacoc: "Стриксгейвен",
+  sato: "Спеллджаммер",
+  ai: "Acquisitions Inc.",
+};
+
+export function sourceLabel(code: string | null | undefined): string {
+  if (!code) return "";
+  return SOURCE_SHORT[code] ?? code.toUpperCase();
+}
+
+/** Ціна наступного +1 у розподілі очок (PHB, p. 13). */
+export function nextPointCost(score: number, costs: Record<string, number>): number | null {
+  const now = costs[String(score)];
+  const next = costs[String(score + 1)];
+  if (now === undefined || next === undefined) return null;
+  return next - now;
 }
