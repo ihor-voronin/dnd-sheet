@@ -8,7 +8,7 @@ API — тонка обгортка над цим сервісом, тому к�
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Any, Mapping
 
 from dndsheet.compendium.domain.entry import (
     CATEGORY_ORDER,
@@ -82,8 +82,14 @@ class CompendiumService:
         spell_lists: SpellListRepository | None = None,
         titles: Mapping[str, str] | None = None,
         mechanics: MechanicsRepository | None = None,
+        *,
+        ddb_slugs: Mapping[str, str] | None = None,
+        market: Mapping[str, Any] | None = None,
     ) -> None:
         self._repository = repository
+        self._ddb_slugs = dict(ddb_slugs or {})
+        self._market = dict(market or {})
+        self._overview: dict[str, Any] | None = None
         self._spell_lists = spell_lists
         self._titles = dict(titles or {})
         self._mechanics = mechanics
@@ -92,6 +98,62 @@ class CompendiumService:
 
     # --- зведення -----------------------------------------------------------
 
+    def books_overview(self) -> dict[str, Any]:
+        """Головна сторінка: що в довіднику (унікальні назви) і з яких книг.
+
+        Скільки чого — по кожній книзі; ціни й обкладинки — з
+        `books_market.json` (звірені вручну з маркетплейсом D&D Beyond, з
+        датою перевірки). Рахується один раз: корпус на ходу не змінюється.
+        """
+        if self._overview is not None:
+            return self._overview
+        per_book: dict[str, dict[str, int]] = {}
+        unique: dict[str, set[str]] = {}
+        for category in Category:
+            for entry in self._all(category):
+                per_book.setdefault(entry.source_id, {}).setdefault(category.value, 0)
+                per_book[entry.source_id][category.value] += 1
+                unique.setdefault(category.value, set()).add(entry.name_en.strip().casefold())
+        market_books: Mapping[str, Mapping[str, Any]] = self._market.get("books") or {}
+        books = []
+        for source_id, meta in market_books.items():
+            slug = self._ddb_slugs.get(source_id)
+            books.append(
+                {
+                    "id": source_id,
+                    "title": self._titles.get(source_id, source_id),
+                    "title_uk": meta.get("uk"),
+                    "group": meta.get("group", "other"),
+                    "price": meta.get("price"),
+                    "price_from": bool(meta.get("from")),
+                    "note": meta.get("note"),
+                    "cover": meta.get("cover"),
+                    "url": f"https://www.dndbeyond.com/sources/dnd/{slug}" if slug else None,
+                    "counts": per_book.get(source_id, {}),
+                }
+            )
+        totals = {key: len(value) for key, value in unique.items()}
+        if self.mechanics_available():
+            # Класи й види — з механік, з яких збирається персонаж (артифіцер записаний
+            # у корпусі інакше, а підраси — окремими записами видів).
+            totals["class"] = len(self.class_definitions())
+            species = self.species_list()
+            totals["species"] = len(species)
+            totals["subspecies"] = sum(len(self.subspecies_of(item.name_en)) for item in species)
+            totals["background"] = len(self.backgrounds())
+        listed = set(market_books)
+        others = {key: value for key, value in per_book.items() if key not in listed}
+        self._overview = {
+            "checked": self._market.get("checked"),
+            "currency": self._market.get("currency", "USD"),
+            "totals": totals,
+            "sources": len(per_book),
+            "books": books,
+            "other_sources": len(others),
+            "other_entries": sum(sum(counts.values()) for counts in others.values()),
+        }
+        return self._overview
+
     def summary(self) -> CorpusSummary:
         counts = self._repository.counts()
         warnings = list(self._repository.warnings())
@@ -99,9 +161,7 @@ class CompendiumService:
             warnings.extend(self._mechanics.warnings())
         total = sum(counts.values())
         if total == 0:
-            warnings.append(
-                "корпус не знайдено або він порожній: перевірте DNDSHEET_CONTENT_DIR"
-            )
+            warnings.append("корпус не знайдено або він порожній: перевірте DNDSHEET_CONTENT_DIR")
 
         books = tuple(
             BookSummary(
@@ -111,11 +171,7 @@ class CompendiumService:
             )
             for source_id, count in sorted(self._book_counts().items())
         )
-        categories = tuple(
-            (category, counts[category])
-            for category in CATEGORY_ORDER
-            if counts.get(category)
-        )
+        categories = tuple((category, counts[category]) for category in CATEGORY_ORDER if counts.get(category))
         return CorpusSummary(
             entries=total,
             categories=categories,
@@ -164,9 +220,7 @@ class CompendiumService:
         return bool(self._mechanics and self._mechanics.available())
 
     def mechanics_warnings(self) -> tuple[str, ...]:
-        return tuple(self._mechanics.warnings()) if self._mechanics else (
-            "механіки класів не підключені",
-        )
+        return tuple(self._mechanics.warnings()) if self._mechanics else ("механіки класів не підключені",)
 
     def class_definitions(self) -> tuple[ClassMechanics, ...]:
         """Усі класи 2014 з механіками, за назвою."""
@@ -215,9 +269,7 @@ class CompendiumService:
     def backgrounds(self) -> tuple[BackgroundMechanics, ...]:
         if self._mechanics is None:
             return ()
-        return tuple(
-            sorted(self._mechanics.backgrounds().values(), key=lambda item: item.name_en)
-        )
+        return tuple(sorted(self._mechanics.backgrounds().values(), key=lambda item: item.name_en))
 
     def background_mechanics(self, name: str) -> BackgroundMechanics:
         if self._mechanics is None:
@@ -229,9 +281,7 @@ class CompendiumService:
 
     # --- закляття -----------------------------------------------------------
 
-    def class_spells(
-        self, class_name: str, max_level: int = MAX_SPELL_LEVEL
-    ) -> ClassSpells:
+    def class_spells(self, class_name: str, max_level: int = MAX_SPELL_LEVEL) -> ClassSpells:
         """Закляття класу до `max_level` включно."""
         if not 0 <= max_level <= MAX_SPELL_LEVEL:
             max_level = MAX_SPELL_LEVEL
@@ -241,9 +291,7 @@ class CompendiumService:
             if names:
                 spells = self._resolve_spell_names(names, max_level)
                 if spells:
-                    return ClassSpells(
-                        class_name=class_name, spells=spells, source="spell-lists"
-                    )
+                    return ClassSpells(class_name=class_name, spells=spells, source="spell-lists")
 
         by_data = self._spells_from_entry_data(class_name, max_level)
         if by_data:
@@ -252,10 +300,12 @@ class CompendiumService:
 
     # --- інше ---------------------------------------------------------------
 
-    def optional_features(
-        self, feature_type: str | None = None
-    ) -> tuple[CompendiumEntry, ...]:
+    def optional_features(self, feature_type: str | None = None) -> tuple[CompendiumEntry, ...]:
         return self._all(Category.OPTIONAL_FEATURE, feature_type=feature_type)
+
+    def feats(self) -> tuple[CompendiumEntry, ...]:
+        """Усі риси корпусу, за назвою (для вибору на підвищенні рівня)."""
+        return tuple(sorted(self._all(Category.FEAT), key=lambda entry: entry.name_en))
 
     def spells(
         self,
@@ -321,9 +371,7 @@ class CompendiumService:
                 result.append(entry)
         return tuple(result)
 
-    def _spells_from_entry_data(
-        self, class_name: str, max_level: int
-    ) -> tuple[CompendiumEntry, ...]:
+    def _spells_from_entry_data(self, class_name: str, max_level: int) -> tuple[CompendiumEntry, ...]:
         wanted = search_key(class_name)
         found: list[CompendiumEntry] = []
         for entry in self._all(Category.SPELL):

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import jsonschema
 import pytest
-
 from dndsheet.sheets.domain.document import SheetDocument
 
 
@@ -33,9 +32,7 @@ def test_all_referenced_fields_exist(fixture_name: str, fixture_documents: dict[
     for page in document.pages:
         for section in page.sections:
             for field_id in section.fields:
-                assert field_id in document.fields, (
-                    f"Секція {section.id!r} посилається на неіснуюче поле {field_id!r}"
-                )
+                assert field_id in document.fields, f"Секція {section.id!r} посилається на неіснуюче поле {field_id!r}"
 
 
 @pytest.mark.parametrize("fixture_name", ["minimal", "full"])

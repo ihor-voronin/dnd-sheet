@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from dndsheet.characters.api import classes_uk
 from dndsheet.characters.application.rows import (
     feature_rows,
     proficiency_rows,
@@ -20,7 +21,11 @@ from dndsheet.characters.domain.services.derived_stats import ComputedSheet
 from dndsheet.characters.domain.services.feature_resources import resources_for
 from dndsheet.characters.domain.services.spell_slots import Spellcasting
 from dndsheet.characters.domain.wizard import STEP_ORDER, Draft, WizardStep
-from dndsheet.shared.kernel import Ability
+from dndsheet.shared.kernel import SKILL_ABILITY, Ability, Skill
+from dndsheet.shared.rules import stealth_disadvantage
+
+#: Лічильники рис, яких немає в перекладі класів.
+_RESOURCE_UK = {"Superiority Dice": "Кістки переваги", "Luck Points": "Очки удачі"}
 
 
 def computed_sheet(
@@ -45,30 +50,49 @@ def computed_sheet(
             ability.value: {
                 "value": computed.saving_throws[ability],
                 "proficient": computed.saving_throw_proficiency[ability],
+                "disadvantage": bool(computed.armor_untrained) and ability in (Ability.STR, Ability.DEX),
             }
             for ability in Ability
         },
         "skills": {
-            skill: {"value": value, "proficient": computed.skill_proficiency[skill]}
+            skill: {
+                "value": value,
+                "proficient": computed.skill_proficiency[skill],
+                "expertise": computed.skill_expertise.get(skill, False),
+                # Завада на Скритність у важкій і частині середньої броні (PHB, p. 145).
+                "disadvantage": (skill == "stealth" and stealth_disadvantage(character.inventory.worn_armor))
+                or (bool(computed.armor_untrained) and SKILL_ABILITY[Skill(skill)] in (Ability.STR, Ability.DEX)),
+            }
             for skill, value in computed.skills.items()
+        },
+        # Експертиза: скільки дали рівні, що обрано і з чого можна обрати.
+        "expertise": {
+            "slots": character.expertise_slots,
+            "chosen": list(character.expertise),
+            "options": list(character.expertise_options()),
         },
         "armor_class": {
             "value": computed.armor_class,
             "parts": [{"label": part.label, "value": part.value} for part in computed.armor_class_parts],
+            "notes": list(computed.armor_class_notes),
         },
         "initiative": computed.initiative,
         "speed": computed.speed,
         "passive_perception": computed.passive_perception,
+        "passive_investigation": computed.passive_investigation,
+        "passive_insight": computed.passive_insight,
         "darkvision": computed.darkvision,
+        "blindsight": computed.blindsight,
         "resistances": list(computed.resistances),
+        "resistance_notes": list(computed.resistance_notes),
+        "roll_notes": list(computed.roll_notes),
+        "attunement_limit": character.attunement_limit,
         "hit_points": {
             "maximum": computed.hit_points.maximum,
             "current": computed.hit_points.current,
             "temporary": computed.hit_points.temporary,
             "bloodied": computed.hit_points.is_bloodied,
-            "parts": [
-                {"label": part.label, "value": part.value} for part in computed.hit_points.parts
-            ],
+            "parts": [{"label": part.label, "value": part.value} for part in computed.hit_points.parts],
         },
         "hit_dice": {f"d{die}": count for die, count in sorted(computed.hit_dice.items())},
         "resources": resources(character, computed),
@@ -84,8 +108,7 @@ def computed_sheet(
         },
         "overridden": sorted(computed.overridden),
         "features": features(character),
-        "attacks_per_action": 1
-        + sum(1 for row in feature_rows(character) if row.name_en.startswith("Extra Attack")),
+        "attacks_per_action": 1 + sum(1 for row in feature_rows(character) if row.name_en.startswith("Extra Attack")),
         "feature_resources": [
             {
                 "key": resource.key,
@@ -97,11 +120,42 @@ def computed_sheet(
                 "used": resource.used,
                 "recharge": resource.recharge,
                 "action": resource.action,
+                **(
+                    {"name_uk": uk_name}
+                    if (uk_name := classes_uk.name_uk(resource.name_en) or _RESOURCE_UK.get(resource.name_en))
+                    else {}
+                ),
             }
             for resource in resources_for(character, computed.ability_modifiers)
         ],
         "attacks": attacks or [],
-        "spellcasting": spellcasting(computed.spellcasting),
+        "spellcasting": {
+            **spellcasting(computed.spellcasting),
+            # Книга мага: 6 заклять на 1 рівні й по 2 за кожен наступний (PHB, p. 114);
+            # більше — законно, якщо переписано зі сувоїв і книг (50 зм і 2 год за рівень).
+            "spellbook": (
+                {
+                    "count": sum(1 for spell in character.spells_of("wizard") if not spell.is_cantrip),
+                    "from_levels": 6 + 2 * (character.class_level("wizard") - 1),
+                }
+                if character.has_class("wizard")
+                else None
+            ),
+        },
+        "armor_untrained": list(computed.armor_untrained),
+        # Які позначки зброї має сенс пропонувати в інвентарі.
+        "weapon_bonds": {
+            "pact": any(
+                value.casefold() == "pact of the blade"
+                for value in character.active_class_choices.get("warlock:Pact Boon", ())
+            ),
+            "hex": any(
+                entry.class_key == "warlock" and (entry.subclass_key or "").endswith("hexblade")
+                for entry in character.classes
+            ),
+            # Скільки зброї кенсея можна позначити (0 — не кенсей або нижче 3 рівня).
+            "kensei": character.kensei_slots,
+        },
         "spells": spells(character, computed),
         "proficiencies": proficiencies(computed.proficiencies),
         "carrying": {
@@ -118,6 +172,10 @@ def computed_sheet(
                     "weight_lb": item.weight_lb,
                     "equipped": item.equipped,
                     "attuned": item.attuned,
+                    "pact_weapon": item.pact_weapon,
+                    "hex_weapon": item.hex_weapon,
+                    "kensei_weapon": item.kensei_weapon,
+                    "entry_id": item.entry_id,
                     "armor_base": item.armor_base,
                     "dex_cap": item.dex_cap,
                     "notes": item.notes,
@@ -145,6 +203,7 @@ def character_brief(character: Character) -> dict[str, Any]:
     """Шапка листа: хто це, з чого зібраний."""
     species = character.species
     background = character.background
+    waiver_keys = {waiver.class_key for waiver in character.multiclass_waivers}
     return {
         "id": character.id,
         "name": character.name,
@@ -159,11 +218,7 @@ def character_brief(character: Character) -> dict[str, Any]:
             if species is not None
             else None
         ),
-        "background": (
-            {"key": background.key, "name_en": background.name_en}
-            if background is not None
-            else None
-        ),
+        "background": ({"key": background.key, "name_en": background.name_en} if background is not None else None),
         "classes": [
             {
                 "key": entry.class_key,
@@ -171,8 +226,14 @@ def character_brief(character: Character) -> dict[str, Any]:
                 "level": entry.level,
                 "subclass": entry.subclass_key,
                 "hit_die": definition.hit_die,
+                "requirements_ignored": entry.class_key in waiver_keys,
             }
             for entry, definition in character.class_entries()
+        ],
+        # Лист має показати, що вимоги мультикласу обійшли, а не мовчати.
+        "multiclass_waivers": [
+            {"class_key": waiver.class_key, "requirements": list(waiver.requirements)}
+            for waiver in character.multiclass_waivers
         ],
         "version": character.version,
     }
@@ -187,9 +248,7 @@ def resources(character: Character, computed: ComputedSheet) -> dict[str, Any]:
     pact = computed.spellcasting.slots.pact
     return {
         "slots": slots,
-        "pact": (
-            {"total": pact.slots, "used": character.state.pact_used} if pact is not None else None
-        ),
+        "pact": ({"total": pact.slots, "used": character.state.pact_used} if pact is not None else None),
         "hit_dice": {
             f"d{die}": {"total": total, "used": character.state.hit_die_used(die)}
             for die, total in sorted(computed.hit_dice.items())
@@ -227,6 +286,12 @@ def spells(character: Character, computed: ComputedSheet) -> list[dict[str, Any]
             "prepared": row.prepared,
             "always_prepared": row.always_prepared,
             "source": row.source,
+            # Власне закляття: лист має позначити його, а не вдавати книжкове.
+            "custom": row.custom,
+            # Текст власного закляття йде як опис; книжковим його допише
+            # довідник (див. `spell_meta.enrich_spells`).
+            "description": row.description,
+            "note": row.note,
         }
         for row in spell_rows(character, computed)
     ]
@@ -241,9 +306,7 @@ def spellcasting(casting: Spellcasting) -> dict[str, Any]:
     slots = {
         "by_level": {str(level): count for level, count in casting.slots.by_level},
         "pact": (
-            {"slots": casting.slots.pact.slots, "level": casting.slots.pact.slot_level}
-            if casting.slots.pact
-            else None
+            {"slots": casting.slots.pact.slots, "level": casting.slots.pact.slot_level} if casting.slots.pact else None
         ),
         "highest_level": casting.slots.highest_level,
     }
@@ -262,6 +325,7 @@ def spellcasting(casting: Spellcasting) -> dict[str, Any]:
                 "spells_known_limit": item.spells_known_limit,
                 "prepared_limit": item.prepared_limit,
                 "prepares": item.prepares,
+                "max_spell_level": item.max_spell_level,
             }
             for item in casting.classes
         ],
@@ -304,6 +368,8 @@ def draft_payload(draft: Draft) -> dict[str, Any]:
         ],
         "next_step": next_step.value if next_step else None,
         "ready_to_finish": ready_to_finish(draft),
+        # Фіксовані бонуси виду (і вибрані «+1 до будь-якої») — для підсумку.
+        "ability_bonuses": {ability.value: value for ability, value in draft.ability_bonuses.items() if value},
     }
 
 
@@ -323,7 +389,12 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
             "species_key": draft.species_key,
             "subspecies_key": draft.subspecies_key,
             "ability_choices": [ability.value for ability in draft.ability_choices],
+            "ability_spread": {ability.value: amount for ability, amount in draft.ability_spread.items()},
             "spell_choices": list(draft.spell_choices),
+            "species_feat": draft.species_feat,
+            "species_source": draft.species_source,
+            "species_feat_choices": {key: list(values) for key, values in draft.species_feat_choices.items()},
+            "species_feat_ability": draft.species_feat_ability.value if draft.species_feat_ability else None,
         }
     if step is WizardStep.CLASS:
         return {"class_key": draft.class_key, "subclass_key": draft.subclass_key}
@@ -336,6 +407,7 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
     if step is WizardStep.BACKGROUND:
         return {
             "background_key": draft.background_key,
+            "custom_background": draft.custom_background,
             "alignment": draft.alignment,
             "picks": [
                 {
@@ -356,9 +428,17 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
                     "weight_lb": item.weight_lb,
                     "equipped": item.equipped,
                     "attuned": item.attuned,
+                    "pact_weapon": item.pact_weapon,
+                    "hex_weapon": item.hex_weapon,
+                    "kensei_weapon": item.kensei_weapon,
                     "entry_id": item.entry_id,
                     "armor_base": item.armor_base,
                     "dex_cap": item.dex_cap,
+                    # Нотатки й власний урон — частина предмета: без них
+                    # «від передісторії» губилося, і повторний вхід у крок
+                    # додавав спорядження передісторії вдруге.
+                    "notes": item.notes,
+                    "damage": item.damage,
                 }
                 for item in draft.items
             ],

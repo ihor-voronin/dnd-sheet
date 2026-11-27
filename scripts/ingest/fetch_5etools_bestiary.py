@@ -6,6 +6,7 @@
 
 Запуск:  python scripts/ingest/fetch_5etools_bestiary.py
 """
+
 from __future__ import annotations
 
 import json
@@ -19,8 +20,7 @@ from scripts.ingest.fetch_5etools import ROOT, fetch  # noqa: E402
 IDX = ROOT / "content" / "raw" / "_index"
 
 # У файлах Plane Shift книга зветься PS-A…PS-X, а в корпусах — PSA…PSX.
-ALIASES = {"PSA": "PS-A", "PSI": "PS-I", "PSK": "PS-K", "PSD": "PS-D",
-           "PSZ": "PS-Z", "PSX": "PS-X"}
+ALIASES = {"PSA": "PS-A", "PSI": "PS-I", "PSK": "PS-K", "PSD": "PS-D", "PSZ": "PS-Z", "PSX": "PS-X"}
 
 
 def id_to_dir() -> dict[str, str]:

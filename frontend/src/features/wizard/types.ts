@@ -21,10 +21,20 @@ export interface AbilityChoice {
   from: string[];
 }
 
+/** Уміння виду: оригінал книги й переклад, якщо він уже є. */
+export interface TraitView {
+  name_en: string;
+  text: string;
+  name_uk?: string;
+  text_uk?: string;
+}
+
 export interface SpeciesView {
   key: string;
   name_en: string;
   source_id: string;
+  /** Природна зброя, кістка якої залежить від книги виду (VGM чи MPMM). */
+  natural_weapon?: { name_en: string; default_source: string; dice: Record<string, string> };
   subrace_of: string | null;
   size: string;
   speed: number;
@@ -43,6 +53,17 @@ export interface SpeciesView {
   shared_cantrips?: string[];
   cantrip_choice?: { from_class: string; count: number } | null;
   granted_spells?: { name: string; level: number; min_level: number }[];
+  /** Особливості з книги: назва й текст (мова — `text_lang`). */
+  traits?: TraitView[];
+  description?: string;
+  /** Український переклад опису (порожньо, якщо перекладу ще немає). */
+  description_uk?: string;
+  /** Мова тексту книги: uk / en / ru. */
+  text_lang?: string | null;
+  /** Звідки взято текст, якщо власного запису немає (підраса в тексті батька). */
+  text_from?: string | null;
+  /** Підраса обовʼязкова: без неї вид не має всіх чисел. */
+  subspecies_required?: boolean;
   subspecies?: SpeciesView[];
 }
 
@@ -67,6 +88,10 @@ export interface SubclassGrants {
 export interface SubclassView {
   id: string;
   name_en: string;
+  /** Українська назва підкласу — з шару перекладу (не з TERMS за id). */
+  name_uk?: string | null;
+  /** Книга, з якої підклас: потрібна, коли назви повторюються (PHB/PSA). */
+  source_id?: string;
   grants?: SubclassGrants;
 }
 
@@ -85,8 +110,24 @@ export interface ClassView {
   spellcasting: SpellcastingMechanics | null;
   cantrips_at_level_1: number;
   spells_known_at_level_1: number | null;
+  /** Перший рівень, на якому клас чарує (паладин і рейнджер — 2); `null` — не чарує. */
+  casts_from_level?: number | null;
   subclass: { title: string; level: number; options: SubclassView[] } | null;
-  features: { name_en: string; level: number }[];
+  /** Усі підкласи з довідника — для бази знань (`/api/v1/kb/classes`). */
+  subclasses_all?: { id: string; name_en: string; name_uk: string | null; source_id: string }[];
+  features: { name_en: string; level: number; name_uk?: string }[];
+  /** Опис класу з книги. */
+  description?: string;
+  /** Опис класу українською — машинна чернетка, оригінал вище. */
+  description_uk?: string;
+  /** Текст умінь, які клас дає на 1 рівні (і базових розділів книги). */
+  feature_texts?: {
+    name_en: string;
+    level: number;
+    text: string;
+    name_uk?: string;
+    text_uk?: string;
+  }[];
 }
 
 export interface BackgroundView {
@@ -99,6 +140,23 @@ export interface BackgroundView {
   tools_any: number;
   languages_any_standard: number;
   feature_en: string | null;
+  /** Власна передісторія: текст пише гравець, правила вибору стандартні. */
+  custom?: boolean;
+  /** Опис і текст риси з книги. */
+  description?: string;
+  feature_text?: string;
+  /** Український переклад — машинна чернетка, оригінал вище. */
+  description_uk?: string | null;
+  feature_uk?: string | null;
+  feature_text_uk?: string | null;
+  /** Спорядження з рядка `Equipment:`; choices — варіанти вибору книги. */
+  equipment?: {
+    text: string;
+    choices: string[];
+    text_uk?: string;
+    choices_uk?: string[];
+  }[];
+  money?: { gp?: number };
 }
 
 export interface AbilitiesOptions {
@@ -187,6 +245,8 @@ export interface ItemPayload {
   entry_id?: string | null;
   armor_base?: number | null;
   dex_cap?: number | null;
+  notes?: string | null;
+  damage?: string | null;
 }
 
 export interface MoneyPayload {
@@ -213,7 +273,12 @@ export interface SheetSpell {
   entry_id: string | null;
   prepared: boolean;
   always_prepared: boolean;
+  /** class | species | subclass | feat | fighting-style | invocation */
   source: string;
+  /** Власне закляття: у довіднику його немає, текст дав гравець. */
+  custom?: boolean;
+  /** Як чарується поза класом або що змінює виклик (Болісний розряд). */
+  note?: string;
   /** Короткі дані з довідника — для вкладки «Дії». */
   casting_time?: string;
   range?: string;
@@ -224,6 +289,9 @@ export interface SheetSpell {
   school?: string;
   description?: string;
   at_higher_levels?: string;
+  /** Український текст закляття й абзацу «На вищих рівнях» (content/translations/spells). */
+  description_uk?: string | null;
+  at_higher_levels_uk?: string | null;
   damage?: { dice: string; type: string } | null;
   save?: string | null;
   attack_roll?: boolean;
@@ -243,6 +311,12 @@ export interface BackgroundDetails {
   skill_any: number;
   tools_any: number;
   languages_any: number;
+  /** Український переклад — машинна чернетка, оригінал вище. */
+  name_uk?: string | null;
+  feature_uk?: string | null;
+  feature_text_uk?: string | null;
+  description_uk?: string | null;
+  equipment_uk?: string | null;
 }
 
 export interface SheetFeature {
@@ -252,12 +326,19 @@ export interface SheetFeature {
   class_name: string;
   source?: "class" | "subclass";
   subclass_name?: string | null;
+  /** Українська назва підкласу для підпису на листі. */
+  subclass_name_uk?: string | null;
   description?: string;
+  /** Українські назва й текст правила — з `content/translations/classes/`. */
+  name_uk?: string | null;
+  text_uk?: string | null;
 }
 
 export interface SheetFeatureResource {
   key: string;
   name_en: string;
+  /** Українська назва вміння (Rage → Лють), якщо переклад є. */
+  name_uk?: string | null;
   class_key: string;
   class_name: string;
   level: number;
@@ -283,15 +364,22 @@ export interface RestReport {
 
 export interface SheetItem {
   name_en: string;
+  /** Українська назва речі з передісторії («знаки розрізнення») — дає бекенд. */
+  name_uk?: string;
   kind: string;
   quantity: number;
   weight_lb: number;
   equipped: boolean;
   attuned: boolean;
+  /** Запис довідника, з якого предмет узяли: звідти ж беремо опис. */
+  entry_id?: string | null;
   armor_base: number | null;
   dex_cap: number | null;
   notes: string | null;
   damage: string | null;
+  pact_weapon?: boolean;
+  hex_weapon?: boolean;
+  kensei_weapon?: boolean;
 }
 
 export interface SpeciesAnswers {
@@ -299,7 +387,16 @@ export interface SpeciesAnswers {
   species_key: string | null;
   subspecies_key: string | null;
   ability_choices: string[];
+  /** Правила 2022: +2 і +1 або три +1 (для видів без фіксованих бонусів). */
+  ability_spread: Record<string, number>;
   spell_choices: string[];
+  /** Риса виду (варіантна людина, власна лінія). */
+  species_feat?: string | null;
+  species_feat_ability?: string | null;
+  /** Книга виду («MPMM»); порожньо — книга запису. */
+  species_source?: string | null;
+  /** Вибори риси виду: «feat:skilled:Skills or Tools» → назви. */
+  species_feat_choices?: Record<string, string[]>;
 }
 
 export interface ClassAnswers {
@@ -313,8 +410,25 @@ export interface AbilitiesAnswers {
   rolls: number[];
 }
 
+export interface CustomBackgroundItem {
+  name_en: string;
+  quantity: number;
+}
+
+export interface CustomBackgroundPayload {
+  name: string;
+  description: string;
+  feature_name: string;
+  feature_text: string;
+  /** Предмети обрані з каталогу (фільтри й властивості — як в інвентарі). */
+  items: CustomBackgroundItem[];
+  equipment: string;
+  money_gp: number;
+}
+
 export interface BackgroundAnswers {
   background_key: string | null;
+  custom_background?: CustomBackgroundPayload | null;
   alignment: string | null;
   picks: PickPayload[];
 }
@@ -346,6 +460,8 @@ export interface DraftView {
   steps: StepStatus[];
   next_step: string | null;
   ready_to_finish: boolean;
+  /** Бонуси характеристик від виду й розподілу (без базових значень). */
+  ability_bonuses?: Partial<Record<string, number>>;
 }
 
 export interface StepView<TOptions = unknown> {
@@ -374,12 +490,27 @@ export interface SheetCharacter {
   alignment: string | null;
   species: { key: string; name_en: string; subspecies: string | null } | null;
   background: { key: string; name_en: string } | null;
-  classes: { key: string; name_en: string; level: number; subclass: string | null; hit_die: number }[];
+  classes: {
+    key: string;
+    name_en: string;
+    level: number;
+    subclass: string | null;
+    /** Назва підкласу з книги й переклад (бекенд бере їх із довідника). */
+    subclass_name?: string;
+    subclass_name_uk?: string | null;
+    hit_die: number;
+    /** Клас узято всупереч вимогам мультикласу (правило дому). */
+    requirements_ignored?: boolean;
+  }[];
+  /** Що саме обійшли: клас і його вимоги («INT 13»). */
+  multiclass_waivers?: { class_key: string; requirements: string[] }[];
   version: number;
 }
 
 export interface SheetSpellcasting {
   caster_level: number;
+  /** Книга мага: скільки заклять у ній і скільки дали рівні (6 + 2 за рівень). */
+  spellbook?: { count: number; from_levels: number } | null;
   slots: {
     by_level: Record<string, number>;
     pact: { slots: number; level: number } | null;
@@ -396,6 +527,8 @@ export interface SheetSpellcasting {
     spells_known_limit: number | null;
     prepared_limit: number | null;
     prepares: boolean;
+    /** Найвищий рівень закляття цього класу на його рівні. */
+    max_spell_level: number;
   }[];
 }
 
@@ -403,14 +536,44 @@ export interface SheetViewPayload {
   character: SheetCharacter;
   abilities: Record<string, SheetAbility>;
   proficiency_bonus: number;
-  saving_throws: Record<string, { value: number; proficient: boolean }>;
-  skills: Record<string, { value: number; proficient: boolean }>;
-  armor_class: { value: number; parts: { label: string; value: number }[] };
+  saving_throws: Record<string, { value: number; proficient: boolean; disadvantage?: boolean }>;
+  /** Броня/щит без володіння: завада на СИЛ/СПР, чарувати не можна. */
+  armor_untrained?: string[];
+  /** Чи пропонувати позначки зброї: угода клинка, хексблейд. */
+  weapon_bonds?: { pact: boolean; hex: boolean; kensei?: number };
+  skills: Record<string, { value: number; proficient: boolean; expertise?: boolean; disadvantage?: boolean }>;
+  /** Експертиза: скільки дали рівні, що обрано, з чого можна обрати. */
+  expertise?: { slots: number; chosen: string[]; options: string[] };
+  /** Бойовий стиль, втаємничення, метамагія, прийоми… (ключ «клас:група»). */
+  class_choices?: ClassChoiceGroup[];
+  armor_class: { value: number; parts: { label: string; value: number }[]; notes?: string[] };
+  /** Риса виду на 1 рівні (варіантна людина, власна лінія); null — вид не дає. */
+  /** Книга виду, якщо від неї залежить кістка природної зброї. */
+  species_source?: {
+    chosen: string | null;
+    default: string | null;
+    options: { source: string; die: string }[];
+    weapon: string;
+  } | null;
+  species_feat?: {
+    chosen: string | null;
+    ability: string | null;
+    feat_abilities: Record<string, string[]>;
+  } | null;
   initiative: number;
   speed: number;
   passive_perception: number;
+  passive_investigation?: number;
+  passive_insight?: number;
   darkvision: number;
+  blindsight?: number;
   resistances: string[];
+  /** Опір за умови: у люті, тотем Ведмедя, Стихійна спорідненість. */
+  resistance_notes?: string[];
+  /** Перевага й особливі правила кидків (Відчуття небезпеки, Надійний талант…). */
+  roll_notes?: string[];
+  /** Скільком предметам можна настроїтися (артифіцер — більше 3). */
+  attunement_limit?: number;
   hit_points: {
     maximum: number;
     current: number;
@@ -435,6 +598,16 @@ export interface SheetViewPayload {
   };
   overridden: string[];
   features: SheetFeature[];
+  /** Вибрані риси з текстом: показуємо разом з уміннями. */
+  feat_details?: {
+    key: string;
+    name_en: string;
+    name_uk?: string | null;
+    source_id?: string;
+    description: string;
+    /** Український текст риси (content/translations/feats). */
+    description_uk?: string | null;
+  }[];
   feature_resources: SheetFeatureResource[];
   background_details: BackgroundDetails | null;
   attacks: {
@@ -445,6 +618,8 @@ export interface SheetViewPayload {
     ability: string;
     notes: string;
     equipped: boolean;
+    /** weapon — зброя з інвентаря; unarmed — удар без зброї й природна зброя; spell — Shillelagh. */
+    kind?: "weapon" | "unarmed" | "spell";
   }[];
   attacks_per_action: number;
   proficiencies: { kind: string; value: string; source: { kind: string; key: string } }[];
@@ -468,3 +643,157 @@ export interface FinishedCharacter {
   character_id: string;
   sheet: SheetViewPayload;
 }
+
+// --- підвищення рівня -----------------------------------------------------
+
+export interface LevelUpSlotRow {
+  level: number;
+  before: number;
+  after: number;
+}
+
+export interface LevelUpSubclassOption {
+  id: string;
+  name_en: string;
+  name_uk: string | null;
+  /** Усі вміння підкласу з рівнями: що він дає зараз і далі. */
+  features: LevelUpSubclassFeature[];
+}
+
+export interface LevelUpSubclassFeature {
+  name_en: string;
+  level: number;
+  /** Вміння саме того рівня, який обирають цим підвищенням. */
+  new?: boolean;
+  name_uk?: string;
+  /** Текст правила: оригінал книги (`text`) і переклад, якщо є (`text_uk`). */
+  text?: string;
+  text_uk?: string;
+}
+
+export interface LevelUpSubclass {
+  title: string | null;
+  level: number;
+  required: boolean;
+  current: string | null;
+  options: LevelUpSubclassOption[];
+}
+
+export interface LevelUpLimits {
+  cantrips: { before: number; after: number };
+  spells_known: { before: number | null; after: number | null };
+  prepared: { before: number | null; after: number | null };
+}
+
+export interface LevelUpPlan {
+  class_key: string;
+  class_name: string;
+  is_new_class: boolean;
+  current_level: number;
+  new_level: number;
+  total_level_before: number;
+  total_level_after: number;
+  hit_die: number;
+  constitution_modifier: number;
+  hp: { average: number; best_roll: number };
+  features: { name_en: string; level: number; name_uk?: string; text?: string; text_uk?: string }[];
+  subclass: LevelUpSubclass | null;
+  subclass_features: {
+    name_en: string;
+    level?: number;
+    description: string;
+    name_uk?: string;
+    text_uk?: string;
+    subclass_name?: string;
+  }[];
+  asi: { slots: number; taken: number; pending: boolean };
+  proficiency_bonus: { before: number; after: number };
+  limits: LevelUpLimits;
+  slots: LevelUpSlotRow[];
+  pact: { before: [number, number] | null; after: [number, number] | null };
+  caster_level: { before: number; after: number };
+  max_spell_level: number;
+  resources_added: { key: string; name_en: string; name_uk?: string }[];
+  allowed: boolean;
+  blocked_reason: string | null;
+  requirements: string[];
+  /** Новий клас барда/слідопита/плута дає одну навичку (PHB, p. 164). */
+  skill_options?: string[];
+  /** Бард при мультикласі: один музичний інструмент. */
+  tool_options?: string[];
+}
+
+export interface LevelUpView {
+  character_id: string;
+  name: string;
+  version: number;
+  total_level: number;
+  max_level: number;
+  can_level_up: boolean;
+  plans: LevelUpPlan[];
+  /** Риса → характеристики, одну з яких вона підвищує на 1. */
+  feat_abilities?: Record<string, string[]>;
+}
+
+export interface LevelUpReport {
+  class_key: string;
+  class_name: string;
+  is_new_class: boolean;
+  from_level: number;
+  to_level: number;
+  total_level_before: number;
+  total_level_after: number;
+  hp_max_before: number;
+  hp_max_after: number;
+  hp_current_before: number;
+  hp_current_after: number;
+  proficiency_bonus_before: number;
+  proficiency_bonus_after: number;
+  features: string[];
+  subclass_key: string | null;
+  ability_increases: [string, number][];
+  feat_key: string | null;
+  slots: LevelUpSlotRow[];
+  spells_added: string[];
+  resources_added: string[];
+  /** Рівень узято без вимог мультикласу — лист це покаже. */
+  requirements_ignored: boolean;
+  ignored_requirements: string[];
+}
+
+export interface ClassSpell {
+  id: string;
+  name_en: string;
+  name_uk: string | null;
+  data: Record<string, unknown>;
+}
+
+export interface FeatEntry {
+  id: string;
+  name_en: string;
+  name_uk: string | null;
+  source_id: string;
+}
+
+export type ClassChoiceGroup = {
+  key: string;
+  class_key: string;
+  group: string;
+  /** Хто дав вибір, якщо не клас: риса чи бойовий стиль. */
+  origin?: { kind: "feat" | "style" | "sub" | "boon" | "feature" | "inv"; key: string; name_uk: string } | null;
+  slots: number;
+  /** Без ліміту (переписані ритуали): `slots` — лише стеля. */
+  open_ended?: boolean;
+  chosen: string[];
+  options: {
+    name_en: string;
+    name_uk?: string | null;
+    text_en: string;
+    text_uk?: string | null;
+    prerequisite?: string | null;
+    source?: string;
+    /** Чого бракує (рівня, дару угоди, закляття); null — доступно. */
+    locked?: string | null;
+    school?: string | null;
+  }[];
+};

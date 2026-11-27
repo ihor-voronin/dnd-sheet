@@ -7,7 +7,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace as _replace
+from dataclasses import dataclass, field
+from dataclasses import replace as _replace
 from enum import StrEnum
 
 from dndsheet.shared.errors import ValidationError
@@ -15,6 +16,11 @@ from dndsheet.shared.kernel import Money
 
 #: Скільки фунтів тягне одна одиниця Сила (PHB, p. 176).
 CARRY_PER_STRENGTH = 15
+
+#: Скільком предметам можна настроїтися одночасно (PHB, p. 138); артифіцер — до 6
+#: (TCoE, p. 12–13), тож тут — абсолютна стеля, а ліміт персонажа перевіряє `Character`.
+MAX_ATTUNED = 3
+ABSOLUTE_MAX_ATTUNED = 6
 
 
 class ItemKind(StrEnum):
@@ -47,6 +53,12 @@ class InventoryItem:
     #: Для зброї: власний урон гравця (повний рядок, як «1d8+3 slashing»).
     #: Порожньо — урон рахується з довідника й модифікатора здібності.
     damage: str | None = None
+    #: Зброя угоди (Pact of the Blade, PHB, p. 107): викликана чи звʼязана.
+    pact_weapon: bool = False
+    #: Зброя Хекс-воїна (Hex Warrior, XGtE, p. 55): обрана після тривалого відпочинку.
+    hex_weapon: bool = False
+    #: Зброя кенсея (Path of the Kensei, XGtE, p. 34): кілька, ліміт — за рівнем ченця.
+    kensei_weapon: bool = False
 
     def __post_init__(self) -> None:
         if not self.name_en.strip():
@@ -59,22 +71,18 @@ class InventoryItem:
             raise ValidationError(f"{self.name_en}: вага не може бути відʼємною")
         if self.kind is ItemKind.ARMOR:
             if self.armor_base is None or self.armor_base < 10:
-                raise ValidationError(
-                    f"{self.name_en}: броня без базового КЗ (мінімум 10)"
-                )
+                raise ValidationError(f"{self.name_en}: броня без базового КЗ (мінімум 10)")
         elif self.armor_base is not None:
-            raise ValidationError(
-                f"{self.name_en}: базовий КЗ буває лише в броні"
-            )
+            raise ValidationError(f"{self.name_en}: базовий КЗ буває лише в броні")
         if self.dex_cap is not None and self.dex_cap < 0:
             raise ValidationError(f"{self.name_en}: межа Спритності не може бути відʼємною")
+        if (self.pact_weapon or self.hex_weapon or self.kensei_weapon) and self.kind is not ItemKind.WEAPON:
+            raise ValidationError(f"{self.name_en}: зброєю угоди чи Хекс-воїна буває лише зброя")
         if self.damage is not None:
             if not str(self.damage).strip():
                 raise ValidationError(f"{self.name_en}: порожній урон зброї")
             if self.kind is not ItemKind.WEAPON:
-                raise ValidationError(
-                    f"{self.name_en}: власний урон буває лише у зброї"
-                )
+                raise ValidationError(f"{self.name_en}: власний урон буває лише у зброї")
 
     @property
     def total_weight(self) -> float:
@@ -104,6 +112,12 @@ class Inventory:
             raise ValidationError("одночасно можна носити лише одну броню")
         if sum(1 for item in self.items if item.is_shield and item.equipped) > 1:
             raise ValidationError("одночасно можна тримати лише один щит")
+        if self.attuned_count > ABSOLUTE_MAX_ATTUNED:
+            raise ValidationError(f"одночасно можна настроїтися не більше ніж на {ABSOLUTE_MAX_ATTUNED} предметів")
+        if sum(1 for item in self.items if item.pact_weapon) > 1:
+            raise ValidationError("зброя угоди буває лише одна (PHB, p. 107)")
+        if sum(1 for item in self.items if item.hex_weapon) > 1:
+            raise ValidationError("Хекс-воїн обирає лише одну зброю (XGtE, p. 55)")
 
     def __len__(self) -> int:
         return len(self.items)
@@ -119,14 +133,11 @@ class Inventory:
             if item.equipped and (item.is_armor or item.is_shield):
                 current = [
                     other.equipped_copy(False)
-                    if other.equipped
-                    and (
-                        (item.is_armor and other.is_armor)
-                        or (item.is_shield and other.is_shield)
-                    )
+                    if other.equipped and ((item.is_armor and other.is_armor) or (item.is_shield and other.is_shield))
                     else other
                     for other in current
                 ]
+            current = _release_bonds(current, item)
             current.append(item)
         return Inventory(items=tuple(current), money=self.money)
 
@@ -143,12 +154,20 @@ class Inventory:
             for position, other in enumerate(items):
                 if position == index or not other.equipped:
                     continue
-                if (item.is_armor and other.is_armor) or (
-                    item.is_shield and other.is_shield
-                ):
+                if (item.is_armor and other.is_armor) or (item.is_shield and other.is_shield):
                     items[position] = other.equipped_copy(False)
+        items[index] = None  # type: ignore[call-overload] — місце звільняється для нової позначки
+        items = _release_bonds(items, item)
         items[index] = item
         return Inventory(items=tuple(items), money=self.money)
+
+    @property
+    def pact_weapon(self) -> InventoryItem | None:
+        return next((item for item in self.items if item.pact_weapon), None)
+
+    @property
+    def hex_weapon(self) -> InventoryItem | None:
+        return next((item for item in self.items if item.hex_weapon), None)
 
     def remove_at(self, index: int) -> "Inventory":
         self._check_index(index)
@@ -181,13 +200,11 @@ class Inventory:
             found = True
             if equipped and item.is_armor:
                 updated = [
-                    other.equipped_copy(False) if other.is_armor and other.equipped else other
-                    for other in updated
+                    other.equipped_copy(False) if other.is_armor and other.equipped else other for other in updated
                 ]
             if equipped and item.is_shield:
                 updated = [
-                    other.equipped_copy(False) if other.is_shield and other.equipped else other
-                    for other in updated
+                    other.equipped_copy(False) if other.is_shield and other.equipped else other for other in updated
                 ]
             updated.append(item.equipped_copy(equipped))
         if not found:
@@ -209,3 +226,17 @@ class Inventory:
     @property
     def attuned_count(self) -> int:
         return sum(1 for item in self.items if item.attuned)
+
+
+def _release_bonds(items: list, item: InventoryItem) -> list:
+    """Нова зброя угоди (чи Хекс-воїна) знімає позначку з попередньої — як споряджена броня."""
+    return [
+        other
+        if other is None
+        else _replace(
+            other,
+            pact_weapon=other.pact_weapon and not item.pact_weapon,
+            hex_weapon=other.hex_weapon and not item.hex_weapon,
+        )
+        for other in items
+    ]

@@ -1,14 +1,13 @@
 """Механіки на справжніх індексах `content/index/*-mechanics.json`.
 
 Стрибає, якщо індексів немає (свіжий клон). Коли є — перевіряє, що числа
-не суперечать книзі: 13 класів 2014, хіт-дайси на місці, підкласи з
+не суперечать книзі: 13 класів 2014, кістки хітів на місці, підкласи з
 правильних рівнів, Pact Magic лише у варлока, види мають бонуси характеристик.
 """
 
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.infrastructure.factory import build_service
 from dndsheet.shared.rules import CasterProgression
@@ -87,11 +86,7 @@ def test_subclass_levels(service: CompendiumService) -> None:
 
 
 def test_only_warlock_has_pact_magic(service: CompendiumService) -> None:
-    pact = [
-        item.key
-        for item in service.class_definitions()
-        if item.caster_progression is CasterProgression.PACT
-    ]
+    pact = [item.key for item in service.class_definitions() if item.caster_progression is CasterProgression.PACT]
     assert pact == ["warlock"]
     warlock = service.class_mechanics("warlock")
     assert warlock.pact_at(1) == (1, 1)
@@ -110,7 +105,7 @@ def test_full_casters_share_the_slot_table(service: CompendiumService) -> None:
 def test_half_casters_start_at_level_two(service: CompendiumService) -> None:
     paladin = service.class_mechanics("paladin")
     assert paladin.caster_progression is CasterProgression.HALF
-    assert all(count == 0 for count in paladin.slots_at(1)), "на 1 рівні слотів немає"
+    assert all(count == 0 for count in paladin.slots_at(1)), "на 1 рівні комірок немає"
     assert paladin.slots_at(2)[0] == 2
 
 
@@ -177,9 +172,7 @@ def test_indexes_are_clean(service: CompendiumService) -> None:
 
 
 def test_only_three_classes_choose_subclass_at_level_one(service: CompendiumService) -> None:
-    at_one = sorted(
-        item.key for item in service.class_definitions() if item.subclass_level == 1
-    )
+    at_one = sorted(item.key for item in service.class_definitions() if item.subclass_level == 1)
     assert at_one == ["cleric", "sorcerer", "warlock"]
 
 

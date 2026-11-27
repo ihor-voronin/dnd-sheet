@@ -10,6 +10,7 @@
 
 Запуск:  python scripts/ingest/survey_5etools.py
 """
+
 import json
 from collections import Counter
 from pathlib import Path
@@ -19,11 +20,55 @@ from pathlib import Path
 # AIS/AAG = sais, DSotDQ = sotdq). Locathah Rising (LR) свідомо немає: він лише
 # завантажений, не розібраний.
 OURS = {
-    "PHB", "DMG", "MM", "XGE", "TCE", "SCAG", "FTD", "EGW", "AI", "VGM", "MTF",
-    "MPMM", "GGR", "ERLW", "MOT", "VRGR", "SCC", "AIS", "AAG", "BMT", "WBtW",
-    "TTP", "OGA", "WGTE", "DoD", "PotA", "SKT", "ToD", "WDH", "WDMM", "CM",
-    "TftYP", "LLK", "CoTN", "LMoP", "Wa", "DDIA-MORD", "DDvRaM", "BGG", "EEPC",
-    "DSotDQ", "SAC", "UA", "MPMV1", "MCV1", "MCV2", "MCV4", "MFFV1", "TVD",
+    "PHB",
+    "DMG",
+    "MM",
+    "XGE",
+    "TCE",
+    "SCAG",
+    "FTD",
+    "EGW",
+    "AI",
+    "VGM",
+    "MTF",
+    "MPMM",
+    "GGR",
+    "ERLW",
+    "MOT",
+    "VRGR",
+    "SCC",
+    "AIS",
+    "AAG",
+    "BMT",
+    "WBtW",
+    "TTP",
+    "OGA",
+    "WGTE",
+    "DoD",
+    "PotA",
+    "SKT",
+    "ToD",
+    "WDH",
+    "WDMM",
+    "CM",
+    "TftYP",
+    "LLK",
+    "CoTN",
+    "LMoP",
+    "Wa",
+    "DDIA-MORD",
+    "DDvRaM",
+    "BGG",
+    "EEPC",
+    "DSotDQ",
+    "SAC",
+    "UA",
+    "MPMV1",
+    "MCV1",
+    "MCV2",
+    "MCV4",
+    "MFFV1",
+    "TVD",
 }
 
 # Книги лінійки 2024+ (або поза нею) — вони «відсутні в корпусі» законно.
@@ -50,8 +95,7 @@ def main() -> None:
     feats = load(root, "feats-5etools.json", "feat")
     races = load(root, "races-5etools.json", "race")
     subraces = load(root, "races-5etools.json", "subrace")
-    print(f"передісторії: {len(bg)}  риси: {len(feats)}  "
-          f"види: {len(races)} (+{len(subraces)} підрас)")
+    print(f"передісторії: {len(bg)}  риси: {len(feats)}  види: {len(races)} (+{len(subraces)} підрас)")
 
     for label, records in (("ПЕРЕДІСТОРІЇ", bg), ("РИСИ", feats), ("ВИДИ", races)):
         counter = Counter(r.get("source", "?") for r in records)
@@ -66,8 +110,7 @@ def main() -> None:
             print(f"  {src:12s} {count:3d}{mark}")
 
     for label, records in (("ПЕРЕДІСТОРІЇ", bg), ("РИСИ", feats), ("ВИДИ", races)):
-        missing = [r for r in records
-                   if r.get("source") not in OURS and r.get("source") not in OTHER_EDITION]
+        missing = [r for r in records if r.get("source") not in OURS and r.get("source") not in OTHER_EDITION]
         print(f"\n--- {label} з книг лінійки 2014, яких немає в корпусі: {len(missing)} ---")
         for r in missing:
             print(f"  {r.get('source'):10s} {r.get('name')}")

@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "tcoe/item/ghost-step-tattoo",
+   "name_uk": "Татуювання привидного кроку"
+  },
+  {
+   "id": "basic-rules-2014/item/glaive",
+   "name_uk": "Глефа"
+  },
+  {
+   "id": "erftlw/item/glamerweave",
+   "name_uk": "Гламервейв"
+  },
+  {
+   "id": "basic-rules-2014/item/glassblower-s-tools",
+   "name_uk": "Інструменти склодува"
+  },
+  {
+   "id": "phb-2014/item/glassblower-s-tools",
+   "name_uk": "Інструменти склодува"
+  },
+  {
+   "id": "dmg-2014/item/gloves-of-thievery",
+   "name_uk": "Рукавички злодійства"
+  },
+  {
+   "id": "gotg/item/glowrune-pigment",
+   "name_uk": "Пігмент сяйної руни"
+  },
+  {
+   "id": "sotdq/item/gnomeflinger",
+   "name_uk": "Гномомет"
+  },
+  {
+   "id": "dc/item/gnomengarde-grenade",
+   "name_uk": "Гноменгардська граната"
+  },
+  {
+   "id": "egtw/item/goggles-of-object-reading",
+   "name_uk": "Окуляри читання предметів"
+  },
+  {
+   "id": "ps-ixalan/item/gold-basin-with-rubies-legion-of-dusk",
+   "name_uk": "Золота чаша з рубінами (Легіон Сутінків)"
+  },
+  {
+   "id": "ftod/item/gold-canary-figurine-of-wondrous-power",
+   "name_uk": "Золота фігурка канарки дивовижної сили"
+  },
+  {
+   "id": "ps-ixalan/item/gold-chalice-legion-of-dusk",
+   "name_uk": "Золотий кубок (Легіон Сутінків)"
+  },
+  {
+   "id": "ps-ixalan/item/gold-chalice-set-with-emeralds-legion-of-dusk",
+   "name_uk": "Золотий кубок із смарагдами (Легіон Сутінків)"
+  },
+  {
+   "id": "ps-ixalan/item/gold-jewelry-box-with-platinum-filigree-brazen-coalition",
+   "name_uk": "Золота скринька для коштовностей з платиновою філігранню (Мідна коаліція)"
+  },
+  {
+   "id": "ps-ixalan/item/gold-locket-with-a-painted-portrait-inside-legion-of-dusk",
+   "name_uk": "Золотий медальйон з намальованим портретом усередині (Легіон Сутінків)"
+  },
+  {
+   "id": "ps-ixalan/item/gold-music-box-brazen-coalition",
+   "name_uk": "Золота музична скринька (Мідна коаліція)"
+  },
+  {
+   "id": "ps-ixalan/item/gold-pendant-with-black-onyx-legion-of-dusk",
+   "name_uk": "Золотий кулон з чорним оніксом (Легіон Сутінків)"
+  },
+  {
+   "id": "ps-ixalan/item/gold-ring-with-turquoise-legion-of-dusk",
+   "name_uk": "Золотий перстень з бірюзою (Легіон Сутінків)"
+  },
+  {
+   "id": "ps-ixalan/item/gold-plated-ceremonial-helmet-and-pauldrons-legion-of-dusk",
+   "name_uk": "Позолочений церемоніальний шолом і наплічники (Легіон Сутінків)"
+  },
+  {
+   "id": "ps-ixalan/item/gold-plated-sextant-with-topaz-brazen-coalition",
+   "name_uk": "Позолочений секстант з топазом (Мідна коаліція)"
+  },
+  {
+   "id": "basic-rules-2014/item/grappling-hook",
+   "name_uk": "Гак-кішка"
+  },
+  {
+   "id": "oota/item/gravenhollow-compass-ring",
+   "name_uk": "Компасний перстень Грейвенголлоу"
+  },
+  {
+   "id": "basic-rules-2014/item/greataxe",
+   "name_uk": "Дворучна сокира"
+  },
+  {
+   "id": "basic-rules-2014/item/greatclub",
+   "name_uk": "Дворучна палиця"
+  },
+  {
+   "id": "basic-rules-2014/item/greatsword",
+   "name_uk": "Дворучний меч"
+  },
+  {
+   "id": "cos/item/green-copper-ewer",
+   "name_uk": "Зелений мідний глечик"
+  },
+  {
+   "id": "tod/item/green-dragon-mask",
+   "name_uk": "Маска зеленого дракона"
+  },
+  {
+   "id": "egtw/item/grimoire-infinitus",
+   "name_uk": "Гримуар нескінченності"
+  },
+  {
+   "id": "egtw/item/grovelthrash",
+   "name_uk": "Гровелтреш"
+  },
+  {
+   "id": "tcoe/item/guardian-emblem",
+   "name_uk": "Емблема охоронця"
+  },
+  {
+   "id": "cos/item/gulthias-staff",
+   "name_uk": "Посох Гултіаса"
+  },
+  {
+   "id": "skt/item/gurt-s-greataxe",
+   "name_uk": "Дворучна сокира Ґурта"
+  },
+  {
+   "id": "basic-rules-2014/item/halberd",
+   "name_uk": "Алебарда"
+  },
+  {
+   "id": "basic-rules-2014/item/half-plate",
+   "name_uk": "Напівпанцир"
+  },
+  {
+   "id": "basic-rules-2014/item/hammer",
+   "name_uk": "Молот"
+  },
+  {
+   "id": "basic-rules-2014/item/hammer-sledge",
+   "name_uk": "Кувалда"
+  },
+  {
+   "id": "jttrc/item/hammock-of-worlds",
+   "name_uk": "Гамак світів"
+  },
+  {
+   "id": "basic-rules-2014/item/handaxe",
+   "name_uk": "Ручна сокира"
+  },
+  {
+   "id": "vrgtr/item/harkon-s-bite",
+   "name_uk": "Укус Гаркона"
+  },
+  {
+   "id": "gotg/item/harp-of-gilded-plenty",
+   "name_uk": "Арфа позолоченого достатку"
+  },
+  {
+   "id": "xgte/item/hat-of-vermin",
+   "name_uk": "Капелюх шкідників"
+  },
+  {
+   "id": "xgte/item/hat-of-wizardry",
+   "name_uk": "Капелюх чарівництва"
+  },
+  {
+   "id": "hotdq/item/hazirawn",
+   "name_uk": "Хазіравн"
+  },
+  {
+   "id": "basic-rules-2014/item/healer-s-kit",
+   "name_uk": "Набір цілителя"
+  },
+  {
+   "id": "phb-2014/item/healer-s-kit",
+   "name_uk": "Набір цілителя"
+  },
+  {
+   "id": "tcoe/item/heart-weaver-s-primer",
+   "name_uk": "Буквар ткача сердець"
+  },
+  {
+   "id": "tftyp/item/hell-hound-cloak",
+   "name_uk": "Плащ пекельного пса"
+  },
+  {
+   "id": "bgdia/item/helm-of-devil-command",
+   "name_uk": "Шолом диявольського наказу"
+  },
+  {
+   "id": "gotg/item/helm-of-perfect-potential",
+   "name_uk": "Шолом досконалого потенціалу"
+  },
+  {
+   "id": "moot/item/helm-of-the-gods",
+   "name_uk": "Шолом богів"
+  },
+  {
+   "id": "gos/item/helm-of-underwater-action",
+   "name_uk": "Шолом підводної дії"
+  },
+  {
+   "id": "basic-rules-2014/item/herbalism-kit",
+   "name_uk": "Набір травника"
+  },
+  {
+   "id": "qftis/item/heretic",
+   "name_uk": "Єретик"
+  },
+  {
+   "id": "pabtso/item/hew",
+   "name_uk": "Х'ю"
+  },
+  {
+   "id": "dmg-2014/item/heward-s-handy-haversack",
+   "name_uk": "Зручна заплічна сумка Г'юарда"
+  },
+  {
+   "id": "xgte/item/heward-s-handy-spice-pouch",
+   "name_uk": "Зручний мішечок спецій Г'юарда"
+  },
+  {
+   "id": "llok/item/heward-s-hireling-armor",
+   "name_uk": "Броня найманця Г'юарда"
+  },
+  {
+   "id": "basic-rules-2014/item/hide",
+   "name_uk": "Шкура"
+  },
+  {
+   "id": "egtw/item/hide-of-the-feral-guardian",
+   "name_uk": "Шкура дикого охоронця"
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 """Документ листа: усе, що є на екрані, мусить бути й у документі.
 
-Тести тут перевіряють не верстку, а **зміст**: чи потрапив стан (хіти, слоти,
+Тести тут перевіряють не верстку, а **зміст**: чи потрапив стан (хіти, комірки,
 виправлення, нотатки) у документ і чи не зник розділ дорогою.
 """
 
@@ -8,16 +8,14 @@ from __future__ import annotations
 
 import jsonschema
 import pytest
-
 from dndsheet.characters.application.golden import GoldenCase, build_golden_cases
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.domain.state import DeathSaves, SheetState
 from dndsheet.characters.domain.vitals import HitPointState
+from dndsheet.shared.kernel import Money
 from dndsheet.sheets.application.build_document import build_sheet_document
 from dndsheet.sheets.domain.document import SheetDocument
-from dndsheet.shared.kernel import Money
-
 from helpers import make_character
 
 
@@ -186,9 +184,7 @@ def test_spell_slots_show_remaining_and_used(rules) -> None:
     """«2/4» у документі = залишилось / усього; витрачене — у підказці."""
     warlock = build_golden_cases(rules)[1]
     warlock.character.set_state(SheetState(pact_used=1, hit_dice_used={8: 1}))
-    document = build_sheet_document(
-        warlock.character, DerivedStatsCalculator().compute(warlock.character)
-    )
+    document = build_sheet_document(warlock.character, DerivedStatsCalculator().compute(warlock.character))
     spells = _values(document, "spells")
     assert spells["spell.pact"] == "0/1"
     assert document.fields["spell.pact"].hint.uk == "витрачено 1"
@@ -206,9 +202,7 @@ def test_notes_page_is_absent_when_empty(golden_cases) -> None:
 def test_warnings_reach_the_document(rules) -> None:
     character = make_character(rules, hp=HitPointState(current=99))
     document = build_sheet_document(character, DerivedStatsCalculator().compute(character))
-    assert _values(document, "warnings")["warnings"] == [
-        "поточні хіти (99) більші за максимум (10)"
-    ]
+    assert _values(document, "warnings")["warnings"] == ["поточні хіти (99) більші за максимум (10)"]
 
 
 def test_unknown_field_type_is_rejected() -> None:

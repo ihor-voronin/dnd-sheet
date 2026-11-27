@@ -1,0 +1,187 @@
+/** Блоки листа в дусі D&D Beyond.
+ *
+ * Тут лише розмітка й підписи: жодних обчислень правил і жодного стану.
+ * Числа приходять готовими з сервера, а редаговані поля вставляються ззовні
+ * через `render` — так само, як у CharacterView.
+ *
+ * Оформлення наслідує загальний вигляд аркуша D&D Beyond (темні панелі,
+ * гексагони характеристик, рядки навичок), але жодних їхніх файлів чи
+ * зображень не використовує.
+ */
+import type { ReactNode } from "react";
+
+import {
+  ABILITY_LABELS,
+  ABILITY_SHORT,
+  SKILL_ABILITY,
+  SKILL_LABELS,
+  abilityLabel,
+  modifierLabel,
+  skillLabel,
+} from "../../labels";
+import type { SheetViewPayload } from "../wizard/types";
+
+import { proficiencyText } from "./uk";
+
+const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
+const SKILL_ORDER = Object.keys(SKILL_LABELS);
+
+/** Редагування числа в місці: підставляється з CharacterView. */
+export type RenderValue = (key: string, value: number, title: string, suffix?: string) => ReactNode;
+
+export function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const letters = words.slice(0, 2).map((word) => Array.from(word)[0] ?? "");
+  return letters.join("").toUpperCase() || "?";
+}
+
+export function AbilityHex({ code, ability }: { code: string; ability: SheetViewPayload["abilities"][string] }) {
+  const basis = `База ${ability.base}${ability.bonus ? `, бонус ${modifierLabel(ability.bonus)}` : ""}`;
+  return (
+    <li className="sheet-ability">
+      <span className="sheet-ability__label">{ABILITY_LABELS[code] ?? code}</span>
+      <div className="sheet-hex" title={`${ABILITY_LABELS[code] ?? code}: ${ability.total} (${basis})`}>
+        <div className="sheet-hex__inner">
+          <span className="sheet-hex__mod">{modifierLabel(ability.modifier)}</span>
+          <span className="sheet-hex__score">{ability.total}</span>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+export function HexStat({
+  label,
+  value,
+  note,
+  title,
+}: {
+  label: string;
+  value: ReactNode;
+  note?: string;
+  title?: string;
+}) {
+  return (
+    <div className="sheet-hexstat">
+      <span className="sheet-hexstat__label">{label}</span>
+      <div className="sheet-hex sheet-hex--small" title={title}>
+        <div className="sheet-hex__inner">
+          <span className="sheet-hexstat__value">{value}</span>
+          {note ? <span className="sheet-hex__note">{note}</span> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SavePills({ saves, render }: { saves: SheetViewPayload["saving_throws"]; render: RenderValue }) {
+  return (
+    <ul className="sheet-saves">
+      {ABILITIES.map((code) => {
+        const save = saves[code];
+        if (!save) return null;
+        return (
+          <li key={code} className={`sheet-save${save.proficient ? " is-prof" : ""}`}>
+            <span className="sheet-save__dot" title={save.proficient ? "володіє рятівним кидком" : "без володіння"} />
+            <span className="sheet-save__name">
+              {ABILITY_SHORT[code]}
+              {save.disadvantage ? (
+                <span className="sheet-skill__dis" title="Завада (disadvantage): броня без володіння">
+                  {" "}
+                  З
+                </span>
+              ) : null}
+            </span>
+            <span className="sheet-save__value">
+              {render(`save:${code}`, save.value, `Рятівний кидок ${abilityLabel(code)}`)}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function PassiveList({ items }: { items: { label: string; value: number; note?: string }[] }) {
+  return (
+    <ul className="sheet-passives">
+      {items.map((item) => (
+        <li key={item.label} className="sheet-passive">
+          <span className="sheet-passive__value">{item.value}</span>
+          <span className="sheet-passive__label">{item.label}</span>
+          {item.note ? <span className="sheet-passive__note">{item.note}</span> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function SkillTable({ skills, render }: { skills: SheetViewPayload["skills"]; render: RenderValue }) {
+  return (
+    <ul className="sheet-skills">
+      {SKILL_ORDER.map((skill) => {
+        const value = skills[skill];
+        if (!value) return null;
+        return (
+          <li
+            key={skill}
+            className={`sheet-skill${value.proficient ? " is-prof" : ""}${value.expertise ? " is-expert" : ""}`}
+            title={value.expertise ? "Експертиза: бонус майстерності подвоєно" : undefined}
+          >
+            <span className="sheet-skill__abil">{ABILITY_SHORT[SKILL_ABILITY[skill]] ?? ""}</span>
+            <span className="sheet-skill__dot" aria-hidden />
+            <span className="sheet-skill__name">
+              {skillLabel(skill)}
+              {value.disadvantage ? (
+                <span className="sheet-skill__dis" title="Броня дає заваду (disadvantage) на цю навичку">
+                  {" "}
+                  З
+                </span>
+              ) : null}
+            </span>
+            <span className="sheet-skill__value">
+              {render(`skill:${skill}`, value.value, `Навичка ${skillLabel(skill)}`)}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Володіння, згруповані як в аркуші: броня, зброя, інструменти, мови. */
+const PROFICIENCY_GROUPS: { kind: string; title: string }[] = [
+  { kind: "armor", title: "Броня" },
+  { kind: "weapon", title: "Зброя" },
+  { kind: "tool", title: "Інструменти" },
+  { kind: "language", title: "Мови" },
+];
+
+export function ProficiencyGroups({ proficiencies }: { proficiencies: SheetViewPayload["proficiencies"] }) {
+  const groups = PROFICIENCY_GROUPS.map((group) => {
+    const values: string[] = [];
+    for (const item of proficiencies) {
+      if (item.kind !== group.kind) continue;
+      // Джерела бувають різні, значення — те саме: «легка броня» з класу
+      // та з передісторії не має друкуватись двічі.
+      if (values.includes(item.value)) continue;
+      values.push(item.value);
+    }
+    return { ...group, values };
+  }).filter((group) => group.values.length);
+
+  if (!groups.length) return <p className="hint">—</p>;
+
+  return (
+    <div className="sheet-prof">
+      {groups.map((group) => (
+        <div key={group.kind} className="sheet-prof__group">
+          <span className="sheet-prof__title">{group.title}</span>
+          <span className="sheet-prof__values">
+            {group.values.map((value) => proficiencyText(group.kind, value)).join(" · ")}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}

@@ -4,10 +4,10 @@
 «Відомих закляттях» — ще й компоненти та текст правила. Тому з довідника
 береться `data` (час, дистанція, тривалість, школа, компоненти, текст вищих
 рівнів) і `text_en` (опис); з тексту ж вичитуються перший кубик урону, тип
-порятунку та згадка атаки закляттям. Це **підказка**, а не розрахунок ефекту:
+рятівного кидка та згадка атаки закляттям. Це **підказка**, а не розрахунок ефекту:
 лист не застосовує закляття.
 
-Порятунок шукається лише тоді, коли він не є «saving throw to avoid the
+Рятівний кидок шукається лише тоді, коли він не є «saving throw to avoid the
 spell» (так у `Light`: предмет можна врятувати, але ефекту на ціль немає).
 
 Результат кешується на застосунку: імена й тексти заклять не змінюються.
@@ -22,6 +22,7 @@ from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
 from dndsheet.shared.errors import NotFoundError
+from dndsheet.shared.translations import SPELL_HEADER, spell_body, text_uk
 
 #: Кубик урону разом із типом: «1d6 acid», «2d8 + 3 fire».
 DAMAGE = re.compile(
@@ -48,12 +49,8 @@ SAVE_CODES = {
 
 SPELL_ATTACK = re.compile(r"spell\s+attack", re.IGNORECASE)
 
-#: Перший рядок опису — «2nd-level abjuration» або «Evocation cantrip»:
-#: рівень і школу лист уже показує окремо, у тексті він зайвий.
-HEADER = re.compile(
-    r"^(?:\d+(?:st|nd|rd|th)-level\s+[a-z]+(?:\s*\(ritual\))?|[A-Z][a-z]+\s+cantrip)$",
-    re.IGNORECASE,
-)
+#: Перший рядок опису — «2nd-level abjuration» або «Evocation cantrip» (спільний із перекладом).
+HEADER = SPELL_HEADER
 
 
 def enrich_spells(
@@ -64,6 +61,10 @@ def enrich_spells(
     """Дописати кожному рядку закляття його короткі дані (на місці)."""
     store = cache if cache is not None else {}
     for spell in spells:
+        # Власне закляття довідник не знає: його текст дав гравець, і
+        # підміняти його книжковим (навіть якщо назва збіглася) не можна.
+        if spell.get("custom"):
+            continue
         key = spell.get("entry_id") or str(spell.get("name_en") or "").strip().casefold()
         if not key:
             continue
@@ -71,12 +72,15 @@ def enrich_spells(
             store[key] = _meta_for(service, spell)
         meta = store[key]
         if meta:
-            spell.update(meta)
+            book_name = meta.get("book_name")
+            spell.update({name: value for name, value in meta.items() if name != "book_name"})
+            # Закляття домену й виду записані ключем («bless») — на листі назва як у книзі.
+            name = str(spell.get("name_en") or "")
+            if book_name and name == name.lower() and name.casefold() == book_name.casefold():
+                spell["name_en"] = book_name
 
 
-def _meta_for(
-    service: CompendiumService, spell: dict[str, Any]
-) -> dict[str, Any] | None:
+def _meta_for(service: CompendiumService, spell: dict[str, Any]) -> dict[str, Any] | None:
     entry = _entry(service, spell)
     if entry is None:
         return None
@@ -85,6 +89,7 @@ def _meta_for(
     damage = DAMAGE.search(text)
     save = SAVE.search(text)
     return {
+        "book_name": entry.name_en,
         "casting_time": _text(data.get("casting_time")),
         "range": _text(data.get("range")),
         "duration": _text(data.get("duration")),
@@ -94,6 +99,9 @@ def _meta_for(
         "school": _text(data.get("school")),
         "description": _body(text),
         "at_higher_levels": _text(data.get("at_higher_levels")),
+        # Український текст (content/translations/spells): ключ — хеш оригіналу.
+        "description_uk": text_uk("spells", _body(text)),
+        "at_higher_levels_uk": text_uk("spells", _text(data.get("at_higher_levels")) or ""),
         "damage": (
             {
                 "dice": damage.group(1).replace(" ", "").replace("−", "-"),
@@ -134,9 +142,4 @@ def _text(value: Any) -> str:
 
 def _body(text: str) -> str:
     """Опис без першого рядка «2nd-level abjuration» — він уже є в підписах."""
-    lines = text.splitlines()
-    while lines and not lines[0].strip():
-        lines.pop(0)
-    if lines and HEADER.match(lines[0].strip()):
-        lines.pop(0)
-    return "\n".join(lines).strip()
+    return spell_body(text)

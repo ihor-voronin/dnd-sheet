@@ -1,9 +1,8 @@
-"""Слоти заклять: мультиклас, Pact Magic, DC і бонус атаки."""
+"""Комірки заклять: мультиклас, Pact Magic, DC і бонус атаки."""
 
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.services.spell_slots import (
     SpellSlotService,
@@ -11,7 +10,6 @@ from dndsheet.characters.domain.services.spell_slots import (
     spellcasting_for_classes,
 )
 from dndsheet.shared.kernel import Ability
-
 from rules_fixture import FIGHTER, WARLOCK, WIZARD
 
 
@@ -63,9 +61,7 @@ def test_pact_magic_table(level: int, slots: int, slot_level: int) -> None:
 
 
 def test_multiclass_slots_are_shared_but_pact_is_separate() -> None:
-    casting = spellcasting_for_classes(
-        _entries(("wizard", 3), ("warlock", 2)), {Ability.INT: 16}
-    )
+    casting = spellcasting_for_classes(_entries(("wizard", 3), ("warlock", 2)), {Ability.INT: 16})
     assert casting.caster_level == 3, "рівні волшебника, варлок не додається"
     assert dict(casting.slots.by_level) == {1: 4, 2: 2}
     assert casting.slots.pact is not None

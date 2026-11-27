@@ -109,9 +109,7 @@ def build_nodes(lines: list[base.Line]) -> list[base.Node]:
 
 def section(nodes: list[base.Node], title: str) -> tuple[list[base.Node], base.Node]:
     index = next(
-        i
-        for i, node in enumerate(nodes)
-        if node.kind == "heading" and node.text.strip().upper() == title.upper()
+        i for i, node in enumerate(nodes) if node.kind == "heading" and node.text.strip().upper() == title.upper()
     )
     heading = nodes[index]
     body: list[base.Node] = []
@@ -199,8 +197,7 @@ def main(argv: list[str] | None = None) -> int:
             nodes = build_nodes(by_page.get(page, []))
             (PAGES_DIR / f"{page:03d}.md").write_text(
                 "\n\n".join(
-                    ("#" * node.level + " " + node.text) if node.kind == "heading" else node.text
-                    for node in nodes
+                    ("#" * node.level + " " + node.text) if node.kind == "heading" else node.text for node in nodes
                 )
                 + "\n",
                 encoding="utf-8",

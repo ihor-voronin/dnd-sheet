@@ -15,9 +15,9 @@ from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemK
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
@@ -78,9 +78,7 @@ def build_demo_character(rules: RulesSource) -> Character:
     )
 
 
-def build_demo_document(
-    rules: RulesSource, attacks: Iterable[Mapping[str, Any]] | None = None
-) -> SheetDocument:
+def build_demo_document(rules: RulesSource, attacks: Iterable[Mapping[str, Any]] | None = None) -> SheetDocument:
     """Демо-лист. `attacks` — з довідника (без нього розділу «Атаки» немає).
 
     Атаки не рахуються тут: для них потрібен довідник, а `sheets` знає лише

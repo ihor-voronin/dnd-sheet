@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from dndsheet.shared.kernel import Ability
 from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,
@@ -60,6 +61,22 @@ class CharacterRepository(Protocol):
 
     def ids(self) -> tuple[str, ...]:
         """Усі збережені id — для списку персонажів."""
+
+
+@runtime_checkable
+class FeatCatalog(Protocol):
+    """Які риси існують у довіднику — домен знає лише ключ.
+
+    Потрібно, щоб у поле `feats` не потрапив ключ, якого немає в корпусі:
+    інакше лист показував би рису без тексту, а помилку було б видно лише
+    через півроку.
+    """
+
+    def has(self, feat_key: str) -> bool:
+        """Чи є така риса в довіднику."""
+
+    def ability_options(self, feat_key: str) -> tuple[Ability, ...]:
+        """Які характеристики риса дає підвищити на 1; порожньо — без вибору."""
 
 
 @runtime_checkable

@@ -1,9 +1,9 @@
 """Completeness sweep: list every entry heading in the reference, compare to ours."""
+
 from __future__ import annotations
 
 import json
 import re
-import sys
 from pathlib import Path
 
 import pymupdf

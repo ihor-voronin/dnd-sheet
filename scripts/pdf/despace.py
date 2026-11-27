@@ -7,6 +7,7 @@ word-break pass over suspiciously long tokens.
 
     python scripts/pdf/despace.py "some text"          # demo
 """
+
 from __future__ import annotations
 
 import json
@@ -27,25 +28,143 @@ MAX_WORD = 18
 WORD_PENALTY = 6.0
 SHORT_OK = {"of", "to", "in", "on", "at", "is", "it", "as", "by", "or", "be", "an"}
 FUNCTION_WORDS = {
-    "the", "of", "and", "to", "in", "on", "at", "for", "with", "from", "that",
-    "this", "is", "are", "was", "were", "a", "an", "as", "by", "or", "be", "it",
-    "you", "your", "their", "they", "them", "its", "if", "not", "but", "can",
+    "the",
+    "of",
+    "and",
+    "to",
+    "in",
+    "on",
+    "at",
+    "for",
+    "with",
+    "from",
+    "that",
+    "this",
+    "is",
+    "are",
+    "was",
+    "were",
+    "a",
+    "an",
+    "as",
+    "by",
+    "or",
+    "be",
+    "it",
+    "you",
+    "your",
+    "their",
+    "they",
+    "them",
+    "its",
+    "if",
+    "not",
+    "but",
+    "can",
 }
 
-STOP_EXTRA = """
-dnd beyond compendium bestiary statblock sorcerer warlock barbarian paladin
-ranger druid cleric bard monk rogue wizard artificer subclass subclasses
-cantrip cantrips darkvision tiefling aasimar dragonborn halfling goliath
-eladrin genasi tabaxi kenku firbolg githyanki githzerai shadar-kai duergar
-yuan-ti svirfneblin lizardfolk tortle aarakocra grung locathah kender
-dungeon master dungeons dragons player's handbook
-foundling foundlings runecraft runecarver runecarvers runes runic rune
-giantkind giants giant's giantkin ordning enclave enclaves scion scions
-firbolg firbolgs fomorian fomorians ettin ettins gargantua colossus
-titanothere ceratops regisaur aerosaur altisaur maw yeenoghu kostchtchie
-grolantor memnor skoraeus stronmaus surtur thrym annam diancastra hiatea
-karontor baphomet demogorgon tarrasque behir behirs wyvern wyverns
-""".split()
+STOP_EXTRA = [
+    "dnd",
+    "beyond",
+    "compendium",
+    "bestiary",
+    "statblock",
+    "sorcerer",
+    "warlock",
+    "barbarian",
+    "paladin",
+    "ranger",
+    "druid",
+    "cleric",
+    "bard",
+    "monk",
+    "rogue",
+    "wizard",
+    "artificer",
+    "subclass",
+    "subclasses",
+    "cantrip",
+    "cantrips",
+    "darkvision",
+    "tiefling",
+    "aasimar",
+    "dragonborn",
+    "halfling",
+    "goliath",
+    "eladrin",
+    "genasi",
+    "tabaxi",
+    "kenku",
+    "firbolg",
+    "githyanki",
+    "githzerai",
+    "shadar-kai",
+    "duergar",
+    "yuan-ti",
+    "svirfneblin",
+    "lizardfolk",
+    "tortle",
+    "aarakocra",
+    "grung",
+    "locathah",
+    "kender",
+    "dungeon",
+    "master",
+    "dungeons",
+    "dragons",
+    "player's",
+    "handbook",
+    "foundling",
+    "foundlings",
+    "runecraft",
+    "runecarver",
+    "runecarvers",
+    "runes",
+    "runic",
+    "rune",
+    "giantkind",
+    "giants",
+    "giant's",
+    "giantkin",
+    "ordning",
+    "enclave",
+    "enclaves",
+    "scion",
+    "scions",
+    "firbolg",
+    "firbolgs",
+    "fomorian",
+    "fomorians",
+    "ettin",
+    "ettins",
+    "gargantua",
+    "colossus",
+    "titanothere",
+    "ceratops",
+    "regisaur",
+    "aerosaur",
+    "altisaur",
+    "maw",
+    "yeenoghu",
+    "kostchtchie",
+    "grolantor",
+    "memnor",
+    "skoraeus",
+    "stronmaus",
+    "surtur",
+    "thrym",
+    "annam",
+    "diancastra",
+    "hiatea",
+    "karontor",
+    "baphomet",
+    "demogorgon",
+    "tarrasque",
+    "behir",
+    "behirs",
+    "wyvern",
+    "wyverns",
+]
 
 _cache: dict[str, float] | None = None
 
@@ -65,16 +184,14 @@ def build_vocab() -> dict[str, float]:
         return _cache
     if VOCAB_CACHE.exists():
         try:
-            _cache = {word: float(weight) for word, weight in json.loads(VOCAB_CACHE.read_text(encoding="utf-8")).items()}
+            _cache = {
+                word: float(weight) for word, weight in json.loads(VOCAB_CACHE.read_text(encoding="utf-8")).items()
+            }
             return _cache
         except (OSError, ValueError):
             pass  # зіпсований кеш не привід падати — перебудуємо
     counts: dict[str, int] = {}
-    corpus_files = [
-        path
-        for root in (COMPENDIUM, BESTIARY)
-        for path in root.glob("*/*.jsonl")
-    ]
+    corpus_files = [path for root in (COMPENDIUM, BESTIARY) for path in root.glob("*/*.jsonl")]
     for path in corpus_files:
         if path.parent.name in EXCLUDE_SOURCES:
             continue
@@ -175,8 +292,12 @@ def fix(text: str) -> str:
 
 
 if __name__ == "__main__":
-    sample = sys.argv[1] if len(sys.argv) > 1 else (
-        "characterstotheancientmagicof giants, thegiantfoundling background "
-        "represents a life spent aroundtitanic creatures"
+    sample = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else (
+            "characterstotheancientmagicof giants, thegiantfoundling background "
+            "represents a life spent aroundtitanic creatures"
+        )
     )
     print(fix(sample))

@@ -30,17 +30,13 @@ def spec() -> dict:
 
 @pytest.fixture(scope="module")
 def classes() -> dict:
-    payload = json.loads(
-        (CONTENT / "index" / "class-mechanics.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads((CONTENT / "index" / "class-mechanics.json").read_text(encoding="utf-8"))
     return payload
 
 
 @pytest.fixture(scope="module")
 def origins() -> dict:
-    payload = json.loads(
-        (CONTENT / "index" / "origin-mechanics.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads((CONTENT / "index" / "origin-mechanics.json").read_text(encoding="utf-8"))
     return payload
 
 
@@ -69,9 +65,9 @@ def test_class_numbers_are_in_range(spec: dict, classes: dict) -> None:
     problems: list[str] = []
     for key, entry in classes["classes"].items():
         if not limits["hit_die"]["min"] <= entry["hit_die"] <= limits["hit_die"]["max"]:
-            problems.append(f"{key}: хіт-дайс d{entry['hit_die']}")
+            problems.append(f"{key}: кість хітів d{entry['hit_die']}")
         if not entry["saving_throws"]:
-            problems.append(f"{key}: без кидків порятунку")
+            problems.append(f"{key}: без рятівних кидків")
         for ability in entry["saving_throws"]:
             if ability not in limits["abilities"]:
                 problems.append(f"{key}: невідома характеристика {ability!r}")
@@ -94,10 +90,10 @@ def test_spell_tables_have_canonical_shape(spec: dict, classes: dict) -> None:
     for key, entry in classes["classes"].items():
         slots = entry["spell_slots"]
         if slots and len(slots) != levels:
-            problems.append(f"{key}: таблиця слотів на {len(slots)} рядків, треба {levels}")
+            problems.append(f"{key}: таблиця комірок на {len(slots)} рядків, треба {levels}")
         for row in slots:
             if len(row) != spell_levels:
-                problems.append(f"{key}: рядок слотів на {len(row)} рівнів")
+                problems.append(f"{key}: рядок комірок на {len(row)} рівнів")
         pact = entry["pact_slots"]
         if pact and len(pact) != levels:
             problems.append(f"{key}: таблиця Pact Magic на {len(pact)} рядків")
@@ -175,11 +171,7 @@ def test_species_numbers_are_in_range(spec: dict, origins: dict) -> None:
             # 2022-перевидання (MPMM, RHW) мають вільний розподіл, якого немає
             # в дзеркалі: для них `ability_unresolved: true`, і вибір робить
             # гравець, а не таблиця.
-            if (
-                not entry["ability_fixed"]
-                and not entry["ability_choice"]
-                and not entry.get("ability_unresolved")
-            ):
+            if not entry["ability_fixed"] and not entry["ability_choice"] and not entry.get("ability_unresolved"):
                 problems.append(f"{collection}/{key}: без бонусів характеристик")
     assert not problems, "\n".join(problems[:10])
 
@@ -187,9 +179,7 @@ def test_species_numbers_are_in_range(spec: dict, origins: dict) -> None:
 def test_subspecies_point_to_existing_species(origins: dict) -> None:
     known = set(origins["species"])
     orphans = sorted(
-        key
-        for key, entry in origins["subspecies"].items()
-        if entry["subrace_of"] and entry["subrace_of"] not in known
+        key for key, entry in origins["subspecies"].items() if entry["subrace_of"] and entry["subrace_of"] not in known
     )
     assert not orphans, f"підраси без базового виду: {orphans[:10]}"
 

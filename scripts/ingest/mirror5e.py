@@ -31,11 +31,10 @@ import datetime as dt
 import json
 import re
 import sys
-from pathlib import Path
 
+from ..normalize import canonical as compendium_format
 from . import config
 from .entities import slugify
-from ..normalize import canonical as compendium_format
 
 # --- константи ------------------------------------------------------------
 
@@ -194,10 +193,34 @@ ATK_LABELS = {
 # Теги, у яких третя частина — те, як назву показати в тексті:
 # {@item artisan's tools|PHB|інструменти ремісника}.
 DISPLAY_THIRD = {
-    "action", "background", "boon", "charoption", "class",
-    "condition", "creature", "cult", "deity", "disease", "feat", "hazard", "item",
-    "language", "object", "optfeature", "psionic", "race", "recipe", "reward",
-    "sense", "skill", "spell", "status", "table", "trap", "vehicle", "variantrule",
+    "action",
+    "background",
+    "boon",
+    "charoption",
+    "class",
+    "condition",
+    "creature",
+    "cult",
+    "deity",
+    "disease",
+    "feat",
+    "hazard",
+    "item",
+    "language",
+    "object",
+    "optfeature",
+    "psionic",
+    "race",
+    "recipe",
+    "reward",
+    "sense",
+    "skill",
+    "spell",
+    "status",
+    "table",
+    "trap",
+    "vehicle",
+    "variantrule",
     "weapon",
 }
 
@@ -268,9 +291,7 @@ def inline(text: str) -> str:
         return text or ""
     for _ in range(4):
         replaced = TAG_RE.sub(lambda match: _tag(match.group(1), match.group(2)), text)
-        replaced = REF_TAG_RE.sub(
-            lambda match: (match.group(2) or "").split("|")[0].strip(), replaced
-        )
+        replaced = REF_TAG_RE.sub(lambda match: (match.group(2) or "").split("|")[0].strip(), replaced)
         if replaced == text:
             break
         text = replaced
@@ -332,9 +353,7 @@ def _replace_txt(node, replace: str, with_: str, ignore_case: bool = False):
     if isinstance(node, list):
         return [_replace_txt(value, replace, with_, ignore_case) for value in node]
     if isinstance(node, dict):
-        return {
-            key: _replace_txt(value, replace, with_, ignore_case) for key, value in node.items()
-        }
+        return {key: _replace_txt(value, replace, with_, ignore_case) for key, value in node.items()}
     return node
 
 
@@ -397,9 +416,7 @@ def _apply_mods(target: dict, mods: dict) -> dict:
                 names = operation.get("names") or []
                 if isinstance(existing, list):
                     target[key] = [
-                        entry
-                        for entry in existing
-                        if not (isinstance(entry, dict) and entry.get("name") in names)
+                        entry for entry in existing if not (isinstance(entry, dict) and entry.get("name") in names)
                     ]
             elif mode == "insertArr":
                 if isinstance(existing, list):
@@ -423,11 +440,7 @@ def resolve_copy(row: dict, index: dict[tuple[str, str], dict], depth: int = 0) 
     parent = index.get((str(copy.get("name")).casefold(), copy.get("source")))
     if parent is None:
         return row
-    merged = {
-        key: value
-        for key, value in resolve_copy(parent, index, depth + 1).items()
-        if key != "_copy"
-    }
+    merged = {key: value for key, value in resolve_copy(parent, index, depth + 1).items() if key != "_copy"}
     merged.update({key: value for key, value in row.items() if key != "_copy"})
     mods = copy.get("_mod")
     if isinstance(mods, dict):
@@ -470,9 +483,7 @@ def monster_index() -> dict[tuple[str, str], dict]:
             continue
         for monster in payload.get("monster") or []:
             if isinstance(monster, dict) and monster.get("name"):
-                index.setdefault(
-                    (str(monster["name"]).casefold(), monster.get("source")), monster
-                )
+                index.setdefault((str(monster["name"]).casefold(), monster.get("source")), monster)
     _MONSTER_INDEX = index
     return index
 
@@ -554,11 +565,7 @@ def _list(node: dict) -> str:
         if not isinstance(item, dict):
             continue
         name = item.get("name")
-        inner = (
-            render(item.get("entry"))
-            or render(item.get("entries"))
-            or render(item.get("items"))
-        )
+        inner = render(item.get("entry")) or render(item.get("entries")) or render(item.get("items"))
         head = inline(name).strip() if name else ""
         multiline = "\n" in inner.strip()
         if head and style.startswith("list-hang"):
@@ -682,9 +689,7 @@ def _blocks(node, *, feature_index: dict | None = None) -> list[str]:
             return [_named(inline(name), table)] if table else [inline(name)]
         return [table] if table else []
     if kind == "tableGroup":
-        inner = _join(
-            [render(child, feature_index=feature_index) for child in node.get("tables") or []]
-        )
+        inner = _join([render(child, feature_index=feature_index) for child in node.get("tables") or []])
         return [_named(inline(name or ""), inner)] if name else _blocks(inner)
     if kind == "list":
         return [_list(node)]
@@ -692,8 +697,18 @@ def _blocks(node, *, feature_index: dict | None = None) -> list[str]:
         return [_spellcasting(node)]
     if kind in ("abilityDc", "abilityAttackMod"):
         return [_ability_block(node, kind)]
-    if kind in ("entries", "section", "part", "inset", "insetReadaloud", "quote",
-                "optfeature", "variant", "variantSub", "homebrew"):
+    if kind in (
+        "entries",
+        "section",
+        "part",
+        "inset",
+        "insetReadaloud",
+        "quote",
+        "optfeature",
+        "variant",
+        "variantSub",
+        "homebrew",
+    ):
         if kind == "homebrew":
             return []
         inner = _join(_blocks(node.get("entries"), feature_index=feature_index))
@@ -733,9 +748,20 @@ def _blocks(node, *, feature_index: dict | None = None) -> list[str]:
         return [f"+{node.get('value')}" if node.get("value") else ""]
     if kind == "bonusSpeed":
         return [f"+{node.get('value')} ft."] if node.get("value") else []
-    if kind in ("refSubclassFeature", "refClassFeature", "refOptionalfeature",
-                "refFeat", "refBackground", "refRace", "refCreature", "refItem",
-                "refSpell", "refDeity", "refCondition", "refDisease"):
+    if kind in (
+        "refSubclassFeature",
+        "refClassFeature",
+        "refOptionalfeature",
+        "refFeat",
+        "refBackground",
+        "refRace",
+        "refCreature",
+        "refItem",
+        "refSpell",
+        "refDeity",
+        "refCondition",
+        "refDisease",
+    ):
         reference = _flatten_ref(node)
         if kind == "refSubclassFeature" and feature_index:
             feature = feature_index.get(reference)
@@ -751,10 +777,26 @@ def _blocks(node, *, feature_index: dict | None = None) -> list[str]:
         if isinstance(data, dict) and data.get("name"):
             return [monster_text(data)]
         return []
-    if kind in ("image", "gallery", "video", "hr", "flowchart", "dataCreature",
-                "dataItem", "dataSpell", "dataBackground", "dataClass", "dataFeat",
-                "dataOptionalfeature", "dataObject", "dataRecipe", "dataVehicle",
-                "source", "spellHeader", "optfeatureHeader"):
+    if kind in (
+        "image",
+        "gallery",
+        "video",
+        "hr",
+        "flowchart",
+        "dataCreature",
+        "dataItem",
+        "dataSpell",
+        "dataBackground",
+        "dataClass",
+        "dataFeat",
+        "dataOptionalfeature",
+        "dataObject",
+        "dataRecipe",
+        "dataVehicle",
+        "source",
+        "spellHeader",
+        "optfeatureHeader",
+    ):
         return []
     # Невідомий вузол: усе, що можна показати, показуємо.
     for key in ("entries", "items", "entry"):
@@ -926,16 +968,30 @@ def _list_text(value, prefix: str | None = None) -> str | None:
 def _skills_text(value) -> str | None:
     if not isinstance(value, dict):
         return None
-    titles = {key: key.title() for key in (
-        "acrobatics", "animal handling", "arcana", "athletics", "deception",
-        "history", "insight", "intimidation", "investigation", "medicine",
-        "nature", "perception", "performance", "persuasion", "religion",
-        "sleight of hand", "stealth", "survival",
-    )}
-    parts = [
-        f"{titles.get(key.lower(), key.title())} {_signed(value[key])}".strip()
-        for key in sorted(value)
-    ]
+    titles = {
+        key: key.title()
+        for key in (
+            "acrobatics",
+            "animal handling",
+            "arcana",
+            "athletics",
+            "deception",
+            "history",
+            "insight",
+            "intimidation",
+            "investigation",
+            "medicine",
+            "nature",
+            "perception",
+            "performance",
+            "persuasion",
+            "religion",
+            "sleight of hand",
+            "stealth",
+            "survival",
+        )
+    }
+    parts = [f"{titles.get(key.lower(), key.title())} {_signed(value[key])}".strip() for key in sorted(value)]
     return "Skills " + ", ".join(parts) if parts else None
 
 
@@ -1019,8 +1075,9 @@ def monster_text(obj: dict) -> str:
     abilities = _abilities_line(obj)
     if abilities:
         blocks.append(abilities)
-    saves = _named_numbers(obj.get("save"), {key: ABILITY_SHORT[key].title() for key in ABILITIES},
-                           "Saving Throws", ABILITIES)
+    saves = _named_numbers(
+        obj.get("save"), {key: ABILITY_SHORT[key].title() for key in ABILITIES}, "Saving Throws", ABILITIES
+    )
     if saves:
         blocks.append(saves)
     skills = _skills_text(obj.get("skill"))
@@ -1108,7 +1165,7 @@ def monster_text(obj: dict) -> str:
 
 
 def monster_data(obj: dict) -> dict:
-    ac_text, ac_value = _ac(obj)
+    _ac_text, ac_value = _ac(obj)
     cr_text, xp = _challenge(obj)
     hp = obj.get("hp") or {}
     raw_type = obj.get("type")
@@ -1118,8 +1175,7 @@ def monster_data(obj: dict) -> dict:
         subtype = ", ".join(tags) if tags else None
         swarm = raw_type.get("swarmSize")
         if swarm:
-            subtype = ", ".join(filter(None, [f"swarm of {SIZE_NAMES.get(str(swarm), swarm).lower()}",
-                                              subtype]))
+            subtype = ", ".join(filter(None, [f"swarm of {SIZE_NAMES.get(str(swarm), swarm).lower()}", subtype]))
     alignment = obj.get("alignment") or []
     if isinstance(alignment, str):
         alignment = [alignment]
@@ -1134,9 +1190,7 @@ def monster_data(obj: dict) -> dict:
         walk = speed
     return {
         "size": " or ".join(_size_names(obj.get("size"))).lower() or None,
-        "creature_type": str(
-            raw_type.get("type") if isinstance(raw_type, dict) else raw_type or ""
-        ).lower() or None,
+        "creature_type": str(raw_type.get("type") if isinstance(raw_type, dict) else raw_type or "").lower() or None,
         "subtype": subtype,
         "alignment": " ".join(word for word in words if word) or None,
         "armor_class": ac_value,
@@ -1157,12 +1211,14 @@ def monster_data(obj: dict) -> dict:
         "senses": ", ".join(
             [inline(str(part)) for part in obj.get("senses") or []]
             + ([f"passive Perception {obj['passive']}"] if obj.get("passive") is not None else [])
-        ) or None,
+        )
+        or None,
         "languages": ", ".join(
             inline(str(part))
             for part in (obj.get("languages") if isinstance(obj.get("languages"), list) else [obj.get("languages")])
             if part
-        ) or None,
+        )
+        or None,
     }
 
 
@@ -1198,8 +1254,7 @@ def species_text(obj: dict, *, feature_index: dict | None = None) -> str:
     return render(obj.get("entries"), feature_index=feature_index)
 
 
-def species_data(obj: dict, *, subrace_of: str | None = None,
-                 parent: dict | None = None) -> dict:
+def species_data(obj: dict, *, subrace_of: str | None = None, parent: dict | None = None) -> dict:
     """Поля виду. Підраса успадковує від виду те, чого сама не задає."""
     size = " / ".join(name.lower() for name in _size_names(obj.get("size"))) or None
     speed = _speed_walk(obj.get("speed"))
@@ -1277,10 +1332,7 @@ def feat_prerequisite(obj: dict) -> str | None:
                         )
             elif key == "race":
                 races = item if isinstance(item, list) else [item]
-                names = [
-                    inline(str(entry.get("name") if isinstance(entry, dict) else entry))
-                    for entry in races
-                ]
+                names = [inline(str(entry.get("name") if isinstance(entry, dict) else entry)) for entry in races]
                 parts.append("Race: " + ", ".join(name for name in names if name))
             elif key == "campaign":
                 parts.append("Campaign: " + ", ".join(str(name) for name in item))
@@ -1290,9 +1342,7 @@ def feat_prerequisite(obj: dict) -> str | None:
                 entries = item if isinstance(item, list) else [item]
                 for entry in entries:
                     if isinstance(entry, dict):
-                        parts.append(
-                            "Proficiency with " + ", ".join(str(name) for name in entry)
-                        )
+                        parts.append("Proficiency with " + ", ".join(str(name) for name in entry))
                     elif isinstance(entry, str):
                         parts.append(inline(entry))
             elif key in ("other", "special", "feature"):
@@ -1408,21 +1458,18 @@ def optional_feature_prerequisite(obj: dict) -> str | None:
             elif key == "item":
                 items = item if isinstance(item, list) else [item]
                 shown = ", ".join(
-                    inline(str(entry)).strip() if not isinstance(entry, dict)
+                    inline(str(entry)).strip()
+                    if not isinstance(entry, dict)
                     else inline(str(entry.get("name") or "")).strip()
                     for entry in items
                 )
                 parts.append("Item: " + shown)
             elif key == "optionalfeature":
                 features = item if isinstance(item, list) else [item]
-                shown = ", ".join(
-                    _requirement_ref(str(entry).split("|")[0]) for entry in features
-                )
+                shown = ", ".join(_requirement_ref(str(entry).split("|")[0]) for entry in features)
                 parts.append("Feature: " + shown)
             elif key == "otherSummary" and isinstance(item, dict):
-                parts.append(
-                    inline(str(item.get("entrySummary") or item.get("entry") or ""))
-                )
+                parts.append(inline(str(item.get("entrySummary") or item.get("entry") or "")))
             elif isinstance(item, str):
                 parts.append(inline(item))
     cleaned = [part.strip() for part in parts if part and part.strip()]
@@ -1441,6 +1488,7 @@ def optionalfeature_data(obj: dict) -> dict:
 
 
 # --- підкласи -------------------------------------------------------------
+
 
 def _level_label(level: int, class_name: str) -> str:
     suffix = "th" if 11 <= level % 100 <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(level % 10, "th")
@@ -1484,8 +1532,7 @@ def subclass_text(obj: dict, features: list[dict], *, feature_index: dict | None
         (
             index
             for index, feature in enumerate(ordered)
-            if _flat(_clean_name(feature.get("name"), feature.get("source"))).lower()
-            == name_key
+            if _flat(_clean_name(feature.get("name"), feature.get("source"))).lower() == name_key
         ),
         0,
     )
@@ -1571,8 +1618,10 @@ def item_text(obj: dict) -> str:
     rarity = obj.get("rarity")
     if rarity in ("none", "unknown", ""):
         rarity = None
-    magical = bool(rarity) or bool(obj.get("wondrous")) or bool(
-        obj.get("type") and str(obj.get("type")).split("|")[0] in {"W", "WD", "RG", "P", "SC", "RD", "ST"}
+    magical = (
+        bool(rarity)
+        or bool(obj.get("wondrous"))
+        or bool(obj.get("type") and str(obj.get("type")).split("|")[0] in {"W", "WD", "RG", "P", "SC", "RD", "ST"})
     )
     body = render(obj.get("entries"))
     if magical:
@@ -1696,11 +1745,14 @@ def _range_text(value) -> str | None:
             if amount is not None:
                 return f"{amount} {unit}"
         return None
-    if kind in ("radius", "sphere", "cone", "line", "cube", "cylinder"):
-        if isinstance(distance, dict) and distance.get("amount") is not None:
-            unit = _DISTANCE_UNITS.get(str(distance.get("type")), str(distance.get("type")))
-            shape = {"radius": "radius", "sphere": "radius", "cylinder": "radius"}.get(kind, kind)
-            return f"Self ({distance['amount']}-{unit} {shape})"
+    if (
+        kind in ("radius", "sphere", "cone", "line", "cube", "cylinder")
+        and isinstance(distance, dict)
+        and distance.get("amount") is not None
+    ):
+        unit = _DISTANCE_UNITS.get(str(distance.get("type")), str(distance.get("type")))
+        shape = {"radius": "radius", "sphere": "radius", "cylinder": "radius"}.get(kind, kind)
+        return f"Self ({distance['amount']}-{unit} {shape})"
     return None
 
 
@@ -1810,9 +1862,19 @@ def spell_text(obj: dict) -> str:
 # --- збірка записів -------------------------------------------------------
 
 
-def record(*, folder: str, category: str, name: str, text: str, data: dict,
-           license_value: str, url: str | None, page, fetched_at: str,
-           notes: list[str] | None = None) -> dict:
+def record(
+    *,
+    folder: str,
+    category: str,
+    name: str,
+    text: str,
+    data: dict,
+    license_value: str,
+    url: str | None,
+    page,
+    fetched_at: str,
+    notes: list[str] | None = None,
+) -> dict:
     return {
         "id": f"{folder}/{category}/{slugify(name)}",
         "schema": "compendium-entry/1",
@@ -1887,10 +1949,7 @@ def mirror_folders() -> list[str]:
     for path in sorted(config.RAW_DIR.iterdir()):
         if not path.is_dir() or path.name.startswith("_") or path.name in NOT_MIRROR:
             continue
-        if any(
-            any(path.glob(f"{prefix}-*.json"))
-            for prefix in ("book", "adventure", "bestiary")
-        ):
+        if any(any(path.glob(f"{prefix}-*.json")) for prefix in ("book", "adventure", "bestiary")):
             folders.append(path.name)
     return folders
 
@@ -1943,9 +2002,15 @@ def _book_id(folder: str, sources: dict[str, dict]) -> str:
     return str(meta.get("mirror") or folder)
 
 
-def build_folder(folder: str, *, mapping: dict[str, str], catalogue: dict[str, dict],
-                 sources: dict[str, dict], fetched_at: str,
-                 feature_index: dict[str, dict] | None = None) -> list[dict]:
+def build_folder(
+    folder: str,
+    *,
+    mapping: dict[str, str],
+    catalogue: dict[str, dict],
+    sources: dict[str, dict],
+    fetched_at: str,
+    feature_index: dict[str, dict] | None = None,
+) -> list[dict]:
     """Усі записи, які дає ця тека дзеркала."""
     meta = sources.get(folder) or {}
     license_value = meta.get("license", "proprietary")
@@ -1973,10 +2038,7 @@ def build_folder(folder: str, *, mapping: dict[str, str], catalogue: dict[str, d
             if data.get("hit_points") is None and hp.get("special"):
                 # Такі статблоки є (Meeseeks: «—(immune to damage)»): хітів
                 # немає, бо істота невразлива. Це не прогалина розбору.
-                notes.append(
-                    "статблок без числових хітів: "
-                    + _flat(inline(str(hp["special"])))
-                )
+                notes.append("статблок без числових хітів: " + _flat(inline(str(hp["special"]))))
             records.append(
                 record(
                     folder=folder,
@@ -1993,9 +2055,16 @@ def build_folder(folder: str, *, mapping: dict[str, str], catalogue: dict[str, d
             )
 
     # 2) довідкові корпуси дзеркала — по коду джерела
-    records.extend(_reference_records(folder, mapping=mapping, license_value=license_value,
-                                     url=url, fetched_at=fetched_at,
-                                     feature_index=feature_index or {}))
+    records.extend(
+        _reference_records(
+            folder,
+            mapping=mapping,
+            license_value=license_value,
+            url=url,
+            fetched_at=fetched_at,
+            feature_index=feature_index or {},
+        )
+    )
     return _deduplicate(records)
 
 
@@ -2060,9 +2129,15 @@ def class_data() -> tuple[list[dict], list[dict], dict[str, dict]]:
     return _CLASS_DATA
 
 
-def _reference_records(folder: str, *, mapping: dict[str, str], license_value: str,
-                       url: str | None, fetched_at: str,
-                       feature_index: dict[str, dict]) -> list[dict]:
+def _reference_records(
+    folder: str,
+    *,
+    mapping: dict[str, str],
+    license_value: str,
+    url: str | None,
+    fetched_at: str,
+    feature_index: dict[str, dict],
+) -> list[dict]:
     out: list[dict] = []
 
     races = _entity_rows("races-5etools.json", "race")
@@ -2075,9 +2150,19 @@ def _reference_records(folder: str, *, mapping: dict[str, str], license_value: s
         text = species_text(race, feature_index=feature_index)
         if len(text) < 80:
             continue
-        out.append(record(folder=folder, category="species", name=_clean_name(race["name"], race.get("source")),
-                          text=text, data=species_data(race), license_value=license_value,
-                          url=url, page=race.get("page"), fetched_at=fetched_at))
+        out.append(
+            record(
+                folder=folder,
+                category="species",
+                name=_clean_name(race["name"], race.get("source")),
+                text=text,
+                data=species_data(race),
+                license_value=license_value,
+                url=url,
+                page=race.get("page"),
+                fetched_at=fetched_at,
+            )
+        )
 
     for subrace in subraces:
         if not _owns(folder, mapping, subrace, "source", "raceSource"):
@@ -2089,20 +2174,28 @@ def _reference_records(folder: str, *, mapping: dict[str, str], license_value: s
         # а книга називає це «Hill Dwarf».
         parent = str(subrace.get("raceName") or "").strip()
         qualifier = _clean_name(subrace["name"], subrace.get("source"))
-        name = qualifier if not parent or parent.lower() in qualifier.lower() else (
-            f"{qualifier} {parent}".strip() if qualifier else parent
+        name = (
+            qualifier
+            if not parent or parent.lower() in qualifier.lower()
+            else (f"{qualifier} {parent}".strip() if qualifier else parent)
         )
-        out.append(record(folder=folder, category="species", name=name,
-                          text=text,
-                          data=species_data(
-                              subrace,
-                              subrace_of=subrace.get("raceName"),
-                              parent=races_by_name.get(
-                                  str(subrace.get("raceName") or "").lower()
-                              ),
-                          ),
-                          license_value=license_value, url=url,
-                          page=subrace.get("page"), fetched_at=fetched_at))
+        out.append(
+            record(
+                folder=folder,
+                category="species",
+                name=name,
+                text=text,
+                data=species_data(
+                    subrace,
+                    subrace_of=subrace.get("raceName"),
+                    parent=races_by_name.get(str(subrace.get("raceName") or "").lower()),
+                ),
+                license_value=license_value,
+                url=url,
+                page=subrace.get("page"),
+                fetched_at=fetched_at,
+            )
+        )
 
     for background in _entity_rows("backgrounds-5etools.json", "background"):
         if not _owns(folder, mapping, background, "source"):
@@ -2110,10 +2203,19 @@ def _reference_records(folder: str, *, mapping: dict[str, str], license_value: s
         text = render(background.get("entries"), feature_index=feature_index)
         if len(text) < 80:
             continue
-        out.append(record(folder=folder, category="background", name=_clean_name(background["name"], background.get("source")),
-                          text=text, data={"feature": background_feature(background)},
-                          license_value=license_value, url=url,
-                          page=background.get("page"), fetched_at=fetched_at))
+        out.append(
+            record(
+                folder=folder,
+                category="background",
+                name=_clean_name(background["name"], background.get("source")),
+                text=text,
+                data={"feature": background_feature(background)},
+                license_value=license_value,
+                url=url,
+                page=background.get("page"),
+                fetched_at=fetched_at,
+            )
+        )
 
     for feat in _entity_rows("feats-5etools.json", "feat"):
         if not _owns(folder, mapping, feat, "source"):
@@ -2121,10 +2223,19 @@ def _reference_records(folder: str, *, mapping: dict[str, str], license_value: s
         text = render(feat.get("entries"), feature_index=feature_index)
         if len(text) < 80:
             continue
-        out.append(record(folder=folder, category="feat", name=_clean_name(feat["name"], feat.get("source")),
-                          text=text, data={"prerequisite": feat_prerequisite(feat)},
-                          license_value=license_value, url=url,
-                          page=feat.get("page"), fetched_at=fetched_at))
+        out.append(
+            record(
+                folder=folder,
+                category="feat",
+                name=_clean_name(feat["name"], feat.get("source")),
+                text=text,
+                data={"prerequisite": feat_prerequisite(feat)},
+                license_value=license_value,
+                url=url,
+                page=feat.get("page"),
+                fetched_at=fetched_at,
+            )
+        )
 
     for spell in all_spells():
         if not _owns(folder, mapping, spell, "source"):
@@ -2132,9 +2243,19 @@ def _reference_records(folder: str, *, mapping: dict[str, str], license_value: s
         text = spell_text(spell)
         if len(text) < 60:
             continue
-        out.append(record(folder=folder, category="spell", name=_clean_name(spell["name"], spell.get("source")),
-                          text=text, data=spell_data(spell), license_value=license_value,
-                          url=url, page=spell.get("page"), fetched_at=fetched_at))
+        out.append(
+            record(
+                folder=folder,
+                category="spell",
+                name=_clean_name(spell["name"], spell.get("source")),
+                text=text,
+                data=spell_data(spell),
+                license_value=license_value,
+                url=url,
+                page=spell.get("page"),
+                fetched_at=fetched_at,
+            )
+        )
 
     subclasses, features, _ = class_data()
     for subclass in subclasses:
@@ -2143,12 +2264,22 @@ def _reference_records(folder: str, *, mapping: dict[str, str], license_value: s
         text = subclass_text(subclass, features, feature_index=feature_index)
         if len(text) < 60:
             continue
-        out.append(record(folder=folder, category="subclass", name=_clean_name(subclass["name"], subclass.get("source")),
-                          text=text,
-                          data={"class": str(subclass.get("className") or "").lower() or None,
-                                "level": subclass_level(subclass, features)},
-                          license_value=license_value, url=url,
-                          page=subclass.get("page"), fetched_at=fetched_at))
+        out.append(
+            record(
+                folder=folder,
+                category="subclass",
+                name=_clean_name(subclass["name"], subclass.get("source")),
+                text=text,
+                data={
+                    "class": str(subclass.get("className") or "").lower() or None,
+                    "level": subclass_level(subclass, features),
+                },
+                license_value=license_value,
+                url=url,
+                page=subclass.get("page"),
+                fetched_at=fetched_at,
+            )
+        )
 
     for item in all_items():
         if not _owns(folder, mapping, item, "source"):
@@ -2156,9 +2287,19 @@ def _reference_records(folder: str, *, mapping: dict[str, str], license_value: s
         text = item_text(item)
         if len(text) < 12:
             continue
-        out.append(record(folder=folder, category="item", name=_clean_name(item["name"], item.get("source")),
-                          text=text, data=item_data(item), license_value=license_value,
-                          url=url, page=item.get("page"), fetched_at=fetched_at))
+        out.append(
+            record(
+                folder=folder,
+                category="item",
+                name=_clean_name(item["name"], item.get("source")),
+                text=text,
+                data=item_data(item),
+                license_value=license_value,
+                url=url,
+                page=item.get("page"),
+                fetched_at=fetched_at,
+            )
+        )
 
     for feature in all_optional_features():
         if not _owns(folder, mapping, feature, "source"):
@@ -2166,11 +2307,19 @@ def _reference_records(folder: str, *, mapping: dict[str, str], license_value: s
         text = optionalfeature_text(feature, feature_index=feature_index)
         if len(text) < 20:
             continue
-        out.append(record(folder=folder, category="optionalfeature",
-                          name=_clean_name(feature["name"], feature.get("source")),
-                          text=text, data=optionalfeature_data(feature),
-                          license_value=license_value, url=url,
-                          page=feature.get("page"), fetched_at=fetched_at))
+        out.append(
+            record(
+                folder=folder,
+                category="optionalfeature",
+                name=_clean_name(feature["name"], feature.get("source")),
+                text=text,
+                data=optionalfeature_data(feature),
+                license_value=license_value,
+                url=url,
+                page=feature.get("page"),
+                fetched_at=fetched_at,
+            )
+        )
     return out
 
 
@@ -2250,11 +2399,7 @@ def _deduplicate(records: list[dict]) -> list[dict]:
             best[key] = entry
             continue
         previous = best[key]
-        keep, drop = (
-            (entry, previous)
-            if len(entry["text_en"]) > len(previous["text_en"])
-            else (previous, entry)
-        )
+        keep, drop = (entry, previous) if len(entry["text_en"]) > len(previous["text_en"]) else (previous, entry)
         keep = dict(keep)
         notes = list(keep.get("notes") or [])
         notes.append("той самий id мав коротший запис: " + _flat(drop["text_en"])[:160])
@@ -2319,13 +2464,53 @@ def owned_sources() -> dict[str, str]:
 
 # Лінійка 2024+ — поза скоупом корпусу (edition=2014).
 OTHER_EDITION = {
-    "XPHB", "XDMG", "XMM", "XSAC", "XScreen", "FRHoF", "EFA", "RHW",
-    "AU", "PL", "WoW", "LFL", "ABH", "NF", "FRAiF", "CaBoMP", "HFLotT",
-    "AUD", "DDE", "ICC", "SoS", "RWG", "BQDD", "WttHC", "HotB", "HBTD",
-    "BQGT", "DrDe-DaS", "DrDe-BD", "DrDe-TWoO", "DrDe-FWtVC", "DrDe-TDoN",
-    "DrDe-TFV", "DrDe-BtS", "DrDe-SD", "DrDe-ACfaS", "DrDe-DotSC",
-    "UtHftLH", "ScoEE", "LRDT", "FRAiF-TLLoL", "FFotR", "VNotEE", "HFStCM",
-    "PaF", "TD", "DMTCRG",
+    "XPHB",
+    "XDMG",
+    "XMM",
+    "XSAC",
+    "XScreen",
+    "FRHoF",
+    "EFA",
+    "RHW",
+    "AU",
+    "PL",
+    "WoW",
+    "LFL",
+    "ABH",
+    "NF",
+    "FRAiF",
+    "CaBoMP",
+    "HFLotT",
+    "AUD",
+    "DDE",
+    "ICC",
+    "SoS",
+    "RWG",
+    "BQDD",
+    "WttHC",
+    "HotB",
+    "HBTD",
+    "BQGT",
+    "DrDe-DaS",
+    "DrDe-BD",
+    "DrDe-TWoO",
+    "DrDe-FWtVC",
+    "DrDe-TDoN",
+    "DrDe-TFV",
+    "DrDe-BtS",
+    "DrDe-SD",
+    "DrDe-ACfaS",
+    "DrDe-DotSC",
+    "UtHftLH",
+    "ScoEE",
+    "LRDT",
+    "FRAiF-TLLoL",
+    "FFotR",
+    "VNotEE",
+    "HFStCM",
+    "PaF",
+    "TD",
+    "DMTCRG",
 }
 
 
@@ -2353,9 +2538,7 @@ def missing_subclasses() -> dict[str, list[dict]]:
     subclasses, features, feature_index = class_data()
     registry = _sources()
     catalogue = load_catalogue()
-    present: dict[str, set[str]] = {
-        folder: _present_names(folder, "subclass") for folder in set(owned.values())
-    }
+    present: dict[str, set[str]] = {folder: _present_names(folder, "subclass") for folder in set(owned.values())}
     grouped: dict[str, list[dict]] = {}
     for subclass in subclasses:
         source = subclass.get("source")
@@ -2478,9 +2661,14 @@ def parse_folders(folders: list[str], *, print_samples: int = 0) -> dict[str, di
     _, _, feature_index = class_data()
     report: dict[str, dict[str, int]] = {}
     for folder in folders:
-        records = build_folder(folder, mapping=mapping, catalogue=catalogue,
-                               sources=sources, fetched_at=fetched_at,
-                               feature_index=feature_index)
+        records = build_folder(
+            folder,
+            mapping=mapping,
+            catalogue=catalogue,
+            sources=sources,
+            fetched_at=fetched_at,
+            feature_index=feature_index,
+        )
         counters = save(folder, records)
         report[folder] = counters
         summary = ", ".join(f"{key}={value}" for key, value in sorted(counters.items()))
@@ -2512,13 +2700,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="scripts.ingest.mirror5e")
     parser.add_argument("--all", action="store_true", help="усі теки дзеркала")
     parser.add_argument("--folder", action="append", default=[], help="лише ця тека")
-    parser.add_argument("--print", dest="show", type=int, default=0,
-                        help="показати перші N записів кожної теки")
+    parser.add_argument("--print", dest="show", type=int, default=0, help="показати перші N записів кожної теки")
     parser.add_argument("--list", action="store_true", help="лише перелік тек")
-    parser.add_argument("--subclasses", action="store_true",
-                        help="добрати підкласи книг, які вже в корпусі")
-    parser.add_argument("--optionalfeatures", action="store_true",
-                        help="добрати опційні вміння книг, які вже в корпусі")
+    parser.add_argument("--subclasses", action="store_true", help="добрати підкласи книг, які вже в корпусі")
+    parser.add_argument(
+        "--optionalfeatures", action="store_true", help="добрати опційні вміння книг, які вже в корпусі"
+    )
     args = parser.parse_args(argv)
 
     if args.folder:

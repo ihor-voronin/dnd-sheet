@@ -8,6 +8,7 @@ are expected from errata rather than from extraction.
 
     python scripts/pdf/validate_eepc.py
 """
+
 from __future__ import annotations
 
 import difflib
@@ -67,10 +68,7 @@ def main() -> None:
     problems: list[str] = []
     for record in spells:
         data = record["data"]
-        missing = [
-            field for field in ("casting_time", "range", "components", "duration")
-            if not data.get(field)
-        ]
+        missing = [field for field in ("casting_time", "range", "components", "duration") if not data.get(field)]
         if missing:
             problems.append(f"{record['name_en']}: stat block missing {missing}")
         if not record["text_en"].strip():
@@ -91,9 +89,7 @@ def main() -> None:
         increases, size, speed, parent = expected
         data = record["data"]
         if data["ability_increases"] != increases:
-            problems.append(
-                f"{record['name_en']}: ability increases {data['ability_increases']} != {increases}"
-            )
+            problems.append(f"{record['name_en']}: ability increases {data['ability_increases']} != {increases}")
         if data["size"] != size:
             problems.append(f"{record['name_en']}: size {data['size']} != {size}")
         if data["speed"] != speed:

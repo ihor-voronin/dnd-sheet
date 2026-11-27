@@ -1,15 +1,15 @@
-"""Відпочинок і хіт-дайси: правила 2014, які змінюють стан листа.
+"""Відпочинок і кістки хітів: правила 2014, які змінюють стан листа.
 
-Короткий відпочинок (PHB, p. 186): персонаж може витрачати хіт-дайси (це
+Короткий відпочинок (PHB, p. 186): персонаж може витрачати кістки хітів (це
 окрема дія листа), відновлюються Pact Magic і ті класові ресурси, що
 оновлюються на короткому відпочинку (Друге дихання, Дія-сплеск, Кі…).
-Звичайні слоти, хіти й хіт-дайси самі не відновлюються.
+Звичайні комірки, хіти й кістки хітів самі не відновлюються.
 
-Довгий відпочинок (PHB, p. 186) повертає поточні хіти до максимуму, усі слоти
-(і Pact Magic), половину **загальної** кількості хіт-дайсів (округлення вниз,
-мінімум один), усі класові ресурси, скидає кидки смерті й зменшує втому на 1.
+Тривалий відпочинок (PHB, p. 186) повертає поточні хіти до максимуму, усі комірки
+(і Pact Magic), половину **загальної** кількості кісток хітів (округлення вниз,
+мінімум один), усі класові ресурси, скидає кидки смерті й зменшує виснаження на 1.
 Тимчасові хіти за правилами не зникають відпочинком: вони тривають, доки їх
-не знімуть або не замінять новими, тому довгий відпочинок їх не чіпає.
+не знімуть або не замінять новими, тому тривалий відпочинок їх не чіпає.
 
 Максимуми не дублюються в агрегаті: їх рахує `DerivedStatsCalculator`, тому
 сервіс спершу обчислює лист, а потім змінює стан.
@@ -44,7 +44,7 @@ class RestReport:
 
 
 class RestService:
-    """Відпочинок і витрата хіт-дайсів."""
+    """Відпочинок і витрата кісток хітів."""
 
     def __init__(self, calculator: DerivedStatsCalculator | None = None) -> None:
         self._calculator = calculator or DerivedStatsCalculator()
@@ -76,12 +76,7 @@ class RestService:
 
         # Тимчасові хіти не чіпаємо: за правилами вони живуть до зняття.
         character.set_hp(current=sheet.hit_points.maximum)
-        character.set_state(
-            state.cleared_slots()
-            .restored_hit_dice(restored)
-            .healed_state()
-            .reset_features()
-        )
+        character.set_state(state.cleared_slots().restored_hit_dice(restored).healed_state().reset_features())
         after = character.state
         return RestReport(
             kind="long",
@@ -107,12 +102,8 @@ class RestService:
         exhaustion = state.exhaustion
         resources = resources_for(character, sheet.ability_modifiers)
         ready = [resource.key for resource in resources if resource.recharge == SHORT]
-        reset_names = tuple(
-            resource.name_en for resource in resources if resource.recharge == SHORT and resource.used
-        )
-        character.set_state(
-            character.state.with_pact_used(0).reset_features(ready)
-        )
+        reset_names = tuple(resource.name_en for resource in resources if resource.recharge == SHORT and resource.used)
+        character.set_state(character.state.with_pact_used(0).reset_features(ready))
         after = character.state
         return RestReport(
             kind="short",
@@ -133,13 +124,13 @@ class RestService:
         return sum(state.slots_used.values()) + state.pact_used
 
     def spend_hit_die(self, character: Character, die: int, roll: int) -> int:
-        """Витратити хіт-дайс і полікуватися: кидок + Статура, не вище максимуму."""
+        """Витратити кість хітів і полікуватися: кидок + Статура, не вище максимуму."""
         pool = character.hit_dice_pool
         if die not in pool:
-            raise ValidationError(f"у персонажа немає хіт-дайсів d{die}")
+            raise ValidationError(f"у персонажа немає кісток хітів d{die}")
         used = character.state.hit_die_used(die)
         if used >= pool[die]:
-            raise ValidationError(f"усі хіт-дайси d{die} вже витрачені")
+            raise ValidationError(f"усі кістки хітів d{die} вже витрачені")
         if isinstance(roll, bool) or not isinstance(roll, int) or not 1 <= roll <= die:
             raise ValidationError(f"кидок d{die} має бути 1..{die}, отримано {roll}")
 

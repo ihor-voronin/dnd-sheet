@@ -14,12 +14,12 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from dndsheet.characters.api import backgrounds_uk
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
-from dndsheet.shared.errors import NotFoundError
 
 #: `#### Feature: Military Rank` — так оформлені риси передісторій.
 FEATURE_HEAD = re.compile(r"^#{2,4}\s+Feature:\s*(.+?)\s*$", re.IGNORECASE)
@@ -37,6 +37,12 @@ def enrich_background(
     if background is None:
         payload["background_details"] = None
         return
+    if character.custom_background:
+        # Власні передісторії мають однакову назву в довіднику ("Custom
+        # Background"), тож кеш за назвою віддав би текст першого персонажа
+        # всім наступним. Їх збираємо щоразу — це лише рядки, без довідника.
+        payload["background_details"] = _details(service, character)
+        return
     store = cache if cache is not None else {}
     key = f"background:{background.name_en.casefold()}"
     if key not in store:
@@ -45,18 +51,17 @@ def enrich_background(
 
 
 def _details(service: CompendiumService, character: Character) -> dict[str, Any]:
+    if character.custom_background:
+        return _custom_details(character, character.custom_background)
     background = character.background
     entry = _entry(service, background.name_en)
     text = entry.text_en or "" if entry is not None else ""
     description, equipment = _split_description(text)
     feature_text = _feature_text(text, background.feature_en)
+    equipment_rows, equipment_money = parse_equipment(equipment)
 
     items = character.all_proficiencies().items
-    mine = [
-        item
-        for item in items
-        if item.source.kind.value == "background" and item.source.key == background.key
-    ]
+    mine = [item for item in items if item.source.kind.value == "background" and item.source.key == background.key]
 
     def values(kind: ProficiencyKind) -> list[str]:
         return sorted({str(item.value) for item in mine if item.kind is kind})
@@ -71,32 +76,91 @@ def _details(service: CompendiumService, character: Character) -> dict[str, Any]
         picked = sum(1 for item in chosen if item.kind is kind)
         return max(0, total - picked)
 
-    return {
-        "key": background.key,
-        "name_en": background.name_en,
-        "source_id": background.source_id,
-        "feature_en": background.feature_en,
-        "feature_text": feature_text,
-        "description": description,
-        "equipment": equipment,
-        "skills": values(ProficiencyKind.SKILL),
-        "tools": values(ProficiencyKind.TOOL),
-        "languages": values(ProficiencyKind.LANGUAGE),
-        "skill_any": remaining(ProficiencyKind.SKILL, background.skill_any),
-        "tools_any": remaining(ProficiencyKind.TOOL, background.tools_any),
-        "languages_any": remaining(
-            ProficiencyKind.LANGUAGE, background.languages_any_standard
-        ),
-    }
+    return backgrounds_uk.enrich_sheet(
+        {
+            "key": background.key,
+            "name_en": background.name_en,
+            "source_id": background.source_id,
+            "feature_en": background.feature_en,
+            "feature_text": feature_text,
+            "description": description,
+            "equipment": equipment,
+            "equipment_rows": equipment_rows,
+            "money": equipment_money,
+            "skills": values(ProficiencyKind.SKILL),
+            "tools": values(ProficiencyKind.TOOL),
+            "languages": values(ProficiencyKind.LANGUAGE),
+            "skill_any": remaining(ProficiencyKind.SKILL, background.skill_any),
+            "tools_any": remaining(ProficiencyKind.TOOL, background.tools_any),
+            "languages_any": remaining(ProficiencyKind.LANGUAGE, background.languages_any_standard),
+        }
+    )
+
+
+def _custom_details(character: Character, custom: dict[str, Any]) -> dict[str, Any]:
+    """Власна передісторія: текст гравця, володіння — як обрав."""
+    background = character.background
+    custom_items = [row for row in (custom.get("items") or []) if str(row.get("name_en") or "").strip()]
+    if custom_items:
+        # Предмети обрані з каталогу — рядок збираємо для листа, а рядки
+        # лишаємо структурою (як у книжкових передісторій).
+        equipment = ", ".join(str(row["name_en"]) for row in custom_items)
+        rows = [{"text": str(row["name_en"]), "choices": []} for row in custom_items]
+        money = {"gp": int(custom.get("money_gp") or 0)} if custom.get("money_gp") else {}
+    else:
+        equipment = str(custom.get("equipment") or "")
+        rows, money = parse_equipment(equipment)
+        if not money and custom.get("money_gp"):
+            money = {"gp": int(custom["money_gp"])}
+    items = character.all_proficiencies().items
+    mine = [
+        item
+        for item in items
+        if item.source.kind.value == "background" and item.source.key == (background.key if background else "custom")
+    ]
+
+    def values(kind: ProficiencyKind) -> list[str]:
+        return sorted({str(item.value) for item in mine if item.kind is kind})
+
+    chosen = [
+        item
+        for item in character.chosen.items
+        if item.source.kind.value == "background" and item.source.key == (background.key if background else "custom")
+    ]
+
+    def remaining(kind: ProficiencyKind, total: int) -> int:
+        picked = sum(1 for item in chosen if item.kind is kind)
+        return max(0, total - picked)
+
+    skill_any = background.skill_any if background else 2
+    tools_any = background.tools_any if background else 1
+    languages_any = background.languages_any_standard if background else 1
+    return backgrounds_uk.enrich_sheet(
+        {
+            "key": background.key if background else "custom",
+            "name_en": str(custom.get("name") or "Власна передісторія"),
+            "source_id": "custom",
+            "feature_en": custom.get("feature_name") or None,
+            "feature_text": str(custom.get("feature_text") or ""),
+            "description": str(custom.get("description") or ""),
+            "equipment": equipment,
+            "equipment_rows": rows,
+            "money": money,
+            "skills": values(ProficiencyKind.SKILL),
+            "tools": values(ProficiencyKind.TOOL),
+            "languages": values(ProficiencyKind.LANGUAGE),
+            "skill_any": remaining(ProficiencyKind.SKILL, skill_any),
+            "tools_any": remaining(ProficiencyKind.TOOL, tools_any),
+            "languages_any": remaining(ProficiencyKind.LANGUAGE, languages_any),
+        }
+    )
 
 
 def _entry(service: CompendiumService, name: str):  # noqa: ANN202
     """Запис довідника за точною назвою (без «базових правил»)."""
     page = service.entries(EntryQuery(category=Category.BACKGROUND, q=name, limit=100))
     wanted = name.strip().casefold()
-    matches = [
-        entry for entry in page.items if entry.name_en.strip().casefold() == wanted
-    ]
+    matches = [entry for entry in page.items if entry.name_en.strip().casefold() == wanted]
     if not matches:
         return None
     matches.sort(key=lambda entry: (entry.source_id == "basic-rules-2014", entry.id))
@@ -142,4 +206,120 @@ def _feature_text(text: str, feature: str | None) -> str:
     return "\n".join(body).strip()
 
 
-__all__ = ["enrich_background"]
+def background_details(
+    service: CompendiumService,
+    name_en: str,
+    feature_en: str | None = None,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Опис, риса й спорядження передісторії — для кроку візарда.
+
+    Спорядження розбирається з рядка `Equipment:` книги на предмети; там, де
+    книга пропонує вибір («prayer book or prayer wheel»), варіанти лишаються
+    окремими, щоб екран дав вибрати.
+    """
+    store = cache if cache is not None else {}
+    key = f"background-details:{(name_en or '').strip().casefold()}"
+    if key in store:
+        return store[key]
+    entry = _entry(service, name_en or "")
+    text = entry.text_en or "" if entry is not None else ""
+    description, equipment_line = _split_description(text)
+    rows, money = parse_equipment(equipment_line)
+    found = {
+        "description": description,
+        "feature_en": feature_en,
+        "feature_text": _feature_text(text, feature_en),
+        "equipment": rows,
+        "money": money,
+        "source_id": entry.source_id if entry is not None else None,
+    }
+    # Переклад — окремим шаром: назва риси, опис, текст і кожна фраза
+    # спорядження; оригінал лишається в payload для звірки з книгою.
+    store[key] = backgrounds_uk.enrich_details(found)
+    return store[key]
+
+
+#: «a pouch containing 10 gp» — гроші з набору передісторії.
+GOLD = re.compile(r"(\d+)\s*gp\b", re.IGNORECASE)
+
+
+def parse_equipment(line: str) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """Рядок Equipment → предмети з варіантами й гроші."""
+    if not line:
+        return [], {}
+    rows: list[dict[str, Any]] = []
+    money: dict[str, int] = {}
+    for chunk in _split_top_level(line):
+        chunk = _strip_lead(chunk)
+        if not chunk:
+            continue
+        gold = GOLD.search(chunk)
+        if gold:
+            money["gp"] = money.get("gp", 0) + int(gold.group(1))
+        choices = [_strip_lead(part) for part in _split_or(chunk)]
+        choices = [part for part in choices if part]
+        if not choices:
+            continue
+        rows.append(
+            {
+                "text": choices[0],
+                "choices": choices if len(choices) > 1 else [],
+            }
+        )
+    return rows, money
+
+
+def _split_top_level(text: str) -> list[str]:
+    """Поділити за комами, не чіпаючи коми в дужках."""
+    parts: list[str] = []
+    buffer = ""
+    depth = 0
+    for char in text:
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        if char == "," and depth == 0:
+            parts.append(buffer)
+            buffer = ""
+        else:
+            buffer += char
+    parts.append(buffer)
+    return parts
+
+
+def _split_or(text: str) -> list[str]:
+    """Поділити «a or b or c» поза дужками."""
+    parts: list[str] = []
+    buffer = ""
+    depth = 0
+    index = 0
+    lowered = text.lower()
+    while index < len(text):
+        char = text[index]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        if depth == 0 and lowered.startswith(" or ", index):
+            parts.append(buffer)
+            buffer = ""
+            index += 4
+            continue
+        buffer += char
+        index += 1
+    parts.append(buffer)
+    return parts
+
+
+def _strip_lead(text: str) -> str:
+    value = text.strip().strip(".")
+    for prefix in ("and ", "a set of ", "an ", "a ", "the "):
+        if value.lower().startswith(prefix):
+            value = value[len(prefix) :]
+            break
+    return value.strip()
+
+
+__all__ = ["background_details", "enrich_background", "parse_equipment"]

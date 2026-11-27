@@ -27,7 +27,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Mapping
 
 from . import config
 from .mirror5e import (
@@ -88,8 +88,7 @@ _DAMAGE_TYPES = {
     "thunder",
 }
 
-_SIZE_CODES = {"T": "tiny", "S": "small", "M": "medium", "L": "large",
-               "H": "huge", "G": "gargantuan"}
+_SIZE_CODES = {"T": "tiny", "S": "small", "M": "medium", "L": "large", "H": "huge", "G": "gargantuan"}
 
 #: Яке джерело показати, коли одна раса є в кількох книгах: спершу те, що в
 #: базових правилах, далі основні книги, і лише потім сетинги.
@@ -148,7 +147,7 @@ def _spell_ref(token: str) -> tuple[str, int, int]:
     Другий елемент — рівень закляття (0 — заговор), третій — рівень, на якому
     його кастують уроджено (5e.tools пише його після `#`).
     """
-    text = token.split("|")[0].strip()
+    text = token.split("|", maxsplit=1)[0].strip()
     cast_level = 0
     if "#" in text:
         text, _, marker = text.partition("#")
@@ -202,9 +201,7 @@ def species_spell_grants(row: Mapping[str, Any]) -> tuple[list[str], dict | None
     return cantrips, choice, granted
 
 
-def subclass_spell_grants(
-    subclasses: list[Any] | None, class_source: str
-) -> dict[str, dict[str, list[str]]]:
+def subclass_spell_grants(subclasses: list[Any] | None, class_source: str) -> dict[str, dict[str, list[str]]]:
     """Закляття підкласів на 1 рівні: домен жреця й розширений список патрона.
 
     `prepared` — завжди підготовлені (домен), `expanded` — додані до списку
@@ -432,9 +429,7 @@ def _feature_ref(raw: Any) -> dict[str, Any] | None:
     return {"name": name, "level": level}
 
 
-def class_mechanics(
-    klass: dict, file_name: str, subclasses: list[Any] | None = None
-) -> dict[str, Any]:
+def class_mechanics(klass: dict, file_name: str, subclasses: list[Any] | None = None) -> dict[str, Any]:
     """Один клас 2014 → запис індексу."""
     hd = klass.get("hd") if isinstance(klass.get("hd"), dict) else {}
     hit_die = hd.get("faces")
@@ -463,9 +458,7 @@ def class_mechanics(
             if not isinstance(alternative, dict):
                 continue
             scores = {
-                key: int(value)
-                for key, value in alternative.items()
-                if key in ABILITIES and isinstance(value, int)
+                key: int(value) for key, value in alternative.items() if key in ABILITIES and isinstance(value, int)
             }
             if scores:
                 requirements.append(scores)
@@ -481,10 +474,7 @@ def class_mechanics(
         labels = [plain(label) for label in group.get("colLabels") or []]
         title = str(group.get("title") or "")
         if title.startswith("Spell Slots per Spell Level") and group.get("rowsSpellProgression"):
-            slots = [
-                _pad_spell_row([int(value) for value in row])
-                for row in group["rowsSpellProgression"]
-            ]
+            slots = [_pad_spell_row([int(value) for value in row]) for row in group["rowsSpellProgression"]]
         if "pact" in str(klass.get("casterProgression") or "").casefold() and "Spell Slots" in labels:
             index_slots = labels.index("Spell Slots")
             index_level = labels.index("Slot Level") if "Slot Level" in labels else None
@@ -493,9 +483,7 @@ def class_mechanics(
                 level = _slot_ordinal(row[index_level]) if index_level is not None else 0
                 pact.append([int(count) if isinstance(count, int) else 0, level])
         if labels and labels[0].startswith("Cantrips Known") and group.get("rows"):
-            cantrips = [
-                int(row[0]) for row in group["rows"] if row and isinstance(row[0], int)
-            ]
+            cantrips = [int(row[0]) for row in group["rows"] if row and isinstance(row[0], int)]
         for position, label in enumerate(labels):
             if label == "Spells Known" and group.get("rows"):
                 spells_known = [
@@ -530,9 +518,7 @@ def class_mechanics(
         progression = block.get("progression") or {}
         if isinstance(progression, list):
             # Список — це кількість на кожному рівні, з першого.
-            progression = {
-                str(level): count for level, count in enumerate(progression, start=1)
-            }
+            progression = {str(level): count for level, count in enumerate(progression, start=1)}
         steps = sorted(
             (int(level), int(count))
             for level, count in progression.items()
@@ -545,13 +531,7 @@ def class_mechanics(
     for group in (klass.get("startingEquipment") or {}).get("defaultData") or []:
         if not isinstance(group, dict):
             continue
-        equipment.append(
-            {
-                choice: items_from_group(group.get(choice))
-                for choice in ("a", "b")
-                if group.get(choice)
-            }
-        )
+        equipment.append({choice: items_from_group(group.get(choice)) for choice in ("a", "b") if group.get(choice)})
 
     gold = plain((klass.get("startingEquipment") or {}).get("goldAlternative") or "")
 
@@ -570,14 +550,10 @@ def class_mechanics(
         "weapon_training": training_from_value(start.get("weapons")),
         "tool_training": training_from_value(start.get("tools")),
         "spellcasting_ability": (
-            str(klass["spellcastingAbility"]).casefold()
-            if isinstance(klass.get("spellcastingAbility"), str)
-            else None
+            str(klass["spellcastingAbility"]).casefold() if isinstance(klass.get("spellcastingAbility"), str) else None
         ),
         "caster_progression": (
-            str(klass["casterProgression"]).casefold()
-            if isinstance(klass.get("casterProgression"), str)
-            else None
+            str(klass["casterProgression"]).casefold() if isinstance(klass.get("casterProgression"), str) else None
         ),
         "prepares_spells": bool(klass.get("preparedSpells")),
         "cantrips_known": cantrips,
@@ -615,13 +591,9 @@ def items_from_group(value: Any) -> list[dict[str, Any]]:
             continue
         quantity = item.get("quantity") if isinstance(item.get("quantity"), int) else 1
         if isinstance(item.get("item"), str):
-            result.append(
-                {"item": plain(item["item"].split("|")[0]).casefold(), "quantity": quantity}
-            )
+            result.append({"item": plain(item["item"].split("|")[0]).casefold(), "quantity": quantity})
         elif isinstance(item.get("equipmentType"), str):
-            result.append(
-                {"equipment_type": str(item["equipmentType"]), "quantity": quantity}
-            )
+            result.append({"equipment_type": str(item["equipmentType"]), "quantity": quantity})
         elif isinstance(item.get("special"), str):
             result.append({"special": plain(item["special"]), "quantity": quantity})
     return result
@@ -662,11 +634,10 @@ def build_classes() -> tuple[dict[str, dict], dict[str, str], list[str]]:
             key = candidate["name_en"].strip().casefold()
             existing = classes.get(key)
             variants.setdefault(key, set()).add(source)
-            if existing is not None:
-                # Одна назва в кількох книгах (SRD + основна): лишаємо ту, що
-                # має більше механік, і фіксуємо, що варіант не єдиний.
-                if _weight(candidate) <= _weight(existing):
-                    continue
+            # Одна назва в кількох книгах (SRD + основна): лишаємо ту, що
+            # має більше механік, і фіксуємо, що варіант не єдиний.
+            if existing is not None and _weight(candidate) <= _weight(existing):
+                continue
             classes[key] = candidate
             files[key] = path.name
 
@@ -719,9 +690,7 @@ def species_mechanics(
     weapons = named_proficiencies(row.get("weaponProficiencies"))
     tools = named_proficiencies(row.get("toolProficiencies"))
     tools_count = tools_any(row.get("toolProficiencies"))
-    resistances = [
-        str(item).casefold() for item in row.get("resist") or [] if str(item).casefold() in _DAMAGE_TYPES
-    ]
+    resistances = [str(item).casefold() for item in row.get("resist") or [] if str(item).casefold() in _DAMAGE_TYPES]
     speed = _speed(row.get("speed")) if row.get("speed") is not None else None
     darkvision = int(row["darkvision"]) if isinstance(row.get("darkvision"), int) else 0
     sizes = [name_ for name_ in (row.get("size") or []) if name_ in _SIZE_CODES]
@@ -749,9 +718,7 @@ def species_mechanics(
         tools_count = max(tools_count, tools_any(parent.get("toolProficiencies")))
         if not resistances:
             resistances = [
-                str(item).casefold()
-                for item in parent.get("resist") or []
-                if str(item).casefold() in _DAMAGE_TYPES
+                str(item).casefold() for item in parent.get("resist") or [] if str(item).casefold() in _DAMAGE_TYPES
             ]
         if not parent_is_standard:
             parent_fixed, parent_choice = abilities_from_value(parent.get("ability"))
@@ -811,11 +778,7 @@ def background_mechanics(row: dict) -> dict[str, Any]:
     for group in row.get("startingEquipment") or []:
         if isinstance(group, dict):
             equipment.append(
-                {
-                    choice: items_from_group(group.get(choice))
-                    for choice in ("_", "a", "b")
-                    if group.get(choice)
-                }
+                {choice: items_from_group(group.get(choice)) for choice in ("_", "a", "b") if group.get(choice)}
             )
         elif isinstance(group, list):
             equipment.append({"_": items_from_group(group)})
@@ -921,9 +884,7 @@ def build_origins() -> tuple[dict, dict, list[str]]:
     # 1) «звичайні» варіанти виду (людина +1 до всього) — вливаємо в базовий
     #    запис, бо окремим вибором вони не є.
     standard: set[str] = set()
-    unnamed = [
-        row for row in subraces if not plain(row.get("name") or "").strip()
-    ]
+    unnamed = [row for row in subraces if not plain(row.get("name") or "").strip()]
     for row in unnamed:
         parent = plain(row.get("raceName") or "").strip().casefold()
         if parent not in species:
@@ -991,8 +952,7 @@ def build_origins() -> tuple[dict, dict, list[str]]:
             problems.append(f"передісторія {key}: без володінь навичками")
 
     return (
-        {"schema": ORIGIN_SCHEMA, "species": species, "subspecies": subspecies,
-         "backgrounds": origin},
+        {"schema": ORIGIN_SCHEMA, "species": species, "subspecies": subspecies, "backgrounds": origin},
         {"species": species_order, "duplicates": duplicates},
         problems,
     )
@@ -1015,8 +975,7 @@ def merge_standard(target: dict, extra: Mapping[str, Any]) -> None:
         target["ability_fixed"][ability] = target["ability_fixed"].get(ability, 0) + int(amount)
     if not target.get("ability_choice") and extra.get("ability_choice"):
         target["ability_choice"] = extra["ability_choice"]
-    for field in ("skill_proficiencies", "weapon_proficiencies", "tool_proficiencies",
-                  "languages", "resistances"):
+    for field in ("skill_proficiencies", "weapon_proficiencies", "tool_proficiencies", "languages", "resistances"):
         current = list(target.get(field) or [])
         for item in extra.get(field) or []:
             if item not in current:
@@ -1027,9 +986,7 @@ def merge_standard(target: dict, extra: Mapping[str, Any]) -> None:
     target["darkvision"] = max(int(target.get("darkvision") or 0), int(extra.get("darkvision") or 0))
     target["standard_variant"] = True
     # «Нерозвʼязаним» вид стає лише тоді, коли після злиття бонусів так і немає.
-    target["ability_unresolved"] = (
-        not target.get("ability_fixed") and target.get("ability_choice") is None
-    )
+    target["ability_unresolved"] = not target.get("ability_fixed") and target.get("ability_choice") is None
 
 
 # ---------------------------------------------------------------------------
@@ -1046,9 +1003,7 @@ def build_class_index() -> dict:
         "problems": problems,
         "stats": {
             "classes": len(classes),
-            "with_spellcasting": sum(
-                1 for entry in classes.values() if entry["spellcasting_ability"]
-            ),
+            "with_spellcasting": sum(1 for entry in classes.values() if entry["spellcasting_ability"]),
             "with_pact": sum(1 for entry in classes.values() if entry["pact_slots"]),
             "files": len(set(files.values())),
         },
@@ -1093,8 +1048,7 @@ def report_origin(payload: Mapping[str, Any]) -> None:
         choice = entry["ability_choice"]
         extra = f" + вибір {choice['count']}×{choice['amount']}" if choice else ""
         print(
-            f"  {entry['name_en']:<16} {bonus}{extra:<12} "
-            f"швидкість {entry['speed']}  темний зір {entry['darkvision']}"
+            f"  {entry['name_en']:<16} {bonus}{extra:<12} швидкість {entry['speed']}  темний зір {entry['darkvision']}"
         )
     for problem in (payload.get("problems") or [])[:20]:
         print("  !", problem)
@@ -1134,10 +1088,7 @@ def main(argv: list[str] | None = None) -> int:
             if key:
                 same = stored.get(key) == payload.get(key)
             else:
-                same = all(
-                    stored.get(part) == payload.get(part)
-                    for part in ("species", "subspecies", "backgrounds")
-                )
+                same = all(stored.get(part) == payload.get(part) for part in ("species", "subspecies", "backgrounds"))
             if not same:
                 print(f"індекс застарів: {path.relative_to(config.REPO_ROOT)}")
                 stale.append(path.name)

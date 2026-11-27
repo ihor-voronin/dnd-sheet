@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "egtw/item/staff-of-the-ivory-claw",
+   "name_uk": "Посох слоновокістяного кігтя"
+  },
+  {
+   "id": "gotg/item/staff-of-the-rooted-hills",
+   "name_uk": "Посох закорінених пагорбів"
+  },
+  {
+   "id": "pabtso/item/statuette-of-augury",
+   "name_uk": "Статуетка віщування"
+  },
+  {
+   "id": "cos/item/statuette-of-saint-markovia",
+   "name_uk": "Статуетка святої Марковії"
+  },
+  {
+   "id": "twbtw/item/steel",
+   "name_uk": "Сталь"
+  },
+  {
+   "id": "aitfr-avt/item/stone-of-creation",
+   "name_uk": "Камінь творіння"
+  },
+  {
+   "id": "wdh/item/stone-of-golorr",
+   "name_uk": "Камінь Голорра"
+  },
+  {
+   "id": "tftyp/item/stone-of-ill-luck",
+   "name_uk": "Камінь невдачі"
+  },
+  {
+   "id": "gotg/item/stonebreakers-breastplate",
+   "name_uk": "Кираса каменелама"
+  },
+  {
+   "id": "oota/item/stonespeaker-crystal",
+   "name_uk": "Кристал Каменеголоса"
+  },
+  {
+   "id": "egtw/item/stormgirdle",
+   "name_uk": "Пояс бурі"
+  },
+  {
+   "id": "basic-rules-2014/item/studded-leather",
+   "name_uk": "Шкіряна броня з заклепками"
+  },
+  {
+   "id": "ps-ixalan/item/sun-amulet-on-a-beaded-chain-sun-empire",
+   "name_uk": "Сонячний амулет на ланцюжку з намистин (Сонячна Імперія)"
+  },
+  {
+   "id": "cos/item/sunsword",
+   "name_uk": "Сонячний меч"
+  },
+  {
+   "id": "dmg-2014/item/sword-of-answering",
+   "name_uk": "Меч відповіді"
+  },
+  {
+   "id": "dmg-2014/item/sword-of-kas",
+   "name_uk": "Меч Каса"
+  },
+  {
+   "id": "dmg-2014/item/sword-of-vengeance",
+   "name_uk": "Меч помсти"
+  },
+  {
+   "id": "bgdia/item/sword-of-zariel",
+   "name_uk": "Меч Заріеля"
+  },
+  {
+   "id": "bam/item/talarith",
+   "name_uk": "Таларіт"
+  },
+  {
+   "id": "twbtw/item/talking-doll",
+   "name_uk": "Лялька, що говорить"
+  },
+  {
+   "id": "hotdq/item/tankard-of-plenty",
+   "name_uk": "Кухоль достатку"
+  },
+  {
+   "id": "xgte/item/tankard-of-sobriety",
+   "name_uk": "Кухоль тверезості"
+  },
+  {
+   "id": "ditlcot/item/tasha-s-creeping-keelboat",
+   "name_uk": "Повзучий кільовий човен Таші"
+  },
+  {
+   "id": "tcoe/item/teeth-of-dahlver-nar",
+   "name_uk": "Зуби Далвер-Нара"
+  },
+  {
+   "id": "toa/item/tej",
+   "name_uk": "Тедж"
+  },
+  {
+   "id": "cotn/item/teleportation-tablet",
+   "name_uk": "Табличка телепортації"
+  },
+  {
+   "id": "basic-rules-2014/item/tent-two-person",
+   "name_uk": "Намет на двох осіб"
+  },
+  {
+   "id": "dmg-2014/item/tentacle-rod",
+   "name_uk": "Жезл щупалець"
+  },
+  {
+   "id": "egtw/item/the-bloody-end",
+   "name_uk": "Кривавий кінець"
+  },
+  {
+   "id": "hcs/item/the-borealus",
+   "name_uk": "Бореалус"
+  },
+  {
+   "id": "idrotf/item/the-codicil-of-white",
+   "name_uk": "Кодицил білості"
+  },
+  {
+   "id": "idrotf/item/the-incantations-of-iriolarthas",
+   "name_uk": "Заклинання Іріолартаса"
+  },
+  {
+   "id": "imr/item/the-infernal-machine-of-lum-the-mad",
+   "name_uk": "Пекельна машина Божевільного Лума"
+  },
+  {
+   "id": "idrotf/item/thermal-cube",
+   "name_uk": "Тепловий куб"
+  },
+  {
+   "id": "imr/item/thessaltoxin",
+   "name_uk": "Тессалотоксин"
+  },
+  {
+   "id": "imr/item/thessaltoxin-antidote",
+   "name_uk": "Антидот тессалотоксину"
+  },
+  {
+   "id": "basic-rules-2014/item/thieves-tools",
+   "name_uk": "Злодійські інструменти"
+  },
+  {
+   "id": "phb-2014/item/thieves-tools",
+   "name_uk": "Злодійські інструменти"
+  },
+  {
+   "id": "phb-2014/item/three-dragon-ante-set",
+   "name_uk": "Набір для «Трьох драконів»"
+  },
+  {
+   "id": "gotg/item/thunderbuss",
+   "name_uk": "Громобій"
+  },
+  {
+   "id": "ai/item/timepiece-of-travel",
+   "name_uk": "Хронометр мандрів"
+  },
+  {
+   "id": "basic-rules-2014/item/tinderbox",
+   "name_uk": "Трутниця"
+  },
+  {
+   "id": "basic-rules-2014/item/tinker-s-tools",
+   "name_uk": "Інструменти бляхаря"
+  },
+  {
+   "id": "phb-2014/item/tinker-s-tools",
+   "name_uk": "Інструменти бляхаря"
+  },
+  {
+   "id": "ps-ixalan/item/tiny-jade-figurine-river-heralds",
+   "name_uk": "Крихітна нефритова статуетка (Вісники Річки)"
+  },
+  {
+   "id": "cos/item/tome-of-strahd",
+   "name_uk": "Том Страгда"
+  },
+  {
+   "id": "dmg-2014/item/tome-of-the-stilled-tongue",
+   "name_uk": "Том замовклого язика"
+  },
+  {
+   "id": "ftod/item/topaz-annihilator",
+   "name_uk": "Топазовий знищувач"
+  },
+  {
+   "id": "basic-rules-2014/item/torch",
+   "name_uk": "Смолоскип"
+  },
+  {
+   "id": "phb-2014/item/totem",
+   "name_uk": "Тотем"
+  },
+  {
+   "id": "ps-ixalan/item/treasure-chest-crafted-of-exotic-wood-with-gold-fittings-and-opals-brazen-coalition",
+   "name_uk": "Скриня з екзотичного дерева із золотими прикрасами та опалами (Мідна коаліція)"
+  },
+  {
+   "id": "basic-rules-2014/item/trident",
+   "name_uk": "Тризуб"
+  },
+  {
+   "id": "cos/item/trinket",
+   "name_uk": "Дрібничка"
+  },
+  {
+   "id": "coa/item/true-ice-shards-dagger",
+   "name_uk": "Осколки справжнього льоду (кинжал)"
+  },
+  {
+   "id": "coa/item/true-ice-shards-rapier",
+   "name_uk": "Осколки справжнього льоду (рапіра)"
+  },
+  {
+   "id": "moot/item/two-birds-sling",
+   "name_uk": "Праща двох птахів"
+  },
+  {
+   "id": "xgte/item/unbreakable-arrow",
+   "name_uk": "Незламна стріла"
+  },
+  {
+   "id": "xmts/item/vanquisher-s-banner",
+   "name_uk": "Прапор переможця"
+  },
+  {
+   "id": "basic-rules-2014/item/vehicles-land-or-water",
+   "name_uk": "Транспорт (наземний або водний)"
+  },
+  {
+   "id": "ps-ixalan/item/velvet-doublet-with-gold-buttons-legion-of-dusk",
+   "name_uk": "Оксамитовий дублет із золотими ґудзиками (Легіон сутінків)"
+  }
+ ]
+}

@@ -1,0 +1,547 @@
+[
+ {
+  "id": "cbd19b5c39",
+  "en": "Actor",
+  "name_uk": "Актор"
+ },
+ {
+  "id": "32fbee4a36",
+  "en": "Adept of the Black Robes",
+  "name_uk": "Адепт чорних мантій"
+ },
+ {
+  "id": "e81fd8f77a",
+  "en": "Adept of the Red Robes",
+  "name_uk": "Адепт червоних мантій"
+ },
+ {
+  "id": "209c36639c",
+  "en": "Adept of the White Robes",
+  "name_uk": "Адепт білих мантій"
+ },
+ {
+  "id": "d62b8110ab",
+  "en": "Aerial Expert",
+  "name_uk": "Повітряний експерт"
+ },
+ {
+  "id": "b8621e0fec",
+  "en": "Agent of Order",
+  "name_uk": "Агент порядку"
+ },
+ {
+  "id": "b969680a49",
+  "en": "Alert",
+  "name_uk": "Пильний"
+ },
+ {
+  "id": "5ae2dde3b4",
+  "en": "Artificer Initiate",
+  "name_uk": "Учень артифіцера"
+ },
+ {
+  "id": "aa86fd23dd",
+  "en": "Athlete",
+  "name_uk": "Атлет"
+ },
+ {
+  "id": "d56b4f6d4b",
+  "en": "Baleful Scion",
+  "name_uk": "Лиховісний нащадок"
+ },
+ {
+  "id": "3508d5f4b5",
+  "en": "Bandit Cunning",
+  "name_uk": "Розбійницька хитрість"
+ },
+ {
+  "id": "1c65833360",
+  "en": "Bountiful Luck",
+  "name_uk": "Щедре везіння"
+ },
+ {
+  "id": "8f86030092",
+  "en": "Charger",
+  "name_uk": "Таранник"
+ },
+ {
+  "id": "46de8428ac",
+  "en": "Chef",
+  "name_uk": "Кухар"
+ },
+ {
+  "id": "b1b09ef7e5",
+  "en": "Cohort of Chaos",
+  "name_uk": "Соратник хаосу"
+ },
+ {
+  "id": "7a3c2d329d",
+  "en": "Crossbow Expert",
+  "name_uk": "Експерт арбалета"
+ },
+ {
+  "id": "c42a22895d",
+  "en": "Crusher",
+  "name_uk": "Трощитель"
+ },
+ {
+  "id": "ce0cccccae",
+  "en": "Defensive Duelist",
+  "name_uk": "Оборонний дуелянт"
+ },
+ {
+  "id": "e7ef6130b2",
+  "en": "Divinely Favored",
+  "name_uk": "Улюбленець богів"
+ },
+ {
+  "id": "925d53301e",
+  "en": "Dragon Fear",
+  "name_uk": "Драконячий страх"
+ },
+ {
+  "id": "4bd516e4af",
+  "en": "Dragon Hide",
+  "name_uk": "Драконяча шкура"
+ },
+ {
+  "id": "692d0957d9",
+  "en": "Drow High Magic",
+  "name_uk": "Вища магія дроу"
+ },
+ {
+  "id": "6afd565c3d",
+  "en": "Dual Wielder",
+  "name_uk": "Бій двома руками"
+ },
+ {
+  "id": "2485f87a34",
+  "en": "Dungeon Delver",
+  "name_uk": "Дослідник підземель"
+ },
+ {
+  "id": "f429936ae6",
+  "en": "Durable",
+  "name_uk": "Витривалий"
+ },
+ {
+  "id": "6730f52887",
+  "en": "Dwarven Fortitude",
+  "name_uk": "Дворфова стійкість"
+ },
+ {
+  "id": "e2fbc706d2",
+  "en": "Eldritch Adept",
+  "name_uk": "Містичний адепт"
+ },
+ {
+  "id": "966f1bd81a",
+  "en": "Elemental Adept",
+  "name_uk": "Адепт стихій"
+ },
+ {
+  "id": "1edee771ce",
+  "en": "Elven Accuracy",
+  "name_uk": "Ельфійська влучність"
+ },
+ {
+  "id": "e3905f3b09",
+  "en": "Ember of the Fire Giant",
+  "name_uk": "Жар вогняного велетня"
+ },
+ {
+  "id": "c7ef210d17",
+  "en": "Fade Away",
+  "name_uk": "Розчинитися"
+ },
+ {
+  "id": "5d1382bceb",
+  "en": "Feat Descriptions",
+  "name_uk": "Описи рис"
+ },
+ {
+  "id": "734bad53a6",
+  "en": "Fey Teleportation",
+  "name_uk": "Фейська телепортація"
+ },
+ {
+  "id": "eb70a0d5c8",
+  "en": "Fey Touched",
+  "name_uk": "Позначений феями"
+ },
+ {
+  "id": "57c7f47ce4",
+  "en": "Fighting Initiate",
+  "name_uk": "Учень бою"
+ },
+ {
+  "id": "0ba0bf91cd",
+  "en": "Flames of Phlegethos",
+  "name_uk": "Полум’я Флегетона"
+ },
+ {
+  "id": "5952fe005d",
+  "en": "Fury of the Frost Giant",
+  "name_uk": "Лють морозного велетня"
+ },
+ {
+  "id": "6cb52be8a9",
+  "en": "Grappler",
+  "name_uk": "Борець"
+ },
+ {
+  "id": "16fb41caa2",
+  "en": "Great Weapon Master",
+  "name_uk": "Майстер великої зброї"
+ },
+ {
+  "id": "5b59c70683",
+  "en": "Guile of the Cloud Giant",
+  "name_uk": "Підступність хмарного велетня"
+ },
+ {
+  "id": "63ec7b49fa",
+  "en": "Gunner",
+  "name_uk": "Стрілець"
+ },
+ {
+  "id": "6cad85d7f7",
+  "en": "Healer",
+  "name_uk": "Цілитель"
+ },
+ {
+  "id": "05243f508f",
+  "en": "Heavily Armored",
+  "name_uk": "Важкоброньований"
+ },
+ {
+  "id": "ce3311df4a",
+  "en": "Heavy Armor Master",
+  "name_uk": "Майстер важкої броні"
+ },
+ {
+  "id": "961874f520",
+  "en": "Heavy Glider",
+  "name_uk": "Важкий планер"
+ },
+ {
+  "id": "5bf9a9b9dd",
+  "en": "Infernal Constitution",
+  "name_uk": "Пекельна статура"
+ },
+ {
+  "id": "4c0844c1a0",
+  "en": "Initiate of High Sorcery",
+  "name_uk": "Учень Вищого чародійства"
+ },
+ {
+  "id": "44c82c09c8",
+  "en": "Inspiring Leader",
+  "name_uk": "Надихаючий лідер"
+ },
+ {
+  "id": "5db4182734",
+  "en": "Keen Mind",
+  "name_uk": "Гострий розум"
+ },
+ {
+  "id": "3712168725",
+  "en": "Keenness of the Stone Giant",
+  "name_uk": "Пильність кам’яного велетня"
+ },
+ {
+  "id": "c70477af20",
+  "en": "Knight of the Crown",
+  "name_uk": "Лицар Корони"
+ },
+ {
+  "id": "6a98d0f015",
+  "en": "Knight of the Rose",
+  "name_uk": "Лицар Троянди"
+ },
+ {
+  "id": "25309f32c4",
+  "en": "Knight of the Sword",
+  "name_uk": "Лицар Меча"
+ },
+ {
+  "id": "8874c13af7",
+  "en": "Lightly Armored",
+  "name_uk": "Легкоброньований"
+ },
+ {
+  "id": "3add3a4886",
+  "en": "Linguist",
+  "name_uk": "Мовознавець"
+ },
+ {
+  "id": "68bec20956",
+  "en": "Lucky",
+  "name_uk": "Щасливчик"
+ },
+ {
+  "id": "b8990a9b9d",
+  "en": "Mage Slayer",
+  "name_uk": "Вбивця магів"
+ },
+ {
+  "id": "1656b0d45f",
+  "en": "Magic Initiate",
+  "name_uk": "Учень магії"
+ },
+ {
+  "id": "3032a9dcd0",
+  "en": "Martial Adept",
+  "name_uk": "Бойовий адепт"
+ },
+ {
+  "id": "3487b97d27",
+  "en": "Medium Armor Master",
+  "name_uk": "Майстер середньої броні"
+ },
+ {
+  "id": "b8d9d34cbd",
+  "en": "Metamagic Adept",
+  "name_uk": "Адепт метамагії"
+ },
+ {
+  "id": "b1d7024593",
+  "en": "Mobile",
+  "name_uk": "Рухливий"
+ },
+ {
+  "id": "bec39fc925",
+  "en": "Moderately Armored",
+  "name_uk": "Помірно броньований"
+ },
+ {
+  "id": "47855d2768",
+  "en": "Mounted Combatant",
+  "name_uk": "Вершник"
+ },
+ {
+  "id": "acd88d479e",
+  "en": "Observant",
+  "name_uk": "Спостережливий"
+ },
+ {
+  "id": "8e4120f20c",
+  "en": "Opportunistic Thief",
+  "name_uk": "Злодій-опортуніст"
+ },
+ {
+  "id": "efd9a2ae05",
+  "en": "Orcish Fury",
+  "name_uk": "Оркська лють"
+ },
+ {
+  "id": "c6b9fe7222",
+  "en": "Outlands Envoy",
+  "name_uk": "Посланець Зовнішніх земель"
+ },
+ {
+  "id": "3e5c929f3e",
+  "en": "Perfect Landing",
+  "name_uk": "Ідеальне приземлення"
+ },
+ {
+  "id": "987901eb6b",
+  "en": "Piercer",
+  "name_uk": "Проколювач"
+ },
+ {
+  "id": "ed5b9d43c9",
+  "en": "Planar Wanderer",
+  "name_uk": "Мандрівник планами"
+ },
+ {
+  "id": "53b8d6d04b",
+  "en": "Poisoner",
+  "name_uk": "Отруйник"
+ },
+ {
+  "id": "276cac0a03",
+  "en": "Polearm Master",
+  "name_uk": "Майстер древкової зброї"
+ },
+ {
+  "id": "b76b9984bb",
+  "en": "Prodigy",
+  "name_uk": "Обдарований"
+ },
+ {
+  "id": "5ea69199cf",
+  "en": "Quicksmithing",
+  "name_uk": "Швидке ковальство"
+ },
+ {
+  "id": "2e559f186a",
+  "en": "Resilient",
+  "name_uk": "Стійкий"
+ },
+ {
+  "id": "cbe664b825",
+  "en": "Righteous Heritor",
+  "name_uk": "Праведний спадкоємець"
+ },
+ {
+  "id": "e94e4f970e",
+  "en": "Ritual Caster",
+  "name_uk": "Ритуаліст"
+ },
+ {
+  "id": "45b7695b1f",
+  "en": "Rune Shaper",
+  "name_uk": "Творець рун"
+ },
+ {
+  "id": "4792872028",
+  "en": "Savage Attacker",
+  "name_uk": "Лютий нападник"
+ },
+ {
+  "id": "11b63f3158",
+  "en": "Scion of the Outer Planes",
+  "name_uk": "Нащадок Зовнішніх планів"
+ },
+ {
+  "id": "d20c1b0739",
+  "en": "Second Chance",
+  "name_uk": "Другий шанс"
+ },
+ {
+  "id": "1b723f9a07",
+  "en": "Sentinel",
+  "name_uk": "Вартовий"
+ },
+ {
+  "id": "a38ce0f5dd",
+  "en": "Servo Crafting",
+  "name_uk": "Майстрування сервоботів"
+ },
+ {
+  "id": "e45bd6ca79",
+  "en": "Shadow Touched",
+  "name_uk": "Позначений тінню"
+ },
+ {
+  "id": "70ffefd6ce",
+  "en": "Sharpshooter",
+  "name_uk": "Снайпер"
+ },
+ {
+  "id": "3db8b4ac70",
+  "en": "Shield Master",
+  "name_uk": "Майстер щита"
+ },
+ {
+  "id": "c0c507f098",
+  "en": "Skill Expert",
+  "name_uk": "Знавець навичок"
+ },
+ {
+  "id": "d96b2d38b3",
+  "en": "Skilled",
+  "name_uk": "Умілий"
+ },
+ {
+  "id": "8b81c7d94c",
+  "en": "Skulker",
+  "name_uk": "Нишпорка"
+ },
+ {
+  "id": "077fdf5d55",
+  "en": "Slasher",
+  "name_uk": "Рубака"
+ },
+ {
+  "id": "ce014d5177",
+  "en": "Soul of the Storm Giant",
+  "name_uk": "Душа штормового велетня"
+ },
+ {
+  "id": "b02145c8ec",
+  "en": "Speech of the Ancient Beasts",
+  "name_uk": "Мова давніх звірів"
+ },
+ {
+  "id": "9be19beba7",
+  "en": "Spell Sniper",
+  "name_uk": "Снайпер заклять"
+ },
+ {
+  "id": "edb8e1d831",
+  "en": "Squat Nimbleness",
+  "name_uk": "Приземкувата спритність"
+ },
+ {
+  "id": "6bb10d186f",
+  "en": "Squire of Solamnia",
+  "name_uk": "Зброєносець Соламнії"
+ },
+ {
+  "id": "3aa551e5b3",
+  "en": "Strike of the Giants",
+  "name_uk": "Удар велетнів"
+ },
+ {
+  "id": "18766f769f",
+  "en": "Strixhaven Initiate",
+  "name_uk": "Учень Стриксгейвену"
+ },
+ {
+  "id": "f82128214c",
+  "en": "Strixhaven Mascot",
+  "name_uk": "Талісман Стриксгейвену"
+ },
+ {
+  "id": "c57a00ebf5",
+  "en": "Tavern Brawler",
+  "name_uk": "Корчемний забіяка"
+ },
+ {
+  "id": "f9c4332c20",
+  "en": "Telekinetic",
+  "name_uk": "Телекінетик"
+ },
+ {
+  "id": "c838734992",
+  "en": "Telepathic",
+  "name_uk": "Телепат"
+ },
+ {
+  "id": "698873766f",
+  "en": "Tough",
+  "name_uk": "Міцний"
+ },
+ {
+  "id": "2e5a8612ca",
+  "en": "Vampiric Exultation",
+  "name_uk": "Вампірський тріумф"
+ },
+ {
+  "id": "0a935e6c15",
+  "en": "Vigor of the Hill Giant",
+  "name_uk": "Снага пагорбового велетня"
+ },
+ {
+  "id": "efedba9299",
+  "en": "War Caster",
+  "name_uk": "Бойовий заклинатель"
+ },
+ {
+  "id": "9ca04c2b65",
+  "en": "Weapon Master",
+  "name_uk": "Майстер зброї"
+ },
+ {
+  "id": "09a8454994",
+  "en": "Wood Elf Magic",
+  "name_uk": "Магія лісового ельфа"
+ },
+ {
+  "id": "62c99cd5d9",
+  "en": "Woodwise",
+  "name_uk": "Знавець лісу"
+ }
+]

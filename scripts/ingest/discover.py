@@ -132,9 +132,7 @@ def toc_rels(html: str) -> list[str]:
 
 
 def _book_keys(seed_html: str, source: str, seed: str) -> set[tuple[str, str]]:
-    counts: collections.Counter[tuple[str, str]] = collections.Counter(
-        key_of(rel) for rel in extract_rels(seed_html)
-    )
+    counts: collections.Counter[tuple[str, str]] = collections.Counter(key_of(rel) for rel in extract_rels(seed_html))
     # Домінантні ключі — це і є книга. Поріг 3 відсікає випадкові перехресні
     # посилання з навігації на інші книги.
     allowed = {key for key, count in counts.items() if count >= 3}

@@ -1,0 +1,11 @@
+# Згенеровано Terraform. Caddy сам отримує сертифікат Let's Encrypt для домену
+# і переводить http:// на https://.
+${domain} {
+	encode gzip
+	reverse_proxy app:8000
+}
+
+# Хто зайшов на голий IP — на домен.
+http://${server_ip} {
+	redir https://${domain}{uri} permanent
+}

@@ -6,12 +6,12 @@
 
 Склад навмисно покриває різні гілки правил:
 
-* **Воїн 1** — максимум хіт-дайса d10, важка броня + щит, кидки порятунку
+* **Воїн 1** — максимум кості хітів d10, важка броня + щит, рятівні кидки
   STR/CON, людський бонус +1 до всього;
-* **Варлок 1** — Pact Magic: слоти не за таблицею заклинателя, DC від CHA,
+* **Варлок 1** — Pact Magic: комірки не за таблицею заклинателя, DC від CHA,
   опір вогню, темний зір;
 * **Воїн 2 / Візард 3** — мультиклас: сумарний рівень 5, бонус майстерності 3,
-  рівень заклинателя 3, слоти 4/2, два хіт-дайси в пулі.
+  рівень заклинателя 3, комірки 4/2, дві кістки хітів в пулі.
 """
 
 from __future__ import annotations
@@ -24,9 +24,9 @@ from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemK
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
 from dndsheet.characters.domain.spells import KnownSpell
@@ -99,10 +99,7 @@ def _fighter(rules: RulesSource) -> GoldenCase:
     return GoldenCase(
         key="fighter-1",
         title_uk="Воїн 1",
-        summary_uk=(
-            "Людина, Солдат. Важка броня й щит, максимум d10, порятунки STR/CON, "
-            "бонус майстерності +2."
-        ),
+        summary_uk=("Людина, Солдат. Важка броня й щит, максимум d10, рятівні кидки STR/CON, бонус майстерності +2."),
         character=character,
     )
 
@@ -130,9 +127,7 @@ def _warlock(rules: RulesSource) -> GoldenCase:
                 class_key="warlock",
                 entry_id="phb-2014/spell/prestidigitation",
             ),
-            KnownSpell(
-                name_en="Hex", level=1, class_key="warlock", entry_id="phb-2014/spell/hex"
-            ),
+            KnownSpell(name_en="Hex", level=1, class_key="warlock", entry_id="phb-2014/spell/hex"),
             KnownSpell(
                 name_en="Charm Person",
                 level=1,
@@ -159,10 +154,7 @@ def _warlock(rules: RulesSource) -> GoldenCase:
     return GoldenCase(
         key="warlock-1",
         title_uk="Варлок 1",
-        summary_uk=(
-            "Тифлінг, Служитель. Pact Magic: 1 слот 1 рівня, DC 13 від CHA, "
-            "опір вогню, темний зір 60."
-        ),
+        summary_uk=("Тифлінг, Служитель. Pact Magic: 1 комірка 1 рівня, DC 13 від CHA, опір вогню, темний зір 60."),
         character=character,
     )
 
@@ -182,16 +174,11 @@ def _multiclass(rules: RulesSource) -> GoldenCase:
         chosen=_picks(
             _skill(Skill.PERCEPTION, SourceKind.CLASS, "fighter"),
             _skill(Skill.SURVIVAL, SourceKind.CLASS, "fighter"),
-            _skill(Skill.ARCANA, SourceKind.CLASS, "wizard"),
-            _skill(Skill.INVESTIGATION, SourceKind.CLASS, "wizard"),
+            # Маг другим класом навичок не дає (PHB, p. 164).
         ),
         spells=(
-            KnownSpell(
-                name_en="Fire Bolt", level=0, class_key="wizard", entry_id="phb-2014/spell/fire-bolt"
-            ),
-            KnownSpell(
-                name_en="Mage Hand", level=0, class_key="wizard", entry_id="phb-2014/spell/mage-hand"
-            ),
+            KnownSpell(name_en="Fire Bolt", level=0, class_key="wizard", entry_id="phb-2014/spell/fire-bolt"),
+            KnownSpell(name_en="Mage Hand", level=0, class_key="wizard", entry_id="phb-2014/spell/mage-hand"),
             KnownSpell(
                 name_en="Prestidigitation",
                 level=0,
@@ -205,9 +192,7 @@ def _multiclass(rules: RulesSource) -> GoldenCase:
                 entry_id="phb-2014/spell/magic-missile",
                 prepared=True,
             ),
-            KnownSpell(
-                name_en="Shield", level=1, class_key="wizard", entry_id="phb-2014/spell/shield"
-            ),
+            KnownSpell(name_en="Shield", level=1, class_key="wizard", entry_id="phb-2014/spell/shield"),
             KnownSpell(
                 name_en="Misty Step",
                 level=2,
@@ -236,7 +221,7 @@ def _multiclass(rules: RulesSource) -> GoldenCase:
         title_uk="Воїн 2 / Візард 3",
         summary_uk=(
             "Мультиклас: сумарний рівень 5, бонус майстерності +3, рівень заклинателя 3 "
-            "(слоти 4×1 і 2×2), хіт-дайси d10×2 + d6×3."
+            "(комірки 4×1 і 2×2), кістки хітів d10×2 + d6×3."
         ),
         character=character,
     )

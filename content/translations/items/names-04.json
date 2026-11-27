@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "kftgv/item/constantori-s-portrait",
+   "name_uk": "Портрет Константорі"
+  },
+  {
+   "id": "basic-rules-2014/item/cook-s-utensils",
+   "name_uk": "Кухонне начиння"
+  },
+  {
+   "id": "phb-2014/item/cook-s-utensils",
+   "name_uk": "Кухонне начиння"
+  },
+  {
+   "id": "ps-ixalan/item/copper-stein-with-silver-filigree-brazen-coalition",
+   "name_uk": "Мідний кухоль із срібною філігранню (Мідна коаліція)"
+  },
+  {
+   "id": "egtw/item/corpse-slayer",
+   "name_uk": "Погибель мерців"
+  },
+  {
+   "id": "idrotf/item/crampons",
+   "name_uk": "Кішки"
+  },
+  {
+   "id": "tcoe/item/crook-of-rao",
+   "name_uk": "Посох Рао"
+  },
+  {
+   "id": "phb-2014/item/crossbow-bolts-20",
+   "name_uk": "Арбалетні болти (20)"
+  },
+  {
+   "id": "basic-rules-2014/item/crossbow-hand",
+   "name_uk": "Арбалет, ручний"
+  },
+  {
+   "id": "basic-rules-2014/item/crossbow-heavy",
+   "name_uk": "Арбалет, важкий"
+  },
+  {
+   "id": "basic-rules-2014/item/crossbow-light",
+   "name_uk": "Арбалет, легкий"
+  },
+  {
+   "id": "basic-rules-2014/item/crowbar",
+   "name_uk": "Лом"
+  },
+  {
+   "id": "veor/item/crown-of-lies",
+   "name_uk": "Корона брехні"
+  },
+  {
+   "id": "imr/item/crown-of-the-forest",
+   "name_uk": "Корона лісу"
+  },
+  {
+   "id": "gotg/item/crown-of-the-wrath-bringer",
+   "name_uk": "Корона Носія гніву"
+  },
+  {
+   "id": "cos/item/crusader-s-shortsword",
+   "name_uk": "Короткий меч хрестоносця"
+  },
+  {
+   "id": "phb-2014/item/crystal",
+   "name_uk": "Кристал"
+  },
+  {
+   "id": "ftod/item/crystal-blade",
+   "name_uk": "Кристалевий клинок"
+  },
+  {
+   "id": "tcoe/item/crystalline-chronicle",
+   "name_uk": "Кристалевий літопис"
+  },
+  {
+   "id": "gos/item/cursed-luckstone",
+   "name_uk": "Проклятий камінь удачі"
+  },
+  {
+   "id": "dmg-2014/item/daern-s-instant-fortress",
+   "name_uk": "Миттєва фортеця Даерна"
+  },
+  {
+   "id": "basic-rules-2014/item/dagger",
+   "name_uk": "Кинджал"
+  },
+  {
+   "id": "toa/item/dancing-monkey-fruit",
+   "name_uk": "Плід танцюючої мавпи"
+  },
+  {
+   "id": "egtw/item/danoth-s-visor",
+   "name_uk": "Забрало Данота"
+  },
+  {
+   "id": "qftis/item/daoud-s-wondrous-lanthorn",
+   "name_uk": "Дивовижний ліхтар Дауда"
+  },
+  {
+   "id": "xgte/item/dark-shard-amulet",
+   "name_uk": "Амулет темного осколка"
+  },
+  {
+   "id": "basic-rules-2014/item/dart",
+   "name_uk": "Дротик"
+  },
+  {
+   "id": "oota/item/dawnbringer",
+   "name_uk": "Носій світанку"
+  },
+  {
+   "id": "tbomt/item/deck-of-dimensions",
+   "name_uk": "Колода вимірів"
+  },
+  {
+   "id": "tbomt/item/deck-of-many-more-things",
+   "name_uk": "Колода багатьох інших речей"
+  },
+  {
+   "id": "tbomt/item/deck-of-miscellany",
+   "name_uk": "Колода всіляких речей"
+  },
+  {
+   "id": "llok/item/deck-of-several-things",
+   "name_uk": "Колода кількох речей"
+  },
+  {
+   "id": "tbomt/item/deck-of-wild-cards",
+   "name_uk": "Колода диких карт"
+  },
+  {
+   "id": "tbomt/item/deck-of-wonder",
+   "name_uk": "Колода чудес"
+  },
+  {
+   "id": "moot/item/dekella-bident-of-thassa",
+   "name_uk": "ДеКелла, двозубець Тасси"
+  },
+  {
+   "id": "gotg/item/delvers-claws",
+   "name_uk": "Пазурі шукача"
+  },
+  {
+   "id": "tcoe/item/demonomicon-of-iggwilv",
+   "name_uk": "Демономікон Іґґвільв"
+  },
+  {
+   "id": "toa/item/devlin-s-staff-of-striking",
+   "name_uk": "Посох удару Девліна"
+  },
+  {
+   "id": "tcoe/item/devotee-s-censer",
+   "name_uk": "Кадило відданого"
+  },
+  {
+   "id": "phb-2014/item/dice-set",
+   "name_uk": "Набір кісток"
+  },
+  {
+   "id": "ai/item/dimensional-loop",
+   "name_uk": "Вимірна петля"
+  },
+  {
+   "id": "basic-rules-2014/item/disguise-kit",
+   "name_uk": "Набір для маскування"
+  },
+  {
+   "id": "egtw/item/dispelling-stone",
+   "name_uk": "Камінь розвіювання"
+  },
+  {
+   "id": "erftlw/item/docent",
+   "name_uk": "Докент"
+  },
+  {
+   "id": "idrotf/item/dogsled",
+   "name_uk": "Собача упряжка"
+  },
+  {
+   "id": "basic-rules-2014/item/donkey-or-mule",
+   "name_uk": "Віслюк або мул"
+  },
+  {
+   "id": "wgte/item/double-bladed-scimitar",
+   "name_uk": "Двоклинкова шабля"
+  },
+  {
+   "id": "xmts/item/dowsing-dagger",
+   "name_uk": "Кинджал лозоходця"
+  },
+  {
+   "id": "rot/item/draakhorn",
+   "name_uk": "Дракоріг"
+  },
+  {
+   "id": "toa/item/draconic-longsword",
+   "name_uk": "Драконій довгий меч"
+  },
+  {
+   "id": "basic-rules-2014/item/draft-horse",
+   "name_uk": "Тяговий кінь"
+  },
+  {
+   "id": "ftod/item/dragon-wing-bow",
+   "name_uk": "Лук драконячого крила"
+  },
+  {
+   "id": "phb-2014/item/dragonchess-set",
+   "name_uk": "Набір для драконових шахів"
+  },
+  {
+   "id": "hotdq/item/dragongleam",
+   "name_uk": "Драконячий блиск"
+  },
+  {
+   "id": "pabtso/item/dragonguard",
+   "name_uk": "Драконяча варта"
+  },
+  {
+   "id": "ftod/item/dragonhide-belt",
+   "name_uk": "Пояс з драконячої шкіри"
+  },
+  {
+   "id": "ftod/item/dragonlance",
+   "name_uk": "Драконячий спис"
+  },
+  {
+   "id": "wdh/item/dragonstaff-of-ahghairon",
+   "name_uk": "Драконячий посох Аґгайрона"
+  },
+  {
+   "id": "rot/item/dragontooth-dagger",
+   "name_uk": "Кинджал драконячого зуба"
+  },
+  {
+   "id": "twbtw/item/dread-helm",
+   "name_uk": "Шолом жаху"
+  }
+ ]
+}

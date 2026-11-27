@@ -1,13 +1,12 @@
 """Короткі дані заклять для вкладки «Дії» — на справжньому корпусі.
 
 Перевіряється саме те, що бачить гравець: час і дистанція переносяться з
-`data`, урон і порятунок вичитуються з тексту. Без корпусу тести стрибають.
+`data`, урон і рятівний кидок вичитуються з тексту. Без корпусу тести стрибають.
 """
 
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.api.spell_meta import enrich_spells
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.infrastructure.factory import build_service
@@ -15,9 +14,7 @@ from dndsheet.compendium.infrastructure.jsonl_corpus import default_content_dir
 
 CONTENT = default_content_dir()
 
-pytestmark = pytest.mark.skipif(
-    not (CONTENT / "compendium").is_dir(), reason="корпусу content/compendium немає"
-)
+pytestmark = pytest.mark.skipif(not (CONTENT / "compendium").is_dir(), reason="корпусу content/compendium немає")
 
 
 @pytest.fixture(scope="module")
@@ -47,7 +44,7 @@ def test_save_spell_without_damage_keeps_save(service: CompendiumService) -> Non
 
 
 def test_utility_spell_does_not_invent_save(service: CompendiumService) -> None:
-    """`Light` згадує порятунок лише як «to avoid the spell» — це не ефект."""
+    """`Light` згадує рятівний кидок лише як «to avoid the spell» — це не ефект."""
     meta = _meta(service, "Light")
     assert meta["save"] is None
     assert meta["damage"] is None

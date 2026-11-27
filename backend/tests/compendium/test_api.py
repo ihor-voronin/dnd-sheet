@@ -5,9 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture()
@@ -76,9 +75,7 @@ def test_class_spells_report_source(client: TestClient) -> None:
 
 
 def test_class_spells_respect_max_level(client: TestClient) -> None:
-    body = client.get(
-        "/api/v1/compendium/classes/wizard/spells", params={"max_level": 1}
-    ).json()
+    body = client.get("/api/v1/compendium/classes/wizard/spells", params={"max_level": 1}).json()
     assert body["total"] == 3
 
 

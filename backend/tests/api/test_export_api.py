@@ -11,9 +11,8 @@ import shutil
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
+from fastapi.testclient import TestClient
 
 DATA_DIR = Path(__file__).resolve().parent / "_tmp_export_api"
 
@@ -120,9 +119,7 @@ def test_markdown_export_contains_the_state(client: TestClient) -> None:
 
 def test_markdown_export_can_hide_originals(client: TestClient) -> None:
     character_id = _export_character(client)
-    response = client.get(
-        f"/api/v1/characters/{character_id}/export/markdown?originals=false"
-    )
+    response = client.get(f"/api/v1/characters/{character_id}/export/markdown?originals=false")
     text = response.content.decode("utf-8")
     assert "Strength" not in text
     assert "Сила" in text
@@ -149,9 +146,7 @@ def test_unknown_format_is_404(client: TestClient) -> None:
 
 
 def test_unknown_character_is_404(client: TestClient) -> None:
-    response = client.get(
-        "/api/v1/characters/00000000-0000-0000-0000-000000000000/export/markdown"
-    )
+    response = client.get("/api/v1/characters/00000000-0000-0000-0000-000000000000/export/markdown")
     assert response.status_code == 404
 
 
@@ -163,3 +158,34 @@ def test_demo_export_has_attacks_from_the_compendium(client: TestClient) -> None
     assert "Елара Світлотінь" in text
     assert "Атаки" in text
     assert "shortsword" in text
+
+
+def test_print_sheet_is_for_the_table(client: TestClient) -> None:
+    """Аркуш для гри: усе потрібне за столом і жодних суцільних текстів правил."""
+    character_id = _export_character(client)
+    response = client.get(f"/api/v1/characters/{character_id}/print")
+    assert response.status_code == 200
+    html = response.text
+    for label in ("рятівні кидки", "навички", "клас захисту", "атаки й заговори", "спорядження"):
+        assert label in html
+    assert "Атлетика" in html and "Спостережливість" in html
+    # Додаткові аркуші з повними текстами — у тому самому файлі, наприкінці.
+    assert "Додатковий аркуш · уміння й особливості" in html
+    # Шрифти вбудовані: аркуш однаково виглядає з диска, з сервера й у PDF.
+    assert "data:font/woff2;base64," in html
+
+
+def test_print_without_explanations_on_request(client: TestClient) -> None:
+    character_id = _export_character(client)
+    html = client.get(f"/api/v1/characters/{character_id}/print", params={"detailed": "false"}).text
+    assert "Додатковий аркуш" not in html
+
+
+def test_detailed_pdf_is_either_bytes_or_honest_503(client: TestClient) -> None:
+    character_id = _export_character(client)
+    response = client.get(f"/api/v1/characters/{character_id}/export/pdf", params={"detailed": "true"})
+    if response.status_code == 503:
+        assert "WeasyPrint" in response.json()["detail"]
+    else:
+        assert response.content.startswith(b"%PDF")
+        assert "filename*=UTF-8''" in response.headers["content-disposition"]

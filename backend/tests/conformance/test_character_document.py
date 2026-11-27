@@ -16,7 +16,6 @@ import html as html_module
 import io
 
 import pytest
-
 from dndsheet.characters.application.golden import build_golden_cases
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.domain.state import DeathSaves, SheetState
@@ -25,12 +24,11 @@ from dndsheet.export.infrastructure.markdown_renderer import MarkdownRenderer
 from dndsheet.export.infrastructure.pdf_renderer import PdfRenderer
 from dndsheet.sheets.application.build_document import build_sheet_document
 from dndsheet.sheets.domain.document import SheetDocument
-
 from rules_fixture import FixtureRules
 
 
 def _character_document(**state) -> SheetDocument:  # noqa: ANN003
-    """Варлок 1 зі змінами за столом: 4 хіти, витрачений слот, нотатка."""
+    """Варлок 1 зі змінами за столом: 4 хіти, витрачений комірка, нотатка."""
     rules = FixtureRules()
     case = {case.key: case for case in build_golden_cases(rules)}["warlock-1"]
     character = case.character
@@ -108,9 +106,7 @@ def test_markdown_marks_overrides_only(document: SheetDocument) -> None:
 
 
 def test_markdown_can_hide_originals(document: SheetDocument) -> None:
-    text = MarkdownRenderer().render(
-        document, RenderOptions(show_originals=False)
-    ).content.decode("utf-8")
+    text = MarkdownRenderer().render(document, RenderOptions(show_originals=False)).content.decode("utf-8")
     assert "Strength" not in text
     assert "Сила" in text
 

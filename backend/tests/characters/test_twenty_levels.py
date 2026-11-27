@@ -1,6 +1,6 @@
 """Матриця «клас × 20 рівнів» і всі пари заклинательських класів.
 
-Найдорожчі помилки ховаються в таблицях: невірний рядок слотів видно лише на
+Найдорожчі помилки ховаються в таблицях: невірний рядок комірок видно лише на
 конкретному рівні — і саме там, де ним грають. Тому тут кожен із 13 класів
 індексу проганяється через `SpellSlotService` на всіх 20 рівнях і порівнюється
 зі своєю таблицею з PHB, а кожна пара заклинательських класів — з таблицею
@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.services.spell_slots import SpellSlotService
 from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepository
@@ -54,9 +53,7 @@ def classes() -> dict:
 
 
 def _casting(definition, level: int):
-    return SpellSlotService().compute(
-        [(CharacterClass(definition.key, level), definition)], {}, proficiency_bonus=2
-    )
+    return SpellSlotService().compute([(CharacterClass(definition.key, level), definition)], {}, proficiency_bonus=2)
 
 
 def _nonzero(table: tuple[int, ...]) -> dict[int, int]:
@@ -85,9 +82,9 @@ def test_index_has_thirteen_classes(classes) -> None:
 def test_single_class_slots_match_own_table(classes, key: str) -> None:
     """Половина заклинателів не йде через мультикласову таблицю.
 
-    Таблиця мультикласу для paladin-а 5 дає 3 слоти 1 рівня, а його власна — 4
+    Таблиця мультикласу для paladin-а 5 дає 3 комірки 1 рівня, а його власна — 4
     і 2 другого. Тому клас із однією заклинательською лінією читає свою
-    таблицю; інакше персонаж втрачав би слоти на непарних рівнях.
+    таблицю; інакше персонаж втрачав би комірки на непарних рівнях.
     """
     definition = classes[key]
     if not definition.casts_spells:
@@ -96,7 +93,7 @@ def test_single_class_slots_match_own_table(classes, key: str) -> None:
     for level in LEVELS:
         casting = _casting(definition, level)
         if definition.is_pact_magic:
-            assert dict(casting.slots.by_level) == {}, f"{key} {level}: слоти не з Pact Magic"
+            assert dict(casting.slots.by_level) == {}, f"{key} {level}: комірки не з Pact Magic"
             expected_pact = definition.pact_at(level)
             actual = casting.slots.pact
             if expected_pact[0] == 0:
@@ -106,7 +103,7 @@ def test_single_class_slots_match_own_table(classes, key: str) -> None:
                 assert (actual.slots, actual.slot_level) == expected_pact, f"{key} {level}"
         else:
             assert dict(casting.slots.by_level) == _nonzero(definition.slots_at(level)), (
-                f"{key} {level}: слоти розійшлися з таблицею класу"
+                f"{key} {level}: комірки розійшлися з таблицею класу"
             )
 
 
@@ -155,10 +152,25 @@ def test_every_pair_of_casters_uses_multiclass_table(classes) -> None:
         definition_a, definition_b = classes[first], classes[second]
         for level_a in LEVELS:
             for level_b in range(1, MAX_LEVEL - level_a + 1):
-                combined = _contribution(
-                    definition_a.caster_progression, level_a
-                ) + _contribution(definition_b.caster_progression, level_b)
-                expected = spell_slots(combined)
+                combined = _contribution(definition_a.caster_progression, level_a) + _contribution(
+                    definition_b.caster_progression, level_b
+                )
+                # Таблиця мультикласу — лише коли «Spellcasting» мають обидва
+                # класи (PHB, p. 164). Pact Magic чаклуна — окрема риса, а
+                # паладин і слідопит на 1 рівні ще не заклинателі: тоді комірки
+                # дає власна таблиця другого класу.
+                standard = [
+                    (definition, level)
+                    for definition, level in ((definition_a, level_a), (definition_b, level_b))
+                    if not definition.is_pact_magic
+                    and (definition.max_spell_level(level) > 0 or definition.cantrips_at(level) > 0)
+                ]
+                if len(standard) > 1:
+                    expected = spell_slots(combined)
+                elif standard:
+                    expected = standard[0][0].slots_at(standard[0][1])
+                else:
+                    expected = ()
                 casting = SpellSlotService().compute(
                     [
                         (CharacterClass(first, level_a), definition_a),
@@ -197,7 +209,7 @@ def test_half_caster_keeps_its_table_when_dipping_a_non_caster(classes) -> None:
     """Paladin 5 / Воїн 5 — це все ще один заклинательський клас.
 
     За суворою буквою PHB мультикласову таблицю застосовують, щойно класів
-    більше одного, і тоді paladin 5 отримав би 3 слоти замість 4 + 2. Це
+    більше одного, і тоді paladin 5 отримав би 3 комірки замість 4 + 2. Це
     відоме місце, яке за столом майже завжди грають інакше, тому свідомо:
     один заклинательський клас — його таблиця, незалежно від не-заклинателів.
     """
@@ -215,7 +227,7 @@ def test_half_caster_keeps_its_table_when_dipping_a_non_caster(classes) -> None:
 
 
 def test_true_multiclass_uses_combined_table(classes) -> None:
-    """Paladin 3 / Візард 2: 1 + 2 = рівень заклинателя 3 — слоти 4 і 2."""
+    """Paladin 3 / Візард 2: 1 + 2 = рівень заклинателя 3 — комірки 4 і 2."""
     casting = SpellSlotService().compute(
         [
             (CharacterClass("paladin", 3), classes["paladin"]),

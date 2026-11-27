@@ -8,6 +8,7 @@
 Запуск:
   python scripts/ingest/survey_5etools_book.py content/raw/toa/adventure-toa.json
 """
+
 import json
 import re
 import sys
@@ -16,7 +17,8 @@ from pathlib import Path
 
 TAG = re.compile(
     r"\{@(creature|item|spell|feat|background|subclass|class|race|condition|"
-    r"object|vehicle|vehupgrade|reward|deity|boon|table|variantrule)\s+([^}|]+)")
+    r"object|vehicle|vehupgrade|reward|deity|boon|table|variantrule)\s+([^}|]+)"
+)
 
 # скільки inline-тегів показувати в рядку (решта — лише кількість)
 SHOW_LIMIT = 16
@@ -27,8 +29,8 @@ def main() -> None:
         raise SystemExit(__doc__)
     path = Path(sys.argv[1])
     data = json.loads(path.read_text(encoding="utf-8"))
-    refs = defaultdict(set)      # вузли statblock: точний перелік самостійних записів
-    inline = defaultdict(set)    # теги в тексті: посилання на чужі записи
+    refs = defaultdict(set)  # вузли statblock: точний перелік самостійних записів
+    inline = defaultdict(set)  # теги в тексті: посилання на чужі записи
     ref_count = 0
 
     def walk(node):
@@ -49,8 +51,7 @@ def main() -> None:
                 walk(value)
 
     walk(data)
-    print(f"файл: {path.name} ({path.stat().st_size // 1024} KB) | "
-          f"statblock-посилань: {ref_count}")
+    print(f"файл: {path.name} ({path.stat().st_size // 1024} KB) | statblock-посилань: {ref_count}")
     for tag in sorted(refs):
         names = sorted(refs[tag])
         print(f"  ref {tag:11s} {len(names):3d}: " + ", ".join(names))

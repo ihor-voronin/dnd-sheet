@@ -1,27 +1,108 @@
 # Застосунок цілком у Docker: API + зібрана SPA на одному порту.
 #
 #   docker compose up -d --build     → http://127.0.0.1:8000
+#   docker compose up --build --watch → те саме + автоперезбірка після змін у коді
 #   docker compose logs -f app
 #   docker compose down
 #
-# Дані (персонажі, чернетки візарда) живуть у ./var на хості — каталог
-# прокинутий у контейнер, тому персонажі не гинуть разом з образом.
+#   docker compose --profile test run --rm --build test   → pytest + DDD-гейти в образі
+#   docker compose --profile dev up                      → http://127.0.0.1:5173,
+#       Vite і `uvicorn --reload` з кодом із диска: зміни видно за секунди, без перезбирання
+#
+# Дані (персонажі, чернетки візарда, користувачі) живуть у ./var/dndsheet.sqlite3
+# на хості — каталог прокинутий у контейнер, тому персонажі не гинуть разом з образом.
+#
+# Вхід: через Telegram (DNDSHEET_TELEGRAM_BOT і DNDSHEET_TELEGRAM_BOT_TOKEN — у файлі
+# .env поруч, його немає в git). Поки бота не налаштовано, працює «вхід для розробки»
+# за іменем — тому порт відкритий лише на цьому компʼютері (127.0.0.1). Перш ніж
+# відкривати застосунок у мережу, приберіть DNDSHEET_DEV_LOGIN. Докладно — RUN.md.
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runtime
     image: dndsheet:local
     container_name: dndsheet-app
     environment:
       DNDSHEET_DATA_DIR: /app/var
       DNDSHEET_CONTENT_DIR: /app/content
       DNDSHEET_SPA_DIST: /app/frontend/dist
+      DNDSHEET_DEV_LOGIN: ${DNDSHEET_DEV_LOGIN:-1}
+      DNDSHEET_TELEGRAM_BOT: ${DNDSHEET_TELEGRAM_BOT:-}
+      DNDSHEET_TELEGRAM_BOT_TOKEN: ${DNDSHEET_TELEGRAM_BOT_TOKEN:-}
+      DNDSHEET_OWNER_TELEGRAM_ID: ${DNDSHEET_OWNER_TELEGRAM_ID:-}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./var:/app/var
     restart: unless-stopped
+    # Автоперезбірка: `docker compose up --build --watch` (або watch-docker.cmd)
+    # стежить за кодом і сама перезбирає й перезапускає контейнер після змін.
+    # Потрібен Docker Compose 2.22+ (є в Docker Desktop 4.24+).
+    develop:
+      watch:
+        - action: rebuild
+          path: ./frontend
+          ignore:
+            - node_modules/
+            - dist/
+        - action: rebuild
+          path: ./backend/src
+        - action: rebuild
+          path: ./backend/pyproject.toml
+        - action: rebuild
+          path: ./content/translations
+
+  # Тести в образі з корпусом: `docker compose --profile test run --rm --build test`.
+  test:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    image: dndsheet:test
+
+  # Швидкий режим розробки: API з `--reload` і Vite з гарячим оновленням.
+  # Код монтується з диска, тож образ перезбирати не треба.
+  api-dev:
+    profiles: ["dev"]
+    image: dndsheet:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: dndsheet-api-dev
+    environment:
+      DNDSHEET_DATA_DIR: /app/var
+      DNDSHEET_CONTENT_DIR: /app/content
+      DNDSHEET_DEV_LOGIN: "1"
+      PYTHONPATH: /app/backend/src
+    command: ["python", "-m", "uvicorn", "dndsheet.main:app", "--host", "0.0.0.0", "--port", "8000",
+              "--reload", "--reload-dir", "/app/backend/src"]
+    ports:
+      - "127.0.0.1:8001:8000"
+    volumes:
+      - ./var:/app/var
+      - ./backend/src:/app/backend/src
+      - ./content/translations:/app/content/translations
+
+  web-dev:
+    profiles: ["dev"]
+    image: node:22-alpine
+    container_name: dndsheet-web-dev
+    working_dir: /web
+    environment:
+      # Проксі Vite на API в сусідньому контейнері (див. frontend/vite.config.ts).
+      VITE_API_TARGET: http://api-dev:8000
+    command: ["sh", "-c", "npm ci && npx vite --host 0.0.0.0 --port 5173"]
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ./frontend:/web
+      - dndsheet-web-modules:/web/node_modules
+    depends_on:
+      - api-dev
 
   # PostgreSQL поки не використовується застосунком (стан — файли в var/).
   # Підняти за потреби: docker compose --profile db up -d
@@ -45,3 +126,5 @@ services:
 
 volumes:
   dndsheet-pgdata:
+  # node_modules для Linux окремо від Windows-копії на диску.
+  dndsheet-web-modules:

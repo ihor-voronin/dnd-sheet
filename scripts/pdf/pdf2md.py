@@ -11,17 +11,15 @@ has to come from OCR. Run:
 
     python scripts/pdf/pdf2md.py "<book.pdf>" content/raw/<source>-pdf
 """
+
 from __future__ import annotations
 
 import json
-import re
-import statistics
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import pymupdf
-
 import xycut
 
 
@@ -59,7 +57,7 @@ def load_boxes(path: Path) -> list[Box]:
 def assemble(boxes: list[Box], width: float, height: float) -> str:
     """Reading order via recursive XY-cut, then paragraph joining."""
     if not boxes:
-        return ''
+        return ""
     lines = [xycut.Line(b.x0, b.y0, b.x1, b.y1, b.text, b.score) for b in boxes]
     del height
     return "\n\n".join(xycut.blocks_to_markdown(lines, width))

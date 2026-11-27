@@ -6,6 +6,7 @@ Instead of trusting heading detection, this walks a canonical list of names and
 cuts the text between consecutive ones, matching spaces loosely so OCR spacing
 glitches do not hide a name.
 """
+
 from __future__ import annotations
 
 import json
@@ -50,7 +51,7 @@ def load_text(base: Path, pages: list[int]) -> str:
 
 def slice_entries(text: str, names: list[str]) -> list[dict]:
     """Cut `text` into entries, one per name, in the given order."""
-    flat = squash(text)
+    squash(text)
     # Cheap index: squash(text) positions do not map linearly to raw offsets, so
     # find each name on the raw text with a whitespace-tolerant regex instead.
     positions: list[tuple[int, str]] = []
@@ -63,10 +64,11 @@ def slice_entries(text: str, names: list[str]) -> list[dict]:
         if not hits:
             positions.append((-1, name))
             continue
+
         # An entry heading is followed by its stat line ("Wondrous Item, Rare"),
         # so prefer the first hit that looks like a heading rather than prose.
         def looks_like_heading(start: int) -> bool:
-            tail = text[start:start + 140]
+            tail = text[start : start + 140]
             return bool(STAT_LINE.search(tail))
 
         chosen = next((hit for hit in hits if looks_like_heading(hit)), hits[0])
@@ -79,7 +81,7 @@ def slice_entries(text: str, names: list[str]) -> list[dict]:
         end = found[idx + 1][0] if idx + 1 < len(found) else len(text)
         body = text[start:end]
         # Drop the heading itself from the body.
-        body = body[len(name):] if body.lower().startswith(name.lower()) else body
+        body = body[len(name) :] if body.lower().startswith(name.lower()) else body
         entries.append({"name": name, "text": polish.polish(despace.fix(clean_body(body)))})
     missing = [name for pos, name in positions if pos < 0]
     return entries, missing
@@ -106,7 +108,9 @@ def main() -> None:
     names = [line.strip() for line in names_file.read_text(encoding="utf-8").splitlines() if line.strip()]
     text = load_text(base, pages)
     entries, missing = slice_entries(text, names)
-    out.write_text(json.dumps({"entries": entries, "missing": missing}, ensure_ascii=False, indent=1), encoding="utf-8")
+    out.write_text(
+        json.dumps({"entries": entries, "missing": missing}, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     print(f"{len(entries)} found, {len(missing)} missing -> {out}")
     if missing:
         print("missing:", ", ".join(missing))

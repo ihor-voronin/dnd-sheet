@@ -4,6 +4,7 @@ Works straight from the OCR cache, so it can run while OCR is still going.
 Outputs JSON per page so later stages can map book page -> PDF page and find
 where each chapter starts.
 """
+
 from __future__ import annotations
 
 import json
@@ -14,7 +15,7 @@ from pathlib import Path
 import pymupdf
 
 sys.path.insert(0, str(Path(__file__).parent))
-from pdf2md import Box, assemble, load_boxes  # noqa: E402
+from pdf2md import assemble, load_boxes  # noqa: E402
 
 FOOTER_RE = re.compile(r"^\s*(CHAPTER|APPENDIX)\s*(?P<num>[0-9A-Z]+)\s*\|?\s*(?P<title>.*)$", re.I)
 PNUM_RE = re.compile(r"^\s*(?P<num>\d{1,3})\s*$")
@@ -68,7 +69,7 @@ def page_record(pno: int, img_dir: Path, ocr_dir: Path) -> dict:
 def main() -> None:
     base = Path(sys.argv[1])
     out = Path(sys.argv[2])
-    img_dir, ocr_dir, md_dir = base / "images", base / "ocr", base / "pages"
+    img_dir, ocr_dir, _md_dir = base / "images", base / "ocr", base / "pages"
     total = len(list(img_dir.glob("*.jpg")))
     rows = [page_record(p, img_dir, ocr_dir) for p in range(1, total + 1)]
     out.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")

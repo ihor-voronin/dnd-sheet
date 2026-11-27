@@ -23,6 +23,11 @@ export const ABILITY_SHORT: Record<string, string> = {
   cha: "ХАР",
 };
 
+/** «INT 13 і WIS 13» із сервера → «ІНТ 13 і МУД 13» (у даних коди лишаються англійські). */
+export function abilityCodesUk(text: string): string {
+  return text.replace(/\b(STR|DEX|CON|INT|WIS|CHA)\b/g, (code) => ABILITY_SHORT[code.toLowerCase()] ?? code);
+}
+
 export const SKILL_LABELS: Record<string, string> = {
   athletics: "Атлетика",
   acrobatics: "Акробатика",
@@ -74,14 +79,7 @@ export const STEP_LABELS: Record<string, string> = {
   spells: "Закляття",
 };
 
-export const STEP_ORDER = [
-  "species",
-  "class",
-  "abilities",
-  "background",
-  "equipment",
-  "spells",
-] as const;
+export const STEP_ORDER = ["species", "class", "abilities", "background", "equipment", "spells"] as const;
 
 export const SIZE_LABELS: Record<string, string> = {
   tiny: "крихітний",
@@ -106,7 +104,7 @@ export const ALIGNMENT_LABELS: Record<string, string> = {
 
 export const PROFICIENCY_LABELS: Record<string, string> = {
   skill: "навички",
-  saving_throw: "кидки порятунку",
+  saving_throw: "рятівні кидки",
   armor: "броня",
   weapon: "зброя",
   tool: "інструменти",
@@ -125,13 +123,27 @@ export const ITEM_KIND_LABELS: Record<string, string> = {
 
 export const METHOD_LABELS: Record<string, string> = {
   standard_array: "Стандартний набір",
-  point_buy: "Point buy",
+  point_buy: "Розподіл очок",
   rolls: "Кидки 4d6",
   manual: "Вручну",
 };
 
+export const ABILITY_GENITIVE: Record<string, string> = {
+  str: "Сили",
+  dex: "Спритності",
+  con: "Статури",
+  int: "Інтелекту",
+  wis: "Мудрості",
+  cha: "Харизми",
+};
+
 export function abilityLabel(code: string): string {
   return ABILITY_LABELS[code] ?? code;
+}
+
+/** Родовий відмінок для «від Мудрості»: підпис уже з великої літери. */
+export function abilityGenitive(code: string): string {
+  return ABILITY_GENITIVE[code] ?? abilityLabel(code);
 }
 
 export const LANGUAGE_LABELS: Record<string, string> = {
@@ -143,7 +155,7 @@ export const LANGUAGE_LABELS: Record<string, string> = {
   draconic: "драконяча",
   gnomish: "гномівська",
   goblin: "гоблінська",
-  halfling: "півросликів",
+  halfling: "напівросликів",
   orc: "ороча",
   abyssal: "безодні",
   sylvan: "лісова",
@@ -190,6 +202,20 @@ export const TOOL_LABELS: Record<string, string> = {
   "poisoner's kit": "набір отруйника",
   "gaming set": "ігровий набір",
   "musical instrument": "музичний інструмент",
+  "dice set": "набір кісток",
+  "dragonchess set": "набір драконячих шахів",
+  "playing card set": "набір гральних карт",
+  "three-dragon ante set": "набір «Три дракони»",
+  bagpipes: "волинка",
+  drum: "барабан",
+  dulcimer: "цимбали",
+  flute: "флейта",
+  lute: "лютня",
+  lyre: "ліра",
+  horn: "ріг",
+  "pan flute": "сопілка Пана",
+  shawm: "шалмей",
+  viol: "віола",
 };
 
 export const DAMAGE_TYPE_LABELS: Record<string, string> = {
@@ -281,7 +307,7 @@ export function subclassLabel(key: string): string {
     .join(" ");
 }
 
-/** Людська назва значення володіння: навичка, порятунок, мова або тип броні. */
+/** Людська назва значення володіння: навичка, рятівний кидок, мова або тип броні. */
 export function proficiencyValue(kind: string, value: string): string {
   if (kind === "skill") return skillLabel(value);
   if (kind === "saving_throw") return abilityLabel(value);
@@ -300,4 +326,200 @@ export function modifierLabel(value: number): string {
 
 export function abilityModifier(total: number): number {
   return Math.floor((total - 10) / 2);
+}
+
+/** Опис класу для новачка: роль, складність і основні характеристики.
+ *
+ * Основні характеристики — з розділу «Quick Build» кожного класу (PHB,
+ * гл. 3): перша — головна, друга — бажана. `standard` — рекомендований
+ * розклад стандартного набору 15/14/13/12/10/8 для кнопки «Розкласти за
+ * класом» (порядок: str, dex, con, int, wis, cha).
+ */
+export interface ClassGuide {
+  saves: string[];
+  role: string;
+  complexity: "простий" | "середній" | "складний";
+  primary: string[];
+  standard: Record<string, number>;
+}
+
+export const CLASS_GUIDE: Record<string, ClassGuide> = {
+  barbarian: {
+    saves: ["str", "con"],
+    role: "ближній бій, витривалість",
+    complexity: "простий",
+    primary: ["str", "con"],
+    standard: { str: 15, dex: 13, con: 14, int: 8, wis: 12, cha: 10 },
+  },
+  bard: {
+    saves: ["dex", "cha"],
+    role: "підтримка, магія, спілкування",
+    complexity: "середній",
+    primary: ["cha", "dex"],
+    standard: { str: 8, dex: 14, con: 13, int: 10, wis: 12, cha: 15 },
+  },
+  cleric: {
+    saves: ["wis", "cha"],
+    role: "лікування, підтримка, божественна магія",
+    complexity: "середній",
+    primary: ["wis", "con"],
+    standard: { str: 13, dex: 10, con: 14, int: 8, wis: 15, cha: 12 },
+  },
+  druid: {
+    saves: ["int", "wis"],
+    role: "магія природи, перевтілення",
+    complexity: "складний",
+    primary: ["wis", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 12, wis: 15, cha: 10 },
+  },
+  fighter: {
+    saves: ["str", "con"],
+    role: "ближній або дальній бій, броня",
+    complexity: "простий",
+    primary: ["str", "con"],
+    standard: { str: 15, dex: 13, con: 14, int: 8, wis: 12, cha: 10 },
+  },
+  monk: {
+    saves: ["str", "dex"],
+    role: "рукопашний бій, рухливість",
+    complexity: "середній",
+    primary: ["dex", "wis"],
+    standard: { str: 10, dex: 15, con: 13, int: 8, wis: 14, cha: 12 },
+  },
+  paladin: {
+    saves: ["wis", "cha"],
+    role: "ближній бій, захист, лікування",
+    complexity: "середній",
+    primary: ["str", "cha"],
+    standard: { str: 15, dex: 8, con: 13, int: 10, wis: 12, cha: 14 },
+  },
+  ranger: {
+    saves: ["str", "dex"],
+    role: "дальній бій, розвідка, природа",
+    complexity: "середній",
+    primary: ["dex", "wis"],
+    standard: { str: 10, dex: 15, con: 13, int: 8, wis: 14, cha: 12 },
+  },
+  rogue: {
+    saves: ["dex", "int"],
+    role: "скритність, навички, точні удари",
+    complexity: "простий",
+    primary: ["dex", "int"],
+    standard: { str: 8, dex: 15, con: 13, int: 14, wis: 12, cha: 10 },
+  },
+  sorcerer: {
+    saves: ["con", "cha"],
+    role: "бойова магія, вроджена сила",
+    complexity: "середній",
+    primary: ["cha", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 10, wis: 12, cha: 15 },
+  },
+  warlock: {
+    saves: ["wis", "cha"],
+    role: "магія пакту, заговори",
+    complexity: "середній",
+    primary: ["cha", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 12, wis: 10, cha: 15 },
+  },
+  wizard: {
+    saves: ["int", "wis"],
+    role: "найширша магія, контроль",
+    complexity: "складний",
+    primary: ["int", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 15, wis: 12, cha: 10 },
+  },
+  artificer: {
+    saves: ["con", "int"],
+    role: "винахідник, магічні предмети",
+    complexity: "складний",
+    primary: ["int", "con"],
+    standard: { str: 8, dex: 13, con: 14, int: 15, wis: 12, cha: 10 },
+  },
+};
+
+export function classGuide(key: string | null | undefined): ClassGuide | undefined {
+  if (!key) return undefined;
+  const slug = key.toLowerCase().split("/").pop() ?? key;
+  return CLASS_GUIDE[slug];
+}
+
+/** Світогляд: одне речення, щоб вибір мав сенс. */
+export const ALIGNMENT_HINTS: Record<string, string> = {
+  "lawful good": "чинить правильно і шанує порядок, обіцянки, закон",
+  "neutral good": "робить добро, не привʼязуючись ні до правил, ні до бунту",
+  "chaotic good": "робить добро за власним сумлінням, правила — не головне",
+  "lawful neutral": "живе за кодексом, традицією чи наказом",
+  neutral: "уникає крайнощів, діє за обставинами",
+  "chaotic neutral": "цінує свободу понад усе, непередбачуваний",
+  "lawful evil": "бере своє методично, в межах власного кодексу",
+  "neutral evil": "думає лише про себе, без принципів",
+  "chaotic evil": "руйнує і ламає заради власних примх",
+};
+
+/** Коди книг, які найчастіше бачить гравець, — людськими назвами. */
+export const SOURCE_SHORT: Record<string, string> = {
+  "phb-2014": "Книга гравця",
+  "basic-rules-2014": "Базові правила",
+  "dmg-2014": "Посібник Майстра",
+  tcoe: "Таша",
+  xgte: "Ксанатар",
+  xge: "Ксанатар",
+  phb: "Книга гравця",
+  idrotf: "Крижаний пік",
+  toa: "Гробниця",
+  gotg: "Велетні",
+  scag: "Узбережжя Мечів",
+  egtw: "Уайлдмаунт",
+  erftlw: "Еберон",
+  ggtr: "Равніка",
+  motm: "Мордекайнен (народи)",
+  mtof: "Мордекайнен (вороги)",
+  vgtm: "Воло",
+  ftod: "Скарбниця драконів",
+  "ps-amonkhet": "Амонхет",
+  "ps-kaladesh": "Каладеш",
+  "ps-ixalan": "Іксалан",
+  "ps-innistrad": "Іннистрад",
+  "ps-zendikar": "Зендікар",
+  "ps-dominaria": "Домінарія",
+  sacoc: "Стриксгейвен",
+  sato: "Спеллджаммер",
+  ai: "Аквізишнз Інкорпорейтед",
+  // Короткі коди книг із механік (PHB, DMG, SCAG…) — пошук іде без регістру.
+  dmg: "Посібник Майстра",
+  erlw: "Еберон",
+  mpmm: "Мордекайнен (народи)",
+  mtf: "Мордекайнен (вороги)",
+  ggr: "Равніка",
+  bgdia: "Брама Балдура",
+  egw: "Уайлдмаунт",
+  vgm: "Воло",
+  scc: "Стриксгейвен",
+  vrgr: "Рейвенлофт",
+  gos: "Привиди Солтмаршу",
+  ftd: "Скарбниця драконів",
+  dsotdq: "Драгонланс",
+  mot: "Терос",
+  tce: "Таша",
+  wbtw: "Відьмосвітло",
+  bgg: "Велич велетнів",
+  bmt: "Книга багатьох речей",
+  awm: "Пригоди з Муком",
+  oga: "Один грунг вище",
+  lr: "Локатах",
+  ttp: "Пакунок тортла",
+  mm: "Посібник монстрів",
+};
+
+export function sourceLabel(code: string | null | undefined): string {
+  if (!code) return "";
+  return SOURCE_SHORT[code] ?? SOURCE_SHORT[code.toLowerCase()] ?? code.toUpperCase();
+}
+
+/** Ціна наступного +1 у розподілі очок (PHB, p. 13). */
+export function nextPointCost(score: number, costs: Record<string, number>): number | null {
+  const now = costs[String(score)];
+  const next = costs[String(score + 1)];
+  if (now === undefined || next === undefined) return null;
+  return next - now;
 }

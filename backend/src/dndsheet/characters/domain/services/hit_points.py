@@ -1,18 +1,22 @@
-"""Максимум хітів і пул хіт-дайсів (правила 2014).
+"""Максимум хітів і пул кісток хітів (правила 2014).
 
 Правило просте, але його легко зіпсувати, тому воно тут одне:
 
-* 1-й рівень персонажа — **максимум** хіт-дайса першого класу + модифікатор
+* 1-й рівень персонажа — **максимум** кості хітів першого класу + модифікатор
   Статури;
 * кожен наступний рівень — кидок (якщо гравець його записав) або середнє
   (половина дайса + 1) + модифікатор Статури;
 * кожен рівень додає щонайменше 1 хіт (PHB, p. 12);
-* мультиклас: перший рівень дає максимум, решта — за своїм хіт-дайсом.
+* мультиклас: перший рівень дає максимум, решта — за своєю кістю хітів.
 
 `rolls` — фактичні кидки на рівнях **після першого**, у порядку класів
 (спершу рівні 2..N першого класу, далі рівні 1..M другого). Такий порядок
 обрано тому, що іншого джерело не дає: гравець записує кидки, коли бере
 рівень, а порядок класів у агрегаті — це і є порядок узяття.
+
+`None` на місці кидка означає «взято середнє»: рівень узятий у класі, який
+стоїть не останнім у списку, тому кидки за ним доводиться вставляти в
+середину, лишаючи перед ними позначені місця.
 """
 
 from __future__ import annotations
@@ -69,9 +73,7 @@ def hit_point_maximum(
     """Порахувати максимум хітів і пояснити його складниками."""
     state = state or HitPointState()
     if state.override_max is not None:
-        return state.override_max, (
-            HitPointPart(label="manual-override", value=state.override_max),
-        )
+        return state.override_max, (HitPointPart(label="manual-override", value=state.override_max),)
 
     parts: list[HitPointPart] = []
     total = 0
@@ -87,13 +89,17 @@ def hit_point_maximum(
                 value = definition.hit_die + constitution_modifier
                 label = f"level-1-max: d{definition.hit_die}"
                 first = False
-            elif roll_index < len(rolls):
-                value = rolls[roll_index] + constitution_modifier
-                label = f"level-{level}-roll: d{definition.hit_die}"
-                roll_index += 1
             else:
-                value = average_hit_points(definition.hit_die) + constitution_modifier
-                label = f"level-{level}-average: d{definition.hit_die}"
+                # Кожен рівень після першого займає своє місце в `rolls`,
+                # навіть якщо кидка там немає (`None` — середнє).
+                rolled = rolls[roll_index] if roll_index < len(rolls) else None
+                roll_index += 1
+                if rolled is not None:
+                    value = rolled + constitution_modifier
+                    label = f"level-{level}-roll: d{definition.hit_die}"
+                else:
+                    value = average_hit_points(definition.hit_die) + constitution_modifier
+                    label = f"level-{level}-average: d{definition.hit_die}"
             value = max(1, value)
             total += value
             parts.append(HitPointPart(label=label, value=value, source=source))
@@ -105,7 +111,7 @@ def hit_point_maximum(
 
 
 def hit_dice_pool(classes: ClassesAndDefinitions) -> dict[int, int]:
-    """Скільки хіт-дайсів якого розміру зараз має персонаж."""
+    """Скільки кісток хітів якого розміру зараз має персонаж."""
     pool: dict[int, int] = {}
     for entry, definition in classes:
         if entry.level <= 0:

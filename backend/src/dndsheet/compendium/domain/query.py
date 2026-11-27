@@ -61,10 +61,7 @@ class EntryQuery:
             return False
         if self.school is not None and entry.spell_school != self.school.casefold():
             return False
-        if (
-            self.feature_type is not None
-            and self.feature_type.casefold() not in entry.feature_types
-        ):
+        if self.feature_type is not None and self.feature_type.casefold() not in entry.feature_types:
             return False
         if self.item_type is not None and entry.item_type != self.item_type.casefold():
             return False
@@ -72,16 +69,11 @@ class EntryQuery:
             return False
         if self.magical is not None and entry.is_magical != self.magical:
             return False
-        if (
-            self.subclass_of is not None
-            and entry.subclass_of != self.subclass_of.casefold()
-        ):
+        if self.subclass_of is not None and entry.subclass_of != self.subclass_of.casefold():
             return False
         if self.edition is not None and entry.edition != self.edition:
             return False
-        if self.status is not None and entry.status != self.status:
-            return False
-        return True
+        return not (self.status is not None and entry.status != self.status)
 
     def narrower_for(self, category: Category) -> "EntryQuery":
         """Той самий запит, але з фіксованою категорією (для індексів)."""

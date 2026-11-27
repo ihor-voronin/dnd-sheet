@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "basic-rules-2014/item/maul",
+   "name_uk": "Молот"
+  },
+  {
+   "id": "cotn/item/medal-of-muscle",
+   "name_uk": "Медаль м'язів"
+  },
+  {
+   "id": "cotn/item/medal-of-the-conch",
+   "name_uk": "Медаль раковини"
+  },
+  {
+   "id": "cotn/item/medal-of-the-horizonback",
+   "name_uk": "Медаль Горбоспина"
+  },
+  {
+   "id": "cotn/item/medal-of-the-maze",
+   "name_uk": "Медаль лабіринту"
+  },
+  {
+   "id": "cotn/item/medal-of-the-meat-pie",
+   "name_uk": "Медаль м'ясного пирога"
+  },
+  {
+   "id": "cotn/item/medal-of-the-wetlands",
+   "name_uk": "Медаль боліт"
+  },
+  {
+   "id": "cotn/item/medal-of-wit",
+   "name_uk": "Медаль дотепності"
+  },
+  {
+   "id": "toa/item/menga-leaves-1-ounce",
+   "name_uk": "Листя менги (1 унція)"
+  },
+  {
+   "id": "basic-rules-2014/item/mess-kit",
+   "name_uk": "Набір для їжі"
+  },
+  {
+   "id": "tcoe/item/mighty-servant-of-leuk-o",
+   "name_uk": "Могутній слуга Леук-о"
+  },
+  {
+   "id": "phb-2014/item/military",
+   "name_uk": "Військове сідло"
+  },
+  {
+   "id": "sato/item/mimir",
+   "name_uk": "Мімір"
+  },
+  {
+   "id": "pabtso/item/mind-crystal-careful",
+   "name_uk": "Кристал розуму (обережний)"
+  },
+  {
+   "id": "pabtso/item/mind-crystal-distant",
+   "name_uk": "Кристал розуму (далекий)"
+  },
+  {
+   "id": "pabtso/item/mind-crystal-empowered",
+   "name_uk": "Кристал розуму (посилений)"
+  },
+  {
+   "id": "pabtso/item/mind-crystal-extended",
+   "name_uk": "Кристал розуму (подовжений)"
+  },
+  {
+   "id": "pabtso/item/mind-crystal-heightened",
+   "name_uk": "Кристал розуму (підвищений)"
+  },
+  {
+   "id": "pabtso/item/mind-crystal-quickened",
+   "name_uk": "Кристал розуму (прискорений)"
+  },
+  {
+   "id": "pabtso/item/mind-crystal-subtle",
+   "name_uk": "Кристал розуму (непомітний)"
+  },
+  {
+   "id": "pabtso/item/mindblasting-cap",
+   "name_uk": "Шапка розумового вибуху"
+  },
+  {
+   "id": "pabtso/item/mindguard-crown",
+   "name_uk": "Корона охоронця розуму"
+  },
+  {
+   "id": "sotdq/item/mirror-of-reflected-pasts",
+   "name_uk": "Дзеркало відображених минулих"
+  },
+  {
+   "id": "tftyp/item/mirror-of-the-past",
+   "name_uk": "Дзеркало минулого"
+  },
+  {
+   "id": "basic-rules-2014/item/mirror-steel",
+   "name_uk": "Дзеркало, сталеве"
+  },
+  {
+   "id": "gotg/item/mistral-mantle",
+   "name_uk": "Мантія містралю"
+  },
+  {
+   "id": "moot/item/molten-bronze-skin",
+   "name_uk": "Розплавлена бронзова шкіра"
+  },
+  {
+   "id": "tcoe/item/moon-sickle",
+   "name_uk": "Місячний серп"
+  },
+  {
+   "id": "xgte/item/moon-touched-sword",
+   "name_uk": "Меч, торкнутий місяцем"
+  },
+  {
+   "id": "dmg-2014/item/moonblade",
+   "name_uk": "Місячний клинок"
+  },
+  {
+   "id": "basic-rules-2014/item/morningstar",
+   "name_uk": "Моргенштерн"
+  },
+  {
+   "id": "pabtso/item/mudslick-tower",
+   "name_uk": "Вежа слизького болота"
+  },
+  {
+   "id": "imr/item/mummy-rot-antidote",
+   "name_uk": "Протиотрута від мумійної гнилі"
+  },
+  {
+   "id": "xgte/item/mystery-key",
+   "name_uk": "Таємничий ключ"
+  },
+  {
+   "id": "sotdq/item/narycrash",
+   "name_uk": "Нарікраш"
+  },
+  {
+   "id": "tcoe/item/nature-s-mantle",
+   "name_uk": "Мантія природи"
+  },
+  {
+   "id": "skt/item/navigation-orb",
+   "name_uk": "Навігаційна сфера"
+  },
+  {
+   "id": "basic-rules-2014/item/navigator-s-tools",
+   "name_uk": "Інструменти навігатора"
+  },
+  {
+   "id": "phb-2014/item/navigator-s-tools",
+   "name_uk": "Інструменти навігатора"
+  },
+  {
+   "id": "ps-ixalan/item/necklace-of-electrum-medallions-with-red-and-blue-tourmalines-brazen-coalition",
+   "name_uk": "Намисто з електрових медальйонів з червоними й синіми турмалінами (Мідна коаліція)"
+  },
+  {
+   "id": "ps-ixalan/item/necklace-of-jade-and-pink-pearls-river-heralds",
+   "name_uk": "Намисто з нефриту та рожевих перлин (Вісники ріки)"
+  },
+  {
+   "id": "hcs/item/necronomicon-ex-corvis",
+   "name_uk": "Некрономікон Екс Корвіс"
+  },
+  {
+   "id": "egtw/item/needle-of-mending",
+   "name_uk": "Голка лагодження"
+  },
+  {
+   "id": "qftis/item/needler-pistol",
+   "name_uk": "Пістолет-голкомет"
+  },
+  {
+   "id": "hcs/item/nest-charm",
+   "name_uk": "Оберіг гнізда"
+  },
+  {
+   "id": "basic-rules-2014/item/net",
+   "name_uk": "Сітка"
+  },
+  {
+   "id": "pabtso/item/netherese-ring-of-protection",
+   "name_uk": "Нетерильський перстень захисту"
+  },
+  {
+   "id": "tftyp/item/night-caller",
+   "name_uk": "Нічний скликач"
+  },
+  {
+   "id": "egtw/item/nightfall-pearl",
+   "name_uk": "Перлина сутінків"
+  },
+  {
+   "id": "gotg/item/nimbus-coronet",
+   "name_uk": "Вінець німба"
+  },
+  {
+   "id": "dmg-2014/item/nolzur-s-marvelous-pigments",
+   "name_uk": "Чудові пігменти Нолзура"
+  },
+  {
+   "id": "bgdia/item/obsidian-flint-dragon-plate",
+   "name_uk": "Обсидіаново-крем'яна драконяча пластинчаста броня"
+  },
+  {
+   "id": "basic-rules-2014/item/oil-flask",
+   "name_uk": "Олія (фляга)"
+  },
+  {
+   "id": "skt/item/opal-of-the-ild-rune",
+   "name_uk": "Опал руни Ілд"
+  },
+  {
+   "id": "phb-2014/item/orb",
+   "name_uk": "Сфера"
+  },
+  {
+   "id": "twbtw/item/orb-of-direction",
+   "name_uk": "Сфера напрямку"
+  },
+  {
+   "id": "erftlw/item/orb-of-shielding",
+   "name_uk": "Сфера захисту"
+  },
+  {
+   "id": "gotg/item/orb-of-skoraeus",
+   "name_uk": "Сфера Скорея"
+  },
+  {
+   "id": "skt/item/orb-of-the-stein-rune",
+   "name_uk": "Сфера руни Штейн"
+  },
+  {
+   "id": "egtw/item/orb-of-the-veil",
+   "name_uk": "Сфера вуалі"
+  }
+ ]
+}

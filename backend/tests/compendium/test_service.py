@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
@@ -78,9 +77,7 @@ def test_class_spells_skip_names_missing_from_corpus(service: CompendiumService)
 def test_class_spells_prefer_srd_record_for_duplicate_name(
     service: CompendiumService,
 ) -> None:
-    magic_missile = next(
-        entry for entry in service.class_spells("Wizard").spells if entry.name_en == "Magic Missile"
-    )
+    magic_missile = next(entry for entry in service.class_spells("Wizard").spells if entry.name_en == "Magic Missile")
     assert magic_missile.id == "demo/spell/magic-missile"
     assert magic_missile.license == "srd"
 

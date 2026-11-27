@@ -27,9 +27,7 @@ def load_checkpoint(source: str) -> dict:
 
 def save_checkpoint(source: str, state: dict) -> None:
     (config.RAW_DIR / source).mkdir(parents=True, exist_ok=True)
-    _checkpoint_file(source).write_text(
-        json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    _checkpoint_file(source).write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def fetch_all(fetcher: session.Fetcher, source: str, refresh: bool = False) -> dict:

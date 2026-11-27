@@ -6,14 +6,14 @@
 лист, коли чернетка зберегла вибір повторно.
 """
 
+from dndsheet.characters.application.rows import proficiency_rows
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
-from dndsheet.characters.application.rows import proficiency_rows
 
 
 def test_identical_grants_collapse_to_one_row() -> None:

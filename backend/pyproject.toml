@@ -9,7 +9,9 @@ description = "D&D 5e (2014) character sheet builder and exporter, Ukrainian"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
-    "uvicorn[standard]>=0.30",
+    # Без [standard]: uvloop, httptools, watchfiles і websockets застосунку не потрібні
+    # (~20 МБ в образі); --reload у dev працює і без watchfiles.
+    "uvicorn>=0.30",
     "pydantic>=2.7",
     "jinja2>=3.1",
 ]
@@ -23,6 +25,8 @@ dev = [
     "jsonschema>=4.22",
     "httpx>=0.27",
     "import-linter>=2.0",
+    # Глосарій термінів (test_terminology); раніше приходив транзитивно з uvicorn[standard].
+    "pyyaml>=6",
 ]
 
 [tool.setuptools.packages.find]
@@ -31,7 +35,7 @@ where = ["src"]
 # Шаблон PDF лежить поруч із рендерером: без цього рядка колесо його не везе,
 # і `pip install backend` дає рендерер, який не знаходить 'sheet' (500 на /export/pdf).
 [tool.setuptools.package-data]
-"dndsheet.export.infrastructure" = ["templates/*"]
+"dndsheet.export.infrastructure" = ["templates/*", "templates/fonts/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests/characters"]
@@ -54,6 +58,7 @@ source_modules = [
     "dndsheet.sheets.domain",
     "dndsheet.export.domain",
     "dndsheet.compendium.domain",
+    "dndsheet.identity.domain",
     "dndsheet.shared",
 ]
 forbidden_modules = [
@@ -69,6 +74,9 @@ forbidden_modules = [
     "dndsheet.compendium.application",
     "dndsheet.compendium.infrastructure",
     "dndsheet.compendium.api",
+    "dndsheet.identity.application",
+    "dndsheet.identity.infrastructure",
+    "dndsheet.identity.api",
     "fastapi",
     "sqlalchemy",
     "jinja2",
@@ -108,4 +116,13 @@ layers = [
     "dndsheet.compendium.api",
     "dndsheet.compendium.application",
     "dndsheet.compendium.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "identity: api -> application -> domain"
+type = "layers"
+layers = [
+    "dndsheet.identity.api",
+    "dndsheet.identity.application",
+    "dndsheet.identity.domain",
 ]

@@ -21,6 +21,7 @@ from dndsheet.characters.domain.inventory import InventoryItem, ItemKind
 from dndsheet.characters.domain.ports import (
     CharacterRepository,
     DraftRepository,
+    FeatCatalog,
     RulesSource,
     SubclassCatalog,
 )
@@ -37,6 +38,17 @@ from dndsheet.shared.ids import CharacterId
 from dndsheet.shared.kernel import Ability, Money
 
 
+def _choice_map(raw: Any) -> dict[str, list[str]]:  # noqa: ANN401
+    """`{"feat:skilled:Skills or Tools": ["Arcana", ...]}` — вибори риси виду."""
+    if raw in (None, ""):
+        return {}
+    if not isinstance(raw, Mapping) or not all(
+        isinstance(values, list) and all(isinstance(value, str) for value in values) for values in raw.values()
+    ):
+        raise ValidationError("species_feat_choices має бути обʼєктом «група: [назви]»")
+    return {str(key): list(values) for key, values in raw.items()}
+
+
 def new_draft_id() -> str:
     return f"drf_{uuid4().hex}"
 
@@ -49,6 +61,8 @@ class WizardService:
     characters: CharacterRepository
     rules: RulesSource
     subclasses: SubclassCatalog
+    #: Риси довідника — для риси виду (варіантна людина, власна лінія).
+    feats: FeatCatalog | None = None
 
     # ------------------------------------------------------------------
     # чернетка
@@ -76,9 +90,7 @@ class WizardService:
         """Застосувати відповідь кроку й зберегти чернетку."""
         draft = self.load(draft_id)
         if expected_revision is not None and expected_revision != draft.revision:
-            raise ConflictError(
-                f"чернетку змінено (ревізія {draft.revision}, надіслано {expected_revision})"
-            )
+            raise ConflictError(f"чернетку змінено (ревізія {draft.revision}, надіслано {expected_revision})")
         body = payload or {}
         try:
             parsed_step = WizardStep(step)
@@ -90,12 +102,18 @@ class WizardService:
 
     def _apply_step(self, draft: Draft, step: WizardStep, body: Mapping[str, Any]) -> None:
         if step is WizardStep.SPECIES:
+            feat_key = _optional_text(body, "species_feat")
             draft.apply_species(
                 name=_text(body, "name"),
                 species_key=_text(body, "species_key"),
                 subspecies_key=_optional_text(body, "subspecies_key"),
                 ability_choices=_abilities(body.get("ability_choices")),
                 spell_choices=_text_list(body.get("spell_choices")),
+                ability_spread=body.get("ability_spread"),
+                species_feat=feat_key,
+                species_source=_optional_text(body, "species_source"),
+                species_feat_choices=_choice_map(body.get("species_feat_choices")),
+                species_feat_ability=self._feat_ability(feat_key, body.get("species_feat_ability")),
             )
         elif step is WizardStep.CLASS:
             class_key = _text(body, "class_key")
@@ -113,6 +131,7 @@ class WizardService:
                 background_key=_text(body, "background_key"),
                 picks=_picks(body.get("picks")),
                 alignment=_optional_text(body, "alignment"),
+                custom=body.get("custom_background") if isinstance(body.get("custom_background"), dict) else None,
             )
         elif step is WizardStep.EQUIPMENT:
             draft.apply_equipment(
@@ -124,6 +143,25 @@ class WizardService:
         else:  # pragma: no cover - стосується лише розширення переліку
             raise ValidationError(f"крок {step!r} ще не підтримується")
 
+    def _feat_ability(self, feat_key: str | None, raw: Any) -> Ability | None:  # noqa: ANN401
+        """Риса має існувати; +1 — лише до характеристики, яку вона дозволяє."""
+        if not feat_key or self.feats is None:
+            return None
+        if not self.feats.has(feat_key):
+            raise ValidationError(f"невідома риса {feat_key!r}")
+        options = self.feats.ability_options(feat_key)
+        if not options:
+            return None
+        if raw in (None, ""):
+            return options[0]
+        try:
+            ability = Ability(str(raw).strip().casefold())
+        except ValueError as exc:
+            raise ValidationError(f"невідома характеристика {raw!r}") from exc
+        if ability not in options:
+            raise ValidationError(f"риса не підвищує {ability.value}")
+        return ability
+
     def _check_subclass(self, class_key: str, subclass_key: str | None) -> None:
         """Ключ підкласу мусить існувати в довіднику — якщо довідник його знає."""
         if not subclass_key:
@@ -132,9 +170,7 @@ class WizardService:
         if known is None:
             return
         if subclass_key.strip().casefold() not in {item.casefold() for item in known}:
-            raise ValidationError(
-                f"невідомий підклас {subclass_key!r} для класу {class_key!r}"
-            )
+            raise ValidationError(f"невідомий підклас {subclass_key!r} для класу {class_key!r}")
 
     # ------------------------------------------------------------------
     # створення персонажа
@@ -283,6 +319,7 @@ def _items(values: Any) -> tuple[InventoryItem, ...]:
                     armor_base=record.get("armor_base"),
                     dex_cap=record.get("dex_cap"),
                     notes=record.get("notes") or None,
+                    damage=record.get("damage") or None,
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:

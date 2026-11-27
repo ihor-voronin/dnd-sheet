@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "dmg-2014/item/driftglobe",
+   "name_uk": "Дрейфова куля"
+  },
+  {
+   "id": "phb-2014/item/drum",
+   "name_uk": "Барабан"
+  },
+  {
+   "id": "phb-2014/item/dulcimer",
+   "name_uk": "Цимбали"
+  },
+  {
+   "id": "tcoe/item/duplicitous-manuscript",
+   "name_uk": "Оманливий манускрипт"
+  },
+  {
+   "id": "egtw/item/duskcrusher",
+   "name_uk": "Трощитель сутінків"
+  },
+  {
+   "id": "twbtw/item/dust-of-corrosion",
+   "name_uk": "Порох корозії"
+  },
+  {
+   "id": "egtw/item/dust-of-deliciousness",
+   "name_uk": "Порох смакоти"
+  },
+  {
+   "id": "imr/item/dust-of-the-mummy",
+   "name_uk": "Порох мумії"
+  },
+  {
+   "id": "erftlw/item/dyrrn-s-tentacle-whip",
+   "name_uk": "Батіг-щупальце Диррна"
+  },
+  {
+   "id": "tftyp/item/eagle-whistle",
+   "name_uk": "Орлиний свисток"
+  },
+  {
+   "id": "xgte/item/ear-horn-of-hearing",
+   "name_uk": "Слухова трубка"
+  },
+  {
+   "id": "cotn/item/earring-of-message",
+   "name_uk": "Сережка послання"
+  },
+  {
+   "id": "erftlw/item/earworm",
+   "name_uk": "Вушний хробак"
+  },
+  {
+   "id": "dmg-2014/item/efreeti-chain",
+   "name_uk": "Кольчуга іфрита"
+  },
+  {
+   "id": "tcoe/item/eldritch-claw-tattoo",
+   "name_uk": "Татуювання химерного кігтя"
+  },
+  {
+   "id": "twbtw/item/eldritch-staff",
+   "name_uk": "Химерний посох"
+  },
+  {
+   "id": "tcoe/item/elemental-essence-shard",
+   "name_uk": "Уламок елементальної сутності"
+  },
+  {
+   "id": "basic-rules-2014/item/elephant",
+   "name_uk": "Слон"
+  },
+  {
+   "id": "dmg-2014/item/elixir-of-health",
+   "name_uk": "Еліксир здоров'я"
+  },
+  {
+   "id": "phb-2014/item/emblem",
+   "name_uk": "Емблема"
+  },
+  {
+   "id": "ftod/item/emerald-pen",
+   "name_uk": "Смарагдове писальце"
+  },
+  {
+   "id": "xgte/item/enduring-spellbook",
+   "name_uk": "Незмінна книга заклять"
+  },
+  {
+   "id": "moot/item/ephixis-bow-of-nylea",
+   "name_uk": "Ефікс, лук Нілеї"
+  },
+  {
+   "id": "egtw/item/ersatz-eye",
+   "name_uk": "Штучне око"
+  },
+  {
+   "id": "erftlw/item/everbright-lantern",
+   "name_uk": "Вічносяйний ліхтар"
+  },
+  {
+   "id": "phb-2014/item/exotic",
+   "name_uk": "Екзотичний"
+  },
+  {
+   "id": "dmg-2014/item/eye-and-hand-of-vecna",
+   "name_uk": "Око і рука Векни"
+  },
+  {
+   "id": "ps-ixalan/item/eye-patch-with-a-mock-eye-set-in-blue-sapphire-and-moonstone-brazen-coalition",
+   "name_uk": "Пов'язка на око з імітацією ока з блакитного сапфіру та місячного каменю (Нахабна коаліція)"
+  },
+  {
+   "id": "bgdia/item/fane-eater",
+   "name_uk": "Пожирач храмів"
+  },
+  {
+   "id": "ai/item/far-gear",
+   "name_uk": "Далекий механізм"
+  },
+  {
+   "id": "tcoe/item/far-realm-shard",
+   "name_uk": "Уламок Далекого Царства"
+  },
+  {
+   "id": "sotdq/item/fargab",
+   "name_uk": "Фаргаб"
+  },
+  {
+   "id": "wdh/item/feather-of-diatryma-summoning",
+   "name_uk": "Перо виклику діатрими"
+  },
+  {
+   "id": "hcs/item/feathered-helm",
+   "name_uk": "Оперений шолом"
+  },
+  {
+   "id": "ps-ixalan/item/feathered-mantle-with-emerald-clasp-sun-empire",
+   "name_uk": "Оперений плащ із смарагдовою застібкою (Сонячна імперія)"
+  },
+  {
+   "id": "basic-rules-2014/item/feed-per-day",
+   "name_uk": "Корм (за день)"
+  },
+  {
+   "id": "tcoe/item/feywild-shard",
+   "name_uk": "Уламок Фейвайлду"
+  },
+  {
+   "id": "erftlw/item/finder-s-goggles",
+   "name_uk": "Окуляри шукача"
+  },
+  {
+   "id": "ps-ixalan/item/fine-gold-chain-with-fire-opals-legion-of-dusk",
+   "name_uk": "Тонкий золотий ланцюжок з вогняними опалами (Легіон сутінків)"
+  },
+  {
+   "id": "ps-ixalan/item/fine-robe-with-dinosaur-feathers-and-silver-embroidery-sun-empire",
+   "name_uk": "Гарна мантія з пір'ям динозавра та срібною вишивкою (Сонячна імперія)"
+  },
+  {
+   "id": "ps-ixalan/item/fine-steel-rapier-with-gold-filigree-hilt-legion-of-dusk",
+   "name_uk": "Гарна стальна рапіра із золотим філігранним руків'ям (Легіон сутінків)"
+  },
+  {
+   "id": "ps-ixalan/item/finely-articulated-jade-glove-river-heralds",
+   "name_uk": "Ретельно зчленована нефритова рукавиця (Вісники річок)"
+  },
+  {
+   "id": "basic-rules-2014/item/fishing-tackle",
+   "name_uk": "Рибальське приладдя"
+  },
+  {
+   "id": "basic-rules-2014/item/flail",
+   "name_uk": "Ціп"
+  },
+  {
+   "id": "ftod/item/flail-of-tiamat",
+   "name_uk": "Ціп Тіамат"
+  },
+  {
+   "id": "basic-rules-2014/item/flask-or-tankard",
+   "name_uk": "Фляга або кухоль"
+  },
+  {
+   "id": "pabtso/item/flayer-slayer",
+   "name_uk": "Винищувач пожирачів"
+  },
+  {
+   "id": "phb-2014/item/flute",
+   "name_uk": "Флейта"
+  },
+  {
+   "id": "moot/item/flying-chariot",
+   "name_uk": "Летюча колісниця"
+  },
+  {
+   "id": "sotdq/item/flying-citadel-helm",
+   "name_uk": "Шолом летючої цитаделі"
+  },
+  {
+   "id": "basic-rules-2014/item/forgery-kit",
+   "name_uk": "Набір для підробки"
+  },
+  {
+   "id": "tcoe/item/fulminating-treatise",
+   "name_uk": "Гримучий трактат"
+  },
+  {
+   "id": "llok/item/galder-s-bubble-pipe",
+   "name_uk": "Бульбашкова люлька Галдера"
+  },
+  {
+   "id": "basic-rules-2014/item/galley",
+   "name_uk": "Галера"
+  },
+  {
+   "id": "llok/item/gambler-s-blade",
+   "name_uk": "Клинок гравця"
+  },
+  {
+   "id": "sato/item/gate-warden-trinket",
+   "name_uk": "Дрібничка вартового брами"
+  },
+  {
+   "id": "bgdia/item/gauntlets-of-flaming-fury",
+   "name_uk": "Рукавиці палаючої люті"
+  },
+  {
+   "id": "coa/item/gauntlets-of-rage",
+   "name_uk": "Рукавиці люті"
+  },
+  {
+   "id": "skt/item/gavel-of-the-venn-rune",
+   "name_uk": "Молоток руни Венн"
+  },
+  {
+   "id": "toa/item/ghost-lantern",
+   "name_uk": "Ліхтар привидів"
+  }
+ ]
+}

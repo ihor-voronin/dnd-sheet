@@ -148,9 +148,7 @@ def check_domain_purity() -> int:
                     modules = [node.module]
                 for module in modules:
                     if module.startswith(FORBIDDEN_DOMAIN_IMPORTS):
-                        problem(
-                            f"домен тягне заборонене: {path.relative_to(ROOT)} -> {module}"
-                        )
+                        problem(f"домен тягне заборонене: {path.relative_to(ROOT)} -> {module}")
     return checked
 
 
@@ -161,7 +159,6 @@ def check_domain_behaviour() -> None:
     from dndsheet.characters.domain.class_level import CharacterClass
     from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
     from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
-    from dndsheet.characters.domain.services.spell_slots import spellcasting_for_classes
     from dndsheet.shared.kernel import (
         Ability,
         AbilityScore,
@@ -245,9 +242,7 @@ def check_domain_behaviour() -> None:
                 source_id="PHB",
                 size=Size.MEDIUM,
                 speed=30,
-                ability_bonuses=tuple(
-                    AbilityBonus(ability, 1) for ability in Ability
-                ),
+                ability_bonuses=tuple(AbilityBonus(ability, 1) for ability in Ability),
             )
             self._soldier = BackgroundMechanics(
                 key="soldier",
@@ -323,10 +318,7 @@ def check_domain_behaviour() -> None:
     )
     casting = DerivedStatsCalculator().compute(multiclass).spellcasting
     if casting.caster_level != 3 or dict(casting.slots.by_level) != {1: 4, 2: 2}:
-        problem(
-            f"мультиклас: рівень заклинателя {casting.caster_level}, "
-            f"слоти {dict(casting.slots.by_level)}"
-        )
+        problem(f"мультиклас: рівень заклинателя {casting.caster_level}, слоти {dict(casting.slots.by_level)}")
 
     functions = sheet_functions({"str": 16, "dex": 14}, level=3)
     if evaluate("10 + mod('dex') + proficiency()", functions=functions) != 14:
@@ -398,17 +390,13 @@ def check_compendium_format() -> tuple[dict[str, tuple[int, int]], list[str]]:
     shown = 0
 
     for source in canonical.corpus_sources(spec):
-        count, changes, source_problems = canonical.normalize_source(
-            source, spec, write=False
-        )
+        count, changes, source_problems = canonical.normalize_source(source, spec, write=False)
         changed += count
         for message in source_problems:
             problem(f"формат корпусу: {message}")
         for category, record_id, reasons in changes:
             if shown < 10:
-                problem(
-                    f"формат корпусу: {category}/{record_id} — " + "; ".join(reasons[:3])
-                )
+                problem(f"формат корпусу: {category}/{record_id} — " + "; ".join(reasons[:3]))
                 shown += 1
     if changed > shown:
         problem(f"формат корпусу: ще {changed - shown} записів поза каноном")
@@ -429,10 +417,7 @@ def check_compendium_format() -> tuple[dict[str, tuple[int, int]], list[str]]:
                 for file in files:
                     rows += len(canonical.read_jsonl(file))
                     if file.stem not in allowed:
-                        problem(
-                            f"корпус {corpus}: {book.name}/{file.name} — категорія "
-                            f"живе в іншому корпусі"
-                        )
+                        problem(f"корпус {corpus}: {book.name}/{file.name} — категорія живе в іншому корпусі")
         else:
             # Свіжий клон репозиторію: текстів книг у ньому немає (копирайт і
             # обсяг). Це не привід падати — але й не привід мовчати.
@@ -456,10 +441,7 @@ def main() -> int:
             print("  -", item)
         return 1
 
-    corpora = ", ".join(
-        f"{name} {books} книг / {rows} записів"
-        for name, (books, rows) in corpus_stats.items()
-    )
+    corpora = ", ".join(f"{name} {books} книг / {rows} записів" for name, (books, rows) in corpus_stats.items())
     print(
         "PREFLIGHT OK: "
         f"{py_count} .py, {len(fixtures)} фікстур / {field_count} полів, "

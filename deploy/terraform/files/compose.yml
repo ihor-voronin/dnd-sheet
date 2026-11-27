@@ -1,0 +1,32 @@
+# Продакшн на VPS: застосунок за Caddy. Порт застосунку назовні не відкритий —
+# лише Caddy слухає 80 (і 443, коли зʼявиться домен).
+services:
+  app:
+    image: ${DNDSHEET_IMAGE:-dndsheet:local}
+    container_name: dndsheet-app
+    env_file: .env
+    environment:
+      DNDSHEET_DATA_DIR: /app/var
+      DNDSHEET_CONTENT_DIR: /app/content
+      DNDSHEET_SPA_DIST: /app/frontend/dist
+    volumes:
+      - /opt/dndsheet/var:/app/var
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: dndsheet-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:

@@ -2,17 +2,54 @@
  *
  * D&D Beyond показує тут не один список, а групи «Дії / Бонусні дії /
  * Реакції / Інше» і фільтри над ними. Ми робимо те саме, але компактними
- * рядками: назва й тип, дистанція, атака/ОС, урон, нотатки. Зброя, Удар без
+ * рядками: назва й тип, дистанція, атака/КС, урон, нотатки. Зброя, Удар без
  * зброї, доступні закляття й обмежені класові ресурси живуть в одній моделі,
- * тому фільтр «Обмежене» чи «Бонусна дія» просто відсіює рядки.
+ * тому фільтр «Обмежене» чи «Бонусна дія» просто відсіює рядки. Унизу
+ * вкладки — згортваний довідник «Дії в бою»: загальні дії ходу, які не
+ * залежать від арсеналу персонажа.
  */
-
 import { useState } from "react";
 
 import { damageTypeLabel, modifierLabel, rangeLabel, schoolLabel } from "../../labels";
 import type { SheetFeatureResource, SheetSpell, SheetViewPayload } from "../wizard/types";
-import { Counter } from "./editing";
+
+import { Counter, isPoolResource } from "./editing";
 import { RuleText } from "./panels";
+import {
+  componentsLabel,
+  featureLabel,
+  featureText,
+  itemLabel,
+  spellLabel,
+  weaponDamage,
+  weaponNotes,
+  withEnglish,
+} from "./uk";
+
+/** Удар без зброї й природна зброя видів: назви з сервера англійською. */
+const UNARMED_LABELS: Record<string, string> = {
+  "Unarmed Strike": "Удар без зброї",
+  "Cat's Claws": "Котячі кігті",
+  Talons: "Пазурі",
+  Bite: "Укус",
+  Horns: "Роги",
+  Claws: "Кігті",
+  Hooves: "Копита",
+  Ram: "Таран",
+  "Vampiric Bite": "Вампірський укус",
+  Fangs: "Ікла",
+};
+
+function attackName(attack: SheetViewPayload["attacks"][number]): string {
+  if (attack.kind === "unarmed") return withEnglish(attack.name_en, UNARMED_LABELS[attack.name_en]);
+  const shillelagh = attack.name_en.match(/^(.*) \(Shillelagh\)$/);
+  if (shillelagh) return `${itemLabel(shillelagh[1])} — Дубинка (Shillelagh)`;
+  return itemLabel(attack.name_en);
+}
+
+const UNARMED_HINT =
+  "Можна вдарити, захопити ціль або штовхнути її на 5 фт чи збити з ніг. Для захвату й " +
+  "штовханини ціль рятується СИЛ або СПР (КС 8 + бонус майстерності + СИЛ).";
 
 type ActionType = "action" | "bonus" | "reaction" | "other";
 type Filter = "all" | "attack" | ActionType | "limited";
@@ -44,11 +81,11 @@ const COMBAT: Record<ActionType, { name: string; hint: string }[]> = {
     { name: "Ривок", hint: "Додатковий рух на відстань, що дорівнює швидкості, цього ходу." },
     {
       name: "Відхід",
-      hint: "Рух без атак можливості від істот, яких ви покидаєте, до кінця ходу.",
+      hint: "Рух без атак нагоди від істот, яких ви покидаєте, до кінця ходу.",
     },
     {
       name: "Ухиляння",
-      hint: "Атаки по вас — із перешкодою, порятунки СПР — з перевагою; втрачається, якщо не можете діяти.",
+      hint: "Атаки по вас — із завадою, рятівні кидки СПР — з перевагою; втрачається, якщо не можете діяти.",
     },
     {
       name: "Захват",
@@ -56,7 +93,7 @@ const COMBAT: Record<ActionType, { name: string; hint: string }[]> = {
     },
     {
       name: "Допомога",
-      hint: "Союзник дістає перевагу на атаку по цілі поруч або на перевірку чи порятунок.",
+      hint: "Союзник дістає перевагу на атаку по цілі поруч або на перевірку чи рятівний кидок.",
     },
     {
       name: "Сховатися",
@@ -149,50 +186,52 @@ function availableSpells(sheet: SheetViewPayload): SheetSpell[] {
 function buildRows(sheet: SheetViewPayload): ActionRow[] {
   const rows: ActionRow[] = [];
   for (const [index, attack] of sheet.attacks.entries()) {
+    const unarmed = attack.kind === "unarmed";
     rows.push({
       id: `weapon-${index}`,
-      name: attack.name_en,
-      typeLabel: "Зброя",
+      name: attackName(attack),
+      typeLabel: unarmed ? "Удар" : attack.kind === "spell" ? "Закляття" : "Зброя",
       range: rangeLabel(attack.range) || "—",
       hit: modifierLabel(attack.attack_bonus),
-      damage: attack.damage,
-      notes: attack.notes,
+      damage: weaponDamage(attack.damage),
+      notes: unarmed
+        ? [attack.notes, attack.name_en === "Unarmed Strike" ? "захват або штовханина: рятунок СИЛ/СПР" : ""]
+            .filter(Boolean)
+            .join(", ")
+        : weaponNotes(attack.notes),
       actionType: "action",
       attack: true,
+      description: unarmed && attack.name_en === "Unarmed Strike" ? UNARMED_HINT : undefined,
     });
   }
 
-  const strength = sheet.abilities.str?.modifier ?? 0;
-  const unarmedDamage =
-    strength === 0
-      ? "1 дробляча"
-      : `1 ${strength > 0 ? "+" : "−"} ${Math.abs(strength)} дробляча`;
-  rows.push({
-    id: "unarmed",
-    name: "Удар без зброї",
-    typeLabel: "Дія",
-    range: "5 фт",
-    hit: modifierLabel(strength + sheet.proficiency_bonus),
-    damage: unarmedDamage,
-    notes: "захват або штовханина: рятунок СИЛ/СПР",
-    actionType: "action",
-    attack: true,
-    description:
-      "Можна вдарити (1 + модифікатор СИЛИ дроблячої шкоди), захопити ціль або " +
-      "штовхнути її на 5 фт чи збити з ніг. Для захвату й штовханини ціль " +
-      "рятується СИЛ або СПР (DC 8 + бонус майстерності + СИЛ).",
-  });
+  // Старий сервер без рядка удару — рахуємо самі, як раніше.
+  if (!sheet.attacks.some((attack) => attack.kind === "unarmed")) {
+    const strength = sheet.abilities.str?.modifier ?? 0;
+    rows.push({
+      id: "unarmed",
+      name: "Удар без зброї",
+      typeLabel: "Удар",
+      range: "5 фт",
+      hit: modifierLabel(strength + sheet.proficiency_bonus),
+      damage: strength === 0 ? "1 дробляча" : `1 ${strength > 0 ? "+" : "−"} ${Math.abs(strength)} дробляча`,
+      notes: "захват або штовханина: рятунок СИЛ/СПР",
+      actionType: "action",
+      attack: true,
+      description: UNARMED_HINT,
+    });
+  }
 
   const casters = sheet.spellcasting.classes;
   for (const spell of availableSpells(sheet)) {
     const caster = casters.find((item) => item.key === spell.class_key) ?? casters[0];
     const hit = spell.save
-      ? `DC ${caster?.save_dc ?? "—"}`
+      ? `КС ${caster?.save_dc ?? "—"}`
       : spell.attack_roll
         ? modifierLabel(caster?.attack_bonus ?? 0)
         : "—";
     const notes = [
-      spell.components ? `компоненти ${spell.components}` : "",
+      spell.components ? `компоненти ${componentsLabel(spell.components)}` : "",
       spell.concentration ? "концентрація" : "",
       spell.ritual ? "ритуал" : "",
       spell.school ? schoolLabel(spell.school) : "",
@@ -201,13 +240,11 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
       .join(" · ");
     rows.push({
       id: `spell-${spell.name_en}-${spell.source}`,
-      name: spell.name_en,
+      name: spellLabel(spell.name_en),
       typeLabel: spell.level === 0 ? "Заговір" : `Закляття ${spell.level} рівня`,
       range: rangeLabel(spell.range) || "—",
       hit,
-      damage: spell.damage
-        ? `${spell.damage.dice} ${damageTypeLabel(spell.damage.type)}`
-        : "—",
+      damage: spell.damage ? `${spell.damage.dice} ${damageTypeLabel(spell.damage.type)}` : "—",
       notes,
       actionType: spellTime(spell),
       attack: Boolean(spell.attack_roll),
@@ -218,19 +255,17 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
     const feature = sheet.features.find((item) => item.name_en === resource.name_en);
     rows.push({
       id: `resource-${resource.key}`,
-      name: resource.name_en,
+      name: featureLabel(resource.name_en, resource.name_uk ?? feature?.name_uk),
       typeLabel: "Обмежене",
       range: "—",
       hit: "—",
       damage: "—",
-      notes: `відновлення: ${
-        resource.recharge === "short" ? "короткий або довгий" : "довгий"
-      } відпочинок`,
+      notes: `відновлення: ${resource.recharge === "short" ? "короткий або тривалий" : "тривалий"} відпочинок`,
       actionType: resource.action,
       attack: false,
       limited: true,
       resource,
-      description: feature?.description,
+      description: featureText(resource.name_en, feature?.description, feature?.text_uk),
     });
   }
 
@@ -254,8 +289,6 @@ export function ActionPanel({
     return rows.filter((row) => row.actionType === filter);
   })();
 
-  const showHints = filter === "all" || filter === "action" || filter === "bonus" || filter === "reaction" || filter === "other";
-
   return (
     <div className="action-panel">
       <div className="action-panel__bar">
@@ -263,9 +296,26 @@ export function ActionPanel({
           Атак за дію: <strong>{sheet.attacks_per_action}</strong>
         </span>
         <span className="action-panel__source">
-          {sheet.attacks.length ? `${sheet.attacks.length} зброї` : "зброї немає"}
+          {(() => {
+            const weapons = sheet.attacks.filter((attack) => (attack.kind ?? "weapon") === "weapon").length;
+            return weapons ? `${weapons} зброї` : "зброї немає";
+          })()}
         </span>
       </div>
+      {(() => {
+        // Угода клинка й Хекс-воїн діють лише на позначену зброю — підказуємо, де її позначити.
+        const items = sheet.inventory.items;
+        const missing = [
+          sheet.weapon_bonds?.pact && !items.some((item) => item.pact_weapon) ? "зброю угоди" : "",
+          sheet.weapon_bonds?.hex && !items.some((item) => item.hex_weapon) ? "зброю Хекс-воїна" : "",
+        ].filter(Boolean);
+        return missing.length ? (
+          <p className="hint">
+            Позначте {missing.join(" і ")} в «Інвентарі»: розгорніть предмет або додайте новий через «Свій предмет». Без
+            позначки атака рахується як звичайна.
+          </p>
+        ) : null;
+      })()}
 
       <div className="action-filters" role="group" aria-label="Фільтр дій">
         {FILTERS.map((item) => (
@@ -299,51 +349,53 @@ export function ActionPanel({
       ) : (
         (Object.keys(GROUP_LABELS) as ActionType[]).map((type) => {
           const groupRows = visible.filter((row) => row.actionType === type);
-          const hints = showHints ? COMBAT[type] : [];
-          if (!groupRows.length && !hints.length) return null;
+          if (!groupRows.length) return null;
           return (
             <section key={type} className="action-group">
               <h4 className="action-group__head">
                 <span>{GROUP_LABELS[type]}</span>
-                {groupRows.length ? (
-                  <span className="action-group__count">{groupRows.length}</span>
-                ) : null}
+                <span className="action-group__count">{groupRows.length}</span>
               </h4>
-              {groupRows.length ? (
-                <ul className="action-list">
-                  {groupRows.map((row) => (
-                    <ActionRowView key={row.id} row={row} onUseFeature={onUseFeature} />
-                  ))}
-                </ul>
-              ) : null}
-              {hints.length ? (
-                <>
-                  <p className="action-group__hint">Дії в бою</p>
-                  <ul className="combat-actions">
-                    {hints.map((hint) => (
-                      <li key={hint.name} className="combat-action">
-                        <span className="combat-action__name">{hint.name}</span>
-                        <span className="combat-action__hint">{hint.hint}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : null}
+              <ul className="action-list">
+                {groupRows.map((row) => (
+                  <ActionRowView key={row.id} row={row} onUseFeature={onUseFeature} />
+                ))}
+              </ul>
             </section>
           );
         })
       )}
+
+      {filter !== "limited" && !visible.length ? (
+        <p className="hint">За цим фільтром у персонажа нічого немає — загальні дії бою є в довіднику нижче.</p>
+      ) : null}
+
+      <details className="combat-ref">
+        <summary className="combat-ref__head">
+          <span className="combat-ref__title">Дії в бою</span>
+          <span className="combat-ref__hint">загальний довідник: що взагалі можна робити в бою</span>
+        </summary>
+        <div className="combat-ref__body">
+          {(Object.keys(GROUP_LABELS) as ActionType[]).map((type) => (
+            <div key={type} className="combat-ref__group">
+              <p className="combat-ref__label">{GROUP_LABELS[type]}</p>
+              <ul className="combat-actions">
+                {COMBAT[type].map((hint) => (
+                  <li key={hint.name} className="combat-action">
+                    <span className="combat-action__name">{hint.name}</span>
+                    <span className="combat-action__hint">{hint.hint}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }
 
-function ActionRowView({
-  row,
-  onUseFeature,
-}: {
-  row: ActionRow;
-  onUseFeature: (key: string, used: number) => void;
-}) {
+function ActionRowView({ row, onUseFeature }: { row: ActionRow; onUseFeature: (key: string, used: number) => void }) {
   return (
     <li className={`action-row ${row.limited ? "is-limited" : ""}`}>
       <div className="action-row__head">
@@ -357,6 +409,7 @@ function ActionRowView({
             used={row.resource.used}
             total={row.resource.total}
             title={row.name}
+            pool={isPoolResource(row.resource.key)}
             onChange={(used) => onUseFeature(row.resource!.key, used)}
           />
         </div>
@@ -367,7 +420,7 @@ function ActionRowView({
             {row.range}
           </span>
           <span>
-            <em>Атака / ОС</em>
+            <em>Атака / КС</em>
             {row.hit}
           </span>
           <span>
@@ -376,9 +429,7 @@ function ActionRowView({
           </span>
         </div>
       )}
-      {row.resource ? null : row.notes ? (
-        <p className="action-row__notes">{row.notes}</p>
-      ) : null}
+      {row.resource ? null : row.notes ? <p className="action-row__notes">{row.notes}</p> : null}
       {row.description ? (
         <details className="action-row__more">
           <summary>як працює</summary>

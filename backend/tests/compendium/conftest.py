@@ -10,14 +10,12 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+import corpus
 import pytest
-
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.infrastructure.jsonl_corpus import JsonlCompendiumRepository
 from dndsheet.compendium.infrastructure.sources_registry import load_titles
 from dndsheet.compendium.infrastructure.spell_lists import JsonSpellListRepository
-
-import corpus
 
 
 @pytest.fixture()

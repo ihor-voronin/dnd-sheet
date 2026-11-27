@@ -5,9 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 import corpus
+import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
@@ -46,16 +45,12 @@ def page() -> Path:
 def test_parse_page_reads_classes_and_levels(page: Path) -> None:
     result = parse_page("demo", page)
     assert result.book == "demo"
-    assert result.lists == {
-        "Bard": {0: ["Blade Ward", "Vicious Mockery"], 1: ["Cure Wounds"]}
-    }
+    assert result.lists == {"Bard": {0: ["Blade Ward", "Vicious Mockery"], 1: ["Cure Wounds"]}}
     assert not result.problems
 
 
 def test_names_outside_level_sections_are_ignored(page: Path) -> None:
-    names = [
-        name for per_level in parse_page("demo", page).lists["Bard"].values() for name in per_level
-    ]
+    names = [name for per_level in parse_page("demo", page).lists["Bard"].values() for name in per_level]
     assert "Ignored Spell" not in names
 
 

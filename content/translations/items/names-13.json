@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "basic-rules-2014/item/shovel",
+   "name_uk": "Лопата"
+  },
+  {
+   "id": "basic-rules-2014/item/sickle",
+   "name_uk": "Серп"
+  },
+  {
+   "id": "basic-rules-2014/item/signal-whistle",
+   "name_uk": "Сигнальний свисток"
+  },
+  {
+   "id": "basic-rules-2014/item/signet-ring",
+   "name_uk": "Перстень-печатка"
+  },
+  {
+   "id": "egtw/item/silken-spite",
+   "name_uk": "Шовкова злоба"
+  },
+  {
+   "id": "ps-ixalan/item/silver-headdress-with-amber-and-red-coral-feathers-sun-empire",
+   "name_uk": "Срібний головний убір із бурштиновими та червоно-кораловими пір'ями (Сонячна Імперія)"
+  },
+  {
+   "id": "ps-ixalan/item/silver-medallion-sun-empire",
+   "name_uk": "Срібний медальйон (Сонячна Імперія)"
+  },
+  {
+   "id": "ps-ixalan/item/silver-necklace-with-an-amber-pendant-sun-empire",
+   "name_uk": "Срібне намисто з бурштиновим кулоном (Сонячна Імперія)"
+  },
+  {
+   "id": "ps-ixalan/item/silver-shoulder-piece-with-amber-and-garnet-sun-empire",
+   "name_uk": "Срібний наплічник із бурштином і гранатом (Сонячна Імперія)"
+  },
+  {
+   "id": "toa/item/sinda-berries-10",
+   "name_uk": "Ягоди сінда (10)"
+  },
+  {
+   "id": "moot/item/siren-song-lyre",
+   "name_uk": "Ліра сиренової пісні"
+  },
+  {
+   "id": "coa/item/skull-of-selfish-knowledge",
+   "name_uk": "Череп себелюбного знання"
+  },
+  {
+   "id": "basic-rules-2014/item/sled",
+   "name_uk": "Сани"
+  },
+  {
+   "id": "idrotf/item/sled-dog",
+   "name_uk": "Їздовий пес"
+  },
+  {
+   "id": "qftis/item/sleep-grenade",
+   "name_uk": "Граната сну"
+  },
+  {
+   "id": "basic-rules-2014/item/sling",
+   "name_uk": "Праща"
+  },
+  {
+   "id": "phb-2014/item/sling-bullets-20",
+   "name_uk": "Камінці для пращі (20)"
+  },
+  {
+   "id": "moot/item/sling-bullets-of-althemone",
+   "name_uk": "Камінці для пращі Альтемоне"
+  },
+  {
+   "id": "basic-rules-2014/item/smith-s-tools",
+   "name_uk": "Інструменти коваля"
+  },
+  {
+   "id": "phb-2014/item/smith-s-tools",
+   "name_uk": "Інструменти коваля"
+  },
+  {
+   "id": "wdh/item/smokepowder",
+   "name_uk": "Димний порох"
+  },
+  {
+   "id": "xgte/item/smoldering-armor",
+   "name_uk": "Тліюча броня"
+  },
+  {
+   "id": "twbtw/item/snicker-snack",
+   "name_uk": "Снікер-Снек"
+  },
+  {
+   "id": "idrotf/item/snowshoes",
+   "name_uk": "Снігоступи"
+  },
+  {
+   "id": "basic-rules-2014/item/soap",
+   "name_uk": "Мило"
+  },
+  {
+   "id": "xmts/item/sorcerous-spyglass",
+   "name_uk": "Чаклунська підзорна труба"
+  },
+  {
+   "id": "bgdia/item/soul-coin",
+   "name_uk": "Монета душі"
+  },
+  {
+   "id": "qftis/item/spaceship-trinket",
+   "name_uk": "Дрібничка у вигляді космічного корабля"
+  },
+  {
+   "id": "erftlw/item/speaking-stone",
+   "name_uk": "Говорящий камінь"
+  },
+  {
+   "id": "basic-rules-2014/item/spear",
+   "name_uk": "Спис"
+  },
+  {
+   "id": "tftyp/item/spear-of-backbiting",
+   "name_uk": "Спис підступності"
+  },
+  {
+   "id": "egtw/item/spell-bottle",
+   "name_uk": "Пляшка заклять"
+  },
+  {
+   "id": "oota/item/spell-gem-amber",
+   "name_uk": "Самоцвіт заклять (бурштин)"
+  },
+  {
+   "id": "oota/item/spell-gem-bloodstone",
+   "name_uk": "Самоцвіт заклять (кривавий камінь)"
+  },
+  {
+   "id": "oota/item/spell-gem-diamond",
+   "name_uk": "Самоцвіт заклять (алмаз)"
+  },
+  {
+   "id": "oota/item/spell-gem-jade",
+   "name_uk": "Самоцвіт заклять (нефрит)"
+  },
+  {
+   "id": "oota/item/spell-gem-lapis-lazuli",
+   "name_uk": "Самоцвіт заклять (лазурит)"
+  },
+  {
+   "id": "oota/item/spell-gem-obsidian",
+   "name_uk": "Самоцвіт заклять (обсидіан)"
+  },
+  {
+   "id": "oota/item/spell-gem-quartz",
+   "name_uk": "Самоцвіт заклять (кварц)"
+  },
+  {
+   "id": "oota/item/spell-gem-ruby",
+   "name_uk": "Самоцвіт заклять (рубін)"
+  },
+  {
+   "id": "oota/item/spell-gem-star-ruby",
+   "name_uk": "Самоцвіт заклять (зірчастий рубін)"
+  },
+  {
+   "id": "oota/item/spell-gem-topaz",
+   "name_uk": "Самоцвіт заклять (топаз)"
+  },
+  {
+   "id": "basic-rules-2014/item/spellbook",
+   "name_uk": "Книга заклять"
+  },
+  {
+   "id": "erftlw/item/spellshard",
+   "name_uk": "Осколок заклять"
+  },
+  {
+   "id": "tcoe/item/spellwrought-tattoo",
+   "name_uk": "Татуювання, викуване закляттям"
+  },
+  {
+   "id": "pabtso/item/spider-staff",
+   "name_uk": "Посох павука"
+  },
+  {
+   "id": "basic-rules-2014/item/spikes-iron-10",
+   "name_uk": "Шипи, залізні (10)"
+  },
+  {
+   "id": "basic-rules-2014/item/splint",
+   "name_uk": "Пластинчаста броня"
+  },
+  {
+   "id": "phb-2014/item/sprig-of-mistletoe",
+   "name_uk": "Гілочка омели"
+  },
+  {
+   "id": "basic-rules-2014/item/spyglass",
+   "name_uk": "Підзорна труба"
+  },
+  {
+   "id": "basic-rules-2014/item/stabling-per-day",
+   "name_uk": "Стійло (за день)"
+  },
+  {
+   "id": "phb-2014/item/staff",
+   "name_uk": "Посох"
+  },
+  {
+   "id": "xgte/item/staff-of-adornment",
+   "name_uk": "Посох оздоблення"
+  },
+  {
+   "id": "xgte/item/staff-of-birdcalls",
+   "name_uk": "Посох пташиних голосів"
+  },
+  {
+   "id": "pabtso/item/staff-of-defense",
+   "name_uk": "Посох захисту"
+  },
+  {
+   "id": "egtw/item/staff-of-dunamancy",
+   "name_uk": "Посох дунамантії"
+  },
+  {
+   "id": "xgte/item/staff-of-flowers",
+   "name_uk": "Посох квітів"
+  },
+  {
+   "id": "qftis/item/staff-of-ruling",
+   "name_uk": "Посох правління"
+  },
+  {
+   "id": "dmg-2014/item/staff-of-the-adder",
+   "name_uk": "Посох гадюки"
+  },
+  {
+   "id": "toa/item/staff-of-the-forgotten-one",
+   "name_uk": "Посох Забутого"
+  }
+ ]
+}

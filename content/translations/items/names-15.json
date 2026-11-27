@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "erftlw/item/ventilating-lungs",
+   "name_uk": "Вентиляційні легені"
+  },
+  {
+   "id": "egtw/item/verminshroud",
+   "name_uk": "Покрив паразитів"
+  },
+  {
+   "id": "xgte/item/veteran-s-cane",
+   "name_uk": "Ціпок ветерана"
+  },
+  {
+   "id": "basic-rules-2014/item/vial",
+   "name_uk": "Флакон"
+  },
+  {
+   "id": "coa/item/vial-of-greed",
+   "name_uk": "Флакон жадібності"
+  },
+  {
+   "id": "azfyt/item/vial-of-thought-capture",
+   "name_uk": "Флакон захоплення думок"
+  },
+  {
+   "id": "phb-2014/item/viol",
+   "name_uk": "Віола"
+  },
+  {
+   "id": "egtw/item/vox-seeker",
+   "name_uk": "Шукач голосу"
+  },
+  {
+   "id": "basic-rules-2014/item/wagon",
+   "name_uk": "Фургон"
+  },
+  {
+   "id": "xgte/item/walloping-ammunition",
+   "name_uk": "Боєприпаси, що збивають з ніг"
+  },
+  {
+   "id": "phb-2014/item/wand",
+   "name_uk": "Палочка"
+  },
+  {
+   "id": "xgte/item/wand-of-conducting",
+   "name_uk": "Палочка диригування"
+  },
+  {
+   "id": "tftyp/item/wand-of-entangle",
+   "name_uk": "Палочка заплутування"
+  },
+  {
+   "id": "dmg-2014/item/wand-of-orcus",
+   "name_uk": "Палочка Оркуса"
+  },
+  {
+   "id": "xgte/item/wand-of-pyrotechnics",
+   "name_uk": "Палочка піротехніки"
+  },
+  {
+   "id": "twbtw/item/wand-of-scowls",
+   "name_uk": "Палочка насупленості"
+  },
+  {
+   "id": "twbtw/item/wand-of-smiles",
+   "name_uk": "Палочка усмішок"
+  },
+  {
+   "id": "oota/item/wand-of-viscid-globs",
+   "name_uk": "Палочка липких грудок"
+  },
+  {
+   "id": "hotdq/item/wand-of-winter",
+   "name_uk": "Палочка зими"
+  },
+  {
+   "id": "erftlw/item/wand-sheath",
+   "name_uk": "Піхви для палочки"
+  },
+  {
+   "id": "gotg/item/war-horn-of-valor",
+   "name_uk": "Бойовий ріг доблесті"
+  },
+  {
+   "id": "basic-rules-2014/item/war-pick",
+   "name_uk": "Бойове кайло"
+  },
+  {
+   "id": "basic-rules-2014/item/warhammer",
+   "name_uk": "Бойовий молот"
+  },
+  {
+   "id": "basic-rules-2014/item/warhorse",
+   "name_uk": "Бойовий кінь"
+  },
+  {
+   "id": "basic-rules-2014/item/warship",
+   "name_uk": "Бойовий корабель"
+  },
+  {
+   "id": "basic-rules-2014/item/waterskin",
+   "name_uk": "Бурдюк"
+  },
+  {
+   "id": "dmg-2014/item/wave",
+   "name_uk": "Хвиля"
+  },
+  {
+   "id": "gotg/item/wayfarers-boots",
+   "name_uk": "Чоботи подорожнього"
+  },
+  {
+   "id": "tftyp/item/waythe",
+   "name_uk": "Вейт"
+  },
+  {
+   "id": "egtw/item/weapon-of-certain-death",
+   "name_uk": "Зброя неминучої смерті"
+  },
+  {
+   "id": "dmg-2014/item/weapon-of-warning",
+   "name_uk": "Зброя попередження"
+  },
+  {
+   "id": "basic-rules-2014/item/weaver-s-tools",
+   "name_uk": "Інструменти ткача"
+  },
+  {
+   "id": "phb-2014/item/weaver-s-tools",
+   "name_uk": "Інструменти ткача"
+  },
+  {
+   "id": "ai/item/wheel-of-stars",
+   "name_uk": "Колесо зірок"
+  },
+  {
+   "id": "erftlw/item/wheel-of-wind-and-water",
+   "name_uk": "Колесо вітру та води"
+  },
+  {
+   "id": "dmg-2014/item/whelm",
+   "name_uk": "Велм"
+  },
+  {
+   "id": "basic-rules-2014/item/whetstone",
+   "name_uk": "Точильний камінь"
+  },
+  {
+   "id": "basic-rules-2014/item/whip",
+   "name_uk": "Батіг"
+  },
+  {
+   "id": "tod/item/white-dragon-mask",
+   "name_uk": "Маска білого дракона"
+  },
+  {
+   "id": "jttrc/item/white-ghost-orchid-seed",
+   "name_uk": "Насіння білої орхідеї-привида"
+  },
+  {
+   "id": "toa/item/wildroot",
+   "name_uk": "Дикий корінь"
+  },
+  {
+   "id": "egtw/item/will-of-the-talon",
+   "name_uk": "Воля Кігтя"
+  },
+  {
+   "id": "hcs/item/wing-crest-shield",
+   "name_uk": "Щит з крилатим гербом"
+  },
+  {
+   "id": "hftt/item/winter-s-dark-bite",
+   "name_uk": "Темний укус зими"
+  },
+  {
+   "id": "basic-rules-2014/item/woodcarver-s-tools",
+   "name_uk": "Інструменти різьбяра"
+  },
+  {
+   "id": "phb-2014/item/woodcarver-s-tools",
+   "name_uk": "Інструменти різьбяра"
+  },
+  {
+   "id": "twbtw/item/woodcutter-s-axe",
+   "name_uk": "Сокира лісоруба"
+  },
+  {
+   "id": "phb-2014/item/wooden-staff",
+   "name_uk": "Дерев'яний посох"
+  },
+  {
+   "id": "egtw/item/wreath-of-the-prism",
+   "name_uk": "Вінок призми"
+  },
+  {
+   "id": "coa/item/wrought-iron-tower",
+   "name_uk": "Вежа з кованого заліза"
+  },
+  {
+   "id": "toa/item/wukka-nut",
+   "name_uk": "Горіх вукка"
+  },
+  {
+   "id": "gotg/item/wyrmreaver-gauntlets",
+   "name_uk": "Рукавиці драконоруба"
+  },
+  {
+   "id": "skt/item/wyrmskull-throne",
+   "name_uk": "Трон черепа виверни"
+  },
+  {
+   "id": "toa/item/yahcha",
+   "name_uk": "Яхча"
+  },
+  {
+   "id": "cos/item/yester-hill-axe",
+   "name_uk": "Сокира Єстер-Гілла"
+  },
+  {
+   "id": "phb-2014/item/yew-wand",
+   "name_uk": "Тисова палочка"
+  },
+  {
+   "id": "toa/item/yklwa",
+   "name_uk": "Іклва"
+  },
+  {
+   "id": "idrotf/item/ythryn-mythallar",
+   "name_uk": "Міталлар Ітріна"
+  },
+  {
+   "id": "toa/item/zabou",
+   "name_uk": "Забу"
+  },
+  {
+   "id": "gotg/item/zephyr-armor",
+   "name_uk": "Броня зефіру"
+  }
+ ]
+}

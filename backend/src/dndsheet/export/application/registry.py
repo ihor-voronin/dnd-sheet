@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dndsheet.export.domain.renderer import RenderFormat, RendererError, SheetRenderer
+from dndsheet.export.domain.renderer import RendererError, RenderFormat, SheetRenderer
 
 
 class RendererRegistry:

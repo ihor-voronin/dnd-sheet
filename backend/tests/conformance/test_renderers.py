@@ -8,8 +8,7 @@ from __future__ import annotations
 import io
 
 import pytest
-
-from dndsheet.export.domain.renderer import RenderOptions, RendererError, check_contract
+from dndsheet.export.domain.renderer import RendererError, RenderOptions, check_contract
 from dndsheet.export.infrastructure.markdown_renderer import MarkdownRenderer
 from dndsheet.export.infrastructure.pdf_renderer import PdfRenderer
 from dndsheet.sheets.domain.document import SheetDocument
@@ -66,18 +65,12 @@ def test_markdown_shows_english_originals(
     assert "Strength" in text
 
 
-def test_markdown_can_hide_originals(
-    documents: dict[str, SheetDocument], markdown_renderer: MarkdownRenderer
-) -> None:
-    text = markdown_renderer.render(
-        documents["minimal"], RenderOptions(show_originals=False)
-    ).content.decode("utf-8")
+def test_markdown_can_hide_originals(documents: dict[str, SheetDocument], markdown_renderer: MarkdownRenderer) -> None:
+    text = markdown_renderer.render(documents["minimal"], RenderOptions(show_originals=False)).content.decode("utf-8")
     assert "Strength" not in text
 
 
-def test_markdown_result_metadata(
-    documents: dict[str, SheetDocument], markdown_renderer: MarkdownRenderer
-) -> None:
+def test_markdown_result_metadata(documents: dict[str, SheetDocument], markdown_renderer: MarkdownRenderer) -> None:
     result = markdown_renderer.render(documents["minimal"])
     assert result.media_type.startswith("text/markdown")
     assert result.filename == "character-sheet.md"
@@ -109,9 +102,7 @@ def test_renderers_report_availability() -> None:
     import importlib.util
 
     assert MarkdownRenderer().available() is True
-    assert PdfRenderer().available() is (
-        importlib.util.find_spec("weasyprint") is not None
-    )
+    assert PdfRenderer().available() is (importlib.util.find_spec("weasyprint") is not None)
 
 
 def test_major_version_mismatch_is_refused(documents: dict[str, SheetDocument]) -> None:

@@ -13,8 +13,7 @@ import httpx
 from . import config
 
 USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 )
 
 # Ознаки того, що сервер віддав справжню сторінку книги, а не заглушку.
@@ -58,9 +57,7 @@ class SessionError(RuntimeError):
 def load_cookie_header(path: pathlib.Path = config.COOKIE_FILE) -> str:
     """Будує заголовок Cookie з експорту браузера (список обʼєктів name/value/domain)."""
     if not path.exists():
-        raise SessionError(
-            f"Немає файлу сесії {path}. Експортуй cookies браузера у цей файл."
-        )
+        raise SessionError(f"Немає файлу сесії {path}. Експортуй cookies браузера у цей файл.")
     data = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(data, dict):
         data = data.get("cookies", [])
@@ -102,9 +99,7 @@ class Fetcher:
             self.has_cookies = True
         else:
             self.has_cookies = False
-        self.client = httpx.Client(
-            follow_redirects=True, timeout=config.TIMEOUT, headers=headers
-        )
+        self.client = httpx.Client(follow_redirects=True, timeout=config.TIMEOUT, headers=headers)
 
     def close(self) -> None:
         self.client.close()
@@ -130,18 +125,16 @@ class Fetcher:
                 response = self.client.get(url)
             except httpx.HTTPError as exc:  # мережа
                 last_error = exc
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
                 continue
 
             self.requests_made += 1
             if response.status_code in (429, 502, 503, 504):
                 last_error = SessionError(f"HTTP {response.status_code} на {url}")
-                time.sleep(min(60, 4 * 2 ** attempt))
+                time.sleep(min(60, 4 * 2**attempt))
                 continue
             if response.status_code in (401, 403):
-                raise ChallengeError(
-                    f"HTTP {response.status_code} — сесія недійсна або закінчилась ({url})"
-                )
+                raise ChallengeError(f"HTTP {response.status_code} — сесія недійсна або закінчилась ({url})")
 
             # DDB віддає UTF-8, але без явного charset у заголовку httpx може
             # вгадати неправильно — декодуємо самі, щоб не ловити «?» замість апострофів.
@@ -158,14 +151,7 @@ class Fetcher:
     def _missing_content(self, url: str, lowered: str) -> Never:
         """У відповіді немає тіла статті — пояснюємо, чому саме."""
         if any(marker in lowered for marker in BLOCK_MARKERS):
-            raise ChallengeError(
-                f"CAPTCHA/верифікація: розвʼяжи її у вікні браузера, "
-                f"потім перезапусти етап ({url})"
-            )
+            raise ChallengeError(f"CAPTCHA/верифікація: розвʼяжи її у вікні браузера, потім перезапусти етап ({url})")
         if not self.has_cookies:
-            raise SessionError(
-                f"потрібна сесія: без cookies сервер віддає заглушку замість статті ({url})"
-            )
-        raise ChallengeError(
-            f"сесія прострочена або недійсна — у відповіді немає тіла статті ({url})"
-        )
+            raise SessionError(f"потрібна сесія: без cookies сервер віддає заглушку замість статті ({url})")
+        raise ChallengeError(f"сесія прострочена або недійсна — у відповіді немає тіла статті ({url})")

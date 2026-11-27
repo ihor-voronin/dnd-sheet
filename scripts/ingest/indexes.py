@@ -33,9 +33,7 @@ def sync(source: str) -> list[str]:
     if added:
         payload["pages"] = pages
         payload["count"] = len(pages)
-        index_file.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        index_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return added
 
 

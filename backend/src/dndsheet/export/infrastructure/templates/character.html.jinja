@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+{#-
+  Лист персонажа для друку (A4). Дані — `print_view.build_print_view`: усе вже
+  українською, тексти правил розібрані на блоки. Шаблон працює і у WeasyPrint
+  (PDF), і в браузері (друк із вкладки), тому лише CSS, який розуміють обидва:
+  grid/flex, рамки `double`, псевдоелементи, `transform` — без тіней і clip-path.
+-#}
+{%- macro pair(row) -%}
+  <span class="nm">{{ row.title }}</span>{% if row.en and o.show_originals %} <span class="en">{{ row.en }}</span>{% endif %}
+{%- endmacro -%}
+{%- macro blocks(rows) -%}
+  {%- for b in rows -%}
+    {%- if b.kind == 'h' -%}<h5>{{ b.text }}</h5>
+    {%- elif b.kind == 'ul' -%}<ul>{% for item in b['items'] %}<li>{{ item }}</li>{% endfor %}</ul>
+    {%- elif b.kind == 'table' -%}
+      <table class="rule-table"><thead><tr>{% for c in b.header %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for r in b.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>
+    {%- else -%}
+      <p{% if b.muted %} class="muted"{% endif %}>{% if b.lead %}<b>{{ b.lead }}</b> {% endif %}{{ b.text }}</p>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endmacro -%}
+{%- macro lines(n) -%}<div class="ruled">{% for i in range(n) %}<div></div>{% endfor %}</div>{%- endmacro -%}
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>{{ v.name }} — лист персонажа</title>
+<style>
+  @font-face { font-family: "AlegreyaC"; src: url("{{ font['alegreya-cyrillic-400-normal.woff2'] }}"); font-weight: 400; }
+  @font-face { font-family: "AlegreyaC"; src: url("{{ font['alegreya-cyrillic-700-normal.woff2'] }}"); font-weight: 700; }
+  @font-face { font-family: "AlegreyaC"; src: url("{{ font['alegreya-cyrillic-400-italic.woff2'] }}"); font-style: italic; }
+  @font-face { font-family: "AlegreyaL"; src: url("{{ font['alegreya-latin-400-normal.woff2'] }}"); font-weight: 400; }
+  @font-face { font-family: "AlegreyaL"; src: url("{{ font['alegreya-latin-700-normal.woff2'] }}"); font-weight: 700; }
+  @font-face { font-family: "AlegreyaL"; src: url("{{ font['alegreya-latin-400-italic.woff2'] }}"); font-style: italic; }
+  @font-face { font-family: "SansC"; src: url("{{ font['alegreya-sans-cyrillic-400-normal.woff2'] }}"); font-weight: 400; }
+  @font-face { font-family: "SansC"; src: url("{{ font['alegreya-sans-cyrillic-500-normal.woff2'] }}"); font-weight: 500; }
+  @font-face { font-family: "SansC"; src: url("{{ font['alegreya-sans-cyrillic-700-normal.woff2'] }}"); font-weight: 700; }
+  @font-face { font-family: "SansC"; src: url("{{ font['alegreya-sans-cyrillic-400-italic.woff2'] }}"); font-style: italic; }
+  @font-face { font-family: "SansL"; src: url("{{ font['alegreya-sans-latin-400-normal.woff2'] }}"); font-weight: 400; }
+  @font-face { font-family: "SansL"; src: url("{{ font['alegreya-sans-latin-500-normal.woff2'] }}"); font-weight: 500; }
+  @font-face { font-family: "SansL"; src: url("{{ font['alegreya-sans-latin-700-normal.woff2'] }}"); font-weight: 700; }
+  @font-face { font-family: "SansL"; src: url("{{ font['alegreya-sans-latin-400-italic.woff2'] }}"); font-style: italic; }
+  @font-face { font-family: "CapsC"; src: url("{{ font['alegreya-sans-sc-cyrillic-500-normal.woff2'] }}"); font-weight: 500; }
+  @font-face { font-family: "CapsC"; src: url("{{ font['alegreya-sans-sc-cyrillic-700-normal.woff2'] }}"); font-weight: 700; }
+  @font-face { font-family: "CapsL"; src: url("{{ font['alegreya-sans-sc-latin-500-normal.woff2'] }}"); font-weight: 500; }
+  @font-face { font-family: "CapsL"; src: url("{{ font['alegreya-sans-sc-latin-700-normal.woff2'] }}"); font-weight: 700; }
+
+  :root {
+    --serif: "AlegreyaC", "AlegreyaL", "DejaVu Serif", serif;
+    --sans: "SansC", "SansL", "DejaVu Sans", sans-serif;
+    --caps: "CapsC", "CapsL", "SansC", "DejaVu Sans", sans-serif;
+  }
+
+  /* Друк чорним по білому: ієрархія — розміром і жирністю, без кольору й заливок. */
+  @page {
+    size: A4;
+    margin: 9mm 9mm 10mm 9mm;
+    @bottom-left { content: "{{ v.name }} · D&D 5e (2014)"; font: 7pt "SansC", "SansL", sans-serif; color: #000; }
+    @bottom-right { content: counter(page) " / " counter(pages); font: 7pt "SansC", "SansL", sans-serif; color: #000; }
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--sans); font-size: 8.6pt; line-height: 1.25; color: #000; background: #fff; }
+  .sheet { width: 192mm; margin: 0 auto; }
+  .page { break-after: page; }
+  .page:last-child { break-after: auto; }
+  /* У вкладці браузера — сторінки окремими аркушами; на друк це не впливає. */
+  @media screen {
+    body { background: #fff; }
+    .sheet { width: 210mm; }
+    .page { width: 210mm; padding: 9mm; margin: 0 auto 8mm; border: 0.6pt solid #000; }
+  }
+  h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
+  p { margin: 0 0 1.3mm; }
+  ul { margin: 0 0 1.3mm; padding-left: 4mm; }
+  .en { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 0.8em; }
+  .muted { font-style: italic; }
+  .lbl { font-family: var(--caps); font-weight: 500; font-size: 6.4pt; letter-spacing: 0.06em; text-transform: lowercase; }
+
+  /* --- рамки ------------------------------------------------------------ */
+  .frame {
+    position: relative;
+    border: 2.2pt double #000;
+    border-radius: 0;
+    padding: 2.4mm 2.8mm 3.6mm;
+    margin-top: 2.6mm;
+    background: #fff;
+    break-inside: avoid;
+  }
+  .frame > .tag {
+    position: absolute;
+    bottom: -2.1mm;
+    /* Центр через translateX: WeasyPrint не знає `max-content`, і підпис на всю
+       ширину своїм білим тлом перекривав нижню лінію рамки. */
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    padding: 0 2mm;
+    background: #fff;
+    font-family: var(--caps);
+    font-weight: 700;
+    font-size: 8pt;
+    letter-spacing: 0.07em;
+    text-transform: lowercase;
+    line-height: 1;
+  }
+  /* Увігнуті кути: білий круг на куті рамки з дугою, повернутою всередину. */
+  .c { position: absolute; width: 4.6mm; height: 4.6mm; border-radius: 50%; background: #fff; border: 0 solid transparent; border-bottom: 2.2pt double #000; }
+  .c.tl { top: -3.1mm; left: -3.1mm; transform: rotate(-45deg); }
+  .c.tr { top: -3.1mm; right: -3.1mm; transform: rotate(45deg); }
+  .c.bl { bottom: -3.1mm; left: -3.1mm; transform: rotate(-135deg); }
+  .c.br { bottom: -3.1mm; right: -3.1mm; transform: rotate(135deg); }
+  .ability .c, .stat .c { width: 4mm; height: 4mm; }
+  /* Щит заокруглений знизу — там увігнутих кутів немає. */
+  .ability .c.bl, .ability .c.br, .stat.shield .c.bl, .stat.shield .c.br { display: none; }
+  .thin { border: 0.7pt solid #000; border-radius: 1.6mm; padding: 1.2mm 2mm; }
+
+  /* --- шапка ------------------------------------------------------------ */
+  .head { display: grid; grid-template-columns: 68mm minmax(0, 1fr); gap: 3mm; height: 30mm; }
+  .banner { position: relative; border: 2.2pt double #000; border-radius: 0; padding: 2.2mm 4mm 2mm; display: flex; flex-direction: column; justify-content: center; }
+  .banner .name { font-family: var(--serif); font-weight: 700; font-size: 18pt; line-height: 1.05; }
+  .banner .sub { margin-top: 1mm; }
+  .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.4mm 2.4mm; }
+  .fact { border-bottom: 0.7pt solid #000; padding: 0.4mm 0 0.3mm; }
+  .fact .val { font-family: var(--serif); font-weight: 700; font-size: 10.5pt; line-height: 1.15; }
+  .fact .val small { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 7pt; }
+
+  /* --- аркуш для гри: три колонки на всю висоту ------------------------ */
+  /* Висоти задані в мм: WeasyPrint не стискає сітку під залишок сторінки через flex. */
+  .cols3 { height: 244mm; display: grid; grid-template-columns: 27mm 60mm minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 3mm; margin-top: 1mm; }
+  .col { display: flex; flex-direction: column; }
+  /* Рамки — за розміром вмісту; лише `.grow` забирає залишок колонки. */
+  .col > * { flex: 0 0 auto; }
+  .col > .grow { flex: 1 1 auto; }
+  /* Щити характеристик компактні й ідуть щільно; решту колонки займають малі блоки. */
+  .col.abil .ability { margin: 2.4mm 0 3.8mm; padding: 1.3mm 1mm 4.2mm; }
+  .mini-box { border: 0.7pt solid #000; border-radius: 1.6mm; text-align: center; padding: 0.8mm 0.6mm 0.9mm; margin-top: 1.8mm; }
+  .mini-box .mini-num { font-family: var(--serif); font-weight: 700; font-size: 12pt; line-height: 1.1; min-height: 4.6mm; }
+  .mini-box .lbl { line-height: 1.1; font-size: 6pt; }
+  .mini-box .mini-num.mark { font-size: 7pt; letter-spacing: 0; line-height: 4.6mm; }
+
+  .ability { position: relative; border: 2.2pt double #000; border-radius: 0 0 6mm 6mm; margin-top: 2.6mm; padding: 1.8mm 1mm 5.2mm; text-align: center; }
+  .ability .lbl { font-weight: 700; font-size: 7pt; }
+  .ability .mod { font-family: var(--serif); font-weight: 700; font-size: 17pt; line-height: 1.05; }
+  .ability .score { position: absolute; left: 50%; bottom: -3.2mm; width: 11mm; margin-left: -5.5mm; border: 1.1pt solid #000; border-radius: 3.4mm; background: #fff; font-family: var(--serif); font-size: 10pt; line-height: 5.2mm; }
+
+  .pill-row { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm; margin-top: 2.6mm; }
+  .pill { display: flex; align-items: center; gap: 1.6mm; border: 0.7pt solid #000; border-radius: 4mm; padding: 0.8mm 2mm 0.8mm 0.8mm; }
+  .pill .num { width: 8mm; height: 8mm; border: 1.3pt solid #000; border-radius: 50%; text-align: center; font-family: var(--serif); font-weight: 700; font-size: 11pt; line-height: 7.4mm; }
+  .pill .lbl { line-height: 1.1; }
+
+  table.rows { width: 100%; border-collapse: collapse; }
+  table.rows td { padding: 0.42mm 0.8mm 0.38mm 0; border-bottom: 0.3pt dotted #000; vertical-align: baseline; }
+  table.rows tr:last-child td { border-bottom: 0; }
+  table.rows td.mk { width: 3.4mm; font-size: 8pt; text-align: center; }
+  table.rows td.v { width: 7mm; text-align: right; padding-right: 1.6mm; font-family: var(--serif); font-weight: 700; font-size: 9pt; }
+  table.rows td.ab { width: 7mm; text-align: right; }
+  .flag { font-family: var(--caps); font-weight: 700; font-size: 6pt; }
+  .legend { font-size: 6.6pt; font-style: italic; margin-top: 0.8mm; }
+  .frame + .legend { margin-top: 3.4mm; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.4mm; margin-top: 2.6mm; }
+  .stat { position: relative; border: 2.2pt double #000; border-radius: 0; text-align: center; padding: 1.3mm 0.6mm 1.1mm; }
+  .stat.shield { border-radius: 0 0 9mm 9mm; padding-bottom: 2.4mm; }
+  .stat .big { font-family: var(--serif); font-weight: 700; font-size: 20pt; line-height: 1.05; }
+  .stat .big small { font-size: 9pt; }
+  .stat .lbl { font-weight: 700; }
+  .stat .note { font-size: 6.2pt; line-height: 1.1; }
+
+  .hp { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 2mm; }
+  .hp .cell { text-align: center; }
+  .hp .box { border: 0.7pt solid #000; border-radius: 1.6mm; height: 11mm; font-family: var(--serif); font-weight: 700; font-size: 15pt; line-height: 11mm; }
+  .hp .cell.cur .box { border: 1.6pt solid #000; height: 13mm; line-height: 13mm; font-size: 20pt; }
+  .mini { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm; margin-top: 1.8mm; }
+  .mini .val { font-family: var(--serif); font-weight: 700; font-size: 11pt; }
+  .mark, .sym, td.mk { font-family: "DejaVu Sans", sans-serif; font-style: normal; }
+  .mark { font-size: 8.6pt; letter-spacing: 0.3mm; }
+
+  table.grid { width: 100%; border-collapse: collapse; }
+  table.grid th { font-family: var(--caps); font-weight: 700; font-size: 6.4pt; letter-spacing: 0.05em; text-transform: lowercase; text-align: left; border-bottom: 0.7pt solid #000; padding: 0 1mm 0.5mm 0; }
+  table.grid td { padding: 0.7mm 1mm 0.6mm 0; border-bottom: 0.3pt dotted #000; vertical-align: top; }
+  table.grid tr:last-child td { border-bottom: 0; }
+  table.grid td.num { font-family: var(--serif); font-weight: 700; white-space: nowrap; }
+  table.grid td.empty { height: 5.2mm; }
+  table.grid .note { display: block; font-size: 6.6pt; font-style: italic; }
+  table.grid td.mk { width: 3.6mm; font-size: 8.4pt; }
+
+  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 2mm; margin: 0; }
+  /* Лінія між групами (броня, зброя, інструменти, мови…), щоб око не плутало рядки. */
+  .kv dt, .kv dd { padding: 0.9mm 0 0.8mm; border-bottom: 0.4pt solid #000; }
+  .kv > :nth-last-child(-n+2) { border-bottom: 0; }
+  .kv dt { font-family: var(--caps); font-weight: 700; font-size: 6.8pt; letter-spacing: 0.04em; text-transform: lowercase; }
+  .kv dd { margin: 0; }
+
+  .res { display: flex; justify-content: space-between; align-items: baseline; gap: 2mm; padding: 0.55mm 0; border-bottom: 0.3pt dotted #000; }
+  .res:last-child { border-bottom: 0; }
+  .res .meta { font-size: 6.4pt; font-style: italic; }
+  .res .count { font-family: var(--serif); font-weight: 700; white-space: nowrap; }
+
+  .toc { columns: 2; column-gap: 4mm; }
+  .toc div { break-inside: avoid; padding: 0.3mm 0; }
+  .toc .lv { font-size: 6.4pt; font-style: italic; }
+
+  .ruled div { height: 5.4mm; border-bottom: 0.4pt solid #000; }
+
+  /* --- закляття (для гри) ---------------------------------------------- */
+  .page-title { position: relative; display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2.2pt double #000; padding-bottom: 1.2mm; margin-bottom: 1.4mm; }
+  .page-title h2 { font-family: var(--serif); font-size: 16pt; }
+  /* Чарування — таблиця, по рядку на клас: у мультикласі в кожного своя складність і атака. */
+  table.cast { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.cast th { font-family: var(--caps); font-weight: 700; font-size: 6.4pt; letter-spacing: 0.05em; text-transform: lowercase; text-align: center; border-bottom: 0.7pt solid #000; padding: 0 1mm 0.6mm; }
+  table.cast th:first-child { text-align: left; width: 26%; }
+  table.cast td { text-align: center; vertical-align: baseline; padding: 0.9mm 1mm 0.7mm; border-bottom: 0.4pt solid #000; }
+  table.cast tr:last-child td { border-bottom: 0; }
+  table.cast td.cls { text-align: left; font-family: var(--serif); font-weight: 700; font-size: 11pt; }
+  table.cast td.ab { font-family: var(--serif); font-size: 10.5pt; }
+  table.cast .big { font-family: var(--serif); font-weight: 700; font-size: 14pt; line-height: 1; }
+  .slots { display: flex; flex-wrap: wrap; gap: 1.6mm 5mm; align-items: baseline; }
+  .slot .lv { font-family: var(--serif); font-weight: 700; font-size: 10pt; margin-right: 1mm; }
+  table.spell-table { table-layout: fixed; }
+  .spell-table th:nth-child(1) { width: 4mm; }
+  .spell-table th:nth-child(2) { width: 33%; }
+  .spell-table th:nth-child(3) { width: 14%; }
+  .spell-table th:nth-child(4) { width: 12%; }
+  .spell-table th:nth-child(5) { width: 14%; }
+  .spell-table th:nth-child(6) { width: 11%; }
+  /* Мультиклас: усередині рівня — підзаголовок класу з його складністю й атакою. */
+  tr.grp td { padding-top: 1.4mm; border-bottom: 0.7pt solid #000; font-family: var(--caps); font-size: 7.4pt; letter-spacing: 0.05em; text-transform: lowercase; }
+  tr.grp td b { font-weight: 700; }
+  .grp-meta { font-weight: 500; }
+
+  /* --- спорядження й нотатки ------------------------------------------- */
+  .coins { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2.4mm; margin-top: 1mm; }
+  .coin { text-align: center; border: 1.1pt solid #000; border-radius: 50% / 45%; padding: 0.8mm 0; }
+  .coin .big { font-family: var(--serif); font-weight: 700; font-size: 12pt; line-height: 1.1; }
+  .coin .lbl { font-weight: 700; }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 3mm; }
+  .note-text { text-align: justify; }
+
+  /* --- журнал пригод ------------------------------------------------------ */
+  table.jtable { table-layout: fixed; }
+  table.jtable th:nth-child(1) { width: 22mm; }
+  table.jtable th:nth-child(3) { width: 32mm; }
+  table.jtable td { height: 5.9mm; border-bottom: 0.4pt solid #000; border-right: 0.3pt dotted #000; }
+  table.jtable td:last-child { border-right: 0; }
+  table.jtable tr:last-child td { border-bottom: 0; }
+
+  /* --- розширений лист: тексти правил ---------------------------------- */
+  .cols { columns: 2; column-gap: 5mm; column-rule: 0.3pt solid #000; }
+  .group-title { font-family: var(--caps); font-weight: 700; font-size: 9pt; letter-spacing: 0.07em; text-transform: lowercase; border-bottom: 0.7pt solid #000; margin: 2.2mm 0 1.2mm; padding-bottom: 0.4mm; break-after: avoid; }
+  .entry { break-inside: avoid-column; margin-bottom: 2mm; text-align: justify; hyphens: auto; }
+  .entry.long { break-inside: auto; }
+  .entry h4 { font-family: var(--serif); font-size: 10pt; line-height: 1.15; margin-bottom: 0.5mm; text-align: left; break-after: avoid; }
+  .entry h4 .meta { font-family: var(--caps); font-weight: 500; font-size: 6.4pt; letter-spacing: 0.05em; text-transform: lowercase; }
+  .entry h5 { font-family: var(--serif); font-size: 9pt; margin: 1mm 0 0.4mm; }
+  .spell-meta { font-size: 6.8pt; font-style: italic; margin-bottom: 0.6mm; }
+  .rule-table { width: 100%; border-collapse: collapse; margin: 0.6mm 0 1.6mm; font-size: 7.4pt; }
+  .rule-table th { text-align: left; border-bottom: 0.7pt solid #000; font-family: var(--caps); font-weight: 700; font-size: 6.6pt; }
+  .rule-table td { border-bottom: 0.3pt dotted #000; padding: 0.3mm 1mm 0.3mm 0; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+{# ============== 1. головний аркуш: усе для гри, без суцільного тексту ============== #}
+<section class="page">
+  <header class="head">
+    <div class="banner"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+      <div class="name">{{ v.name }}</div>
+      <div class="sub lbl">лист персонажа · Книга гравця 2014</div>
+    </div>
+    <div class="facts">
+      {% for f in v.header %}
+      <div class="fact">
+        <div class="val">{{ f.value }}{% if f.small and o.show_originals %} <small>{{ f.small }}</small>{% endif %}</div>
+        <div class="lbl">{{ f.label }}</div>
+      </div>
+      {% endfor %}
+      <div class="fact">
+        <div class="val">{{ v.proficiency_bonus }}</div>
+        <div class="lbl">Бонус майстерності</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="cols3">
+    <div class="col abil">
+      {% for a in v.abilities %}
+      <div class="ability"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <div class="lbl">{{ a.name }}</div>
+        <div class="mod">{{ a.mod }}</div>
+        <div class="score">{{ a.score }}</div>
+      </div>
+      {% endfor %}
+      <div class="mini-box">
+        <div class="mini-num">{{ '✦' if v.inspiration else '' }}</div>
+        <div class="lbl">натхнення</div>
+      </div>
+      <div class="mini-box">
+        <div class="mini-num">{{ v.proficiency_bonus }}</div>
+        <div class="lbl">бонус майстер&shy;ності</div>
+      </div>
+      {% for label, value in v.passives %}
+      <div class="mini-box">
+        <div class="mini-num">{{ value }}</div>
+        <div class="lbl">пасивна {{ label|lower }}</div>
+      </div>
+      {% endfor %}
+      <div class="mini-box">
+        <div class="mini-num mark">{% for i in range(6) %}{{ '●' if i < v.combat.exhaustion else '○' }}{% endfor %}</div>
+        <div class="lbl">виснаження</div>
+      </div>
+      <div class="mini-box grow">
+        <div class="lbl">стани</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">рятівні кидки</span>
+        <table class="rows">
+          {% for s in v.saves %}
+          <tr><td class="mk">{{ '●' if s.proficient else '○' }}</td><td class="v">{{ s.value }}</td><td>{{ s.name }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">навички</span>
+        <table class="rows">
+          {% for s in v.skills %}
+          <tr>
+            <td class="mk">{{ '◆' if s.expertise else ('●' if s.proficient else '○') }}</td>
+            <td class="v">{{ s.value }}</td>
+            <td>{{ s.name }}{% if s.disadvantage %} <span class="flag">перешкода</span>{% endif %}</td>
+            <td class="ab lbl">{{ s.ability }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+        <div class="legend"><span class="sym">●</span> володіння · <span class="sym">◆</span> експертність</div>
+      </div>
+
+      <div class="frame grow"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">володіння й мови</span>
+        <dl class="kv">
+          {% for label, value in v.proficiencies %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
+          {% for label, value in v.senses %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
+        </dl>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="stats">
+        <div class="stat shield"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+          <div class="lbl">клас захисту</div>
+          <div class="big">{{ v.combat.ac }}</div>
+        </div>
+        <div class="stat"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+          <div class="lbl">ініціатива</div>
+          <div class="big">{{ v.combat.initiative }}</div>
+        </div>
+        <div class="stat"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+          <div class="lbl">швидкість</div>
+          <div class="big">{{ v.combat.speed }}<small> фт</small></div>
+          <div class="note">≈ {{ (v.combat.speed * 0.3) | round(1) | replace('.0', '') }} м</div>
+        </div>
+      </div>
+
+      <div class="frame ornate"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">хіти</span>
+        <div class="hp">
+          <div class="cell"><div class="box">{{ v.combat.hp_max }}</div><div class="lbl">максимум</div></div>
+          <div class="cell cur"><div class="box"></div><div class="lbl">поточні</div></div>
+          <div class="cell"><div class="box"></div><div class="lbl">тимчасові</div></div>
+        </div>
+        <div class="mini">
+          <div class="thin">
+            <div class="lbl">кістки хітів</div>
+            <div class="val">{{ v.combat.hit_dice }}</div>
+          </div>
+          <div class="thin">
+            <div class="lbl">кидки смерті</div>
+            <div>успіхи <span class="mark">○○○</span></div>
+            <div>провали <span class="mark">○○○</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">атаки й заговори{% if v.attacks_per_action > 1 %} · {{ v.attacks_per_action }} атаки за дію{% endif %}</span>
+        <table class="grid">
+          <thead><tr><th>назва</th><th>влуч.</th><th>урон і тип</th><th>дальність</th></tr></thead>
+          <tbody>
+          {% for a in v.attacks[:8] %}
+            <tr>
+              <td>{{ pair(a) }}{% if a.notes %}<span class="note">{{ a.notes }}</span>{% endif %}</td>
+              <td class="num">{{ a.bonus }}</td>
+              <td>{{ a.damage }}</td>
+              <td>{{ a.range }}</td>
+            </tr>
+          {% endfor %}
+          {% for i in range([0, 5 - v.attacks|length]|max) %}<tr><td class="empty"></td><td></td><td></td><td></td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if v.resources %}
+      <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">обмежені вміння</span>
+        {% for r in v.resources %}
+        <div class="res">
+          <span>{{ pair(r) }}<span class="meta"> · {{ r.recharge }}</span></span>
+          <span class="count">
+            {% if r.boxes %}<span class="mark">{% for i in range(r.total) %}☐{% endfor %}</span>
+            {% else %}{{ r.total }} <span class="lbl">запас</span> · ____{% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="frame grow"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">уміння й особливості</span>
+        <div class="toc">
+          {% for g in v.features %}{% for f in g['items'] %}<div><b>{{ f.title }}</b> <span class="lv">{{ f.meta }}</span></div>{% endfor %}{% endfor %}
+          {% for f in v.species_traits %}<div><b>{{ f.title }}</b> <span class="lv">вид</span></div>{% endfor %}
+          {% if v.background and v.background.feature %}<div><b>{{ v.background.feature.title }}</b> <span class="lv">передісторія</span></div>{% endif %}
+        </div>
+        {% if detailed %}<div class="legend">Що дає кожне вміння — на додаткових аркушах наприкінці.</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ============== 2. закляття для гри: таблиця, комірки, підготовка ============== #}
+{% if v.spellcasting %}
+{% set sc = v.spellcasting %}
+<section class="page">
+  <div class="page-title"><h2>Закляття</h2><span class="lbl">{{ v.name }}</span></div>
+  <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+    <span class="tag">чарування</span>
+    <table class="cast">
+      <thead><tr><th>клас</th><th>характеристика</th><th>складність кидка</th><th>бонус атаки</th><th>закляття</th><th>заговори</th></tr></thead>
+      <tbody>
+      {% for c in sc.classes %}
+        <tr>
+          <td class="cls">{{ c.name }}</td>
+          <td class="ab">{{ c.ability }}</td>
+          <td class="big">{{ c.dc }}</td>
+          <td class="big">{{ c.attack }}</td>
+          <td><span class="big">{{ c.limit or '—' }}</span> <span class="lbl">{{ c.mode }}</span></td>
+          <td class="big">{{ c.cantrips or '—' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if sc.slots or sc.pact %}
+  <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+    <span class="tag">комірки заклять — відмічайте витрачені</span>
+    <div class="slots">
+      {% for s in sc.slots %}<span class="slot"><span class="lv">{{ s.level }} рів.</span><span class="mark">{% for i in range(s.total) %}○{% endfor %}</span></span>{% endfor %}
+      {% if sc.pact %}<span class="slot"><span class="lv">угода · {{ sc.pact.level }} рів.</span><span class="mark">{% for i in range(sc.pact.total) %}○{% endfor %}</span></span>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% for lv in sc.levels %}
+  <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+    <span class="tag">{{ lv.title }}</span>
+    {% set multi = sc.classes|length > 1 %}
+    <table class="grid spell-table">
+      <thead><tr><th></th><th>назва</th><th>час</th><th>дистанція</th><th>тривалість</th><th>компоненти</th><th>школа</th></tr></thead>
+      <tbody>
+      {% for g in lv.groups %}
+      {% if multi %}
+        <tr class="grp"><td colspan="7"><b>{{ g.title }}</b>{% if g.dc %} <span class="grp-meta">· складність {{ g.dc }} · атака {{ g.attack }}</span>{% endif %}</td></tr>
+      {% endif %}
+      {% for s in g.spells %}
+        <tr>
+          <td class="mk">{% if s.always %}◆{% elif lv.level and s.preparable %}{{ '■' if s.prepared else '☐' }}{% endif %}</td>
+          <td class="nm"><b>{{ s.title }}</b>{% if s.en and o.show_originals %} <span class="en">{{ s.en }}</span>{% endif %}{% if s.tags %} <span class="flag">{{ s.tags }}</span>{% endif %}</td>
+          <td>{{ s.time }}</td><td>{{ s.range }}</td><td>{{ s.duration }}</td><td>{{ s.components_short }}</td><td>{{ s.school }}</td>
+        </tr>
+      {% endfor %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+  <div class="legend"><span class="sym">■</span> підготовлене · <span class="sym">☐</span> не підготовлене · <span class="sym">◆</span> завжди підготовлене · конц. — концентрація · рит. — ритуал · В, С, М — вербальний, соматичний, матеріальний компонент</div>
+</section>
+{% endif %}
+
+{# ============== 3. спорядження й нотатки ============== #}
+<section class="page">
+  <div class="page-title"><h2>Спорядження й нотатки</h2><span class="lbl">{{ v.name }}</span></div>
+  <div class="coins">
+    {% for label, value in v.inventory.coins %}
+    <div class="coin"><div class="big">{{ value or '&nbsp;'|safe }}</div><div class="lbl">{{ label }}</div></div>
+    {% endfor %}
+  </div>
+  <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+    <span class="tag">спорядження · вага {{ v.inventory.weight }}{% if v.inventory.capacity %} з {{ v.inventory.capacity }}{% endif %} фнт</span>
+    <table class="grid">
+      <thead><tr><th>предмет</th><th>к-сть</th><th>вага</th><th>стан</th></tr></thead>
+      <tbody>
+      {% for i in v.inventory['items'] %}
+        <tr>
+          <td>{{ pair(i) }}{% if i.notes %}<span class="note">{{ i.notes }}</span>{% endif %}</td>
+          <td class="num">{{ i.quantity }}</td>
+          <td>{{ i.weight | round(1) | replace('.0', '') }}{% if i.weight %} фнт{% endif %}</td>
+          <td>{{ i.marks }}</td>
+        </tr>
+      {% endfor %}
+      {% for i in range([3, 16 - v.inventory['items']|length]|max) %}<tr><td class="empty"></td><td></td><td></td><td></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="two">
+    {% if v.background %}
+    <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+      <span class="tag">передісторія</span>
+      <div><b>{{ v.background.title }}</b>{% if v.background.en and o.show_originals %} <span class="en">{{ v.background.en }}</span>{% endif %}</div>
+      {% if v.background.feature %}<div>Риса: <b>{{ v.background.feature.title }}</b></div>{% endif %}
+    </div>
+    {% endif %}
+    {% for n in v.notes %}
+    <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+      <span class="tag">{{ n.title }}</span>
+      {% if n.blocks %}<div class="note-text">{{ blocks(n.blocks) }}</div>{% else %}{{ lines(4) }}{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{# ============== журнал пригод: записи подій олівцем ============== #}
+<section class="page">
+  <div class="page-title"><h2>Журнал пригод</h2><span class="lbl">{{ v.name }}</span></div>
+  <div class="frame journal"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+    <span class="tag">записи подій</span>
+    <table class="grid jtable">
+      <thead><tr><th>сесія · дата</th><th>що сталося: місця, люди, рішення, борги, підказки</th><th>здобуто</th></tr></thead>
+      <tbody>
+      {% for i in range(40) %}<tr><td></td><td></td><td></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{# ============== 4+. розширений лист: пояснення ============== #}
+{% if detailed %}
+<section class="page">
+  <div class="page-title"><h2>Додатковий аркуш · уміння й особливості</h2><span class="lbl">{{ v.name }}</span></div>
+  <div class="cols">
+    {% for g in v.features %}
+      <div class="group-title">{{ g.title }}</div>
+      {% for f in g['items'] %}
+      <div class="entry{{ ' long' if f.blocks|length > 6 }}">
+        <h4>{{ pair(f) }} {% if f.meta %}<span class="meta">· {{ f.meta }}</span>{% endif %}</h4>
+        {{ blocks(f.blocks) }}
+      </div>
+      {% endfor %}
+    {% endfor %}
+    {% if v.species_traits %}
+      <div class="group-title">Вид · {{ v.header[1].value }}</div>
+      {% for f in v.species_traits %}
+      <div class="entry"><h4>{{ pair(f) }}</h4>{{ blocks(f.blocks) }}</div>
+      {% endfor %}
+    {% endif %}
+    {% if v.background %}
+      <div class="group-title">Передісторія · {{ v.background.title }}</div>
+      {% if v.background.feature %}
+      <div class="entry"><h4>{{ pair(v.background.feature) }} <span class="meta">· риса</span></h4>{{ blocks(v.background.feature_text) }}</div>
+      {% endif %}
+      {% if v.background.description %}
+      <div class="entry long"><h4>Опис</h4>{{ blocks(v.background.description) }}</div>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+
+{% if v.spellcasting and v.spellcasting.levels %}
+<section class="page">
+  <div class="page-title"><h2>Додатковий аркуш · закляття</h2><span class="lbl">{{ v.name }}</span></div>
+  <div class="cols">
+    {% for lv in v.spellcasting.levels %}
+      <div class="group-title">{{ lv.title }}</div>
+      {% for s in lv.spells %}
+      <div class="entry{{ ' long' if s.blocks|length > 5 }}">
+        <h4>{{ pair(s) }}</h4>
+        <div class="spell-meta">{% if v.spellcasting.classes|length > 1 and s['class'] %}<b>{{ s['class'] }}</b> · {% endif %}{{ s.school }} · {{ s.time }} · {{ s.range }} · {{ s.duration }} · {{ s.components }}</div>
+        {{ blocks(s.blocks) }}
+        {% if s.higher %}<p><b>На вищих рівнях.</b> {% for b in s.higher %}{{ b.text }} {% endfor %}</p>{% endif %}
+      </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endif %}
+
+</div>
+</body>
+</html>

@@ -5,15 +5,16 @@
  * інструменти, мови й спорядження, які вона дала. Зовнішність переїхала сюди
  * з нотаток: це частина «хто я», а не замітки під час гри.
  */
-
-import { ALIGNMENT_LABELS, proficiencyValue } from "../../labels";
+import { ALIGNMENT_LABELS, sourceLabel } from "../../labels";
 import type { BackgroundDetails } from "../wizard/types";
+
 import { NoteArea, notesStatusText } from "./notes";
 import type { NoteStatus } from "./notes";
 import { RuleText } from "./panels";
+import { itemLabel, proficiencyText, ukBackground, withEnglish } from "./uk";
 
 function joinOrDash(values: string[], kind: string, any: number): string {
-  const labels = values.map((value) => proficiencyValue(kind, value));
+  const labels = values.map((value) => proficiencyText(kind, value));
   if (any > 0) {
     labels.push(`${any} на вибір`);
   }
@@ -38,31 +39,34 @@ export function BackgroundPanel({
   if (!details) {
     return (
       <>
-        <h3 className="ddb-work__title">
+        <h3 className="sheet-work__title">
           <span>Передісторія</span>
         </h3>
-        <p className="hint">
-          Передісторію не вибрано — її обирають у візарді на кроці «Передісторія».
-        </p>
+        <p className="hint">Передісторію не вибрано — її обирають у візарді на кроці «Передісторія».</p>
       </>
     );
   }
 
+  const uk = ukBackground(details.key);
+  const nameUk = details.name_uk ?? uk?.name;
+  const featureUk = details.feature_uk ?? uk?.feature;
+  const featureTextUk = details.feature_text_uk ?? uk?.featureText;
+  const equipmentUk = details.equipment_uk ?? uk?.equipment;
+  const descriptionUk = details.description_uk ?? uk?.description;
+
   return (
     <div className="background-panel">
-      <h3 className="ddb-work__title">
+      <h3 className="sheet-work__title">
         <span>Передісторія</span>
-        <span className="short">{details.source_id || "2014"}</span>
+        <span className="short">
+          {details.source_id === "custom" ? "власна" : sourceLabel(details.source_id) || "2014"}
+        </span>
       </h3>
 
       <section className="bg-card">
         <div className="bg-card__head">
-          <span className="bg-card__name">{details.name_en}</span>
-          {alignment ? (
-            <span className="bg-card__align">
-              {ALIGNMENT_LABELS[alignment] ?? alignment}
-            </span>
-          ) : null}
+          <span className="bg-card__name">{withEnglish(details.name_en, nameUk)}</span>
+          {alignment ? <span className="bg-card__align">{ALIGNMENT_LABELS[alignment] ?? alignment}</span> : null}
         </div>
         <ul className="bg-grants">
           <li>
@@ -79,13 +83,19 @@ export function BackgroundPanel({
           </li>
           <li>
             <span>Риса</span>
-            <span>{details.feature_en ?? "—"}</span>
+            <span>{details.feature_en ? withEnglish(details.feature_en, featureUk) : "—"}</span>
           </li>
         </ul>
         {details.equipment ? (
           <p className="bg-equipment">
             <span>Спорядження </span>
-            {details.equipment}
+            {equipmentUk ??
+              (details.source_id === "custom"
+                ? details.equipment
+                    .split(", ")
+                    .map((name) => itemLabel(name))
+                    .join(", ")
+                : details.equipment)}
           </p>
         ) : null}
       </section>
@@ -93,13 +103,15 @@ export function BackgroundPanel({
       {details.feature_text ? (
         <details className="feature">
           <summary className="feature__summary">
-            <span className="feature-name">{details.feature_en}</span>
+            <span className="feature-name">
+              {details.feature_en ? withEnglish(details.feature_en, featureUk) : "Риса передісторії"}
+            </span>
             <span className="feature-meta">риса передісторії</span>
             <span className="feature__chevron" aria-hidden>
               ▾
             </span>
           </summary>
-          <RuleText text={details.feature_text} />
+          <RuleText text={featureTextUk ?? details.feature_text} />
         </details>
       ) : null}
 
@@ -112,11 +124,11 @@ export function BackgroundPanel({
               ▾
             </span>
           </summary>
-          <RuleText text={details.description} />
+          <RuleText text={descriptionUk ?? details.description} />
         </details>
       ) : null}
 
-      <h3 className="ddb-work__title">
+      <h3 className="sheet-work__title">
         <span>Зовнішність</span>
         <span className="short">зберігається автоматично</span>
       </h3>

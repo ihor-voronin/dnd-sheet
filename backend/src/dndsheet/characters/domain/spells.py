@@ -1,7 +1,7 @@
-"""Закляття персонажа й слоти Pact Magic.
+"""Закляття персонажа й комірки Pact Magic.
 
 Закляття належить **класу**, а не персонажу: у мультикласі «Пекельний
-договір» іде окремо від слотів волшебника, і ліміт відомих заклять у кожного
+договір» іде окремо від комірок волшебника, і ліміт відомих заклять у кожного
 класу свій. Тому `KnownSpell.class_key` обовʼязковий.
 """
 
@@ -23,18 +23,31 @@ class KnownSpell:
     entry_id: str | None = None
     prepared: bool = False
     always_prepared: bool = False
+    #: Власне (домашнє) закляття: у довіднику його немає, назву й текст дав
+    #: гравець. Лист і експорт кажуть «власне», щоб його не плутали з
+    #: книжковим — жодних чисел правила з нього не виводяться.
+    custom: bool = False
+    #: Текст власного закляття (для книжкових він приходить із довідника).
+    description: str | None = None
 
     def __post_init__(self) -> None:
-        if not self.name_en.strip():
+        name = self.name_en.strip()
+        if not name:
             raise ValidationError("закляття без назви")
+        object.__setattr__(self, "name_en", name)
         if not self.class_key.strip():
             raise ValidationError(f"{self.name_en}: закляття без класу")
+        object.__setattr__(self, "class_key", self.class_key.strip().casefold())
         if isinstance(self.level, bool) or not isinstance(self.level, int):
             raise ValidationError(f"{self.name_en}: рівень закляття має бути числом")
         if not 0 <= self.level <= MAX_SPELL_LEVEL:
-            raise ValidationError(
-                f"{self.name_en}: рівень закляття має бути 0..{MAX_SPELL_LEVEL}"
-            )
+            raise ValidationError(f"{self.name_en}: рівень закляття має бути 0..{MAX_SPELL_LEVEL}")
+        if self.custom and self.entry_id:
+            raise ValidationError(f"{self.name_en}: власне закляття не має запису в довіднику")
+        text = (self.description or "").strip()
+        object.__setattr__(self, "description", text or None)
+        if text and not self.custom:
+            raise ValidationError(f"{self.name_en}: власний текст буває лише у власного закляття")
 
     @property
     def is_cantrip(self) -> bool:
@@ -46,14 +59,14 @@ class KnownSpell:
 
 @dataclass(frozen=True, slots=True)
 class PactMagic:
-    """Слоти Pact Magic: усі одного рівня, відновлюються на короткому відпочинку."""
+    """Комірки Pact Magic: усі одного рівня, відновлюються на короткому відпочинку."""
 
     slots: int
     slot_level: int
 
     def __post_init__(self) -> None:
         if self.slots < 0 or not 0 <= self.slot_level <= MAX_SPELL_LEVEL:
-            raise ValidationError("неприпустимі слоти Pact Magic")
+            raise ValidationError("неприпустимі комірки Pact Magic")
 
     @property
     def empty(self) -> bool:
@@ -62,19 +75,15 @@ class PactMagic:
 
 @dataclass(frozen=True, slots=True)
 class SpellSlots:
-    """Слоти заклять: звичайні за рівнями й (окремо) Pact Magic."""
+    """Комірки заклять: звичайні за рівнями й (окремо) Pact Magic."""
 
     by_level: tuple[tuple[int, int], ...] = ()
     pact: PactMagic | None = None
 
     @classmethod
-    def from_table(
-        cls, table: tuple[int, ...], pact: PactMagic | None = None
-    ) -> "SpellSlots":
+    def from_table(cls, table: tuple[int, ...], pact: PactMagic | None = None) -> "SpellSlots":
         return cls(
-            by_level=tuple(
-                (level, count) for level, count in enumerate(table, start=1) if count
-            ),
+            by_level=tuple((level, count) for level, count in enumerate(table, start=1) if count),
             pact=pact,
         )
 

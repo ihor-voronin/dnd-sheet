@@ -37,7 +37,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest backend -q
 ```
 
-Очікувано: **460 passed, 1 skipped** (скіп — PDF, див. розділ 6).
+Очікувано: **557 passed, 2 skipped** (скіп — PDF, див. розділ 6).
 
 ### 1.2 Фронтенд
 
@@ -126,7 +126,7 @@ docker compose logs -f app          # журнали
 docker compose down                 # зупинити
 ```
 
-Відкрити: **http://127.0.0.1:8000** (порт прокинутий `8000:8000`).
+Відкрити: **http://127.0.0.1:8000** (порт прокинутий лише на цей компʼютер: `127.0.0.1:8000:8000`).
 
 Що всередині образу:
 
@@ -135,12 +135,13 @@ docker compose down                 # зупинити
   `content/compendium`, `content/bestiary`, `content/index` (без `content/raw` — він потрібен лише ingest);
 - `content/raw`, `var/`, `logs/`, `.venv`, `node_modules` відсікає `.dockerignore`.
 
-Дані живуть на хості: `./var` прокинутий у `/app/var`, тому збережені персонажі, чернетки
-візарда й відпочинок переживають `docker compose down` і перезбірку.
+Дані живуть на хості: `./var` прокинутий у `/app/var`, тому персонажі, чернетки візарда й
+користувачі (база `var/dndsheet.sqlite3`) переживають `docker compose down` і перезбірку.
+Старі файли `var/characters/*.json` переносяться в базу на першому старті й лишаються на
+диску як резервна копія.
 
 ```powershell
-Get-ChildItem var\characters        # персонажі на хості
-docker compose exec app ls /app/var # те саме зсередини
+docker compose exec app ls /app/var # база й старі файли зсередини
 ```
 
 Змінні, якими керується образ: `DNDSHEET_DATA_DIR=/app/var`, `DNDSHEET_CONTENT_DIR=/app/content`,
@@ -155,8 +156,69 @@ docker compose exec app ls /app/var # те саме зсередини
 docker compose up -d --build     # перезібрати й перезапустити
 ```
 
-PostgreSQL у compose є, але застосунок його поки не використовує (стан — файли в `var/`).
+**Автоперезбірка.** `watch-docker.cmd` (або `docker compose up -d --build` і потім
+`docker compose watch`) стежить за `frontend/`, `backend/src`, `backend/pyproject.toml` і
+`content/translations`: після збереження файлу образ перезбирається, а контейнер
+перезапускається сам (1–2 хв на збірку). Вікно має лишатися відкритим; закрили — стеження
+зупиниться, а контейнер працюватиме далі з останньою версією.
+
+**Швидкий режим розробки.** `dev-docker.cmd` (або `docker compose --profile dev up api-dev web-dev`)
+піднімає Vite на http://127.0.0.1:5173 і API з `uvicorn --reload` на 8001. Код монтується з
+диска, тож зміни у `frontend/` і `backend/src` видно за секунди, без перезбирання образу.
+
+**Тести в Docker.** `test-docker.cmd` (або `docker compose --profile test run --rm --build test`)
+запускає `pytest` і DDD-гейти в образі, де є корпус довідника й WeasyPrint — тобто разом із
+PDF-тестами, які на Windows пропускаються. CI на GitHub тут не допоможе: корпус книг у git не
+зберігається (`.gitignore`), а без нього тести правил не мають на чому працювати.
+
+PostgreSQL у compose є, але застосунок його поки не використовує (стан — SQLite у `var/`).
 Підняти за потреби: `docker compose --profile db up -d` (порт 5433).
+
+## 3.2 Вхід через Telegram і хто що бачить
+
+- **Без входу** — лише довідник (`#/kb`): види, класи з підкласами, передісторії, риси,
+  закляття, опційні вміння, предмети.
+- **Після входу** — свої персонажі й чернетки. Вони в базі на сервері, тому той самий
+  гравець бачить їх з телефона, ноутбука й іншого браузера. Чужий персонаж для API «не
+  існує» (404).
+- **Лист синхронізується сам**: кожні 4 секунди питає номер версії й перечитує себе, якщо
+  лист змінили з іншого пристрою. Дві одночасні зміни однієї версії не перезапишуть одна
+  одну — друга отримає «лист змінили на іншому пристрої», а екран покаже свіжу версію.
+
+**Налаштувати бота** (потрібна публічна HTTPS-адреса — Telegram не пускає віджет на `localhost`):
+
+1. У [@BotFather](https://t.me/BotFather): `/newbot` → імʼя й username бота, отримати токен.
+2. Там же `/setdomain` → вибрати бота → вказати домен сайту (без `https://`).
+3. Поруч із `docker-compose.yml` створити `.env` (у git не потрапляє):
+
+   ```
+   DNDSHEET_TELEGRAM_BOT=назва_бота_без_собачки
+   DNDSHEET_TELEGRAM_BOT_TOKEN=123456:ABC...
+   DNDSHEET_DEV_LOGIN=0
+   DNDSHEET_OWNER_TELEGRAM_ID=ваш_числовий_id   # необовʼязково
+   ```
+
+   Для продакшну ці значення зберігаються в репозиторії зашифрованими —
+   `deploy/secrets/prod.env` (git-crypt + GPG). Як розблокувати й додати
+   людину чи сервер — [`deploy/README.md`](deploy/README.md).
+
+4. `docker compose up -d --build`. На головній сторінці зʼявиться кнопка «Увійти через Telegram».
+
+Сервер перевіряє підпис Telegram (HMAC від токена бота) і свіжість входу (до доби), потім
+видає власну cookie-сесію на 30 днів (HttpOnly, SameSite=Lax; `Secure`, коли сайт відкрито
+через HTTPS або проксі передає `X-Forwarded-Proto: https`; примусово — `DNDSHEET_COOKIE_SECURE=1`).
+У базі лежить лише SHA-256 від токена сесії.
+
+**Чиї старі персонажі.** Перенесені з файлів персонажі не мають власника. Їх отримує
+користувач з `DNDSHEET_OWNER_TELEGRAM_ID`, а якщо змінну не задано — перший, хто увійде.
+
+**Вхід для розробки** (`DNDSHEET_DEV_LOGIN=1`, у compose ввімкнений за замовчуванням) —
+поле «імʼя гравця» замість Telegram, щоб працювати на `localhost`. Будь-хто, хто бачить
+сторінку, може увійти під будь-яким іменем, тому порт відкритий лише на `127.0.0.1`.
+**Перед публікацією в мережу вимкніть його** (`DNDSHEET_DEV_LOGIN=0` у `.env`).
+
+**Без входу взагалі** (`DNDSHEET_AUTH=off`) — режим одного гравця: усе належить
+«локальному гравцю». Так працюють тести.
 
 ---
 
@@ -167,6 +229,7 @@ PostgreSQL у compose є, але застосунок його поки не в�
 | `http://127.0.0.1:8000/` | SPA: список збережених персонажів, візард (`#/create`), демо-листок |
 | `http://127.0.0.1:8000/healthz` | `{"status":"ok"}` |
 | `http://127.0.0.1:8000/#/create` | візард створення персонажа (6 кроків) |
+| `http://127.0.0.1:8000/#/character/<id>/level-up` | підвищення рівня: клас, хіти, підклас, характеристики, закляття |
 | `http://127.0.0.1:8000/api/v1/characters` | збережені персонажі |
 | `http://127.0.0.1:8000/api/v1/demo/sheet` | `SheetDocument` (JSON) |
 | `http://127.0.0.1:8000/api/v1/renderers` | `{"formats":["markdown","pdf"]}` |
@@ -210,6 +273,33 @@ npm run build                                                     # tsc + vite b
 ```
 
 ---
+
+## 5.1 Перевірки перед комітом (pre-commit)
+
+Налаштування — `.pre-commit-config.yaml`, за зразком GloPros. Один раз:
+
+```powershell
+pre-commit install          # хуки pre-commit і commit-msg
+cd frontend; npm install    # ESLint, Prettier з плагіном — їх хуки беруть звідси
+```
+
+Далі кожен `git commit` перевіряє змінені файли:
+
+| Хук | Що робить |
+| --- | --- |
+| ruff-check, ruff (isort), ruff-format | Python: лінт, порядок імпортів, форматування (`ruff.toml`) |
+| prettier | фронтенд: форматування й порядок імпортів (`frontend/.prettierrc.json`) |
+| eslint | фронтенд: лінт (`frontend/eslint.config.js`), без жодного попередження |
+| tsc | фронтенд: перевірка типів |
+| shellcheck, shfmt | скрипти `.sh` (відступ 2) |
+| terraform fmt | `deploy/terraform/*.tf` |
+| trufflehog | секрети в змінених файлах (образ Docker) |
+| secrets-encrypted | файли з `deploy/secrets/` ідуть у коміт лише зашифрованими git-crypt |
+| end-of-file, trailing-whitespace, BOM, json/yaml/toml, великі файли, конфлікти | дрібні перевірки з pre-commit-hooks |
+| gitlint | повідомлення коміту: заголовок ≤ 100 символів, рядки тіла ≤ 160 |
+
+Форматери виправляють файли самі й зупиняють коміт: перегляньте зміни,
+`git add`, комітьте ще раз. Прогнати все вручну — `pre-commit run --all-files`.
 
 ## 6. PDF: чому 503 і що робити
 
@@ -317,6 +407,7 @@ backend/src/dndsheet/
   characters/    # агрегат Character + DerivedStatsCalculator
   sheets/        # SheetDocument, формули, лейбли, build_document
   export/        # порт SheetRenderer, реєстр, адаптери Markdown/PDF, Jinja-шаблон
+  identity/      # користувачі, вхід через Telegram, сесії (SQLite)
   api/           # FastAPI: create_app()
 contract/        # JSON Schema + фікстури (єдине джерело типів)
 content/         # глосарій v0 (чернетка)

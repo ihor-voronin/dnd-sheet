@@ -1,14 +1,14 @@
 """Правила як дані: те, що однаково розуміють довідник і персонаж.
 
 Тут живуть не «записи довідника» й не «стан персонажа», а **ознаки правил**:
-хіт-дайс класу, бонуси виду, вимоги мультикласу, таблиця слотів заклять.
+кість хітів класу, бонуси виду, вимоги мультикласу, таблиця комірок заклять.
 Їх розуміють обидва контексти, тому вони в спільному ядрі:
 
 * `compendium` віддає їх через API (візард питає «що дає Воїн на 1 рівні?»);
 * `characters` рахує з них лист (`DerivedStatsCalculator`).
 
 Модуль чистий: жодного I/O, лише значення, розбір уже готового JSON і таблиці
-правил. Таблиці слотів тут, а не в корпусі, бо це SRD-контент: 20 рядків, які
+правил. Таблиці комірок тут, а не в корпусі, бо це SRD-контент: 20 рядків, які
 не змінюються від книги до книги, і без них домен не порахує нічого.
 
 Джерела чисел: PHB (2014) — «Multiclassing: Spellcasting» (p. 165), Warlock
@@ -18,8 +18,9 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Any
@@ -87,8 +88,7 @@ class Size(StrEnum):
 
 
 SIZE_FROM_CODE: Mapping[str, Size] = MappingProxyType(
-    {"T": Size.TINY, "S": Size.SMALL, "M": Size.MEDIUM,
-     "L": Size.LARGE, "H": Size.HUGE, "G": Size.GARGANTUAN}
+    {"T": Size.TINY, "S": Size.SMALL, "M": Size.MEDIUM, "L": Size.LARGE, "H": Size.HUGE, "G": Size.GARGANTUAN}
 )
 
 ARMOR_TRAININGS = ("light", "medium", "heavy", "shield")
@@ -98,8 +98,8 @@ WEAPON_TRAININGS = ("simple", "martial")
 # таблиці правил (SRD)
 # ---------------------------------------------------------------------------
 
-#: Слоти за рівнями заклять для рівня заклинателя 1..20 (PHB, p. 165).
-#: Рядок 1 — 1 рівень: два слоти 1 рівня. Це ж таблиця дає слоти
+#: Комірки за рівнями заклять для рівня заклинателя 1..20 (PHB, p. 165).
+#: Рядок 1 — 1 рівень: два комірки 1 рівня. Це ж таблиця дає комірки
 #: мультикласовому персонажу за сумарним рівнем заклинателя.
 CASTER_SLOT_TABLE: tuple[tuple[int, ...], ...] = (
     (2, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -124,13 +124,30 @@ CASTER_SLOT_TABLE: tuple[tuple[int, ...], ...] = (
     (4, 3, 3, 3, 3, 2, 2, 1, 1),
 )
 
-#: Pact Magic warlock-а: (кількість слотів, рівень слотів) на рівень 1..20.
-#: Окрема таблиця, бо слоти відпочивають на короткому відпочинку й не
+#: Pact Magic warlock-а: (кількість комірок, рівень комірок) на рівень 1..20.
+#: Окрема таблиця, бо комірки відпочивають на короткому відпочинку й не
 #: додаються до мультикласових (PHB, p. 107 і 164).
 PACT_SLOT_TABLE: tuple[tuple[int, int], ...] = (
-    (1, 1), (2, 1), (2, 2), (2, 2), (2, 3), (2, 3), (2, 4), (2, 4),
-    (2, 5), (2, 5), (3, 5), (3, 5), (3, 5), (3, 5), (3, 5), (3, 5),
-    (4, 5), (4, 5), (4, 5), (4, 5),
+    (1, 1),
+    (2, 1),
+    (2, 2),
+    (2, 2),
+    (2, 3),
+    (2, 3),
+    (2, 4),
+    (2, 4),
+    (2, 5),
+    (2, 5),
+    (3, 5),
+    (3, 5),
+    (3, 5),
+    (3, 5),
+    (3, 5),
+    (3, 5),
+    (4, 5),
+    (4, 5),
+    (4, 5),
+    (4, 5),
 )
 
 MAX_SPELL_LEVEL = 9
@@ -166,10 +183,57 @@ def caster_level(levels: Iterable[tuple[CasterProgression | None, int]]) -> int:
 
 
 def spell_slots(level: int) -> tuple[int, ...]:
-    """Слоти за рівнем заклинателя 1..20: 9 чисел, індекс 0 — 1 рівень."""
+    """Комірки за рівнем заклинателя 1..20: 9 чисел, індекс 0 — 1 рівень."""
     if level <= 0:
         return (0,) * MAX_SPELL_LEVEL
     return CASTER_SLOT_TABLE[_check_level(level) - 1]
+
+
+def prepared_spell_limit(
+    modifier: int,
+    class_level: int,
+    progression: "CasterProgression | None" = None,
+) -> int:
+    """Скільки заклять клас готує на день, мінімум 1.
+
+    * жрець, друїд, маг — модифікатор + рівень класу (PHB, p. 58, 66, 114);
+    * паладин — модифікатор + **половина** рівня паладина, вниз (PHB, p. 84);
+    * артифіцер — модифікатор + половина рівня, вниз (TCE, p. 10).
+
+    Формула одна на обчислювач листа й на щоденну підготовку: якщо їх дві,
+    екран і перевірка рано чи пізно розійдуться.
+    """
+    if progression in (CasterProgression.HALF, CasterProgression.ARTIFICER):
+        return max(1, modifier + class_level // 2)
+    return max(1, modifier + class_level)
+
+
+#: Вимоги мультикласу (PHB, p. 163), де індекс механік помиляється: таблицю
+#: книги «Strength 13 or Dexterity 13» розбір склеїв в одну умову «і».
+MULTICLASS_REQUIREMENT_FIXES: Mapping[str, tuple[Mapping[Ability, int], ...]] = {
+    "fighter": ({Ability.STR: 13}, {Ability.DEX: 13}),
+}
+
+#: Що з книги може бути бронею; решта рядка («druids will not wear armor
+#: made of metal») — не володіння, а шум розбору.
+ARMOR_KINDS = frozenset({"light", "medium", "heavy", "shield"})
+
+
+#: Види, де підраса **обовʼязкова**: вона визначає числа (PHB p. 20–24 —
+#: дворф, ельф, гном, напіврослик; EEPC — genasi; ERLW — shifter; EGtW —
+#: aasimar; gith поділяється на githyanki/githzerai).
+#:
+#: Корпус не позначає «обовʼязковість» окремим полем, а «є підраси» — не те
+#: саме: у людини є *Variant Human*, і він необовʼязковий. Тому список
+#: явний — інакше довелося б або заборонити звичайну людину, або дозволити
+#: ельфа без підраси.
+SUBRACE_REQUIRED: frozenset[str] = frozenset(
+    {"dwarf", "elf", "gnome", "halfling", "genasi", "shifter", "aasimar", "gith"}
+)
+
+
+def requires_subspecies(species_key: str | None) -> bool:
+    return (species_key or "").strip().casefold() in SUBRACE_REQUIRED
 
 
 # ---------------------------------------------------------------------------
@@ -248,6 +312,10 @@ class SubclassSpells:
 
     prepared: tuple[str, ...] = ()
     expanded: tuple[str, ...] = ()
+    #: Завжди підготовлені за рівнем класу: {1: (bless, cure wounds), 3: (…)}.
+    by_level: Mapping[int, tuple[str, ...]] = field(default_factory=lambda: MappingProxyType({}))
+    #: Круг Землі: місцевість → таблиця за рівнями (обирається в `class_choices`).
+    by_terrain: Mapping[str, Mapping[int, tuple[str, ...]]] = field(default_factory=lambda: MappingProxyType({}))
 
 
 @dataclass(frozen=True, slots=True)
@@ -296,22 +364,18 @@ class ClassMechanics:
     multiclass_weapons: tuple[str, ...] = ()
     multiclass_tools: tuple[str, ...] = ()
     features: tuple[ClassFeature, ...] = ()
-    optional_features: Mapping[str, tuple[tuple[int, int], ...]] = field(
-        default_factory=lambda: MappingProxyType({})
-    )
+    optional_features: Mapping[str, tuple[tuple[int, int], ...]] = field(default_factory=lambda: MappingProxyType({}))
     #: Закляття підкласів на 1 рівні, ключ — slug id підкласу (life-domain).
-    subclass_spells: Mapping[str, SubclassSpells] = field(
-        default_factory=lambda: MappingProxyType({})
-    )
+    subclass_spells: Mapping[str, SubclassSpells] = field(default_factory=lambda: MappingProxyType({}))
     variants: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.key.strip():
             raise ValidationError("клас без ключа")
         if not 4 <= self.hit_die <= 20:
-            raise ValidationError(f"{self.key}: неприпустимий хіт-дайс d{self.hit_die}")
+            raise ValidationError(f"{self.key}: неприпустимий кість хітів d{self.hit_die}")
         if not self.saving_throws:
-            raise ValidationError(f"{self.key}: без володінь кидками порятунку")
+            raise ValidationError(f"{self.key}: без володінь рятівними кидками")
         if self.subclass_level is not None:
             _check_level(self.subclass_level, "рівень підкласу")
 
@@ -343,11 +407,18 @@ class ClassMechanics:
         return self.cantrips_known[level - 1] if len(self.cantrips_known) >= level else 0
 
     def spells_known_at(self, level: int) -> int | None:
-        """Ліміт відомих заклять; `None` — клас не має такого ліміту."""
+        """Ліміт відомих заклять зі списку класу; `None` — клас не має такого ліміту.
+
+        Магічні таємниці барда входять у колонку відомих (PHB, p. 54), але
+        обираються окремо й з будь-якого класу — тому зі списку барда їх менше.
+        """
         if not self.spells_known:
             return None
         _check_level(level)
-        return self.spells_known[level - 1] if len(self.spells_known) >= level else None
+        if len(self.spells_known) < level:
+            return None
+        known = self.spells_known[level - 1]
+        return known - magical_secrets_count(level) if self.key == "bard" else known
 
     def slots_at(self, level: int) -> tuple[int, ...]:
         _check_level(level)
@@ -356,11 +427,25 @@ class ClassMechanics:
         return self.spell_slots[level - 1]
 
     def pact_at(self, level: int) -> tuple[int, int]:
-        """(слоти, рівень слотів) для Pact Magic; (0, 0), якщо його немає."""
+        """(комірки, рівень комірок) для Pact Magic; (0, 0), якщо його немає."""
         _check_level(level)
         if len(self.pact_slots) < level:
             return (0, 0)
         return self.pact_slots[level - 1]
+
+    def max_spell_level(self, level: int) -> int:
+        """Найвищий рівень закляття, який клас має на цьому рівні.
+
+        Формула одна на лист, підготовку й підвищення рівня: інакше екран
+        пропонував би закляття, яких клас ще не дає.
+        """
+        if self.is_pact_magic:
+            slots, slot_level = self.pact_at(level)
+            return slot_level if slots else 0
+        return max(
+            (index for index, count in enumerate(self.slots_at(level), start=1) if count),
+            default=0,
+        )
 
     def features_at(self, level: int) -> tuple[ClassFeature, ...]:
         _check_level(level)
@@ -402,9 +487,7 @@ class ClassMechanics:
     def from_index(cls, key: str, record: Mapping[str, Any]) -> "ClassMechanics":
         """Розібрати запис `content/index/class-mechanics.json`."""
         slots = tuple(tuple(int(value) for value in row) for row in record.get("spell_slots") or ())
-        pact = tuple(
-            (int(row[0]), int(row[1])) for row in record.get("pact_slots") or () if len(row) >= 2
-        )
+        pact = tuple((int(row[0]), int(row[1])) for row in record.get("pact_slots") or () if len(row) >= 2)
         optional = {
             str(name): tuple((int(level), int(count)) for level, count in steps)
             for name, steps in (record.get("optional_features") or {}).items()
@@ -432,7 +515,7 @@ class ClassMechanics:
                 for choice in record.get("skill_choices") or ()
             ),
             skill_any=int(record.get("skill_any") or 0),
-            armor_training=tuple(str(item) for item in record.get("armor_training") or ()),
+            armor_training=tuple(str(item) for item in record.get("armor_training") or () if str(item) in ARMOR_KINDS),
             weapon_training=tuple(str(item) for item in record.get("weapon_training") or ()),
             tool_training=tuple(str(item) for item in record.get("tool_training") or ()),
             spellcasting_ability=_optional_ability(record.get("spellcasting_ability")),
@@ -440,18 +523,14 @@ class ClassMechanics:
             prepares_spells=bool(record.get("prepares_spells")),
             cantrips_known=tuple(int(value) for value in record.get("cantrips_known") or ()),
             spells_known=(
-                tuple(int(value) for value in record["spells_known"])
-                if record.get("spells_known")
-                else None
+                tuple(int(value) for value in record["spells_known"]) if record.get("spells_known") else None
             ),
             spell_slots=slots,
             pact_slots=pact,
             subclass_title=_optional_str(record.get("subclass_title")),
-            subclass_level=(
-                int(record["subclass_level"]) if record.get("subclass_level") else None
-            ),
-            multiclass_requirements=requirements,
-            multiclass_armor=tuple(str(item) for item in gained.get("armor") or ()),
+            subclass_level=(int(record["subclass_level"]) if record.get("subclass_level") else None),
+            multiclass_requirements=MULTICLASS_REQUIREMENT_FIXES.get(key, requirements),
+            multiclass_armor=tuple(str(item) for item in gained.get("armor") or () if str(item) in ARMOR_KINDS),
             multiclass_weapons=tuple(str(item) for item in gained.get("weapons") or ()),
             multiclass_tools=tuple(str(item) for item in gained.get("tools") or ()),
             features=tuple(
@@ -551,9 +630,7 @@ class SpeciesMechanics:
                 if choice
                 else None
             ),
-            skill_proficiencies=frozenset(
-                _skill(name) for name in record.get("skill_proficiencies") or ()
-            ),
+            skill_proficiencies=frozenset(_skill(name) for name in record.get("skill_proficiencies") or ()),
             skill_any=int(record.get("skill_any") or 0),
             weapon_proficiencies=tuple(str(item) for item in record.get("weapon_proficiencies") or ()),
             tool_proficiencies=tuple(str(item) for item in record.get("tool_proficiencies") or ()),
@@ -565,9 +642,7 @@ class SpeciesMechanics:
             standard_variant=bool(record.get("standard_variant")),
             ability_unresolved=bool(record.get("ability_unresolved")),
             shared_cantrips=tuple(str(item) for item in record.get("shared_cantrips") or ()),
-            cantrip_choice_class=_optional_str(
-                (record.get("cantrip_choice") or {}).get("from_class")
-            ),
+            cantrip_choice_class=_optional_str((record.get("cantrip_choice") or {}).get("from_class")),
             cantrip_choice_count=int((record.get("cantrip_choice") or {}).get("count") or 0),
             granted_spells=tuple(
                 GrantedSpell(
@@ -607,9 +682,7 @@ class BackgroundMechanics:
             key=key,
             name_en=str(record.get("name_en") or key),
             source_id=str(record.get("source_id") or ""),
-            skill_proficiencies=frozenset(
-                _skill(name) for name in record.get("skill_proficiencies") or ()
-            ),
+            skill_proficiencies=frozenset(_skill(name) for name in record.get("skill_proficiencies") or ()),
             skill_any=int(record.get("skill_any") or 0),
             tool_proficiencies=tuple(str(item) for item in record.get("tool_proficiencies") or ()),
             tools_any=int(record.get("tools_any") or 0),
@@ -622,6 +695,42 @@ class BackgroundMechanics:
 # ---------------------------------------------------------------------------
 # допоміжне
 # ---------------------------------------------------------------------------
+
+
+def ability_spread(
+    raw: Mapping[Any, Any] | None = None,
+) -> dict[Ability, int]:
+    """Розподіл характеристик за правилами 2022 (MotM, p. 7; TCoE «Custom Lineage»).
+
+    Два дозволені види: **+2 і +1** до двох різних характеристик або **+1,
+    +1 і +1** до трьох. Старе правило видів давало фіксовані бонуси, тому тут
+    їх немає — гравець розставляє сам, а сервер перевіряє форму.
+
+    Повертає `{Ability: бонус}`; порожній вхід — порожній результат.
+    """
+    if not raw:
+        return {}
+    if not isinstance(raw, Mapping):
+        raise ValidationError("ability_spread має бути обʼєктом «характеристика: +»")
+    spread: dict[Ability, int] = {}
+    for name, amount in raw.items():
+        try:
+            ability = Ability(str(name).strip().casefold())
+        except ValueError as exc:
+            raise ValidationError(f"невідома характеристика {name!r}") from exc
+        if isinstance(amount, bool) or not isinstance(amount, int):
+            raise ValidationError(f"{name}: бонус має бути цілим числом")
+        if amount < 1 or amount > 2:
+            raise ValidationError(f"{name}: бонус вільного розподілу — +1 або +2, надіслано {amount}")
+        if ability in spread:
+            raise ValidationError(f"характеристика {ability.value!r} повторюється")
+        spread[ability] = amount
+    if sum(spread.values()) != 3:
+        raise ValidationError(f"вільний розподіл дає рівно +3 (два бонуси або три), надіслано {sum(spread.values())}")
+    shape = sorted(spread.values(), reverse=True)
+    if shape not in ([2, 1], [1, 1, 1]):
+        raise ValidationError("вільний розподіл: або +2 і +1 до двох характеристик, або +1, +1 і +1 до трьох")
+    return spread
 
 
 def ability_bonus_totals(
@@ -669,3 +778,785 @@ def _optional_str(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+# ---------------------------------------------------------------------------
+# заклинателі-третинки: чарують через підклас (PHB, p. 74 і 97)
+# ---------------------------------------------------------------------------
+
+#: Відомі закляття містичного лицаря й таємного пройдисвіта за рівнем класу.
+_THIRD_CASTER_KNOWN = (0, 0, 3, 4, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 11, 12, 13)
+
+#: Підклас → заговори (3–9 рівень, 10+). Пройдисвіт має ще Mage Hand.
+THIRD_CASTER_SUBCLASSES: Mapping[str, tuple[int, int]] = {
+    "eldritch-knight": (2, 3),
+    "arcane-trickster": (3, 4),
+}
+
+
+def with_subclass_casting(definition: ClassMechanics, subclass_key: str | None) -> ClassMechanics:
+    """Воїн чи плут з магічним підкласом чарує як третинний заклинатель.
+
+    Інтелект, список мага, комірки власної таблиці = таблиця за рівнем
+    заклинателя ⌈рівень / 3⌉ (з 3 рівня класу).
+
+    shortcut: обмеження шкіл (огородження й втілення / чари й ілюзія) не
+    перевіряється — додати, коли закляття в агрегаті матимуть школу.
+    """
+    slug = (subclass_key or "").strip().casefold().rsplit("/", 1)[-1]
+    cantrips = THIRD_CASTER_SUBCLASSES.get(slug)
+    if cantrips is None or definition.casts_spells:
+        return definition
+    levels = range(1, MAX_LEVEL + 1)
+    return replace(
+        definition,
+        spellcasting_ability=Ability.INT,
+        caster_progression=CasterProgression.THIRD,
+        cantrips_known=tuple(0 if lvl < 3 else cantrips[lvl >= 10] for lvl in levels),
+        spells_known=_THIRD_CASTER_KNOWN,
+        spell_slots=tuple(spell_slots(-(-lvl // 3)) if lvl >= 3 else spell_slots(0) for lvl in levels),
+    )
+
+
+# ---------------------------------------------------------------------------
+# риси з +1 до характеристики (PHB, p. 165–170)
+# ---------------------------------------------------------------------------
+
+_FEAT_INCREASE = re.compile(r"Increase (?:your|the chosen) (.*?)(?: score)? by 1", re.I)
+
+
+def feat_ability_options(text: str) -> tuple[Ability, ...]:
+    """Які характеристики риса дає підвищити на 1; порожньо — риса без +1.
+
+    «Increase your Strength or Dexterity score by 1» → (STR, DEX);
+    «Increase the chosen ability score by 1» (Resilient) → усі шість.
+    """
+    match = _FEAT_INCREASE.search(text or "")
+    if match is None:
+        return ()
+    phrase = match.group(1).casefold()
+    if "chosen" in match.group(0).casefold() or "ability" in phrase:
+        return tuple(Ability)
+    names = {
+        "strength": Ability.STR,
+        "dexterity": Ability.DEX,
+        "constitution": Ability.CON,
+        "intelligence": Ability.INT,
+        "wisdom": Ability.WIS,
+        "charisma": Ability.CHA,
+    }
+    return tuple(ability for name, ability in names.items() if name in phrase)
+
+
+#: Навичка, яку клас дає при мультикласі (PHB, p. 164): бард — будь-яку,
+#: слідопит і плут — зі свого списку. Решта класів навичок не дає.
+MULTICLASS_SKILLS: Mapping[str, int] = {"bard": 1, "ranger": 1, "rogue": 1}
+
+
+# ---------------------------------------------------------------------------
+# вибори класу: бойовий стиль, втаємничення, метамагія, прийоми… (PHB 2014)
+# ---------------------------------------------------------------------------
+
+#: Група → тип запису `optionalfeature` у довіднику ({cls} — ключ класу).
+CHOICE_FEATURE_TYPES: Mapping[str, str] = {
+    "Fighting Style": "fighting style ({cls})",
+    "Eldritch Invocations": "eldritch invocation",
+    "Metamagic": "metamagic",
+    "Pact Boon": "pact boon",
+    "Maneuvers": "maneuver (battle master)",
+    "Infusions": "artificer infusion",
+}
+
+#: Місцевості слідопита й Круга Землі (PHB, p. 68, 91), у порядку книги.
+TERRAINS = ("arctic", "coast", "desert", "forest", "grassland", "mountain", "swamp", "underdark")
+
+#: Групи, варіанти яких — не записи довідника, а перелік із книги (PHB, p. 91).
+CHOICE_FIXED_OPTIONS: Mapping[str, tuple[str, ...]] = {
+    "Favored Enemy": (
+        "aberrations",
+        "beasts",
+        "celestials",
+        "constructs",
+        "dragons",
+        "elementals",
+        "fey",
+        "fiends",
+        "giants",
+        "monstrosities",
+        "oozes",
+        "plants",
+        "undead",
+        "humanoids (two races)",
+    ),
+    "Natural Explorer": TERRAINS,
+    "Circle Terrain": TERRAINS,
+}
+
+#: Вибори, яких індекс механік не має: (клас, підклас або None, група) → [(рівень, скільки)].
+_EXTRA_CHOICES: Mapping[tuple[str, str | None, str], tuple[tuple[int, int], ...]] = {
+    ("fighter", "battle-master", "Maneuvers"): ((3, 3), (7, 5), (10, 7), (15, 9)),
+    ("fighter", "champion", "Fighting Style"): ((10, 1),),  # Additional Fighting Style
+    ("ranger", None, "Favored Enemy"): ((1, 1), (6, 2), (14, 3)),
+    ("ranger", None, "Natural Explorer"): ((1, 1), (6, 2), (10, 3)),
+    ("druid", "circle-of-the-land", "Circle Terrain"): ((2, 1),),
+}
+
+
+def class_choice_slots(entries: Iterable[tuple[Any, ClassMechanics]]) -> dict[str, int]:
+    """Скільки варіантів кожної групи дали рівні: {"fighter:Fighting Style": 1}."""
+    slots: dict[str, int] = {}
+    for entry, definition in entries:
+        subclass = (entry.subclass_key or "").casefold().rsplit("/", 1)[-1] or None
+        groups = {name: definition.optional_feature_count(name, entry.level) for name in definition.optional_features}
+        for (klass, needs, group), steps in _EXTRA_CHOICES.items():
+            if klass == entry.class_key and needs in (None, subclass):
+                groups[group] = groups.get(group, 0) + max(
+                    (count for level, count in steps if level <= entry.level), default=0
+                )
+        for group, count in groups.items():
+            if count > 0 and (group in CHOICE_FEATURE_TYPES or group in CHOICE_FIXED_OPTIONS):
+                slots[f"{entry.class_key}:{group}"] = count
+    return slots
+
+
+#: Броня із завадою на Скритність (PHB, p. 145).
+_NOISY_ARMOR = frozenset({"padded", "scale mail", "half plate", "ring mail", "chain mail", "splint", "plate"})
+
+
+def stealth_disadvantage(armor: Any) -> bool:
+    """Чи дає вдягнена броня заваду на Скритність (`armor` — предмет або None)."""
+    if armor is None:
+        return False
+    name = armor.name_en.strip().casefold().removesuffix(" armor")
+    return name in _NOISY_ARMOR
+
+
+#: Категорія броні за назвою (PHB, p. 145); магічні («Plate Armor +1», «Elven
+#: Chain») — за базовою назвою всередині. Довше — раніше: «studded leather»
+#: перш ніж «leather».
+_ARMOR_CATEGORY: tuple[tuple[str, str], ...] = (
+    ("studded leather", "light"),
+    ("padded", "light"),
+    ("leather", "light"),
+    ("chain shirt", "medium"),
+    ("elven chain", "medium"),
+    ("scale mail", "medium"),
+    ("half plate", "medium"),
+    ("breastplate", "medium"),
+    ("spiked armor", "medium"),
+    ("hide", "medium"),
+    ("ring mail", "heavy"),
+    ("chain mail", "heavy"),
+    ("splint", "heavy"),
+    ("plate", "heavy"),
+)
+
+
+def armor_category(armor: Any) -> str | None:
+    """«light» / «medium» / «heavy» для вдягненої броні; без назви в таблиці — з межі Спритності."""
+    if armor is None:
+        return None
+    name = armor.name_en.strip().casefold()
+    for base, category in _ARMOR_CATEGORY:
+        if base in name:
+            return category
+    return {None: "light", 2: "medium", 0: "heavy"}.get(armor.dex_cap, "medium")
+
+
+def armor_dex_cap(armor: Any) -> int | None:
+    """Межа Спритності за категорією: легка — без межі, середня — 2, важка — 0."""
+    return {"light": None, "medium": 2, "heavy": 0}[armor_category(armor) or "light"]
+
+
+#: Музичні інструменти (PHB, p. 154): бард при мультикласі обирає один (p. 164).
+MUSICAL_INSTRUMENTS = (
+    "bagpipes",
+    "drum",
+    "dulcimer",
+    "flute",
+    "horn",
+    "lute",
+    "lyre",
+    "pan flute",
+    "shawm",
+    "viol",
+)
+
+
+# ---------------------------------------------------------------------------
+# вибори рис і бойових стилів (PHB, p. 165–170; TCoE, p. 22, 41, 79; XGtE, p. 73)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class DerivedChoice:
+    """Що треба обрати, коли взято рису чи стиль: «3 навички або інструменти».
+
+    `kind` каже, з чого обирати: skill, tool, skill_or_tool, language, weapon,
+    expertise, spell, fixed (готовий перелік `options`) або optional (записи
+    `optionalfeature` типу `feature_type`).
+    """
+
+    group: str
+    count: int
+    kind: str
+    spell_level: int = 0
+    schools: tuple[str, ...] = ()
+    #: Клас списку заклять; `None` — клас із вибору «Spell Class» тієї ж риси,
+    #: «*» — будь-який клас.
+    spell_class: str | None = None
+    ritual: bool = False
+    options: tuple[str, ...] = ()
+    feature_type: str = ""
+    #: Будь-який рівень від заговорів до найвищого, який має цей клас (Магічні таємниці).
+    max_level_of: str = ""
+    #: Рівень закляття — до половини рівня (вгору): «warlock» — рівня чаклуна,
+    #: «total» — рівня персонажа (переписані ритуали).
+    max_level_half: str = ""
+    #: Без ліміту: гравець дописує, скільки знайшов (ритуали в книзі); `count` — стеля.
+    open_ended: bool = False
+
+
+#: Класи, з яких Magic Initiate і Ritual Caster беруть закляття.
+FEAT_SPELL_CLASSES = ("bard", "cleric", "druid", "sorcerer", "warlock", "wizard")
+
+#: Інструменти ремісника (PHB, p. 154) — Artificer Initiate обирає один.
+ARTISAN_TOOLS = (
+    "alchemist's supplies",
+    "brewer's supplies",
+    "calligrapher's supplies",
+    "carpenter's tools",
+    "cartographer's tools",
+    "cobbler's tools",
+    "cook's utensils",
+    "glassblower's tools",
+    "jeweler's tools",
+    "leatherworker's tools",
+    "mason's tools",
+    "painter's supplies",
+    "potter's tools",
+    "smith's tools",
+    "tinker's tools",
+    "weaver's tools",
+    "woodcarver's tools",
+)
+
+#: Усі інструменти, якими можна володіти (PHB, p. 154–155).
+ALL_TOOLS = (
+    ARTISAN_TOOLS
+    + (
+        "disguise kit",
+        "forgery kit",
+        "herbalism kit",
+        "navigator's tools",
+        "poisoner's kit",
+        "thieves' tools",
+        "vehicles (land)",
+        "vehicles (water)",
+        "dice set",
+        "dragonchess set",
+        "playing card set",
+        "three-dragon ante set",
+    )
+    + MUSICAL_INSTRUMENTS
+)
+
+#: Стандартні й екзотичні мови (PHB, p. 123).
+LANGUAGES = (
+    "common",
+    "dwarvish",
+    "elvish",
+    "giant",
+    "gnomish",
+    "goblin",
+    "halfling",
+    "orc",
+    "abyssal",
+    "celestial",
+    "draconic",
+    "deep speech",
+    "infernal",
+    "primordial",
+    "sylvan",
+    "undercommon",
+)
+
+#: Проста й воєнна зброя (PHB, p. 149) — Weapon Master обирає чотири.
+WEAPONS = (
+    "club",
+    "dagger",
+    "greatclub",
+    "handaxe",
+    "javelin",
+    "light hammer",
+    "mace",
+    "quarterstaff",
+    "sickle",
+    "spear",
+    "light crossbow",
+    "dart",
+    "shortbow",
+    "sling",
+    "battleaxe",
+    "flail",
+    "glaive",
+    "greataxe",
+    "greatsword",
+    "halberd",
+    "lance",
+    "longsword",
+    "maul",
+    "morningstar",
+    "pike",
+    "rapier",
+    "scimitar",
+    "shortsword",
+    "trident",
+    "war pick",
+    "warhammer",
+    "whip",
+    "blowgun",
+    "hand crossbow",
+    "heavy crossbow",
+    "longbow",
+    "net",
+)
+
+_SPELL_CLASS = DerivedChoice("Spell Class", 1, "fixed", options=FEAT_SPELL_CLASSES)
+
+#: Риса (останній сегмент ключа) → вибори, які вона дає.
+FEAT_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
+    "skilled": (DerivedChoice("Skills or Tools", 3, "skill_or_tool"),),
+    "skill-expert": (DerivedChoice("Skill", 1, "skill"), DerivedChoice("Expertise", 1, "expertise")),
+    "prodigy": (
+        DerivedChoice("Skill", 1, "skill"),
+        DerivedChoice("Tool", 1, "tool"),
+        DerivedChoice("Language", 1, "language"),
+        DerivedChoice("Expertise", 1, "expertise"),
+    ),
+    "linguist": (DerivedChoice("Languages", 3, "language"),),
+    "weapon-master": (DerivedChoice("Weapons", 4, "weapon"),),
+    "magic-initiate": (
+        _SPELL_CLASS,
+        DerivedChoice("Cantrips", 2, "spell", spell_level=0),
+        DerivedChoice("1st-level Spell", 1, "spell", spell_level=1),
+    ),
+    "ritual-caster": (
+        _SPELL_CLASS,
+        DerivedChoice("Rituals", 2, "spell", spell_level=1, ritual=True),
+        # Знайдені пізніше ритуали класу — до половини рівня персонажа (PHB, p. 169).
+        DerivedChoice("Copied Rituals", 40, "spell", ritual=True, open_ended=True, max_level_half="total"),
+    ),
+    "elemental-adept": (
+        DerivedChoice("Damage Type", 1, "fixed", options=("acid", "cold", "fire", "lightning", "thunder")),
+    ),
+    "martial-adept": (DerivedChoice("Maneuvers", 2, "optional", feature_type="maneuver (battle master)"),),
+    "eldritch-adept": (DerivedChoice("Eldritch Invocations", 1, "optional", feature_type="eldritch invocation"),),
+    "metamagic-adept": (DerivedChoice("Metamagic", 2, "optional", feature_type="metamagic"),),
+    "fighting-initiate": (DerivedChoice("Fighting Style", 1, "optional", feature_type="fighting style (fighter)"),),
+    "fey-touched": (
+        DerivedChoice(
+            "1st-level Spell", 1, "spell", spell_level=1, schools=("divination", "enchantment"), spell_class="*"
+        ),
+    ),
+    "shadow-touched": (
+        DerivedChoice(
+            "1st-level Spell", 1, "spell", spell_level=1, schools=("illusion", "necromancy"), spell_class="*"
+        ),
+    ),
+    "artificer-initiate": (
+        DerivedChoice("Cantrip", 1, "spell", spell_level=0, spell_class="artificer"),
+        DerivedChoice("1st-level Spell", 1, "spell", spell_level=1, spell_class="artificer"),
+        DerivedChoice("Tool", 1, "fixed", options=ARTISAN_TOOLS),
+    ),
+    "wood-elf-magic": (DerivedChoice("Cantrip", 1, "spell", spell_level=0, spell_class="druid"),),
+}
+
+#: Бойовий стиль → вибори (TCoE, p. 41): заговори жерця чи друїда, маневр.
+STYLE_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
+    "blessed warrior": (DerivedChoice("Cantrips", 2, "spell", spell_level=0, spell_class="cleric"),),
+    "druidic warrior": (DerivedChoice("Cantrips", 2, "spell", spell_level=0, spell_class="druid"),),
+    "superior technique": (DerivedChoice("Maneuvers", 1, "optional", feature_type="maneuver (battle master)"),),
+}
+
+#: Підклас (останній сегмент ключа) → (рівень класу, вибори). Ефект — той самий
+#: механізм, що й у рис: володіння, експертиза, заговори, бойовий стиль.
+#: Варіанти Мисливця, тотемів і драконячого предка (PHB, p. 50, 93, 102).
+HUNTER_PREY = ("Colossus Slayer", "Giant Killer", "Horde Breaker")
+TOTEMS = ("Bear", "Eagle", "Elk", "Tiger", "Wolf")
+DRAGON_ANCESTORS = (
+    "Black (acid)",
+    "Blue (lightning)",
+    "Brass (fire)",
+    "Bronze (lightning)",
+    "Copper (acid)",
+    "Gold (fire)",
+    "Green (poison)",
+    "Red (fire)",
+    "Silver (cold)",
+    "White (cold)",
+)
+
+
+def _steps(
+    group: str, kind: str, steps: tuple[tuple[int, int], ...], **extra: object
+) -> tuple[tuple[int, DerivedChoice], ...]:
+    """Вибір, кількість якого росте з рівнем: ((3, 2), (7, 3)) — 2 на 3 рівні, 3 на 7."""
+    return tuple((level, DerivedChoice(group, count, kind, **extra)) for level, count in steps)  # type: ignore[arg-type]
+
+
+#: Підклас (останній сегмент ключа) → ((рівень класу, вибір), …). Однакова група на
+#: вищому рівні замінює нижчу (кількість росте). Ефект — той самий механізм, що й у
+#: рис: володіння, експертиза, закляття, бойовий стиль; решта — вибір для листа,
+#: текст уміння вже у «Вміннях».
+SUBCLASS_CHOICES: Mapping[str, tuple[tuple[int, DerivedChoice], ...]] = {
+    # Blessings of Knowledge: 2 мови й 2 навички з подвоєним бонусом (PHB, p. 59).
+    "knowledge-domain": (
+        (1, DerivedChoice("Languages", 2, "language")),
+        (1, DerivedChoice("Skills", 2, "skill", options=("Arcana", "History", "Nature", "Religion"))),
+    ),
+    # Acolyte of Nature: заговір друїда й навичка (PHB, p. 62).
+    "nature-domain": (
+        (1, DerivedChoice("Cantrip", 1, "spell", spell_level=0, spell_class="druid")),
+        (1, DerivedChoice("Skill", 1, "skill", options=("Animal Handling", "Nature", "Survival"))),
+    ),
+    # Bonus Proficiencies: три навички; Additional Magical Secrets — 2 закляття
+    # будь-якого класу, що не рахуються у відомих (PHB, p. 54–55).
+    "college-of-lore": (
+        (3, DerivedChoice("Skills", 3, "skill")),
+        (6, DerivedChoice("Additional Magical Secrets", 2, "spell", spell_class="*", max_level_of="bard")),
+    ),
+    # Fighting Style: Дуель або Бій двома зброями (XGtE, p. 15).
+    "college-of-swords": (
+        (3, DerivedChoice("Fighting Style", 1, "fixed", options=("Dueling", "Two-Weapon Fighting"))),
+    ),
+    # Bonus Proficiency: навичка зі списку або мова (XGtE, p. 31).
+    "samurai": (
+        (
+            3,
+            DerivedChoice(
+                "Skill or Language",
+                1,
+                "skill_or_language",
+                options=("History", "Insight", "Performance", "Persuasion"),
+            ),
+        ),
+    ),
+    # Мисливець: по одному вибору на 3, 7, 11 і 15 рівнях (PHB, p. 93).
+    "hunter": (
+        (3, DerivedChoice("Hunter's Prey", 1, "fixed", options=HUNTER_PREY)),
+        (
+            7,
+            DerivedChoice(
+                "Defensive Tactics", 1, "fixed", options=("Escape the Horde", "Multiattack Defense", "Steel Will")
+            ),
+        ),
+        (11, DerivedChoice("Multiattack", 1, "fixed", options=("Volley", "Whirlwind Attack"))),
+        (
+            15,
+            DerivedChoice(
+                "Superior Hunter's Defense", 1, "fixed", options=("Evasion", "Stand Against the Tide", "Uncanny Dodge")
+            ),
+        ),
+    ),
+    # Тотемний воїн: дух на 3, аспект на 6, налаштування на 14 (PHB, p. 50; SCAG — лось і тигр).
+    "path-of-the-totem-warrior": (
+        (3, DerivedChoice("Totem Spirit", 1, "fixed", options=TOTEMS)),
+        (6, DerivedChoice("Aspect of the Beast", 1, "fixed", options=TOTEMS)),
+        (14, DerivedChoice("Totemic Attunement", 1, "fixed", options=TOTEMS)),
+    ),
+    # Драконячий предок: тип дракона задає тип урону (PHB, p. 102).
+    "draconic-bloodline": ((1, DerivedChoice("Dragon Ancestor", 1, "fixed", options=DRAGON_ANCESTORS)),),
+    # Аура бурі: пустеля, море чи тундра (XGtE, p. 10).
+    "path-of-the-storm-herald": ((3, DerivedChoice("Storm Aura", 1, "fixed", options=("Desert", "Sea", "Tundra"))),),
+    # Учень стихій: дисципліни на 3, 6, 11, 17 рівнях (PHB, p. 80).
+    "way-of-the-four-elements": _steps(
+        "Elemental Disciplines", "optional", ((3, 1), (6, 2), (11, 3), (17, 4)), feature_type="elemental discipline"
+    ),
+    # Арканний постріл: 2 на 3 рівні, далі +1 на 7, 10, 15, 18 (XGtE, p. 28).
+    "arcane-archer": _steps(
+        "Arcane Shot", "optional", ((3, 2), (7, 3), (10, 4), (15, 5), (18, 6)), feature_type="arcane shot"
+    ),
+    # Різьбяр рун: 2 руни на 3 рівні, далі +1 на 7, 10, 15 (TCoE, p. 44).
+    "rune-knight": _steps("Runes", "optional", ((3, 2), (7, 3), (10, 4), (15, 5)), feature_type="rune"),
+}
+
+#: Магічні таємниці барда: 2 закляття будь-якого класу на 10, 14 і 18 рівнях; вони
+#: входять у кількість відомих (PHB, p. 54) — тому ліміт зі списку барда менший.
+MAGICAL_SECRETS: tuple[tuple[int, int], ...] = ((10, 2), (14, 4), (18, 6))
+
+
+#: Бонус урону люті варвара за рівнем (PHB, p. 48).
+RAGE_DAMAGE = ((16, 4), (9, 3), (1, 2))
+
+
+def rage_damage(level: int) -> int:
+    return next((bonus for threshold, bonus in RAGE_DAMAGE if level >= threshold), 0) if level else 0
+
+
+def dragon_damage_type(ancestor: str) -> str | None:
+    """«Red (fire)» → «fire»: тип урону драконячого предка (PHB, p. 102)."""
+    if "(" not in ancestor:
+        return None
+    return ancestor.rsplit("(", 1)[1].rstrip(")").strip().casefold() or None
+
+
+def magical_secrets_count(level: int) -> int:
+    return max((count for threshold, count in MAGICAL_SECRETS if level >= threshold), default=0)
+
+
+#: Вміння класу з вибором поза таблицею виборів: клас → ((рівень, вибір), …).
+CLASS_FEATURE_CHOICES: Mapping[str, tuple[tuple[int, DerivedChoice], ...]] = {
+    "bard": tuple(
+        (level, DerivedChoice("Magical Secrets", count, "spell", spell_class="*", max_level_of="bard"))
+        for level, count in MAGICAL_SECRETS
+    ),
+    # Містичний арканум: по закляттю 6–9 рівнів, раз на тривалий відпочинок (PHB, p. 108).
+    "warlock": tuple(
+        (
+            level,
+            DerivedChoice(
+                f"Mystic Arcanum ({spell_level}th level)", 1, "spell", spell_level=spell_level, spell_class="warlock"
+            ),
+        )
+        for level, spell_level in ((11, 6), (13, 7), (15, 8), (17, 9))
+    ),
+    # Майстерність заклять (18) і фірмові закляття (20) мага (PHB, p. 115).
+    "wizard": (
+        (18, DerivedChoice("Spell Mastery (1st level)", 1, "spell", spell_level=1, spell_class="wizard")),
+        (18, DerivedChoice("Spell Mastery (2nd level)", 1, "spell", spell_level=2, spell_class="wizard")),
+        (20, DerivedChoice("Signature Spells", 2, "spell", spell_level=3, spell_class="wizard")),
+    ),
+}
+
+#: Як чаруються закляття вмінь класу (група → примітка).
+CLASS_FEATURE_SPELL_USAGE: Mapping[str, str] = {
+    "Mystic Arcanum": "1/long rest",
+    "Spell Mastery": "at will",
+    "Signature Spells": "1/short rest",
+}
+
+#: Рятівні кидки від умінь класу: (клас, рівень) → характеристики (PHB, p. 79, 96).
+CLASS_FEATURE_SAVES: Mapping[tuple[str, int], tuple[str, ...]] = {
+    ("monk", 14): ("str", "dex", "con", "int", "wis", "cha"),  # Diamond Soul
+    ("rogue", 15): ("wis",),  # Slippery Mind
+}
+
+#: Скільки предметів може настроїти артифіцер (TCoE, p. 12–13); решта — 3.
+ARTIFICER_ATTUNEMENT = ((18, 6), (14, 5), (10, 4))
+
+#: Виклик → вибори: Книга давніх таємниць — 2 ритуали 1 рівня будь-якого класу (PHB, p. 110).
+INVOCATION_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
+    "book of ancient secrets": (
+        DerivedChoice("Rituals", 2, "spell", spell_level=1, spell_class="*", ritual=True),
+        # Переписані пізніше ритуали будь-якого класу — до половини рівня чаклуна (PHB, p. 110).
+        DerivedChoice(
+            "Copied Rituals", 40, "spell", spell_class="*", ritual=True, open_ended=True, max_level_half="warlock"
+        ),
+    ),
+}
+
+#: Підкласи, чиї обрані навички мають подвоєний бонус (Blessings of Knowledge).
+SUBCLASS_EXPERTISE = frozenset({"knowledge-domain"})
+
+#: Дар угоди → вибори: Угода фоліанта — три заговори будь-якого класу (PHB, p. 108).
+BOON_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
+    "pact of the tome": (DerivedChoice("Cantrips", 3, "spell", spell_level=0, spell_class="*"),),
+}
+
+#: Закляття, які риса дає без вибору: (назва, рівень, як чарується).
+FEAT_SPELLS: Mapping[str, tuple[tuple[str, int, str], ...]] = {
+    "fey-touched": (("Misty Step", 2, "1/long rest"),),
+    "shadow-touched": (("Invisibility", 2, "1/long rest"),),
+    "telekinetic": (("Mage Hand", 0, "invisible"),),
+    "telepathic": (("Detect Thoughts", 2, "1/long rest"),),
+    "drow-high-magic": (
+        ("Detect Magic", 1, "at will"),
+        ("Levitate", 2, "1/long rest"),
+        ("Dispel Magic", 3, "1/long rest"),
+    ),
+    "wood-elf-magic": (("Longstrider", 1, "1/long rest"), ("Pass without Trace", 2, "1/long rest")),
+    "fey-teleportation": (("Misty Step", 2, "1/short rest"),),
+}
+
+#: Як чаруються закляття 1+ рівня з вибору риси (Magic Initiate: 1/тривалий відпочинок).
+FEAT_CHOICE_SPELL_NOTE: Mapping[str, str] = {
+    "magic-initiate": "1/long rest",
+    "fey-touched": "1/long rest",
+    "shadow-touched": "1/long rest",
+    "artificer-initiate": "1/long rest",
+    "ritual-caster": "ritual only",
+}
+
+#: Володіння, які риса дає без вибору: (вид, значення).
+FEAT_PROFICIENCIES: Mapping[str, tuple[tuple[str, str], ...]] = {
+    "lightly-armored": (("armor", "light"),),
+    "moderately-armored": (("armor", "medium"), ("armor", "shield")),
+    "heavily-armored": (("armor", "heavy"),),
+    "tavern-brawler": (("weapon", "improvised weapons"),),
+    "chef": (("tool", "cook's utensils"),),
+    "poisoner": (("tool", "poisoner's kit"),),
+    "gunner": (("weapon", "firearms"),),
+    "fey-teleportation": (("language", "sylvan"),),
+}
+
+#: Володіння від підкласу (останній сегмент ключа) без вибору: (вид, значення).
+#: Хексблейд — Hex Warrior (XGtE, p. 55); домени — Bonus Proficiency (PHB, p. 60–63).
+SUBCLASS_PROFICIENCIES: Mapping[str, tuple[tuple[str, str], ...]] = {
+    "the-hexblade": (("armor", "medium"), ("armor", "shield"), ("weapon", "martial")),
+    "life-domain": (("armor", "heavy"),),
+    "nature-domain": (("armor", "heavy"),),
+    "tempest-domain": (("armor", "heavy"), ("weapon", "martial")),
+    "war-domain": (("armor", "heavy"), ("weapon", "martial")),
+    "death-domain": (("weapon", "martial"),),
+    "forge-domain": (("armor", "heavy"), ("tool", "smith's tools")),
+    "order-domain": (("armor", "heavy"),),
+    "twilight-domain": (("armor", "heavy"), ("weapon", "martial")),
+    "college-of-valor": (("armor", "medium"), ("armor", "shield"), ("weapon", "martial")),
+    "college-of-swords": (("armor", "medium"), ("weapon", "scimitar")),
+    "battle-smith": (("weapon", "martial"), ("tool", "smith's tools")),
+    "armorer": (("armor", "heavy"), ("tool", "smith's tools")),
+    "bladesinging": (("armor", "light"), ("skill", "performance")),
+    "assassin": (("tool", "disguise kit"), ("tool", "poisoner's kit")),
+    # Драконячий родовід: читаєте й говорите драконячою (PHB, p. 102).
+    "draconic-bloodline": (("language", "draconic"),),
+}
+
+#: Види, що дають рису на 1 рівні (PHB, p. 31; TCoE, p. 8).
+SPECIES_WITH_FEAT = frozenset({"variant human", "custom lineage"})
+
+
+# ---------------------------------------------------------------------------
+# містичні виклики (PHB, p. 110; XGtE, p. 56; TCoE, p. 70)
+# ---------------------------------------------------------------------------
+
+#: Виклик → закляття, яке він дає: (назва, рівень, як чарується).
+INVOCATION_SPELLS: Mapping[str, tuple[str, int, str]] = {
+    "armor of shadows": ("Mage Armor", 1, "at will"),
+    "ascendant step": ("Levitate", 2, "at will"),
+    "beast speech": ("Speak with Animals", 1, "at will"),
+    "bewitching whispers": ("Compulsion", 4, "1/long rest"),
+    "chains of carceri": ("Hold Monster", 5, "at will"),
+    "dreadful word": ("Confusion", 4, "1/long rest"),
+    "eldritch sight": ("Detect Magic", 1, "at will"),
+    "fiendish vigor": ("False Life", 1, "at will"),
+    "mask of many faces": ("Disguise Self", 1, "at will"),
+    "master of myriad forms": ("Alter Self", 2, "at will"),
+    "minions of chaos": ("Conjure Elemental", 5, "1/long rest"),
+    "mire the mind": ("Slow", 3, "1/long rest"),
+    "misty visions": ("Silent Image", 1, "at will"),
+    "otherworldly leap": ("Jump", 1, "at will"),
+    "sculptor of flesh": ("Polymorph", 4, "1/long rest"),
+    "sign of ill omen": ("Bestow Curse", 3, "1/long rest"),
+    "thief of five fates": ("Bane", 1, "1/long rest"),
+    "visions of distant realms": ("Arcane Eye", 4, "at will"),
+    "whispers of the grave": ("Speak with Dead", 3, "at will"),
+    "shroud of shadow": ("Invisibility", 2, "at will"),
+    "trickster's escape": ("Freedom of Movement", 4, "1/long rest"),
+    "gift of the depths": ("Water Breathing", 3, "1/long rest"),
+    "far scribe": ("Sending", 3, "no slot"),
+    "undying servitude": ("Animate Dead", 3, "1/long rest"),
+}
+
+#: Виклики, що змінюють Містичний розряд (Eldritch Blast): назва → примітка.
+ELDRITCH_BLAST_INVOCATIONS: Mapping[str, str] = {
+    "agonizing blast": "agonizing",
+    "eldritch spear": "range 300 feet",
+    "repelling blast": "push 10 feet",
+    "grasp of hadar": "pull 10 feet (1/turn)",
+    "lance of lethargy": "speed −10 feet (1/turn)",
+}
+
+
+# ---------------------------------------------------------------------------
+# природна зброя видів і удар без зброї (PHB, p. 195; VGtM; MPMM; MOoT; VRGR)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class NaturalWeapon:
+    """Природна зброя виду: нею б'ють як ударом без зброї, але з кубиком."""
+
+    name_en: str
+    die: str
+    damage_type: str
+    #: Кубик у Monsters of the Multiverse, якщо вид звідти.
+    die_mpmm: str | None = None
+    ability: Ability = Ability.STR
+    note: str = ""
+
+
+#: Ключ виду або підвиду → природна зброя.
+NATURAL_WEAPONS: Mapping[str, NaturalWeapon] = {
+    "tabaxi": NaturalWeapon("Cat's Claws", "1d4", "slashing", die_mpmm="1d6"),
+    "aarakocra": NaturalWeapon("Talons", "1d4", "slashing", die_mpmm="1d6"),
+    "lizardfolk": NaturalWeapon("Bite", "1d6", "piercing"),
+    "minotaur": NaturalWeapon("Horns", "1d6", "piercing"),
+    "leonin": NaturalWeapon("Claws", "1d4", "slashing"),
+    "tortle": NaturalWeapon("Claws", "1d4", "slashing", die_mpmm="1d6"),
+    "centaur": NaturalWeapon("Hooves", "1d4", "bludgeoning", die_mpmm="1d6"),
+    "satyr": NaturalWeapon("Ram", "1d4", "bludgeoning", die_mpmm="1d6"),
+    "dhampir": NaturalWeapon("Vampiric Bite", "1d4", "piercing", ability=Ability.CON),
+    "longtooth shifter": NaturalWeapon("Fangs", "1d6", "piercing", note="shifted only"),
+}
+
+
+def natural_weapon_for(species_key: str | None, subspecies_key: str | None) -> NaturalWeapon | None:
+    """Природна зброя виду чи підвиду (підвид важливіший: ікласті шифтери)."""
+    for key in (subspecies_key, species_key):
+        slug = (key or "").strip().casefold().rsplit("/", 1)[-1]
+        if slug in NATURAL_WEAPONS:
+            return NATURAL_WEAPONS[slug]
+    return None
+
+
+def natural_weapon_die(weapon: NaturalWeapon, source: str | None) -> str:
+    """Кістка природної зброї за книгою виду: у MPMM вона більша (табаксі 1d6)."""
+    return weapon.die_mpmm if weapon.die_mpmm and (source or "").upper() == "MPMM" else weapon.die
+
+
+#: Кістка бойових мистецтв ченця за рівнем (PHB, p. 76).
+MARTIAL_ARTS_DIE = ((17, "1d10"), (11, "1d8"), (5, "1d6"), (1, "1d4"))
+
+
+def martial_arts_die(monk_level: int) -> str | None:
+    """Кістка бойових мистецтв або `None`, якщо ченця немає."""
+    if monk_level <= 0:
+        return None
+    return next(die for level, die in MARTIAL_ARTS_DIE if monk_level >= level)
+
+
+def die_size(dice: str) -> int:
+    """Подвоєне середнє кидка, щоб порівнювати «1d6» і «2d4»; «1» → 2."""
+    match = re.fullmatch(r"(\d+)d(\d+)", dice.strip())
+    if match is None:
+        return int(dice) * 2 if dice.strip().isdigit() else 0
+    return int(match.group(1)) * (int(match.group(2)) + 1)
+
+
+def is_monk_weapon(name_en: str, properties: str, group: str) -> bool:
+    """Зброя ченця (PHB, p. 76): короткий меч і проста ближня без two-handed/heavy."""
+    folded = properties.casefold()
+    name = name_en.strip().casefold()
+    if "shortsword" in name:
+        return True
+    if "two-handed" in folded or "heavy" in folded:
+        return False
+    if group:
+        return group.casefold().startswith("simple melee")
+    # Без групи (власний предмет, запис іншої книги) — за назвою.
+    return "greatclub" not in name and any(base in name for base in _SIMPLE_MELEE_ONE_HANDED)
+
+
+#: Проста зброя ближнього бою без two-handed і heavy (PHB, p. 149).
+_SIMPLE_MELEE_ONE_HANDED = (
+    "club",
+    "dagger",
+    "handaxe",
+    "javelin",
+    "light hammer",
+    "mace",
+    "quarterstaff",
+    "sickle",
+    "spear",
+)

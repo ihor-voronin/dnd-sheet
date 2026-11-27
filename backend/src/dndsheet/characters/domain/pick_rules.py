@@ -13,13 +13,14 @@ from __future__ import annotations
 
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.proficiencies import (
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
 from dndsheet.shared.errors import NotFoundError, ValidationError
 from dndsheet.shared.kernel import Skill
+from dndsheet.shared.rules import MULTICLASS_SKILLS, MUSICAL_INSTRUMENTS
 
 #: Підписи, які не є володінням, а описують вибір («three musical instruments
 #: of your choice»). Такий вибір робить гравець, і він приходить як `pick`.
@@ -42,6 +43,7 @@ def validate_pick(
     pick: Proficiency,
     *,
     existing: Proficiencies,
+    multiclass: bool = False,
 ) -> None:
     """Перевірити одне володіння проти правил його джерела.
 
@@ -53,22 +55,31 @@ def validate_pick(
         definition = rules.class_mechanics(source.key)
         if definition is None:
             raise NotFoundError(f"немає правил класу {source.key!r}")
+        if (
+            pick.kind is ProficiencyKind.TOOL
+            and multiclass
+            and any("musical instrument" in tool.casefold() for tool in definition.multiclass_tools)
+        ):
+            if pick.value.strip().casefold() not in MUSICAL_INSTRUMENTS:
+                raise ValidationError(f"{pick.value!r} — не музичний інструмент")
+            if count_picks(existing, ProficiencyKind.TOOL, source) >= 1:
+                raise ValidationError(f"клас {definition.name_en!r} дає при мультикласі один інструмент")
+            return
         if pick.kind is not ProficiencyKind.SKILL:
-            raise ValidationError(
-                f"клас {definition.name_en!r} дає володіння навичками — оберіть навичку"
-            )
+            raise ValidationError(f"клас {definition.name_en!r} дає володіння навичками — оберіть навичку")
         try:
             skill = Skill(pick.value.strip().casefold().replace(" ", "_"))
         except ValueError as exc:
             raise ValidationError(f"невідома навичка {pick.value!r}") from exc
         if definition.skill_any == 0 and skill not in definition.skill_options():
-            raise ValidationError(
-                f"клас {definition.name_en!r} не дає навички {skill.value!r}"
-            )
+            raise ValidationError(f"клас {definition.name_en!r} не дає навички {skill.value!r}")
         used = count_picks(existing, ProficiencyKind.SKILL, source)
-        if used + 1 > definition.skill_limit:
+        # Другий клас дає не «2 зі списку», а таблицю мультикласу (PHB, p. 164).
+        limit = MULTICLASS_SKILLS.get(definition.key, 0) if multiclass else definition.skill_limit
+        if used + 1 > limit:
             raise ValidationError(
-                f"клас {definition.name_en!r} дає не більше {definition.skill_limit} навичок"
+                f"клас {definition.name_en!r} дає не більше {limit} навичок"
+                + (" при мультикласі" if multiclass else "")
             )
         return
     if source.kind is SourceKind.SPECIES:

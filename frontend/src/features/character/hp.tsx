@@ -1,19 +1,19 @@
-/** Хіти й кістки хитів: те, що найчастіше змінюється за столом.
+/** Хіти й кістки хітів: те, що найчастіше змінюється за столом.
  *
- * Хіти — це не «поле числа», а дві дії: отримати шкоду й полікуватися. Тому
+ * Хіти — це не «поле числа», а дві дії: отримати урон і полікуватися. Тому
  * зверху великі поточні/максимум/тимчасові (клік по числу — вписати), а під
  * ними — поле кількості з двома кнопками й швидкі кнопки −1/−5/−10 і
  * +1/+5/+10: на дошці це швидше, ніж відкривати поле.
  *
- * Кістки хитів показуються кісткою, кількістю вільних і «намистинами»
+ * Кістки хітів показуються кісткою, кількістю вільних і «намистинами»
  * витрачених. Кидок можна зробити одразу (випадкове число, як у DDB) або
  * вписати те, що випало на реальному кубику.
  */
-
 import { useState } from "react";
 import type { ReactNode } from "react";
 
 import type { SheetViewPayload } from "../wizard/types";
+
 import { EditableNumber, NumberField } from "./editing";
 
 export function HitPointsBlock({
@@ -35,10 +35,10 @@ export function HitPointsBlock({
   const down = hitPoints.current === 0;
 
   return (
-    <section className="ddb-hp" aria-label="Хіти">
-      <div className="ddb-hp__values">
-        <div className="ddb-hp__cell">
-          <span className="ddb-hp__cap">Поточні</span>
+    <section className="sheet-hp" aria-label="Хіти">
+      <div className="sheet-hp__values">
+        <div className="sheet-hp__cell">
+          <span className="sheet-hp__cap">Поточні</span>
           <EditableNumber
             size="lg"
             value={hitPoints.current}
@@ -48,19 +48,15 @@ export function HitPointsBlock({
             onSave={(value) => onSet({ current: value })}
           />
         </div>
-        <span className="ddb-hp__slash" aria-hidden>
+        <span className="sheet-hp__slash" aria-hidden>
           /
         </span>
-        <div className="ddb-hp__cell ddb-hp__cell--max">
-          <span className="ddb-hp__cap">Максимум</span>
-          <span className="ddb-hp__max">{maxField}</span>
+        <div className="sheet-hp__cell sheet-hp__cell--max">
+          <span className="sheet-hp__cap">Максимум</span>
+          <span className="sheet-hp__max">{maxField}</span>
         </div>
-        <div
-          className={`ddb-hp__cell ddb-hp__cell--temp ${
-            hitPoints.temporary > 0 ? "is-on" : ""
-          }`}
-        >
-          <span className="ddb-hp__cap">Тимч.</span>
+        <div className={`sheet-hp__cell sheet-hp__cell--temp ${hitPoints.temporary > 0 ? "is-on" : ""}`}>
+          <span className="sheet-hp__cap">Тимч.</span>
           <EditableNumber
             value={hitPoints.temporary}
             title="Тимчасові хіти"
@@ -69,16 +65,16 @@ export function HitPointsBlock({
             onSave={(value) => onSet({ temporary: value })}
           />
         </div>
-        <span className="ddb-hp__flags">
+        <span className="sheet-hp__flags">
           {down ? (
-            <span className="ddb-hp__flag ddb-hp__flag--down">непритомний</span>
+            <span className="sheet-hp__flag sheet-hp__flag--down">непритомний</span>
           ) : hitPoints.bloodied ? (
-            <span className="ddb-hp__flag">поранений</span>
+            <span className="sheet-hp__flag">поранений</span>
           ) : null}
         </span>
       </div>
 
-      <div className="ddb-hp__apply">
+      <div className="sheet-hp__apply">
         <NumberField
           value={amount}
           live
@@ -92,16 +88,16 @@ export function HitPointsBlock({
         />
         <button
           type="button"
-          className="ddb-hp__act ddb-hp__act--damage"
+          className="sheet-hp__act sheet-hp__act--damage"
           disabled={disabled}
           onClick={() => onDamage(amount)}
           title="Зняти хіти: спершу тимчасові, як у правилах"
         >
-          Шкода
+          Урон
         </button>
         <button
           type="button"
-          className="ddb-hp__act ddb-hp__act--heal"
+          className="sheet-hp__act sheet-hp__act--heal"
           disabled={disabled}
           onClick={() => onHeal(amount)}
           title="Додати хіти, не вище максимуму"
@@ -110,12 +106,12 @@ export function HitPointsBlock({
         </button>
       </div>
 
-      <div className="ddb-hp__quick" aria-label="Швидка зміна хітів">
+      <div className="sheet-hp__quick" aria-label="Швидка зміна хітів">
         {[-10, -5, -1].map((step) => (
           <button
             key={step}
             type="button"
-            className="ddb-hp__quick-btn ddb-hp__quick-btn--damage"
+            className="sheet-hp__quick-btn sheet-hp__quick-btn--damage"
             disabled={disabled}
             onClick={() => onDamage(-step)}
           >
@@ -126,7 +122,7 @@ export function HitPointsBlock({
           <button
             key={step}
             type="button"
-            className="ddb-hp__quick-btn ddb-hp__quick-btn--heal"
+            className="sheet-hp__quick-btn sheet-hp__quick-btn--heal"
             disabled={disabled}
             onClick={() => onHeal(step)}
           >
@@ -171,7 +167,7 @@ export function HitDiceBlock({
         const free = resource.total - resource.used;
         return (
           <div key={name} className={`hitdie ${free === 0 ? "is-empty" : ""}`}>
-            <span className="hitdie__face" title={`Кістка хиту ${name}`}>
+            <span className="hitdie__face" title={`Кістка хіту ${name}`}>
               {name}
             </span>
             <div className="hitdie__body">

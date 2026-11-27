@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "xgte/item/orb-of-time",
+   "name_uk": "Сфера часу"
+  },
+  {
+   "id": "idrotf/item/orc-stone",
+   "name_uk": "Камінь орка"
+  },
+  {
+   "id": "twbtw/item/ornithopter-of-flying",
+   "name_uk": "Літаючий орнітоптер"
+  },
+  {
+   "id": "ai/item/orrery-of-the-wanderer",
+   "name_uk": "Планетарій Мандрівника"
+  },
+  {
+   "id": "tcoe/item/outer-essence-shard",
+   "name_uk": "Осколок зовнішньої сутності"
+  },
+  {
+   "id": "phb-2014/item/pack",
+   "name_uk": "В'юк"
+  },
+  {
+   "id": "basic-rules-2014/item/padded",
+   "name_uk": "Стьобана броня"
+  },
+  {
+   "id": "basic-rules-2014/item/painter-s-supplies",
+   "name_uk": "Приладдя художника"
+  },
+  {
+   "id": "phb-2014/item/painter-s-supplies",
+   "name_uk": "Приладдя художника"
+  },
+  {
+   "id": "ps-ixalan/item/pair-of-engraved-bone-dice-brazen-coalition",
+   "name_uk": "Пара різьблених кістяних костей (Латунна коаліція)"
+  },
+  {
+   "id": "phb-2014/item/pan-flute",
+   "name_uk": "Флейта Пана"
+  },
+  {
+   "id": "basic-rules-2014/item/paper-one-sheet",
+   "name_uk": "Папір (один аркуш)"
+  },
+  {
+   "id": "wdh/item/paper-bird",
+   "name_uk": "Паперовий птах"
+  },
+  {
+   "id": "qftis/item/paralysis-pistol",
+   "name_uk": "Пістолет паралічу"
+  },
+  {
+   "id": "basic-rules-2014/item/parchment-one-sheet",
+   "name_uk": "Пергамент (один аркуш)"
+  },
+  {
+   "id": "skt/item/pennant-of-the-vind-rune",
+   "name_uk": "Вимпел руни Вінд"
+  },
+  {
+   "id": "basic-rules-2014/item/perfume-vial",
+   "name_uk": "Парфуми (флакон)"
+  },
+  {
+   "id": "xgte/item/perfume-of-bewitching",
+   "name_uk": "Парфуми чарів"
+  },
+  {
+   "id": "toa/item/petrified-grung-egg",
+   "name_uk": "Скам'яніле яйце грунга"
+  },
+  {
+   "id": "ps-ixalan/item/pewter-mug-with-green-spinels-brazen-coalition",
+   "name_uk": "Олов'яний кухоль із зеленими шпінелями (Латунна коаліція)"
+  },
+  {
+   "id": "basic-rules-2014/item/pick-miner-s",
+   "name_uk": "Кайло шахтаря"
+  },
+  {
+   "id": "phb-2014/item/pick-miner-s",
+   "name_uk": "Кайло шахтаря"
+  },
+  {
+   "id": "basic-rules-2014/item/pike",
+   "name_uk": "Піка"
+  },
+  {
+   "id": "gos/item/pipe-of-remembrance",
+   "name_uk": "Люлька пам'яті"
+  },
+  {
+   "id": "twbtw/item/pipe-of-smoke-monsters",
+   "name_uk": "Люлька димових монстрів"
+  },
+  {
+   "id": "xmts/item/pirate-s-cutlass",
+   "name_uk": "Шабля пірата"
+  },
+  {
+   "id": "basic-rules-2014/item/piton",
+   "name_uk": "Скельний гак"
+  },
+  {
+   "id": "oota/item/piwafwi-cloak-of-elvenkind",
+   "name_uk": "Півафві (плащ ельфів)"
+  },
+  {
+   "id": "oota/item/piwafwi-of-fire-resistance",
+   "name_uk": "Півафві опору вогню"
+  },
+  {
+   "id": "twbtw/item/pixie-dust",
+   "name_uk": "Порошок піксі"
+  },
+  {
+   "id": "aitfr-thp/item/planar-key",
+   "name_uk": "Планарний ключ"
+  },
+  {
+   "id": "sato/item/planar-philosopher-trinket",
+   "name_uk": "Дрібничка планарного філософа"
+  },
+  {
+   "id": "tcoe/item/planecaller-s-codex",
+   "name_uk": "Кодекс викликача планів"
+  },
+  {
+   "id": "basic-rules-2014/item/plate",
+   "name_uk": "Латна броня"
+  },
+  {
+   "id": "ps-ixalan/item/platinum-headdress-with-topaz-sun-symbol-sun-empire",
+   "name_uk": "Платиновий головний убір із символом сонця з топазу (Сонячна імперія)"
+  },
+  {
+   "id": "ps-ixalan/item/platinum-ring-with-yellow-sapphire-sun-empire",
+   "name_uk": "Платиновий перстень із жовтим сапфіром (Сонячна імперія)"
+  },
+  {
+   "id": "ftod/item/platinum-scarf",
+   "name_uk": "Платиновий шарф"
+  },
+  {
+   "id": "ps-ixalan/item/platinum-staff-topped-with-amber-sun-empire",
+   "name_uk": "Платиновий посох із бурштиновим навершям (Сонячна імперія)"
+  },
+  {
+   "id": "phb-2014/item/playing-card-set",
+   "name_uk": "Набір гральних карт"
+  },
+  {
+   "id": "basic-rules-2014/item/poison-basic-vial",
+   "name_uk": "Отрута, проста (флакон)"
+  },
+  {
+   "id": "basic-rules-2014/item/poisoner-s-kit",
+   "name_uk": "Набір отруйника"
+  },
+  {
+   "id": "phb-2014/item/poisoner-s-kit",
+   "name_uk": "Набір отруйника"
+  },
+  {
+   "id": "basic-rules-2014/item/pole-10-foot",
+   "name_uk": "Жердина (10 футів)"
+  },
+  {
+   "id": "xgte/item/pole-of-angling",
+   "name_uk": "Жердина для риболовлі"
+  },
+  {
+   "id": "twbtw/item/pole-of-collapsing",
+   "name_uk": "Жердина, що складається"
+  },
+  {
+   "id": "llok/item/polymorph-blade",
+   "name_uk": "Клинок перевтілення"
+  },
+  {
+   "id": "basic-rules-2014/item/pony",
+   "name_uk": "Поні"
+  },
+  {
+   "id": "sato/item/portal-compass",
+   "name_uk": "Компас порталів"
+  },
+  {
+   "id": "xgte/item/pot-of-awakening",
+   "name_uk": "Горщик пробудження"
+  },
+  {
+   "id": "basic-rules-2014/item/pot-iron",
+   "name_uk": "Казан, залізний"
+  },
+  {
+   "id": "twbtw/item/potion-of-advantage",
+   "name_uk": "Зілля переваги"
+  },
+  {
+   "id": "moot/item/potion-of-aqueous-form",
+   "name_uk": "Зілля водяної форми"
+  },
+  {
+   "id": "ftod/item/potion-of-dragon-s-majesty",
+   "name_uk": "Зілля драконової величності"
+  },
+  {
+   "id": "dmg-2014/item/potion-of-fire-breath",
+   "name_uk": "Зілля вогняного подиху"
+  },
+  {
+   "id": "skt/item/potion-of-giant-size",
+   "name_uk": "Зілля велетенського розміру"
+  },
+  {
+   "id": "dmg-2014/item/potion-of-invulnerability",
+   "name_uk": "Зілля невразливості"
+  },
+  {
+   "id": "dmg-2014/item/potion-of-longevity",
+   "name_uk": "Зілля довголіття"
+  },
+  {
+   "id": "egtw/item/potion-of-maximum-power",
+   "name_uk": "Зілля максимальної сили"
+  },
+  {
+   "id": "tftyp/item/potion-of-mind-control",
+   "name_uk": "Зілля контролю розуму"
+  },
+  {
+   "id": "ditlcot/item/potion-of-polychromy",
+   "name_uk": "Зілля барвистості"
+  }
+ ]
+}

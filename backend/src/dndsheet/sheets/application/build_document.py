@@ -7,9 +7,9 @@
 
 Три види полів за походженням:
 
-* `computed` — порахував домен (КЗ, порятунки, навички, максимум хітів, слоти);
+* `computed` — порахував домен (КЗ, рятівні кидки, навички, максимум хітів, комірки);
 * `input` — стан, який гравець змінює за столом (поточні хіти, витрачені
-  слоти, кидки смерті, натхнення, втома, нотатки);
+  комірки, кидки смерті, натхнення, виснаження, нотатки);
 * `override` — гравець вписав своє число замість обчисленого.
 
 Стан листа потрапляє в документ **тим самим шляхом, що й на екран**: числа
@@ -19,7 +19,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Mapping
+from contextvars import ContextVar
+from typing import Any, Callable, Iterable, Mapping
 
 from dndsheet.characters.application.rows import (
     SpellRow,
@@ -84,20 +85,46 @@ TRAINING_LABELS: dict[str, tuple[str, str]] = {
 }
 
 
+#: Як показати назву з довідника («Warlock» → «Чаклун (Warlock)»); за замовчуванням — як є.
+#: ContextVar, а не параметр кожної функції: назви потрібні в десятку місць документа.
+_NAME: ContextVar[Callable[[str], str]] = ContextVar("sheet_name", default=lambda name: name)
+
+
+def _n(name: str) -> str:
+    return _NAME.get()(name)
+
+
 def build_sheet_document(
     character: Character,
     computed: ComputedSheet,
     attacks: Iterable[Mapping[str, Any]] | None = None,
+    feat_titles: Mapping[str, str] | None = None,
+    name: Callable[[str], str] | None = None,
+) -> SheetDocument:
+    """Документ листа; `name` перекладає назви з довідника за правилом «Українська (English)»."""
+    token = _NAME.set(name or (lambda value: value))
+    try:
+        return _build(character, computed, attacks, feat_titles)
+    finally:
+        _NAME.reset(token)
+
+
+def _build(
+    character: Character,
+    computed: ComputedSheet,
+    attacks: Iterable[Mapping[str, Any]] | None = None,
+    feat_titles: Mapping[str, str] | None = None,
 ) -> SheetDocument:
     """Повний документ листа: шість розділів, як на екрані.
 
-    `attacks` приходить ззовні (з довідника), бо домен не читає корпус:
-    немає списку атак — немає й розділу, а не порожній заголовок.
+    `attacks` і `feat_titles` приходять ззовні (з довідника), бо домен не
+    читає корпус: немає списку атак — немає й розділу, а не порожній
+    заголовок; немає назви риси — показуємо її ключ, а не вигаданий текст.
     """
     fields: dict[str, Field] = {}
     pages: list[Page] = []
 
-    identity = _identity_fields(character, computed)
+    identity = _identity_fields(character, computed, feat_titles)
     fields.update(identity)
     ability_ids = _ability_fields(fields, computed)
     combat_ids = _combat_fields(character, computed, fields)
@@ -161,7 +188,11 @@ def build_sheet_document(
 # ---------------------------------------------------------------------------
 
 
-def _identity_fields(character: Character, computed: ComputedSheet) -> dict[str, Field]:
+def _identity_fields(
+    character: Character,
+    computed: ComputedSheet,
+    feat_titles: Mapping[str, str] | None = None,
+) -> dict[str, Field]:
     fields: dict[str, Field] = {
         "identity.level": _computed_number(
             "identity.level",
@@ -176,17 +207,15 @@ def _identity_fields(character: Character, computed: ComputedSheet) -> dict[str,
     }
     species = character.species
     if species is not None:
-        name = species.name_en
+        name = _n(species.name_en)
         if character.subspecies_key:
-            name = f"{name} ({character.subspecies_key})"
-        fields["identity.species"] = _text(
-            "identity.species", name, LocalizedText(uk="Вид", en="Species")
-        )
+            name = f"{name}, {_n(character.subspecies_key)}"
+        fields["identity.species"] = _text("identity.species", name, LocalizedText(uk="Вид", en="Species"))
     background = character.background
     if background is not None:
         fields["identity.background"] = _text(
             "identity.background",
-            background.name_en,
+            _n(background.name_en),
             LocalizedText(uk="Передісторія", en="Background"),
         )
     if character.alignment:
@@ -208,19 +237,34 @@ def _identity_fields(character: Character, computed: ComputedSheet) -> dict[str,
             LocalizedText(uk="Стійкість до урону", en="Damage Resistances"),
         )
     if character.feats:
+        titles = feat_titles or {}
         fields["identity.feats"] = _computed_list(
             "identity.feats",
-            list(character.feats),
+            [titles.get(key, key) for key in character.feats],
             LocalizedText(uk="Риси", en="Feats"),
+        )
+    if character.multiclass_waivers:
+        # Не похідне число, а слід рішення: вимоги обійшли свідомо.
+        fields["identity.waivers"] = _computed_list(
+            "identity.waivers",
+            [_waiver_text(character, waiver) for waiver in character.multiclass_waivers],
+            LocalizedText(
+                uk="Вимоги мультикласу проігноровано",
+                en="Multiclass requirements ignored",
+            ),
         )
     return fields
 
 
+def _waiver_text(character: Character, waiver) -> str:  # noqa: ANN001 — MulticlassWaiver
+    definition = character.rules.class_mechanics(waiver.class_key)
+    name = _n(definition.name_en) if definition is not None else waiver.class_key
+    required = " або ".join(waiver.requirements)
+    return f"{name} ({required})" if required else name
+
+
 def _classes_text(character: Character) -> str:
-    return " / ".join(
-        f"{definition.name_en} {entry.level}"
-        for entry, definition in character.class_entries()
-    )
+    return " / ".join(f"{_n(definition.name_en)} {entry.level}" for entry, definition in character.class_entries())
 
 
 def _ability_fields(fields: dict[str, Field], computed: ComputedSheet) -> list[str]:
@@ -236,11 +280,7 @@ def _ability_fields(fields: dict[str, Field], computed: ComputedSheet) -> list[s
             origin="computed" if viewed.bonus else "input",
             label=ability_label(ability),
             hint=hint(f"ability.{ability.value}"),
-            formula=(
-                Formula(expr=f"base('{ability.value}') + {viewed.bonus}", deps=[])
-                if viewed.bonus
-                else None
-            ),
+            formula=(Formula(expr=f"base('{ability.value}') + {viewed.bonus}", deps=[]) if viewed.bonus else None),
             editable=True,
         )
         fields[mod_id] = Field(
@@ -256,9 +296,7 @@ def _ability_fields(fields: dict[str, Field], computed: ComputedSheet) -> list[s
     return ids
 
 
-def _combat_fields(
-    character: Character, computed: ComputedSheet, fields: dict[str, Field]
-) -> list[str]:
+def _combat_fields(character: Character, computed: ComputedSheet, fields: dict[str, Field]) -> list[str]:
     state = character.state
 
     def origin(key: str) -> str:
@@ -292,9 +330,7 @@ def _combat_fields(
         type="number",
         value=computed.proficiency_bonus,
         origin="computed",
-        label=LocalizedText(
-            uk="Бонус майстерності", en="Proficiency Bonus", glossary_id="rules.proficiency_bonus"
-        ),
+        label=LocalizedText(uk="Бонус майстерності", en="Proficiency Bonus", glossary_id="rules.proficiency_bonus"),
         hint=hint("rules.proficiency_bonus"),
         formula=Formula(expr="proficiency()"),
         editable=False,
@@ -324,9 +360,7 @@ def _combat_fields(
         value=computed.hit_points.maximum,
         origin=origin("hit_points_max"),
         label=LocalizedText(uk="Хіти: максимум", en="Hit Points: maximum"),
-        formula=Formula(
-            expr=" + ".join(str(part.value) for part in computed.hit_points.parts) or "0"
-        ),
+        formula=Formula(expr=" + ".join(str(part.value) for part in computed.hit_points.parts) or "0"),
         editable=True,
     )
     fields["hp.current"] = Field(
@@ -350,7 +384,7 @@ def _combat_fields(
         type="text",
         value=", ".join(f"d{die} × {count}" for die, count in sorted(computed.hit_dice.items())),
         origin="computed",
-        label=LocalizedText(uk="Кубики хітів", en="Hit Dice"),
+        label=LocalizedText(uk="Кістки хітів", en="Hit Dice"),
         editable=False,
     )
     fields["hitdice.left"] = Field(
@@ -358,7 +392,7 @@ def _combat_fields(
         type="text",
         value=_hit_dice_left(character, computed),
         origin="input",
-        label=LocalizedText(uk="Хіт-дайси: вільно", en="Hit Dice: available"),
+        label=LocalizedText(uk="Кістки хітів: вільно", en="Hit Dice: available"),
         editable=True,
     )
     fields["inspiration"] = Field(
@@ -374,15 +408,13 @@ def _combat_fields(
         type="number",
         value=state.exhaustion,
         origin="input",
-        label=LocalizedText(uk="Втома", en="Exhaustion"),
+        label=LocalizedText(uk="Виснаження", en="Exhaustion"),
         editable=True,
     )
     fields["death_saves"] = Field(
         id="death_saves",
         type="text",
-        value=(
-            f"успіхи {state.death_saves.successes} / провали {state.death_saves.failures}"
-        ),
+        value=(f"успіхи {state.death_saves.successes} / провали {state.death_saves.failures}"),
         origin="input",
         label=LocalizedText(uk="Кидки смерті", en="Death Saves"),
         editable=True,
@@ -413,9 +445,7 @@ def _hit_dice_left(character: Character, computed: ComputedSheet) -> str:
     return ", ".join(parts)
 
 
-def _save_and_skill_fields(
-    computed: ComputedSheet, fields: dict[str, Field]
-) -> tuple[list[str], list[str]]:
+def _save_and_skill_fields(computed: ComputedSheet, fields: dict[str, Field]) -> tuple[list[str], list[str]]:
     save_ids: list[str] = []
     for ability in Ability:
         save_id = f"save.{ability.value}"
@@ -475,9 +505,7 @@ def _action_sections(
         )
         attack_ids.append(field_id)
     if attack_ids:
-        sections.append(
-            Section(id="attacks", title=ATTACKS_SECTION, columns=1, fields=attack_ids)
-        )
+        sections.append(Section(id="attacks", title=ATTACKS_SECTION, columns=1, fields=attack_ids))
 
     feature_ids: list[str] = []
     for index, row in enumerate(feature_rows(character), start=1):
@@ -485,16 +513,14 @@ def _action_sections(
         fields[field_id] = Field(
             id=field_id,
             type="text",
-            value=f"{row.class_name} {row.level}",
+            value=f"{_n(row.class_name)} {row.level}",
             origin="computed",
             label=english_name(row.name_en),
             editable=False,
         )
         feature_ids.append(field_id)
     if feature_ids:
-        sections.append(
-            Section(id="features", title=FEATURES_SECTION, columns=2, fields=feature_ids)
-        )
+        sections.append(Section(id="features", title=FEATURES_SECTION, columns=2, fields=feature_ids))
 
     # Володіння друкуємо групами «вид + джерело»: чотири рядки «броня: …»
     # займають пів сторінки, а один «броня: легка, середня, важка, щити» читається
@@ -510,7 +536,7 @@ def _action_sections(
         fields[field_id] = Field(
             id=field_id,
             type="text",
-            value=f"{', '.join(values)} · {source_kind_label(source_kind).uk} {source_key}",
+            value=f"{', '.join(values)} · {source_kind_label(source_kind).uk} {_n(source_key)}",
             origin="computed",
             label=proficiency_kind_label(kind),
             editable=False,
@@ -541,9 +567,7 @@ def _proficiency_value(kind: str, value: str) -> str:
     return value
 
 
-def _spell_sections(
-    character: Character, computed: ComputedSheet, fields: dict[str, Field]
-) -> list[Section]:
+def _spell_sections(character: Character, computed: ComputedSheet, fields: dict[str, Field]) -> list[Section]:
     sections: list[Section] = []
     casting = computed.spellcasting
 
@@ -557,7 +581,7 @@ def _spell_sections(
             value=item.save_dc,
             origin="computed",
             label=LocalizedText(
-                uk=f"Опір закляттям: {item.name_en}", en=f"Spell save DC: {item.name_en}"
+                uk=f"КС рятівного кидка закляття: {_n(item.name_en)}", en=f"Spell save DC: {item.name_en}"
             ),
             formula=Formula(
                 expr=f"8 + proficiency() + mod('{item.ability.value}')",
@@ -571,7 +595,7 @@ def _spell_sections(
             value=item.attack_bonus,
             origin="computed",
             label=LocalizedText(
-                uk=f"Бонус атаки закляттям: {item.name_en}",
+                uk=f"Бонус атаки закляттям: {_n(item.name_en)}",
                 en=f"Spell attack bonus: {item.name_en}",
             ),
             formula=Formula(
@@ -590,7 +614,7 @@ def _spell_sections(
             type="counter",
             value=f"{max(0, total - used)}/{total}",
             origin="input",
-            label=LocalizedText(uk=f"Слоти {level} рівня", en=f"Spell slots, level {level}"),
+            label=LocalizedText(uk=f"Комірки {level} рівня", en=f"Spell slots, level {level}"),
             hint=LocalizedText(uk=f"витрачено {used}", en=f"used {used}"),
             editable=True,
         )
@@ -605,7 +629,7 @@ def _spell_sections(
             value=f"{max(0, pact.slots - used)}/{pact.slots}",
             origin="input",
             label=LocalizedText(
-                uk=f"Pact Magic, {pact.slot_level} рівень", en=f"Pact Magic, level {pact.slot_level}"
+                uk=f"{_n('Pact Magic')}, {pact.slot_level} рівень", en=f"Pact Magic, level {pact.slot_level}"
             ),
             hint=LocalizedText(uk=f"витрачено {used}", en=f"used {used}"),
             editable=True,
@@ -613,9 +637,7 @@ def _spell_sections(
         casting_ids.append("spell.pact")
 
     if casting_ids:
-        sections.append(
-            Section(id="spells", title=SPELLS_SECTION, columns=2, fields=casting_ids)
-        )
+        sections.append(Section(id="spells", title=SPELLS_SECTION, columns=2, fields=casting_ids))
 
     rows = sorted(spell_rows(character, computed), key=spell_sort_key)
     spell_ids: list[str] = []
@@ -627,6 +649,9 @@ def _spell_sections(
             value=_spell_value(row),
             origin="computed",
             label=english_name(row.name_en),
+            # Власне закляття не має тексту в книзі: у документ іде те, що
+            # гравець написав сам (у підказці, щоб не ламати сітку).
+            hint=(LocalizedText(uk=row.description, en=row.description) if row.custom and row.description else None),
             editable=False,
         )
         spell_ids.append(field_id)
@@ -644,6 +669,8 @@ def _spell_sections(
 
 def _spell_value(row: SpellRow) -> str:
     level = spell_level_label(row.level).uk
+    if row.custom:
+        return f"{level} · власне"
     if row.source != "class":
         return f"{level} · {spell_source_label(row.source).uk}"
     if row.always_prepared:
@@ -653,9 +680,7 @@ def _spell_value(row: SpellRow) -> str:
     return level
 
 
-def _inventory_sections(
-    character: Character, computed: ComputedSheet, fields: dict[str, Field]
-) -> list[Section]:
+def _inventory_sections(character: Character, computed: ComputedSheet, fields: dict[str, Field]) -> list[Section]:
     sections: list[Section] = []
 
     item_ids: list[str] = []
@@ -670,7 +695,7 @@ def _inventory_sections(
             parts.append(f"{row.weight_lb:g} фнт")
         parts.append("споряджено" if row.equipped else "не споряджено")
         if row.attuned:
-            parts.append("налаштовано")
+            parts.append("настроєно")
         fields[field_id] = Field(
             id=field_id,
             type="text",
@@ -681,9 +706,7 @@ def _inventory_sections(
         )
         item_ids.append(field_id)
     if item_ids:
-        sections.append(
-            Section(id="inventory", title=INVENTORY_SECTION, columns=2, fields=item_ids)
-        )
+        sections.append(Section(id="inventory", title=INVENTORY_SECTION, columns=2, fields=item_ids))
 
     money = character.inventory.money
     money_fields: list[str] = []
@@ -711,9 +734,7 @@ def _inventory_sections(
         editable=False,
     )
     money_fields.append("carrying")
-    sections.append(
-        Section(id="money", title=MONEY_SECTION, columns=4, fields=money_fields)
-    )
+    sections.append(Section(id="money", title=MONEY_SECTION, columns=4, fields=money_fields))
     return sections
 
 

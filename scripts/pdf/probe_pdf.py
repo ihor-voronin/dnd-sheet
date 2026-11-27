@@ -1,4 +1,5 @@
 """Probe a PDF: pages, metadata, whether it carries a real text layer."""
+
 from __future__ import annotations
 
 import json

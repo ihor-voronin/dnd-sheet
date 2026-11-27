@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.services.hit_points import (
     average_hit_points,
@@ -11,7 +10,6 @@ from dndsheet.characters.domain.services.hit_points import (
     hit_point_maximum,
 )
 from dndsheet.characters.domain.vitals import HitPointState
-
 from rules_fixture import FIGHTER, ROGUE, WARLOCK, WIZARD
 
 DEFINITIONS = {"fighter": FIGHTER, "warlock": WARLOCK, "wizard": WIZARD, "rogue": ROGUE}
@@ -56,9 +54,7 @@ def test_recorded_rolls_replace_average() -> None:
 
 
 def test_multiclass_uses_each_class_die() -> None:
-    maximum, _ = hit_point_maximum(
-        _entries(("fighter", 2), ("wizard", 3)), constitution_modifier=1
-    )
+    maximum, _ = hit_point_maximum(_entries(("fighter", 2), ("wizard", 3)), constitution_modifier=1)
     # 10+1, 6+1, 4+1, 4+1, 4+1
     assert maximum == 11 + 7 + 5 + 5 + 5
 

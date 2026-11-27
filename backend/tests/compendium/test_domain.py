@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
+from corpus import record
 from dndsheet.compendium.domain.entry import (
     Category,
     CompendiumEntry,
@@ -11,8 +11,6 @@ from dndsheet.compendium.domain.entry import (
 )
 from dndsheet.compendium.domain.query import EntryQuery, Page
 from dndsheet.shared.errors import ValidationError
-
-from corpus import record
 
 
 def make(category: str, slug: str, name: str, **kwargs) -> CompendiumEntry:

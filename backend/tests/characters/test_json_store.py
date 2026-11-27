@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 
 import pytest
-
 from dndsheet.characters.application.golden import build_golden_cases
 from dndsheet.characters.domain.inventory import InventoryItem, ItemKind
 from dndsheet.characters.domain.proficiencies import (
@@ -54,12 +53,8 @@ def test_restored_character_computes_the_same_sheet(rules, tmp_data) -> None:
         before.hit_points.maximum,
     )
     assert after.hit_dice == before.hit_dice
-    casting_before = SpellSlotService().compute(
-        case.character.class_entries(), {}, after.proficiency_bonus
-    )
-    casting_after = SpellSlotService().compute(
-        restored.class_entries(), {}, after.proficiency_bonus
-    )
+    casting_before = SpellSlotService().compute(case.character.class_entries(), {}, after.proficiency_bonus)
+    casting_after = SpellSlotService().compute(restored.class_entries(), {}, after.proficiency_bonus)
     assert dict(casting_after.slots.by_level) == dict(casting_before.slots.by_level)
 
 
@@ -80,7 +75,7 @@ def test_draft_roundtrip(rules, tmp_data) -> None:
     draft.apply_class(class_key="fighter")
     draft.apply_abilities(
         method=AbilityMethod.STANDARD_ARRAY,
-        scores={ability: score for ability, score in zip(Ability, (15, 14, 13, 12, 10, 8))},
+        scores=dict(zip(Ability, (15, 14, 13, 12, 10, 8))),
     )
     draft.apply_background(
         background_key="soldier",

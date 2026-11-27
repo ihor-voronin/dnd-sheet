@@ -6,10 +6,8 @@ import shutil
 from pathlib import Path
 
 import pytest
-
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepository
-
 from helpers import make_character  # noqa: F401 — реекспорт для тестів
 from rules_fixture import FixtureRules
 

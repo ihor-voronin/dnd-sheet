@@ -1,4 +1,4 @@
-"""Слоти заклять і числа заклинателя, включно з мультикласом.
+"""Комірки заклять і числа заклинателя, включно з мультикласом.
 
 Правила, які тут зашиті (PHB, 2014):
 
@@ -6,8 +6,8 @@
   (з округленням вниз) + третина третинних; Pact Magic warlock-а окремо;
 * **один заклинательський клас** читає власну таблицю класу, **два й більше** —
   таблицю мультикласу за рівнем заклинателя. Це не дрібниця: для paladin-а 5
-  таблиця мультикласу дає 3 слоти 1 рівня, а власна — 4 + 2 другого, бо
-  напівзаклинатель отримує новий рівень слотів на непарних рівнях;
+  таблиця мультикласу дає 3 комірки 1 рівня, а власна — 4 + 2 другого, бо
+  напівзаклинатель отримує новий рівень комірок на непарних рівнях;
 * опір закляттям = 8 + бонус майстерності + модифікатор характеристики
   заклинань; бонус атаки = бонус майстерності + модифікатор;
 * «підготовлених» у підготовлюючого класу не більше ніж модифікатор + рівень
@@ -26,6 +26,7 @@ from dndsheet.shared.rules import (
     PACT_SLOT_TABLE,
     ClassMechanics,
     caster_level,
+    prepared_spell_limit,
     spell_slots,
 )
 
@@ -47,16 +48,18 @@ class ClassCasting:
     spells_known_limit: int | None
     prepared_limit: int | None
     prepares: bool
+    #: Найвищий рівень закляття цього класу на його рівні (для вибору).
+    max_spell_level: int = 0
 
 
 @dataclass(frozen=True, slots=True)
 class Spellcasting:
-    """Усе про закляття персонажа, що обчислюється: слоти, DC, ліміти."""
+    """Усе про закляття персонажа, що обчислюється: комірки, DC, ліміти."""
 
     caster_level: int
     slots: SpellSlots
     classes: tuple[ClassCasting, ...]
-    #: Звідки взялися звичайні слоти: `class` — таблиця єдиного класу,
+    #: Звідки взялися звичайні комірки: `class` — таблиця єдиного класу,
     #: `multiclass` — таблиця за рівнем заклинателя, `none` — закляттів немає.
     slots_from: str = "none"
 
@@ -78,7 +81,7 @@ def pact_magic_for(level: int) -> PactMagic | None:
 
 
 class SpellSlotService:
-    """Обчислювач слотів і характеристик заклинань."""
+    """Обчислювач комірок і характеристик заклинань."""
 
     def compute(
         self,
@@ -86,23 +89,32 @@ class SpellSlotService:
         abilities: Mapping[Ability, int],
         proficiency_bonus: int,
     ) -> Spellcasting:
+        # Паладин і слідопит отримують «Spellcasting» лише на 2 рівні (PHB, p. 84,
+        # 91): на 1 рівні в них ні комірок, ні заговорів — і заклинателем для
+        # таблиці мультикласу такий клас ще не є.
         casters = [
             (entry, definition)
             for entry, definition in classes
-            if definition.casts_spells and entry.level > 0
+            if definition.casts_spells
+            and entry.level > 0
+            and (definition.max_spell_level(entry.level) > 0 or definition.cantrips_at(entry.level) > 0)
         ]
         if not casters:
             return Spellcasting(caster_level=0, slots=SpellSlots(), classes=())
-
-        combined = caster_level(
-            (definition.caster_progression, entry.level) for entry, definition in casters
-        )
-        if len(casters) > 1:
+        combined = caster_level((definition.caster_progression, entry.level) for entry, definition in casters)
+        # Таблиця мультикласу — лише коли «Spellcasting» мають два класи й
+        # більше; Pact Magic чаклуна сюди не рахується (PHB, p. 164–165):
+        # паладин 5 + чаклун 1 бере комірки з таблиці паладина.
+        standard_casters = [(entry, definition) for entry, definition in casters if not definition.is_pact_magic]
+        if len(standard_casters) > 1:
             standard = spell_slots(combined) if combined else ()
             slots_from = "multiclass"
+        elif standard_casters:
+            entry, definition = standard_casters[0]
+            standard = definition.slots_at(entry.level)
+            slots_from = "class"
         else:
-            entry, definition = casters[0]
-            standard = () if definition.is_pact_magic else definition.slots_at(entry.level)
+            standard = ()
             slots_from = "class"
         pact: PactMagic | None = None
         for entry, definition in casters:
@@ -110,9 +122,7 @@ class SpellSlotService:
                 continue
             from_data = definition.pact_at(entry.level)
             pact = (
-                PactMagic(slots=from_data[0], slot_level=from_data[1])
-                if from_data[0]
-                else pact_magic_for(entry.level)
+                PactMagic(slots=from_data[0], slot_level=from_data[1]) if from_data[0] else pact_magic_for(entry.level)
             )
 
         details: list[ClassCasting] = []
@@ -124,7 +134,9 @@ class SpellSlotService:
             modifier = (score - 10) // 2
             known = definition.spells_known_at(entry.level)
             prepared = (
-                max(1, modifier + entry.level) if definition.prepares_spells else None
+                prepared_spell_limit(modifier, entry.level, definition.caster_progression)
+                if definition.prepares_spells
+                else None
             )
             details.append(
                 ClassCasting(
@@ -139,6 +151,7 @@ class SpellSlotService:
                     spells_known_limit=known,
                     prepared_limit=prepared,
                     prepares=definition.prepares_spells,
+                    max_spell_level=definition.max_spell_level(entry.level),
                 )
             )
 

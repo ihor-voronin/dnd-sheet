@@ -48,7 +48,7 @@ class FeatureResource:
 
     @property
     def recharge_label(self) -> str:
-        return "короткий або довгий" if self.recharge == SHORT else "довгий"
+        return "короткий або тривалий" if self.recharge == SHORT else "тривалий"
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,6 +171,24 @@ RULES: tuple[_Rule, ...] = (
         recharge=LONG,
     ),
     _Rule(
+        key="paladin:cleansing-touch",
+        name_en="Cleansing Touch",
+        class_key="paladin",
+        steps=((14, 1),),
+        ability=Ability.CHA,
+        ability_mode="min1",
+        recharge=LONG,
+    ),
+    _Rule(
+        key="artificer:flash-of-genius",
+        name_en="Flash of Genius",
+        class_key="artificer",
+        steps=((7, 1),),
+        ability=Ability.INT,
+        ability_mode="min1",
+        recharge=LONG,
+    ),
+    _Rule(
         key="paladin:channel-divinity",
         name_en="Channel Divinity",
         class_key="paladin",
@@ -249,9 +267,16 @@ ACTIONS: dict[str, str] = {
 }
 
 
-def _uses(
-    rule: _Rule, level: int, ability_modifiers: Mapping[Ability, int]
-) -> int:
+def name_of(key: str) -> str | None:
+    """Назва ресурсу за ключем («fighter:action-surge» → «Action Surge»)."""
+    cleaned = (key or "").strip()
+    for rule in RULES:
+        if rule.key == cleaned:
+            return rule.name_en
+    return None
+
+
+def _uses(rule: _Rule, level: int, ability_modifiers: Mapping[Ability, int]) -> int:
     count = 0
     for threshold, value in rule.steps:
         if level >= threshold:
@@ -267,9 +292,7 @@ def _uses(
     return count
 
 
-def resources_for(
-    character: "Character", ability_modifiers: Mapping[Ability, int]
-) -> tuple[FeatureResource, ...]:
+def resources_for(character: "Character", ability_modifiers: Mapping[Ability, int]) -> tuple[FeatureResource, ...]:
     """Ресурси, доступні цьому персонажу зараз (у порядку класів)."""
     resources: list[FeatureResource] = []
     for entry, definition in character.class_entries():
@@ -286,9 +309,7 @@ def resources_for(
             if total <= 0:
                 continue
             used = min(character.state.feature_used.get(rule.key, 0), total)
-            recharge = (
-                SHORT if rule.short_from is not None and level >= rule.short_from else rule.recharge
-            )
+            recharge = SHORT if rule.short_from is not None and level >= rule.short_from else rule.recharge
             resources.append(
                 FeatureResource(
                     key=rule.key,
@@ -302,4 +323,76 @@ def resources_for(
                     action=ACTIONS.get(rule.key, "other"),
                 )
             )
-    return tuple(resources)
+    paladin = character.class_level("paladin")
+    if paladin:
+        # Накладання рук: запас хітів 5 × рівень паладина (PHB, p. 84).
+        total = 5 * paladin
+        resources.insert(
+            0,
+            FeatureResource(
+                key="paladin:lay-on-hands",
+                name_en="Lay on Hands",
+                class_key="paladin",
+                class_name="Paladin",
+                level=paladin,
+                total=total,
+                used=min(character.state.feature_used.get("paladin:lay-on-hands", 0), total),
+                recharge=LONG,
+                action="action",
+            ),
+        )
+    return tuple(_with_feat_resources(character, resources))
+
+
+#: Риси й стилі з лічильником: ключ, назва, скільки, коли відновлюється.
+_FEAT_RESOURCES = {
+    # Lucky: 3 очки удачі на тривалий відпочинок (PHB, p. 167).
+    "lucky": ("feat:luck-points", "Luck Points", 3, LONG),
+}
+
+
+def _with_feat_resources(character: "Character", resources: list[FeatureResource]) -> list[FeatureResource]:
+    """Лічильники рис: очки удачі; кістки переваги Бойового адепта й Вищої техніки.
+
+    Martial Adept (PHB, p. 168) і Superior Technique (TCoE, p. 41) дають по одній
+    кістці переваги d6; якщо персонаж уже майстер битви, кістка додається до його
+    запасу, а не стає окремим лічильником.
+    """
+    feats = {feat.casefold().rsplit("/", 1)[-1] for feat in character.feats}
+    extra_dice = int("martial-adept" in feats) + int(character.has_class_choice("superior technique"))
+    if extra_dice:
+        index = next((i for i, item in enumerate(resources) if item.key == "fighter:superiority-dice"), None)
+        if index is not None:
+            current = resources[index]
+            total = current.total + extra_dice
+            resources[index] = FeatureResource(
+                key=current.key,
+                name_en=current.name_en,
+                class_key=current.class_key,
+                class_name=current.class_name,
+                level=current.level,
+                total=total,
+                used=min(character.state.feature_used.get(current.key, 0), total),
+                recharge=current.recharge,
+                action=current.action,
+            )
+        else:
+            resources.append(_feat_resource(character, "feat:superiority-dice", "Superiority Dice", extra_dice, SHORT))
+    for slug, (key, name, total, recharge) in _FEAT_RESOURCES.items():
+        if slug in feats:
+            resources.append(_feat_resource(character, key, name, total, recharge))
+    return resources
+
+
+def _feat_resource(character: "Character", key: str, name: str, total: int, recharge: str) -> FeatureResource:
+    return FeatureResource(
+        key=key,
+        name_en=name,
+        class_key="feat",
+        class_name="Feat",
+        level=character.total_level,
+        total=total,
+        used=min(character.state.feature_used.get(key, 0), total),
+        recharge=recharge,
+        action="other",
+    )

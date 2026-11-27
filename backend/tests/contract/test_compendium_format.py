@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import json
 import shutil
 import sys
 from pathlib import Path
@@ -46,18 +45,14 @@ def scratch() -> Path:
     finally:
         shutil.rmtree(base, ignore_errors=True)
 
-pytestmark = pytest.mark.skipif(
-    not (CONTENT / "compendium").is_dir(), reason="корпусу content/compendium немає"
-)
+
+pytestmark = pytest.mark.skipif(not (CONTENT / "compendium").is_dir(), reason="корпусу content/compendium немає")
 
 
 def _corpus() -> list[tuple[str, str, str, dict]]:
     """(корпус, книга, категорія, запис) по всіх корпусах."""
     spec = canonical.load_spec()
-    return [
-        (corpus, source, category, row)
-        for corpus, source, category, row in canonical.iter_corpus(spec)
-    ]
+    return [(corpus, source, category, row) for corpus, source, category, row in canonical.iter_corpus(spec)]
 
 
 @pytest.fixture(scope="module")
@@ -80,9 +75,7 @@ def test_spec_puts_each_category_in_exactly_one_corpus(spec):
     seen: dict[str, str] = {}
     for name in spec.corpus_names():
         for category in spec.corpus_categories(name):
-            assert category not in seen, (
-                f"{category}: у двох корпусах ({seen[category]}, {name})"
-            )
+            assert category not in seen, f"{category}: у двох корпусах ({seen[category]}, {name})"
             seen[category] = name
     orphans = sorted(set(spec.categories) - set(seen))
     assert not orphans, f"категорії без корпусу: {orphans}"
@@ -193,9 +186,7 @@ def test_normalize_moves_stray_record_to_its_corpus(scratch, monkeypatch, spec):
     assert (scratch / "content" / "bestiary" / "demo" / "monster.jsonl").is_file()
     assert not (compendium / "monster.jsonl").exists()
     assert (compendium / "rule.jsonl").is_file()
-    rows = canonical.read_jsonl(
-        scratch / "content" / "bestiary" / "demo" / "monster.jsonl"
-    )
+    rows = canonical.read_jsonl(scratch / "content" / "bestiary" / "demo" / "monster.jsonl")
     assert [row["id"] for row in rows] == ["demo/monster/aboleth"]
 
 
@@ -205,9 +196,7 @@ def test_ids_are_unique(corpus):
     for name, source, category, record in corpus:
         record_id = record["id"]
         if record_id in seen:
-            duplicates.append(
-                f"{record_id} ({seen[record_id][0]}/{seen[record_id][1]} і {name}/{source}/{category})"
-            )
+            duplicates.append(f"{record_id} ({seen[record_id][0]}/{seen[record_id][1]} і {name}/{source}/{category})")
         seen[record_id] = (name, f"{source}/{category}")
     assert not duplicates, "повторювані id:\n" + "\n".join(duplicates[:20])
 
@@ -235,9 +224,7 @@ def test_data_keys_are_canonical(corpus, spec):
     for _, source, _, record in corpus:
         expected = spec.data_keys(record["category"])
         if list(record.get("data") or {}) != expected:
-            problems.append(
-                f"{source}/{record['id']}: {list(record.get('data') or {})} != {expected}"
-            )
+            problems.append(f"{source}/{record['id']}: {list(record.get('data') or {})} != {expected}")
     assert not problems, "\n".join(problems[:10])
 
 
@@ -265,9 +252,7 @@ def test_data_values_have_declared_types(corpus, spec):
             if kind == "int" and isinstance(value, bool):
                 problems.append(f"{source}/{record['id']}.{key}: bool замість int")
             elif not isinstance(value, allowed):
-                problems.append(
-                    f"{source}/{record['id']}.{key}: {type(value).__name__} замість {kind}"
-                )
+                problems.append(f"{source}/{record['id']}.{key}: {type(value).__name__} замість {kind}")
     assert not problems, "\n".join(problems[:10])
 
 
@@ -287,9 +272,8 @@ def test_text_skeleton_per_category(corpus, spec):
         elif style == "prose":
             if first.startswith("#"):
                 problems.append(f"{source}/{record['id']}: прозовий запис починається заголовком")
-        elif style == "section":
-            if not first.startswith("# "):
-                problems.append(f"{source}/{record['id']}: розділ без заголовка {first[:40]!r}")
+        elif style == "section" and not first.startswith("# "):
+            problems.append(f"{source}/{record['id']}: розділ без заголовка {first[:40]!r}")
     assert not problems, "\n".join(problems[:10])
 
 
@@ -343,12 +327,9 @@ def test_monsters_have_stat_block_minimum(corpus):
         challenge = str(data.get("challenge_rating") or "")
         if challenge[:1].isdigit():
             no_hit_points_documented = any(
-                str(note).startswith("статблок без числових хітів")
-                for note in (record.get("notes") or [])
+                str(note).startswith("статблок без числових хітів") for note in (record.get("notes") or [])
             )
             for key in ("hit_points", "xp"):
-                if data.get(key) is None and not (
-                    key == "hit_points" and no_hit_points_documented
-                ):
+                if data.get(key) is None and not (key == "hit_points" and no_hit_points_documented):
                     problems.append(f"{source}/{record['id']}: немає {key}")
     assert not problems, "\n".join(problems[:10])

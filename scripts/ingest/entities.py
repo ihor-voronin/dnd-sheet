@@ -155,8 +155,22 @@ CREATURE_RE = re.compile(
     re.IGNORECASE,
 )
 _CREATURE_TYPE_WORDS = frozenset(
-    "aberration beast celestial construct dragon elemental fey fiend giant "
-    "humanoid monstrosity ooze plant undead".split()
+    [
+        "aberration",
+        "beast",
+        "celestial",
+        "construct",
+        "dragon",
+        "elemental",
+        "fey",
+        "fiend",
+        "giant",
+        "humanoid",
+        "monstrosity",
+        "ooze",
+        "plant",
+        "undead",
+    ]
 )
 
 # Мітки статблока. У HTML між <strong> і значенням іноді немає пробілу, тому
@@ -227,7 +241,7 @@ def _monster_data(body: list[str]) -> dict:
         # починається з чужого слова.
         for label in STAT_LABELS:
             if line.startswith(label) and len(line) > len(label) and line[len(label)].isupper():
-                line = f"{label} {line[len(label):]}"
+                line = f"{label} {line[len(label) :]}"
                 break
 
         # Вертикальна таблиця характеристик: у частині книг D&D Beyond віддає
@@ -272,9 +286,7 @@ def _monster_data(body: list[str]) -> dict:
             rating = CR_RE.match(value)
             data["challenge_rating"] = rating.group("cr") if rating else None
             xp = XP_RE.search(value)
-            data["xp"] = (
-                int(re.sub(r"[\s,]", "", xp.group("xp"))) if xp else None
-            )
+            data["xp"] = int(re.sub(r"[\s,]", "", xp.group("xp"))) if xp else None
         else:
             data[key] = value
     return data
@@ -615,9 +627,8 @@ def _walk(nodes: list[dict]):
 
 def _find(nodes: list[dict], title: str, level: int | None = None) -> dict | None:
     for node in _walk(nodes):
-        if node["title"].lower() == title.lower():
-            if level is None or node["level"] == level:
-                return node
+        if node["title"].lower() == title.lower() and (level is None or node["level"] == level):
+            return node
     return None
 
 
@@ -628,9 +639,8 @@ def _species_entity(name: str, text: str, subrace_of: str | None = None) -> dict
         or re.search(r"^Size[:.]?\s*\**\s*(Tiny|Small|Medium|Large)", body, re.MULTILINE | re.IGNORECASE)
         or re.search(r"\b(Tiny|Small|Medium|Large)\b", body)
     )
-    speed = (
-        re.search(r"(?:walking )?speed is (\d+) feet", body, re.IGNORECASE)
-        or re.search(r"^Speed[:.]?\s*\**\s*(\d+)", body, re.MULTILINE | re.IGNORECASE)
+    speed = re.search(r"(?:walking )?speed is (\d+) feet", body, re.IGNORECASE) or re.search(
+        r"^Speed[:.]?\s*\**\s*(\d+)", body, re.MULTILINE | re.IGNORECASE
     )
     # «Your Dexterity score increases by 2 and your Constitution score
     # increases by 1» — другий бонус іде без «Your», тому шукаємо саму пару
@@ -667,6 +677,7 @@ def _looks_like_species_name(name: str) -> bool:
     if lowered in SPECIES_NON_ENTRIES or lowered.startswith("mark of "):
         return False
     return not SPECIES_NAME_STOP.search(name)
+
 
 # Ознака виду в тілі «<Назва> Traits». До 2020 року бонуси писали в кожному виді
 # («Ability Score Increase»), у MotM (2022) це спільне правило на всю книгу, а в
@@ -713,11 +724,7 @@ def split_species(markdown: str) -> list[dict]:
                 if parent is not None and parent["title"].strip().lower().startswith(name.lower()):
                     # «Dwarf» → «Dwarf Traits», «Tortle Race» → «Tortle Traits».
                     container = parent
-                if (
-                    _looks_like_species_name(name)
-                    and _has_ability_marker(text)
-                    and name not in seen
-                ):
+                if _looks_like_species_name(name) and _has_ability_marker(text) and name not in seen:
                     seen.add(name)
                     subraces: list[tuple[dict, str]] = []
                     if container is not node:
@@ -730,9 +737,7 @@ def split_species(markdown: str) -> list[dict]:
                     pruned = {
                         **container,
                         "children": [
-                            child
-                            for child in container["children"]
-                            if all(child is not sub[0] for sub in subraces)
+                            child for child in container["children"] if all(child is not sub[0] for sub in subraces)
                         ],
                     }
                     base = _species_entity(name, _render_node(pruned))
@@ -753,9 +758,7 @@ def split_species(markdown: str) -> list[dict]:
     return entities
 
 
-FEATS_SECTION_RE = re.compile(
-    r"^(?:new\s+)?(?:feats?|(?:racial\s+)?feat descriptions?)$", re.IGNORECASE
-)
+FEATS_SECTION_RE = re.compile(r"^(?:new\s+)?(?:feats?|(?:racial\s+)?feat descriptions?)$", re.IGNORECASE)
 
 
 def split_feats(markdown: str) -> list[dict]:
@@ -784,11 +787,7 @@ def split_feats(markdown: str) -> list[dict]:
                     "name": child["title"],
                     "category": "feat",
                     "text": text,
-                    "data": {
-                        "prerequisite": (
-                            prerequisite.group(1).strip() if prerequisite else None
-                        )
-                    },
+                    "data": {"prerequisite": (prerequisite.group(1).strip() if prerequisite else None)},
                 }
             )
     return entities

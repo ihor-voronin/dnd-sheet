@@ -51,6 +51,13 @@ compendium/
 | GET | `/species` | базові види з бонусами характеристик |
 | GET | `/species/{species}/subspecies` | підраси виду (вже з успадкованими числами) |
 | GET | `/species/{species}/mechanics` | один вид або підраса |
+
+Крок «Вид» візарда (`/characters/wizard/{id}/steps/species`) віддає не лише
+числа, а й текст книги — з перекладом, де він є: у кожному вмінні `name_en` /
+`text` (оригінал) і `name_uk` / `text_uk` (українська), в описі —
+`description_uk`. Переклад лежить у `content/translations/species/*.json`,
+ключ — `sha1` оригіналу; немає перекладу — цих полів немає взагалі, і екран
+показує оригінал. Деталі — `docs/translation.md`.
 | GET | `/backgrounds` | передісторії з навичками й мовами |
 | GET | `/backgrounds/{name}/mechanics` | одна передісторія |
 

@@ -116,7 +116,7 @@ ITEM_KIND_LABELS: dict[str, tuple[str, str]] = {
 
 PROFICIENCY_KIND_LABELS: dict[str, tuple[str, str]] = {
     "skill": ("навички", "skills"),
-    "saving_throw": ("кидки порятунку", "saving throws"),
+    "saving_throw": ("рятівні кидки", "saving throws"),
     "armor": ("броня", "armor"),
     "weapon": ("зброя", "weapons"),
     "tool": ("інструменти", "tools"),
@@ -127,6 +127,8 @@ SOURCE_KIND_LABELS: dict[str, tuple[str, str]] = {
     "class": ("клас", "class"),
     "species": ("вид", "species"),
     "background": ("передісторія", "background"),
+    "feat": ("риса", "feat"),
+    "item": ("предмет", "item"),
     "manual": ("вручну", "manual"),
 }
 
@@ -139,7 +141,7 @@ LANGUAGE_LABELS: dict[str, tuple[str, str]] = {
     "draconic": ("драконяча", "Draconic"),
     "gnomish": ("гномівська", "Gnomish"),
     "goblin": ("гоблінська", "Goblin"),
-    "halfling": ("півросликів", "Halfling"),
+    "halfling": ("напівросликів", "Halfling"),
     "orc": ("ороча", "Orc"),
     "abyssal": ("безодні", "Abyssal"),
     "sylvan": ("лісова", "Sylvan"),
@@ -173,6 +175,12 @@ SPELL_SOURCE_LABELS: dict[str, tuple[str, str]] = {
     "class": ("від класу", "class"),
     "species": ("від виду", "species"),
     "subclass": ("від підкласу", "subclass"),
+    "feat": ("від риси", "feat"),
+    "fighting-style": ("від бойового стилю", "fighting style"),
+    "invocation": ("від виклику", "invocation"),
+    "pact-boon": ("від дару угоди", "pact boon"),
+    "secrets": ("магічні таємниці", "magical secrets"),
+    "feature": ("від уміння класу", "class feature"),
 }
 
 

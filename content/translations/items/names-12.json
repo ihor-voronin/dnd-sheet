@@ -1,0 +1,244 @@
+{
+ "items": [
+  {
+   "id": "basic-rules-2014/item/rope-hempen-50-feet",
+   "name_uk": "Мотузка з конопель (50 футів)"
+  },
+  {
+   "id": "basic-rules-2014/item/rope-silk-50-feet",
+   "name_uk": "Мотузка шовкова (50 футів)"
+  },
+  {
+   "id": "ai/item/rotor-of-return",
+   "name_uk": "Ротор повернення"
+  },
+  {
+   "id": "basic-rules-2014/item/rowboat",
+   "name_uk": "Гребний човен"
+  },
+  {
+   "id": "xgte/item/ruby-of-the-war-mage",
+   "name_uk": "Рубін бойового мага"
+  },
+  {
+   "id": "coa/item/ruby-rod-of-asmodeus",
+   "name_uk": "Рубіновий жезл Асмодея"
+  },
+  {
+   "id": "ftod/item/ruby-weave-gem",
+   "name_uk": "Самоцвіт рубінового плетіння"
+  },
+  {
+   "id": "cotn/item/ruidium-armor",
+   "name_uk": "Броня з руїдію"
+  },
+  {
+   "id": "cotn/item/ruidium-shield",
+   "name_uk": "Щит з руїдію"
+  },
+  {
+   "id": "cotn/item/ruidium-weapon",
+   "name_uk": "Зброя з руїдію"
+  },
+  {
+   "id": "imr/item/ruinblade",
+   "name_uk": "Клинок руїни"
+  },
+  {
+   "id": "dc/item/ruinstone",
+   "name_uk": "Камінь руїни"
+  },
+  {
+   "id": "egtw/item/ruin-s-wake",
+   "name_uk": "Пробудження руїни"
+  },
+  {
+   "id": "toa/item/ryath-root",
+   "name_uk": "Корінь ріат"
+  },
+  {
+   "id": "basic-rules-2014/item/sack",
+   "name_uk": "Мішок"
+  },
+  {
+   "id": "dmg-2014/item/saddle-of-the-cavalier",
+   "name_uk": "Сідло кавалериста"
+  },
+  {
+   "id": "basic-rules-2014/item/saddlebags",
+   "name_uk": "Сідельні сумки"
+  },
+  {
+   "id": "coa/item/sage-s-mirror",
+   "name_uk": "Дзеркало мудреця"
+  },
+  {
+   "id": "basic-rules-2014/item/sailing-ship",
+   "name_uk": "Вітрильний корабель"
+  },
+  {
+   "id": "cos/item/saint-markovia-s-thighbone",
+   "name_uk": "Стегнова кістка святої Марковії"
+  },
+  {
+   "id": "gotg/item/sanctum-amulet",
+   "name_uk": "Амулет святилища"
+  },
+  {
+   "id": "ftod/item/sapphire-buckler",
+   "name_uk": "Сапфіровий баклер"
+  },
+  {
+   "id": "basic-rules-2014/item/scale-mail",
+   "name_uk": "Луската броня"
+  },
+  {
+   "id": "basic-rules-2014/item/scale-merchant-s",
+   "name_uk": "Ваги купецькі"
+  },
+  {
+   "id": "phb-2014/item/scale-merchant-s",
+   "name_uk": "Ваги купецькі"
+  },
+  {
+   "id": "basic-rules-2014/item/scimitar",
+   "name_uk": "Шабля"
+  },
+  {
+   "id": "twbtw/item/scissors-of-shadow-snipping",
+   "name_uk": "Ножиці обрізання тіней"
+  },
+  {
+   "id": "toa/item/scorpion-armor",
+   "name_uk": "Броня скорпіона"
+  },
+  {
+   "id": "coa/item/scourge-of-shadow",
+   "name_uk": "Батіг тіні"
+  },
+  {
+   "id": "erftlw/item/scribe-s-pen",
+   "name_uk": "Перо писаря"
+  },
+  {
+   "id": "dmg-2014/item/scroll-of-protection",
+   "name_uk": "Сувій захисту"
+  },
+  {
+   "id": "idrotf/item/scroll-of-tarrasque-summoning",
+   "name_uk": "Сувій виклику тарраска"
+  },
+  {
+   "id": "idrotf/item/scroll-of-the-comet",
+   "name_uk": "Сувій комети"
+  },
+  {
+   "id": "basic-rules-2014/item/sealing-wax",
+   "name_uk": "Сургуч"
+  },
+  {
+   "id": "gos/item/sekolahian-worshiping-statuette",
+   "name_uk": "Статуетка шани Секола"
+  },
+  {
+   "id": "dmg-2014/item/sending-stones",
+   "name_uk": "Камені посилання"
+  },
+  {
+   "id": "sato/item/sensory-stone",
+   "name_uk": "Камінь відчуттів"
+  },
+  {
+   "id": "dmg-2014/item/sentinel-shield",
+   "name_uk": "Щит вартового"
+  },
+  {
+   "id": "tcoe/item/shadowfell-brand-tattoo",
+   "name_uk": "Татуювання тавра Шедоуфеллу"
+  },
+  {
+   "id": "tcoe/item/shadowfell-shard",
+   "name_uk": "Осколок Шедоуфеллу"
+  },
+  {
+   "id": "skt/item/shard-of-the-ise-rune",
+   "name_uk": "Осколок руни ісе"
+  },
+  {
+   "id": "kftgv/item/shard-of-xeluan",
+   "name_uk": "Осколок Кселуа"
+  },
+  {
+   "id": "kftgv/item/shard-solitaire-black-sapphire",
+   "name_uk": "Осколок-солітер (чорний сапфір)"
+  },
+  {
+   "id": "kftgv/item/shard-solitaire-diamond",
+   "name_uk": "Осколок-солітер (алмаз)"
+  },
+  {
+   "id": "kftgv/item/shard-solitaire-jacinth",
+   "name_uk": "Осколок-солітер (гіацинт)"
+  },
+  {
+   "id": "kftgv/item/shard-solitaire-rainbow-pearl",
+   "name_uk": "Осколок-солітер (райдужна перлина)"
+  },
+  {
+   "id": "kftgv/item/shard-solitaire-ruby",
+   "name_uk": "Осколок-солітер (рубін)"
+  },
+  {
+   "id": "tftyp/item/shatterspike",
+   "name_uk": "Крушишип"
+  },
+  {
+   "id": "bgdia/item/shatterstick",
+   "name_uk": "Дробильна палиця"
+  },
+  {
+   "id": "phb-2014/item/shawm",
+   "name_uk": "Шалма"
+  },
+  {
+   "id": "basic-rules-2014/item/shield",
+   "name_uk": "Щит"
+  },
+  {
+   "id": "idrotf/item/shield-guardian-amulet",
+   "name_uk": "Амулет щита-охоронця"
+  },
+  {
+   "id": "xgte/item/shield-of-expression",
+   "name_uk": "Щит виразу"
+  },
+  {
+   "id": "toa/item/shield-of-shouting",
+   "name_uk": "Щит крику"
+  },
+  {
+   "id": "gotg/item/shield-of-the-blazing-dreadnought",
+   "name_uk": "Щит палахкотючого дредноута"
+  },
+  {
+   "id": "bgdia/item/shield-of-the-hidden-lord",
+   "name_uk": "Щит прихованого володаря"
+  },
+  {
+   "id": "cos/item/shield-of-the-silver-dragon",
+   "name_uk": "Щит срібного дракона"
+  },
+  {
+   "id": "erftlw/item/shiftweave",
+   "name_uk": "Змінне плетіння"
+  },
+  {
+   "id": "basic-rules-2014/item/shortbow",
+   "name_uk": "Короткий лук"
+  },
+  {
+   "id": "basic-rules-2014/item/shortsword",
+   "name_uk": "Короткий меч"
+  }
+ ]
+}

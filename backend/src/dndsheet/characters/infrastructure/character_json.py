@@ -11,7 +11,7 @@
 * ключ класу/виду/передісторії читається з `RulesSource` у момент
   відновлення, тому числа не дублюються у файлі: правила лишаються єдиним
   джерелом істини;
-* усе, що зберігається, — це **стан**, а не похідні: максимум хітів, КЗ, слоти
+* усе, що зберігається, — це **стан**, а не похідні: максимум хітів, КЗ, комірки
   не пишуться, бо вони рахуються кожного разу з правил.
 """
 
@@ -20,14 +20,14 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from dndsheet.characters.domain.character import Character
-from dndsheet.characters.domain.class_level import CharacterClass
+from dndsheet.characters.domain.class_level import CharacterClass, MulticlassWaiver
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
 from dndsheet.characters.domain.spells import KnownSpell
@@ -51,6 +51,17 @@ DRAFT_SCHEMA = "wizard-draft/1"
 
 def abilities_to_record(abilities: Mapping[Ability, AbilityScore]) -> dict[str, int]:
     return {ability.value: score.value for ability, score in abilities.items()}
+
+
+def ability_spread_from_record(record: Mapping[str, Any] | None) -> dict[Ability, int]:
+    """Вільний розподіл бонусів (правила 2022) із файлу."""
+    spread: dict[Ability, int] = {}
+    for key, value in (record or {}).items():
+        try:
+            spread[Ability(str(key))] = int(value)
+        except (ValueError, TypeError) as exc:
+            raise ValidationError(f"невірний розподіл бонусів: {key!r}") from exc
+    return spread
 
 
 def abilities_from_record(record: Mapping[str, Any] | None) -> dict[Ability, AbilityScore]:
@@ -112,6 +123,9 @@ def inventory_to_record(inventory: Inventory) -> dict[str, Any]:
                 "dex_cap": item.dex_cap,
                 "notes": item.notes,
                 "damage": item.damage,
+                "pact_weapon": item.pact_weapon,
+                "hex_weapon": item.hex_weapon,
+                "kensei_weapon": item.kensei_weapon,
             }
             for item in inventory.items
         ],
@@ -136,6 +150,9 @@ def inventory_from_record(record: Mapping[str, Any] | None) -> Inventory:
                     dex_cap=raw.get("dex_cap"),
                     notes=raw.get("notes") or None,
                     damage=raw.get("damage") or None,
+                    pact_weapon=bool(raw.get("pact_weapon")),
+                    hex_weapon=bool(raw.get("hex_weapon")),
+                    kensei_weapon=bool(raw.get("kensei_weapon")),
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:
@@ -176,31 +193,26 @@ def state_from_record(record: Mapping[str, Any] | None) -> SheetState:
         try:
             slots[int(key)] = int(value)
         except (TypeError, ValueError) as exc:
-            raise ValidationError(f"невірні витрачені слоти: {key!r}") from exc
+            raise ValidationError(f"невірні витрачені комірки: {key!r}") from exc
     dice: dict[int, int] = {}
     for key, value in (payload.get("hit_dice_used") or {}).items():
         text = str(key).lstrip("dD")
         try:
             dice[int(text)] = int(value)
         except (TypeError, ValueError) as exc:
-            raise ValidationError(f"невірні витрачені хіт-дайси: {key!r}") from exc
+            raise ValidationError(f"невірні витрачені кістки хітів: {key!r}") from exc
     return SheetState(
         slots_used=slots,
         pact_used=int(payload.get("pact_used") or 0),
         hit_dice_used=dice,
-        feature_used={
-            str(key): int(value)
-            for key, value in (payload.get("feature_used") or {}).items()
-        },
+        feature_used={str(key): int(value) for key, value in (payload.get("feature_used") or {}).items()},
         death_saves=DeathSaves(
             successes=int(saves.get("successes") or 0),
             failures=int(saves.get("failures") or 0),
         ),
         inspiration=bool(payload.get("inspiration")),
         exhaustion=int(payload.get("exhaustion") or 0),
-        overrides={
-            str(key): int(value) for key, value in (payload.get("overrides") or {}).items()
-        },
+        overrides={str(key): int(value) for key, value in (payload.get("overrides") or {}).items()},
         notes={str(key): str(value) for key, value in (payload.get("notes") or {}).items()},
     )
 
@@ -214,6 +226,8 @@ def spells_to_record(spells: tuple[KnownSpell, ...]) -> list[dict[str, Any]]:
             "entry_id": spell.entry_id,
             "prepared": spell.prepared,
             "always_prepared": spell.always_prepared,
+            "custom": spell.custom,
+            "description": spell.description,
         }
         for spell in spells
     ]
@@ -231,6 +245,8 @@ def spells_from_record(records: list[Mapping[str, Any]] | None) -> tuple[KnownSp
                     entry_id=record.get("entry_id") or None,
                     prepared=bool(record.get("prepared")),
                     always_prepared=bool(record.get("always_prepared")),
+                    custom=bool(record.get("custom")),
+                    description=record.get("description") or None,
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:
@@ -243,6 +259,24 @@ def spells_from_record(records: list[Mapping[str, Any]] | None) -> tuple[KnownSp
 # ---------------------------------------------------------------------------
 
 
+def multiclass_waivers_from_record(
+    records: list[Mapping[str, Any]] | None,
+) -> tuple[MulticlassWaiver, ...]:
+    """Позначки «взято без вимог». Немає поля — немає й позначок."""
+    waivers: list[MulticlassWaiver] = []
+    for record in records or ():
+        try:
+            waivers.append(
+                MulticlassWaiver(
+                    class_key=str(record["class_key"]),
+                    requirements=tuple(str(item) for item in record.get("requirements") or ()),
+                )
+            )
+        except (KeyError, ValueError, TypeError) as exc:
+            raise ValidationError(f"невірна позначка вимог у файлі: {record!r}") from exc
+    return tuple(waivers)
+
+
 def character_to_record(character: Character) -> dict[str, Any]:
     return {
         "schema": CHARACTER_SCHEMA,
@@ -251,6 +285,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
         "version": character.version,
         "abilities": abilities_to_record(character.abilities),
         "ability_bonus_choices": [ability.value for ability in character.ability_bonus_choices],
+        "ability_spread": {ability.value: amount for ability, amount in character.ability_spread.items()},
         "classes": [
             {
                 "class_key": entry.class_key,
@@ -259,15 +294,28 @@ def character_to_record(character: Character) -> dict[str, Any]:
             }
             for entry in character.classes
         ],
+        # Вимоги мультикласу, які група обійшла: лист показує це явно.
+        "multiclass_waivers": [
+            {"class_key": waiver.class_key, "requirements": list(waiver.requirements)}
+            for waiver in character.multiclass_waivers
+        ],
         "species_key": character.species_key,
         "subspecies_key": character.subspecies_key,
         "background_key": character.background_key,
+        "custom_background": character.custom_background,
         "alignment": character.alignment,
         "chosen": proficiencies_to_record(character.chosen),
         "inventory": inventory_to_record(character.inventory),
         "spells": spells_to_record(character.spells),
         "spell_choices": list(character.spell_choices),
         "feats": list(character.feats),
+        "expertise": list(character.expertise),
+        "feat_abilities": {key: ability.value for key, ability in character.feat_abilities.items()},
+        "class_choices": {key: list(values) for key, values in character.class_choices.items()},
+        "species_feat": character.species_feat,
+        "species_source": character.species_source,
+        "choice_spell_levels": dict(character.choice_spell_levels),
+        "asi_taken": character.asi_taken,
         "hp": {
             "current": character.hp.current,
             "temporary": character.hp.temporary,
@@ -282,10 +330,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
 def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Character:
     schema = str(record.get("schema") or "")
     if schema != CHARACTER_SCHEMA and schema not in LEGACY_CHARACTER_SCHEMAS:
-        raise ValidationError(
-            f"невідома схема персонажа {record.get('schema')!r}, "
-            f"очікується {CHARACTER_SCHEMA!r}"
-        )
+        raise ValidationError(f"невідома схема персонажа {record.get('schema')!r}, очікується {CHARACTER_SCHEMA!r}")
     legacy = schema != CHARACTER_SCHEMA
     hp = record.get("hp") or {}
     return Character(
@@ -301,22 +346,33 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
             )
             for entry in record.get("classes") or ()
         ],
-        ability_bonus_choices=tuple(
-            Ability(str(name)) for name in record.get("ability_bonus_choices") or ()
-        ),
+        ability_bonus_choices=tuple(Ability(str(name)) for name in record.get("ability_bonus_choices") or ()),
+        ability_spread=ability_spread_from_record(record.get("ability_spread")),
+        multiclass_waivers=multiclass_waivers_from_record(record.get("multiclass_waivers")),
         species_key=record.get("species_key") or None,
         subspecies_key=record.get("subspecies_key") or None,
         background_key=record.get("background_key") or None,
+        custom_background=dict(record.get("custom_background") or {}) or None,
         alignment=record.get("alignment") or None,
         chosen=Proficiencies(items=proficiencies_from_record(record.get("chosen"))),
         inventory=inventory_from_record(record.get("inventory")),
         spells=spells_from_record(record.get("spells")),
         spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
         feats=tuple(str(item) for item in record.get("feats") or ()),
+        expertise=tuple(str(item) for item in record.get("expertise") or ()),
+        class_choices={
+            str(key): tuple(str(value) for value in values)
+            for key, values in (record.get("class_choices") or {}).items()
+        },
+        feat_abilities={str(key): Ability(str(value)) for key, value in (record.get("feat_abilities") or {}).items()},
+        species_feat=record.get("species_feat") or None,
+        species_source=record.get("species_source") or None,
+        choice_spell_levels={str(key): int(value) for key, value in (record.get("choice_spell_levels") or {}).items()},
+        asi_taken=int(record.get("asi_taken") or 0),
         hp=HitPointState(
             current=_hp_current(hp, legacy=legacy),
             temporary=int(hp.get("temporary") or 0),
-            rolls=tuple(int(value) for value in hp.get("rolls") or ()),
+            rolls=tuple(None if value is None else int(value) for value in hp.get("rolls") or ()),
             bonus=int(hp.get("bonus") or 0),
             override_max=hp.get("override_max"),
         ),
@@ -355,26 +411,30 @@ def draft_to_record(draft: Draft) -> dict[str, Any]:
         "species_key": draft.species_key,
         "subspecies_key": draft.subspecies_key,
         "ability_choices": [ability.value for ability in draft.ability_choices],
+        "ability_spread": {ability.value: amount for ability, amount in draft.ability_spread.items()},
         "class_key": draft.class_key,
         "subclass_key": draft.subclass_key,
         "ability_method": draft.ability_method.value if draft.ability_method else None,
         "ability_scores": {ability.value: score for ability, score in draft.ability_scores.items()},
         "roll_set": list(draft.roll_set),
         "background_key": draft.background_key,
+        "custom_background": draft.custom_background,
         "alignment": draft.alignment,
         "picks": proficiencies_to_record(Proficiencies(items=draft.picks)),
         "inventory": inventory_to_record(Inventory(items=draft.items, money=draft.money)),
         "equipment_submitted": draft.equipment_submitted,
         "spells": spells_to_record(draft.spells),
         "spell_choices": list(draft.spell_choices),
+        "species_feat": draft.species_feat,
+        "species_source": draft.species_source,
+        "species_feat_choices": {key: list(values) for key, values in draft.species_feat_choices.items()},
+        "species_feat_ability": draft.species_feat_ability.value if draft.species_feat_ability else None,
     }
 
 
 def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
     if record.get("schema") != DRAFT_SCHEMA:
-        raise ValidationError(
-            f"невідома схема чернетки {record.get('schema')!r}, очікується {DRAFT_SCHEMA!r}"
-        )
+        raise ValidationError(f"невідома схема чернетки {record.get('schema')!r}, очікується {DRAFT_SCHEMA!r}")
     inventory = inventory_from_record(record.get("inventory"))
     method = record.get("ability_method")
     return Draft(
@@ -384,18 +444,15 @@ def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
         name=str(record.get("name") or ""),
         species_key=record.get("species_key") or None,
         subspecies_key=record.get("subspecies_key") or None,
-        ability_choices=tuple(
-            Ability(str(name)) for name in record.get("ability_choices") or ()
-        ),
+        ability_choices=tuple(Ability(str(name)) for name in record.get("ability_choices") or ()),
+        ability_spread=ability_spread_from_record(record.get("ability_spread")),
         class_key=record.get("class_key") or None,
         subclass_key=record.get("subclass_key") or None,
         ability_method=AbilityMethod(str(method)) if method else None,
-        ability_scores={
-            Ability(str(key)): int(value)
-            for key, value in (record.get("ability_scores") or {}).items()
-        },
+        ability_scores={Ability(str(key)): int(value) for key, value in (record.get("ability_scores") or {}).items()},
         roll_set=tuple(int(value) for value in record.get("roll_set") or ()),
         background_key=record.get("background_key") or None,
+        custom_background=dict(record.get("custom_background") or {}) or None,
         alignment=record.get("alignment") or None,
         picks=proficiencies_from_record(record.get("picks")),
         items=inventory.items,
@@ -403,4 +460,13 @@ def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
         equipment_submitted=bool(record.get("equipment_submitted")),
         spells=spells_from_record(record.get("spells")),
         spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
+        species_feat=record.get("species_feat") or None,
+        species_source=record.get("species_source") or None,
+        species_feat_choices={
+            str(key): tuple(str(value) for value in values)
+            for key, values in (record.get("species_feat_choices") or {}).items()
+        },
+        species_feat_ability=(
+            Ability(str(record["species_feat_ability"])) if record.get("species_feat_ability") else None
+        ),
     )

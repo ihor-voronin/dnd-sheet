@@ -5,6 +5,7 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+pytest-of-*/
 .coverage
 htmlcov/
 .mypy_cache/
@@ -18,14 +19,22 @@ frontend/dist/
 
 # --- Дані/секрети ---
 .env
+# Тимчасові файли деплою (стиснутий образ). Доступи — у deploy/secrets (git-crypt).
+deploy/local/
+# Terraform: плагіни й локальні змінні (адреса сервера).
+deploy/terraform/.terraform/
+# Стан Terraform — лише зашифрований у deploy/secrets/terraform; копії, які Terraform
+# кладе поруч (state rm, backup), відкриті — у git їм не можна.
+deploy/terraform/*.tfstate*
+deploy/terraform/terraform.tfvars
 *.local
 *.sqlite3
 .tmp/
 
 # --- База знань: сирі тексти книг (copyright) і сесія ---
+# Корпус (content/compendium, bestiary, index) — у git, але зашифрований git-crypt:
+# правила в їхніх .gitattributes. Сирі тексти книг і сесія — лише локально.
 content/raw/
-content/compendium/
-content/bestiary/
 content/.session/
 
 # --- Згенеровані артефакти ---
@@ -49,8 +58,6 @@ ingest-status*.txt
 *.bak.*
 
 
-# --- Похідні індекси з корпусу (збираються скриптами) ---
-content/index/
 
 
 # --- Тимчасові теки тестів (пісочниця не дає писати в %TEMP%) ---
@@ -58,3 +65,6 @@ backend/tests/**/_tmp_*/
 
 # --- Дані застосунку: чернетки візарда й збережені персонажі ---
 var/
+
+# Terraform: блокування стану на час запуску (тимчасовий файл).
+deploy/secrets/terraform/.terraform.tfstate.lock.info

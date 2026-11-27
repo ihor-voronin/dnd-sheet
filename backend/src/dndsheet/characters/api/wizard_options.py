@@ -14,6 +14,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from dndsheet.characters.api import classes_uk, subclasses_uk
+from dndsheet.characters.api.background_info import background_details, parse_equipment
+from dndsheet.characters.api.features import class_details
+from dndsheet.characters.api.species_traits import species_details
 from dndsheet.characters.domain.wizard import (
     POINT_BUY_BUDGET,
     POINT_BUY_COSTS,
@@ -29,6 +33,17 @@ from dndsheet.compendium.api.serializers import (
 )
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
+from dndsheet.shared.rules import (
+    SPECIES_WITH_FEAT,
+    feat_ability_options,
+    natural_weapon_die,
+    natural_weapon_for,
+    requires_subspecies,
+)
+
+#: Розділи книги, які є в тексті класу, але не є «вміннями»: без них крок
+#: «Клас» не показав би, що клас дає на 1 рівні з поясненням.
+BASE_SECTIONS = frozenset({"Hit Points", "Proficiencies", "Equipment"})
 
 ALIGNMENTS: tuple[str, ...] = (
     "lawful good",
@@ -42,36 +57,60 @@ ALIGNMENTS: tuple[str, ...] = (
     "chaotic evil",
 )
 
+
 def build_options(
     step: WizardStep,
     draft: Draft,
     service: CompendiumService,
+    cache: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if step is WizardStep.SPECIES:
-        return _species_options(draft, service)
+        return _species_options(draft, service, cache)
     if step is WizardStep.CLASS:
-        return _class_options(draft, service)
+        return _class_options(draft, service, cache)
     if step is WizardStep.ABILITIES:
         return _abilities_options(draft)
     if step is WizardStep.BACKGROUND:
-        return _background_options(draft, service)
+        return _background_options(draft, service, cache)
     if step is WizardStep.EQUIPMENT:
-        return _equipment_options(draft, service)
+        return _equipment_options(draft, service, cache)
     return _spells_options(draft, service)
 
 
 # ---------------------------------------------------------------------------
 
 
-def _species_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
+def _species_options(
+    draft: Draft,
+    service: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Види з числами й **особливостями з книги**.
+
+    Текст умінь («Hare-Trigger», «Rabbit Hop») живе тільки в довіднику, тому
+    він приходить сюди ж: інакше екран показував Harengon як «без бонусів» і
+    гравець не бачив, що вид дає.
+    """
+    store = cache if cache is not None else {}
     species: list[dict[str, Any]] = []
     choice_classes: set[str] = set()
-    for item in service.species_list():
-        payload = species_mechanics_full(item)
+    # Спершу види з Книги гравця (їх обирають найчастіше), далі решта — за назвою:
+    # інакше список із 69 видів починався з «Ааракокри».
+    ordered = sorted(service.species_list(), key=lambda s: (s.source_id.casefold() != "phb", s.name_en.casefold()))
+    for item in ordered:
+        payload = _species_entry(item, service, store)
         payload["subspecies"] = [
-            species_mechanics_full(child)
-            for child in service.subspecies_of(item.name_en)
+            _species_entry(child, service, store, parent=item.name_en) for child in service.subspecies_of(item.name_en)
         ]
+        # Природна зброя, кістка якої залежить від книги (VGM чи MPMM).
+        natural = natural_weapon_for(payload.get("key"), None)
+        mechanics = draft.rules.species_mechanics(payload["key"]) if payload.get("key") else None
+        if natural is not None and natural.die_mpmm and mechanics is not None and len(mechanics.variants) > 1:
+            payload["natural_weapon"] = {
+                "name_en": natural.name_en,
+                "default_source": mechanics.source_id,
+                "dice": {source: natural_weapon_die(natural, source) for source in mechanics.variants},
+            }
         for candidate in (payload, *payload["subspecies"]):
             if candidate.get("cantrip_choice"):
                 choice_classes.add(candidate["cantrip_choice"]["from_class"])
@@ -88,24 +127,101 @@ def _species_options(draft: Draft, service: CompendiumService) -> dict[str, Any]
     return {
         "species": species,
         "class_cantrips": class_cantrips,
-        "hint": (
-            "Підраса успадковує числа батьківського виду: «Hill Dwarf» уже "
-            "несе +2 CON і +1 WIS."
-        ),
+        # Варіантна людина й власна лінія: риса на 1 рівні (PHB, p. 31; TCoE, p. 8).
+        "species_with_feat": sorted(SPECIES_WITH_FEAT),
+        "feat_abilities": {
+            entry.id: [ability.value for ability in options]
+            for entry in service.feats()
+            if (options := feat_ability_options(entry.text_en or ""))
+        },
+        "hint": ("Підраса успадковує числа батьківського виду: «Hill Dwarf» уже несе +2 CON і +1 WIS."),
     }
 
 
-def _class_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
+def _species_entry(
+    item,  # noqa: ANN001 — SpeciesMechanics
+    service: CompendiumService,
+    cache: dict[str, Any],
+    *,
+    parent: str | None = None,
+) -> dict[str, Any]:
+    """Числа виду + текст книги: опис і особливості."""
+    payload = species_mechanics_full(item)
+    details = species_details(service, item.name_en, parent_name_en=parent, cache=cache)
+    payload["traits"] = (details or {}).get("traits") or []
+    payload["description"] = (details or {}).get("description") or ""
+    payload["description_uk"] = (details or {}).get("description_uk") or ""
+    payload["text_lang"] = (details or {}).get("lang")
+    payload["text_from"] = (details or {}).get("from_parent") or (details or {}).get("from_rule") if details else None
+    # Підраса обовʼязкова лише там, де вона визначає числа (PHB: дворф, ельф,
+    # гном, напіврослик; EEPC: genasi; ERLW: shifter; EGtW: aasimar; gith).
+    payload["subspecies_required"] = requires_subspecies(item.key)
+    return payload
+
+
+def _casts_from_level(definition: Any) -> int | None:
+    """Перший рівень класу, на якому є комірки, комірки угоди чи замовляння."""
+    if not definition.casts_spells:
+        return None
+    for level in range(1, 21):
+        if any(definition.slots_at(level)) or definition.pact_at(level)[0] or definition.cantrips_at(level):
+            return level
+    return None
+
+
+def _class_options(
+    draft: Draft,
+    service: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    store = cache if cache is not None else {}
     classes: list[dict[str, Any]] = []
     for definition in service.class_definitions():
         payload = class_mechanics_full(definition)
         payload["skill_options"] = [skill.value for skill in definition.skill_options()]
         payload["cantrips_at_level_1"] = definition.cantrips_at(1)
         payload["spells_known_at_level_1"] = definition.spells_known_at(1)
+        # Паладин і рейнджер чарують лише з 2 рівня: картка класу не має
+        # писати «чарує» про 1 рівень, якщо там ще немає ні комірок, ні замовлянь.
+        payload["casts_from_level"] = _casts_from_level(definition)
+        # Список «усі вміння за рівнями» — теж українською: назви варіантів
+        # («Extra Attack (2)», «Destroy Undead (CR 1)») перекладені в тому ж шарі.
+        payload["features"] = [
+            {
+                **feature,
+                **({"name_uk": uk_name} if (uk_name := classes_uk.name_uk(feature["name_en"])) else {}),
+            }
+            for feature in payload["features"]
+        ]
+        # Опис класу й тексти вмінь — з книги: числа є в індексі, а «що це за
+        # клас» і що робить уміння, там не сказано.
+        details = class_details(service, definition.key, store)
+        payload["description"] = details["description"]
+        if details.get("description_uk"):
+            payload["description_uk"] = details["description_uk"]
+        levels = {feature.name_en: feature.level for feature in definition.features}
+        # Тільки те, що клас справді дає на 1 рівні, і базові розділи
+        # (хіти, володіння, спорядження). «Quick Build» і підкласи в тексті
+        # класу теж є заголовками, але до вмінь 1 рівня не належать.
+        first_level = {name for name, level in levels.items() if level <= 1}
+        payload["feature_texts"] = [
+            {
+                "name_en": item["name_en"],
+                "level": levels.get(item["name_en"], 1),
+                "text": item["text"],
+                **({"name_uk": item["name_uk"]} if item.get("name_uk") else {}),
+                **({"text_uk": item["text_uk"]} if item.get("text_uk") else {}),
+            }
+            for item in details["features"]
+            if item["name_en"] in first_level or item["name_en"] in BASE_SECTIONS
+        ]
         subclass_entries: list[dict[str, Any]] = []
         if definition.subclass_level == 1:
             for entry in service.subclasses(definition.name_en):
                 brief = entry_brief(entry)
+                # Назва підкласу — з шару перекладу: у TERMS на фронтенді є
+                # не все («Bladesinging» там не було).
+                brief["name_uk"] = subclasses_uk.name_uk(brief["name_en"]) or brief["name_uk"]
                 grants = definition.subclass_spells_for(entry.id)
                 brief["grants"] = (
                     {"prepared": list(grants.prepared), "expanded": list(grants.expanded)}
@@ -139,10 +255,7 @@ def _abilities_options(draft: Draft) -> dict[str, Any]:
             "min": min(POINT_BUY_COSTS),
             "max": max(POINT_BUY_COSTS),
         },
-        "species_bonuses": {
-            ability.value: draft.ability_bonuses.get(ability, 0)
-            for ability in draft.ability_bonuses
-        },
+        "species_bonuses": {ability.value: draft.ability_bonuses.get(ability, 0) for ability in draft.ability_bonuses},
         "hint": (
             "Оцінки тут — базові. Бонуси виду додаються на листі й показуються "
             "окремо, щоб було видно, звідки взялося число."
@@ -150,11 +263,62 @@ def _abilities_options(draft: Draft) -> dict[str, Any]:
     }
 
 
-def _background_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
+def _background_options(
+    draft: Draft,
+    service: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Передісторії з описом, рисою й спорядженням — для вибору й екрана.
+
+    Спорядження передісторії потрібне вже тут: крок «Спорядження» бере його
+    з відповіді цього кроку, а не вгадує за назвою.
+    """
+    store = cache if cache is not None else {}
+    backgrounds: list[dict[str, Any]] = []
+    # Спершу PHB (їх обирають найчастіше), далі решта книг — за назвою.
+    ordered = sorted(service.backgrounds(), key=lambda b: (b.source_id.casefold() != "phb", b.name_en.casefold()))
+    for item in ordered:
+        # «Custom Background» з книги PHB — це лише заголовок розділу «своя
+        # передісторія»: правил він не дає (риса «Choose a Feature»). Його
+        # замінює наша форма нижче, інакше в списку два однакові пункти.
+        if item.key.strip().casefold() == "custom background":
+            continue
+        payload = background_mechanics_full(item)
+        details = background_details(service, item.name_en, item.feature_en, store)
+        payload["description"] = details["description"]
+        payload["feature_text"] = details["feature_text"]
+        payload["equipment"] = details["equipment"]
+        payload["money"] = details["money"]
+        # Українські поля — якщо переклад є: немає — екран покаже оригінал.
+        payload["description_uk"] = details.get("description_uk")
+        payload["feature_uk"] = details.get("feature_uk")
+        payload["feature_text_uk"] = details.get("feature_text_uk")
+        backgrounds.append(payload)
+    # «Власна передісторія»: гравець пише назву, опис, рису й спорядження
+    # сам, а правила вибору — стандартні (2 навички / 1 інструмент / 1 мова).
+    backgrounds.append(
+        {
+            "key": "custom",
+            "name_en": "Custom Background",
+            "source_id": "custom",
+            "skill_proficiencies": [],
+            "tool_proficiencies": [],
+            "skill_any": 2,
+            "tools_any": 1,
+            "languages_any_standard": 1,
+            "feature_en": None,
+            "description": "",
+            "feature_text": "",
+            "equipment": "",
+            "money": {},
+            "description_uk": None,
+            "feature_uk": None,
+            "feature_text_uk": None,
+            "custom": True,
+        }
+    )
     options: dict[str, Any] = {
-        "backgrounds": [
-            background_mechanics_full(item) for item in service.backgrounds()
-        ],
+        "backgrounds": backgrounds,
         "alignments": list(ALIGNMENTS),
         "class_skills": None,
         "species_skills": None,
@@ -179,14 +343,48 @@ def _background_options(draft: Draft, service: CompendiumService) -> dict[str, A
     return options
 
 
-def _equipment_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
+def _equipment_options(
+    draft: Draft,
+    service: CompendiumService,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    store = cache if cache is not None else {}
     options: dict[str, Any] = {
         "items_url": "/api/v1/compendium/items",
         "hint": (
             "Спорядження не обовʼязкове: можна пропустити й додати предмети вже "
             "на листі. Пошук предметів — у довіднику."
         ),
+        "background": None,
     }
+    background = draft.background
+    if background is not None:
+        if draft.custom_background:
+            # Власна передісторія: рядок спорядження написав гравець —
+            # розбираємо його тим самим парсером, що й рядки з книг.
+            custom = draft.custom_background
+            custom_items = [row for row in (custom.get("items") or []) if str(row.get("name_en") or "").strip()]
+            if custom_items:
+                rows = [{"text": str(row["name_en"]), "choices": []} for row in custom_items]
+            else:
+                rows, _ = parse_equipment(str(custom.get("equipment") or ""))
+            money = {"gp": int(custom.get("money_gp") or 0)} if custom.get("money_gp") else {}
+            options["background"] = {
+                "key": background.key,
+                "name_en": str(custom.get("name") or background.name_en),
+                "equipment": rows,
+                "money": money,
+            }
+        else:
+            # Спорядження передісторії додається одразу; де книга дає вибір
+            # («bone dice or deck of cards») — вибір показує екран.
+            details = background_details(service, background.name_en, background.feature_en, store)
+            options["background"] = {
+                "key": background.key,
+                "name_en": background.name_en,
+                "equipment": details["equipment"],
+                "money": details["money"],
+            }
     if draft.class_key:
         definition = draft.class_definition
         options["class"] = {
@@ -204,7 +402,15 @@ def _spells_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
     if not definition.casts_spells:
         return {
             "casting": None,
-            "hint": f"{definition.name_en} на 1 рівні не чарує — крок можна пропустити.",
+            "hint": "Цей клас на 1 рівні не чарує — крок можна пропустити.",
+        }
+    starts = _casts_from_level(definition)
+    if starts is not None and starts > 1:
+        # Паладин і рейнджер (PHB, pp. 84, 91): чарування — з 2 рівня. Крок
+        # не має пропонувати ні комірок, ні підготовлених заклять на 1 рівні.
+        return {
+            "casting": None,
+            "hint": f"Клас чарує лише з {starts} рівня — закляття оберете, коли підвищите рівень.",
         }
     spells = service.class_spells(definition.key, max_level=1)
     cantrips = [entry_brief(entry) for entry in spells.spells if entry.data.get("level") == 0]
@@ -235,10 +441,7 @@ def _spells_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
         "spells": leveled,
         "granted": reserved,
         "expanded": [entry["name_en"] for entry in expanded],
-        "hint": (
-            "Список — зі «Spell Lists» книг. Закляття належить класу, тому "
-            "вони й лежать у кроці класу."
-        ),
+        "hint": ("Список — зі «Spell Lists» книг. Закляття належить класу, тому вони й лежать у кроці класу."),
     }
 
 
@@ -266,9 +469,7 @@ def _granted_for_draft(draft: Draft) -> list[dict[str, Any]]:
         spells = definition.subclass_spells_for(draft.subclass_key)
         if spells is not None:
             for name in spells.prepared:
-                granted.append(
-                    {"name_en": name, "level": 1, "source": "subclass", "prepared": True}
-                )
+                granted.append({"name_en": name, "level": 1, "source": "subclass", "prepared": True})
     return granted
 
 

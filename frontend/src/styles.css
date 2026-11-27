@@ -1,19 +1,5 @@
 :root {
-  --ink: #1b1a18;
-  --muted: #6f6a63;
-  --line: #ded9d1;
-  --line-soft: #efece6;
-  --surface: #ffffff;
-  --canvas: #f1efeb;
-  --panel: #fbf9f6;
-  --accent: #a3241f;
-  --accent-deep: #58180d;
-  --brand: #b02b2c;
-  --gold: #a9863f;
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
-  font-family: "Segoe UI", "Noto Sans", "DejaVu Sans", system-ui, sans-serif;
-  color: var(--ink);
-  background: var(--canvas);
+  /* токени — у theme.css */
 }
 
 * {
@@ -34,9 +20,9 @@ body {
   display: inline-block;
   margin: 0 0 18px;
   padding: 4px 11px;
-  border: 1px solid #e2d7bf;
+  border: 1px solid var(--graphite);
   border-radius: 3px;
-  background: #fffdf8;
+  background: var(--leaf);
   color: var(--gold);
   font-size: 10.5px;
   font-weight: 600;
@@ -53,8 +39,8 @@ body {
 }
 
 .status--error {
-  color: #8b2f2f;
-  border-color: #e3bcbc;
+  color: var(--wax);
+  border-color: var(--wax-soft);
 }
 
 .sheet {
@@ -135,7 +121,7 @@ body {
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfbfa;
+  background: var(--leaf);
 }
 
 .field-label {
@@ -176,15 +162,15 @@ body {
   font-size: 9.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #9a9a9e;
+  color: var(--graphite);
 }
 
 .field-origin--computed {
-  color: var(--accent);
+  color: var(--act-text);
 }
 
 .field-origin--override {
-  color: #8a6a2f;
+  color: var(--brass);
 }
 
 .hint-trigger {
@@ -204,7 +190,7 @@ body {
 .hint-trigger:hover,
 .hint-trigger:focus-visible {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--act-text);
   outline: none;
 }
 
@@ -212,8 +198,8 @@ body {
   max-width: 280px;
   padding: 7px 10px;
   border-radius: 7px;
-  background: #232325;
-  color: #f6f6f4;
+  background: var(--ink);
+  color: var(--paper);
   font-size: 12px;
   line-height: 1.35;
   box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
@@ -226,7 +212,7 @@ body {
 }
 
 .hint-arrow {
-  fill: #232325;
+  fill: var(--ink);
 }
 
 /* ------------------------------------------------------------------ */
@@ -289,15 +275,6 @@ body {
   font-size: 24px;
 }
 
-.wizard-progress {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .step-chip {
   display: inline-flex;
   align-items: center;
@@ -313,17 +290,17 @@ body {
 
 .step-chip--done {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--act-text);
 }
 
 .step-chip--active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--leaf);
 }
 
 .step-chip--active .step-index {
-  background: rgb(255 255 255 / 22%);
+  background: color-mix(in srgb, var(--leaf) 22%, transparent);
 }
 
 .step-chip--locked {
@@ -344,7 +321,7 @@ body {
   width: 17px;
   height: 17px;
   border-radius: 50%;
-  background: #ececea;
+  background: var(--line);
   font-size: 10px;
   font-weight: 700;
 }
@@ -360,11 +337,22 @@ body {
   max-width: 900px;
 }
 
+/* «Що це дає» на кроці «Спорядження» бере сітку з листа, а там вона для
+   темної панелі: значення там білі. У світлому візарді їх треба перефарбувати,
+   інакше видно самі підписи. */
+.wizard-step .item-detail__stat dd {
+  color: inherit;
+}
+
+.wizard-step .item-facts {
+  margin-top: 4px;
+}
+
 .wizard-block {
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fbfbfa;
+  background: var(--leaf);
 }
 
 .wizard-block h3 {
@@ -435,8 +423,109 @@ body {
   gap: 10px;
 }
 
-.choice-grid--compact {
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+/* --- вид: картка обраного виду згори ---------------------------------- */
+
+/* Обраний вид показується **над** списком: підраса, що вид дає,
+ * як він виглядає й особливості. Список 69 карток згортається, щоб
+ * не прокручувати його щоразу. */
+.species-card {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--graphite);
+  border-radius: 9px;
+  background: var(--surface);
+  padding: 12px 14px 14px;
+}
+
+.species-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.species-card__head h3 {
+  margin: 0;
+}
+
+.species-card__subs {
+  margin-top: 10px;
+}
+
+.species-card__subs h4,
+.species-card__h4 {
+  margin: 12px 0 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.species-grid {
+  margin-top: 10px;
+}
+
+/* --- вид: опис і особливості з книги ---------------------------------- */
+
+.species-traits {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  columns: 2;
+  column-gap: 18px;
+}
+
+.species-traits li {
+  break-inside: avoid;
+  margin-bottom: 6px;
+}
+
+.species-traits .reckoning {
+  margin: 0;
+}
+
+.species-description {
+  margin-top: 8px;
+}
+
+/* Картка підкласу: «що це таке» + вміння за рівнями (крок «Клас» і
+   підвищення рівня). Опис — як опис класу, тому сірий. */
+.subclass-brief {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.subclass-brief__text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Каталог предметів — той самий компонент, що на листі, а там він темний.
+   У світлому візарді перефарбовуємо поверхні, щоб блок не виглядав
+   чужорідним; кнопки й чипи беруть кольори візарда самі. */
+.wizard-step .inv-search__input {
+  border: 1px solid var(--line);
+  background: var(--leaf);
+  color: inherit;
+}
+
+.wizard-step .inv-search__input::placeholder {
+  color: var(--graphite);
+}
+
+.wizard-step .inv-catalog {
+  border: 1px solid var(--line);
+  background: var(--leaf);
+}
+
+.wizard-step .inv-catalog__name {
+  color: inherit;
+}
+
+.wizard-step .inv-catalog__meta {
+  color: var(--muted);
 }
 
 .choice {
@@ -453,7 +542,7 @@ body {
 }
 
 .choice:hover {
-  border-color: #b9b9b4;
+  border-color: var(--graphite);
 }
 
 .choice--active {
@@ -486,7 +575,13 @@ body {
 .chip--active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--leaf);
+}
+
+/* На активному чипі підпис («+1 МУД, +2 СПР») має читатися. */
+.chip--active .meta,
+.chip--active .choice-meta {
+  color: color-mix(in srgb, var(--leaf) 85%, transparent);
 }
 
 .chip--row {
@@ -518,7 +613,7 @@ body {
 
 .button {
   padding: 8px 14px;
-  border: 1px solid #cfc9c0;
+  border: 1px solid var(--graphite);
   border-radius: 4px;
   background: var(--surface);
   color: var(--ink);
@@ -533,7 +628,7 @@ body {
 
 .button:hover:not(:disabled) {
   border-color: var(--accent);
-  background: #fdf9f6;
+  background: var(--leaf);
   color: var(--accent-deep);
 }
 
@@ -545,13 +640,13 @@ body {
 .button--primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--leaf);
 }
 
 .button--primary:hover:not(:disabled) {
-  background: #8a1c18;
-  border-color: #8a1c18;
-  color: #fff;
+  background: var(--wax);
+  border-color: var(--wax);
+  color: var(--leaf);
 }
 
 .button-row,
@@ -561,10 +656,6 @@ body {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.button-row--start {
-  justify-content: flex-start;
 }
 
 .wizard-footer {
@@ -582,7 +673,7 @@ body {
   padding: 0;
   border: none;
   background: none;
-  color: var(--accent);
+  color: var(--act-text);
   font: inherit;
   text-decoration: underline;
   cursor: pointer;
@@ -596,7 +687,7 @@ body {
 }
 
 .hint--warn {
-  color: #8a6a2f;
+  color: var(--brass);
 }
 
 .plain-list {
@@ -649,174 +740,12 @@ body {
   padding: 0 0 6px;
   border-radius: 8px;
   box-shadow:
-    0 1px 2px rgb(28 20 12 / 8%),
-    0 14px 36px rgb(28 20 12 / 7%);
+    0 1px 2px color-mix(in srgb, var(--ink) 8%, transparent),
+    0 14px 36px color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
-.character-view > :not(.sheet-banner) {
-  margin-left: 26px;
-  margin-right: 26px;
-}
-
-.character-view > nav.tabs {
-  margin: 0;
-  padding: 0 26px;
-}
-
-.character-view > .sheet-section:last-child,
-.character-view > .panel:last-child {
+.character-view > .sheet-section:last-child {
   margin-bottom: 26px;
-}
-
-.sheet-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 14px 28px;
-  padding: 22px 26px 16px;
-  border-bottom: 3px solid var(--brand);
-  border-radius: 8px 8px 0 0;
-  background:
-    linear-gradient(180deg, #fffdf9 0%, #ffffff 100%);
-}
-
-.banner-kicker {
-  margin: 0 0 3px;
-  color: var(--gold);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.sheet-banner h1 {
-  margin: 0;
-  font-family: var(--serif);
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: -0.005em;
-  line-height: 1.1;
-  color: #241a12;
-}
-
-.banner-sub {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-  margin: 7px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.banner-level {
-  display: inline-block;
-  padding: 2px 8px;
-  border: 1px solid var(--brand);
-  border-radius: 3px;
-  color: var(--brand);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.vitals {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.stat {
-  position: relative;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--panel);
-}
-
-.stat--ac {
-  grid-column: span 2;
-  background: linear-gradient(180deg, #f7f4ee 0%, #fffdf9 100%);
-  border-color: #d9d2c4;
-}
-
-.stat--hp {
-  grid-column: span 2;
-  border-color: #e3c3c0;
-  background: linear-gradient(180deg, #fdf2f1 0%, #fffafa 100%);
-}
-
-.stat--wide {
-  grid-column: span 3;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.stat--wide .stat-value {
-  margin-top: 0;
-  font-size: 24px;
-}
-
-.stat-label {
-  display: block;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.stat-value {
-  display: block;
-  margin-top: 2px;
-  font-family: var(--serif);
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.15;
-  color: #241a12;
-  font-variant-numeric: tabular-nums;
-}
-
-.stat--hp .stat-value {
-  font-size: 30px;
-  color: #8c1b18;
-}
-
-.stat-slash {
-  color: #c8a8a5;
-  font-weight: 400;
-}
-
-.stat-note {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 10.5px;
-  line-height: 1.35;
-}
-
-.panel {
-  margin-top: 18px;
-  padding: 14px 16px 16px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--panel);
-}
-
-.panel h3 {
-  margin: 0 0 12px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--line);
-  color: var(--accent-deep);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .reckoning {
@@ -842,73 +771,6 @@ body {
   margin-top: 12px;
 }
 
-.ability-cards {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ability-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 10px 6px 8px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: linear-gradient(180deg, #fffdf9 0%, #ffffff 62%);
-  text-align: center;
-}
-
-.ability-card__name {
-  color: var(--muted);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.ability-card__score {
-  font-family: var(--serif);
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1.05;
-  color: #241a12;
-  font-variant-numeric: tabular-nums;
-}
-
-.ability-card__mod {
-  color: var(--brand);
-  font-size: 13px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.ability-card__save {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 100%;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--line-soft);
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.skill-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 30px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .skill {
   display: grid;
   grid-template-columns: 12px 1fr auto 44px;
@@ -919,34 +781,6 @@ body {
   font-size: 13px;
 }
 
-.skill-mark {
-  color: #b9b3a9;
-  font-size: 10px;
-  line-height: 1.6;
-}
-
-.skill-ability {
-  color: var(--muted);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
-}
-
-.skill-value {
-  text-align: right;
-  font-weight: 600;
-  color: #241a12;
-  font-variant-numeric: tabular-nums;
-}
-
-.skill--proficient .skill-mark {
-  color: var(--brand);
-}
-
-.skill--proficient .skill-name {
-  font-weight: 600;
-  color: var(--ink);
-}
-
 .dot {
   display: inline-block;
   width: 6px;
@@ -954,7 +788,6 @@ body {
   border-radius: 50%;
   background: var(--brand);
 }
-
 
 /* ------------------------------------------------------------------ */
 /* Експорт листа: посилання, які браузер віддає як файли               */
@@ -967,15 +800,6 @@ body {
   gap: 6px;
 }
 
-.export-label {
-  margin-right: 2px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .export-bar .button {
   display: inline-block;
   padding: 6px 11px;
@@ -986,20 +810,7 @@ body {
 }
 
 .export-bar .button--primary {
-  color: #fff;
-}
-
-
-/* ------------------------------------------------------------------ */
-/* Лист: вкладки, редагування на місці, лічильники                     */
-/* ------------------------------------------------------------------ */
-
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-  margin: 0;
-  border-bottom: 1px solid var(--line);
+  color: var(--leaf);
 }
 
 .tab {
@@ -1018,14 +829,7 @@ body {
 
 .tab:hover {
   color: var(--accent-deep);
-  background: #faf7f3;
-}
-
-.tab--active {
-  border-bottom-color: var(--brand);
-  background: var(--surface);
-  color: var(--accent-deep);
-  font-weight: 700;
+  background: var(--paper);
 }
 
 .editable {
@@ -1047,7 +851,7 @@ body {
   display: inline-flex;
   align-items: stretch;
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: 8px;
   background: var(--surface);
   vertical-align: middle;
@@ -1066,8 +870,8 @@ body {
 }
 
 .numfield__btn:hover:not(:disabled) {
-  background: #f2eee8;
-  color: var(--accent);
+  background: var(--line);
+  color: var(--act-text);
 }
 
 .numfield__btn:disabled {
@@ -1096,6 +900,13 @@ body {
 
 .numfield__input:focus {
   outline: none;
+  box-shadow: none;
+}
+
+/* Поле всередині лічильника без власної рамки: фокус показує вся рамка. */
+.numfield:focus-within {
+  border-color: var(--patina);
+  box-shadow: 0 0 0 2px var(--patina);
 }
 
 .numfield__suffix {
@@ -1133,8 +944,8 @@ body {
 }
 
 .editable--override .editable-value {
-  color: #8a6a2f;
-  border-bottom-color: #c9a86a;
+  color: var(--brass);
+  border-bottom-color: var(--brass);
 }
 
 .editable-reset {
@@ -1162,19 +973,31 @@ body {
   margin-left: 8px;
 }
 
-.counter-button {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 6px;
+/* Скільки витратити з великого запасу (Накладання рук). */
+.counter-amount {
+  width: 4.5em;
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+.counter-btn {
+  padding: 2px 8px;
+  border: 1px solid var(--field-line);
+  border-radius: 5px;
   background: var(--surface);
+  color: inherit;
   font: inherit;
-  line-height: 1;
+  font-size: 9.5px;
+  line-height: 1.6;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.counter-button:disabled {
+.counter-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.counter-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -1227,16 +1050,6 @@ body {
   align-items: center;
 }
 
-.inline-number {
-  width: 70px;
-  margin: 0 6px;
-  padding: 3px 6px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  font: inherit;
-  font-size: 13px;
-}
-
 .notes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -1251,38 +1064,6 @@ body {
   font: inherit;
   font-size: 13.5px;
   resize: vertical;
-}
-
-/* ------------------------------------------------------------------ */
-/* Огляд у дві колонки: бій ліворуч, характеристики праворуч           */
-/* ------------------------------------------------------------------ */
-
-.sheet-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 430px;
-  gap: 16px;
-  margin-top: 18px;
-  align-items: start;
-}
-
-.sheet-column {
-  min-width: 0;
-}
-
-.sheet-column > * {
-  margin-top: 0;
-}
-
-.sheet-column > * + * {
-  margin-top: 16px;
-}
-
-.sheet-column--stats {
-  order: -1;
-}
-
-.sheet-column--stats .skill-grid {
-  grid-template-columns: minmax(0, 1fr);
 }
 
 .ability-table--compact {
@@ -1325,55 +1106,7 @@ body {
   white-space: nowrap;
 }
 
-/* ------------------------------------------------------------------ */
-/* Вузькі екрани: лист розкладається в одну-дві колонки               */
-/* ------------------------------------------------------------------ */
-
-@media (max-width: 980px) {
-  .sheet-columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .vitals {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .stat--ac,
-  .stat--hp,
-  .stat--wide {
-    grid-column: span 1;
-  }
-
-  .ability-cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .skill-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 @media (max-width: 620px) {
-  .sheet-banner {
-    padding: 18px 18px 14px;
-  }
-
-  .sheet-banner h1 {
-    font-size: 26px;
-  }
-
-  .character-view > :not(.sheet-banner) {
-    margin-left: 16px;
-    margin-right: 16px;
-  }
-
-  .character-view > nav.tabs {
-    padding: 0 8px;
-  }
-
-  .ability-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .tab {
     padding: 10px 10px 8px;
     font-size: 10px;
@@ -1415,4 +1148,995 @@ body {
 .item-meta {
   color: var(--muted);
   font-size: 11px;
+}
+
+/* --- підвищення рівня --------------------------------------------------- */
+
+.levelup .wizard-body {
+  display: grid;
+  gap: 14px;
+}
+
+.levelup-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.levelup-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.levelup-row .radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.levelup-row .number {
+  width: 72px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.levelup-row .select {
+  min-width: 170px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.chip--column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  max-width: 260px;
+  text-align: left;
+}
+
+.chip--column .meta {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.levelup-summary .levelup-list {
+  margin: 8px 0 16px;
+  padding-left: 18px;
+  line-height: 1.7;
+  font-size: 13px;
+}
+
+.levelup .spell-grid {
+  max-height: 260px;
+  overflow: auto;
+}
+
+/* Галочка «ігнорувати вимоги»: свідомий виняток, тому й позначається. */
+.levelup-ignore {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 10px;
+  padding: 4px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.levelup-ignore input {
+  margin: 0;
+}
+
+.levelup-ignore label {
+  cursor: pointer;
+}
+
+.levelup-warning {
+  color: var(--brass);
+}
+
+/* --- навігація, вхід, довідник ------------------------------------------- */
+
+.topnav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+}
+
+.topnav [aria-current="page"] {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.userbar {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.login,
+.kb {
+  margin-top: 18px;
+  padding: 20px 22px 26px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.login h2,
+.kb__head h2 {
+  margin: 0 0 8px;
+}
+
+.login-telegram {
+  min-height: 48px;
+  margin: 12px 0;
+}
+
+.login-dev {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.login-dev label {
+  display: grid;
+  gap: 4px;
+}
+
+.kb__nav {
+  margin: 12px 0 16px;
+}
+
+.kb__sections {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.kb__section-card {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  border: 1px solid var(--field-line);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.kb__section-card:hover,
+.kb__item:hover {
+  background: color-mix(in srgb, var(--patina) 10%, transparent);
+}
+
+.kb__search {
+  width: 100%;
+  max-width: 420px;
+  margin: 4px 0;
+}
+
+.kb__levels {
+  margin-bottom: 8px;
+}
+
+.kb__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px;
+}
+
+.kb__item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 10px;
+  text-align: left;
+  border: 1px solid var(--field-line);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.kb__item--active {
+  border-color: var(--act-text, currentColor);
+}
+
+.kb__detail {
+  margin-bottom: 16px;
+}
+
+.kb__detail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kb__detail-head h3 {
+  margin: 0 0 8px;
+}
+
+.inv-catalog__row {
+  flex-wrap: wrap;
+}
+
+.inv-catalog__facts {
+  flex-basis: 100%;
+}
+
+/* --- поділитися й перегляд за посиланням ------------------------------- */
+
+/* Вимкнений fieldset без власної розкладки: кнопки й поля всередині не діють,
+   а сітка листа лишається такою самою. */
+.sheet-readonly {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.sheet-readonly-note {
+  margin: 0;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.share-panel {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+}
+
+.share-panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.share-panel__title {
+  margin: 0 0 6px;
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+  text-transform: none;
+  letter-spacing: 0;
+  border: 0;
+  padding: 0;
+}
+
+.share-panel__lead {
+  max-width: 46em;
+  margin: 0 0 12px;
+  color: var(--graphite);
+}
+
+.share-panel__link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.share-panel__link input {
+  flex: 1;
+  min-width: 260px;
+}
+
+.share-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* --- головна ------------------------------------------------------------- */
+
+.home {
+  display: grid;
+  gap: 64px;
+}
+
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 40px;
+  align-items: center;
+  min-height: 540px;
+}
+
+.home-hero__title {
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 4.4vw, 3.7rem);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.home-hero__lead {
+  max-width: 33em;
+  margin: 0 0 26px;
+  font-size: var(--t-lg);
+  line-height: 1.55;
+  color: var(--graphite);
+}
+
+.home-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Віяло надрукованих сторінок — єдиний яскравий образ сторінки. */
+.home-sheets {
+  margin: 0;
+}
+
+.home-sheets__stack {
+  position: relative;
+  height: 580px;
+}
+
+.home-sheets__page {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 56%;
+  height: auto;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+  transform-origin: 50% 90%;
+  animation: home-fan 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.home-sheets__page--back {
+  --fan: translateX(-72%) rotate(-8deg);
+  transform: var(--fan);
+}
+
+.home-sheets__page--mid {
+  --fan: translateX(-26%) translateY(8px) rotate(6deg);
+  transform: var(--fan);
+  animation-delay: 80ms;
+}
+
+.home-sheets__page--front {
+  --fan: translateX(-52%) translateY(28px) rotate(-2deg);
+  transform: var(--fan);
+  animation-delay: 160ms;
+}
+
+@keyframes home-fan {
+  from {
+    transform: translateX(-50%) translateY(28px) rotate(0deg);
+  }
+  to {
+    transform: var(--fan);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-sheets__page {
+    animation: none;
+  }
+}
+
+.home-sheets__caption {
+  margin-top: 14px;
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  text-align: center;
+}
+
+.home-h2 {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: var(--t-xl);
+  color: var(--ink);
+  text-transform: none;
+  letter-spacing: 0;
+  border: 0;
+  padding: 0;
+}
+
+.home-note {
+  max-width: 46em;
+  margin: 0 0 22px;
+  color: var(--graphite);
+  line-height: 1.5;
+}
+
+/* Зміст довідника: як зміст книги — назва, крапки, число. */
+.home-toc {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 56px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-toc__row {
+  display: flex;
+  align-items: baseline;
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-toc__title {
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+}
+
+.home-toc__note {
+  color: var(--graphite);
+  font-family: var(--sans);
+  font-size: var(--t-sm);
+}
+
+.home-toc__dots {
+  flex: 1;
+  min-width: 24px;
+  margin: 0 10px;
+  border-bottom: 2px dotted var(--field-line);
+  transform: translateY(-5px);
+}
+
+.home-toc__count {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--brass);
+  font-variant-numeric: oldstyle-nums;
+}
+
+.home-toc__row:hover .home-toc__title,
+.home-toc__row:focus-visible .home-toc__title {
+  color: var(--act-text);
+}
+
+.home-toc__row:focus-visible {
+  outline: 2px solid var(--act-text);
+  outline-offset: 2px;
+}
+
+/* Полиця книг: обкладинка, назва, що дає, ціна й посилання. */
+.home-shelf + .home-shelf {
+  margin-top: 34px;
+}
+
+.home-shelf__title {
+  margin: 0 0 2px;
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+  color: var(--ink);
+}
+
+.home-shelf__lead {
+  margin: 0 0 10px;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.home-shelf__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 0 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-book {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.home-book__cover {
+  width: 54px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 2px;
+  background: var(--leaf-hi);
+}
+
+.home-book__cover--blank {
+  display: block;
+  border: 1px solid var(--line);
+}
+
+.home-book__body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.home-book__title {
+  font-family: var(--serif);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.home-book__en {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+
+.home-book__gives {
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+
+.home-book__buy {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  text-align: right;
+  max-width: 11em;
+}
+
+.home-book__price {
+  font-family: var(--serif);
+  font-weight: 700;
+  color: var(--brass);
+  font-size: var(--t-sm);
+}
+
+.home-book__link {
+  color: var(--act-text);
+  font-size: var(--t-xs);
+}
+
+.home-disclaimer {
+  max-width: 70ch;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  color: var(--graphite);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+}
+
+.home-disclaimer__fcp {
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .home-sheets__stack {
+    height: 460px;
+  }
+
+  .home-toc {
+    grid-template-columns: 1fr;
+  }
+
+  .home-shelf__list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- цілі натискання -------------------------------------------------------
+   Дрібні кнопки (числа, що редагуються кліком, «−/+», лічильники, терміни,
+   посилання) отримують невидиму більшу область натискання — розкладка та сама.
+   WCAG 2.5.8: щонайменше 24×24; на сенсорному екрані — більше. */
+.editable-value,
+.numfield__btn,
+.counter-btn,
+.term,
+.home-book__link,
+.topnav .link-button {
+  position: relative;
+}
+
+.editable-value::after,
+.numfield__btn::after,
+.counter-btn::after,
+.term::after,
+.home-book__link::after,
+.topnav .link-button::after {
+  content: "";
+  position: absolute;
+  inset: -6px -5px;
+}
+
+/* У «−/+» рамка обрізає невидиму область (overflow: hidden) — тож сама кнопка ширша. */
+.numfield__btn {
+  min-width: 28px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 18px;
+  height: 18px;
+}
+
+@media (pointer: coarse) {
+  .editable-value::after,
+  .numfield__btn::after,
+  .counter-btn::after,
+  .term::after,
+  .home-book__link::after,
+  .topnav .link-button::after {
+    inset: -11px -8px;
+  }
+
+  .numfield__btn {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* Назва сайту — посилання на головну. */
+.badge--home {
+  color: inherit;
+  text-decoration: none;
+}
+
+.badge--home:hover,
+.badge--home:focus-visible {
+  text-decoration: underline;
+}
+
+/* У перегляді за посиланням підказки до дій («клік витрачає») не потрібні. */
+.sheet-readonly .slot-hint {
+  display: none;
+}
+
+@media (max-width: 780px) {
+  .topnav .link-button,
+  .topnav .userbar {
+    padding: 6px 0;
+  }
+}
+
+/* Підпис усередині активного чіпа (рівень закляття) — не сірий на червоному. */
+.chip--active .meta {
+  color: inherit;
+  opacity: 0.9;
+}
+
+/* --- «Мої персонажі»: картки ------------------------------------------- */
+
+.roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster > li {
+  display: flex;
+}
+
+.roster-card {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "portrait head level"
+    "classes classes classes"
+    "vitals vitals vitals";
+  /* Картки одного ряду однакової висоти: хіти завжди внизу, рівно в ряд. */
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
+  gap: 10px 12px;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(160deg, var(--leaf-hi), var(--leaf) 70%);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.roster-card:hover {
+  border-color: var(--brass);
+}
+
+.roster-card:focus-visible {
+  outline: 2px solid var(--act);
+  outline-offset: 2px;
+}
+
+.roster-card__portrait {
+  grid-area: portrait;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: linear-gradient(150deg, var(--leaf-hi), var(--paper) 70%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--act) 30%, transparent);
+  font-family: var(--serif);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+
+.roster-card__head {
+  grid-area: head;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.roster-card__name {
+  overflow-wrap: anywhere;
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.roster-card:hover .roster-card__name {
+  text-decoration: underline;
+  text-decoration-color: var(--brass);
+  text-underline-offset: 3px;
+}
+
+.roster-card__origin {
+  color: var(--graphite);
+  font-size: var(--t-sm);
+  line-height: 1.3;
+}
+
+.roster-card__en {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  font-weight: 400;
+}
+
+/* Рівень — шестикутник з латуні, як жетони характеристик у візарді. */
+.roster-card__level {
+  grid-area: level;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.roster-card__level-num {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 40px;
+  background: no-repeat center / 100% 100%
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 46'%3E%3Cpath d='M14 1.5h28L54.5 23 42 44.5H14L1.5 23z' fill='none' stroke='%23d1a654' stroke-width='2'/%3E%3C/svg%3E");
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.roster-card__level-cap {
+  color: var(--graphite);
+  font-size: 12px;
+}
+
+.roster-card__classes {
+  grid-area: classes;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.roster-class {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+}
+
+.roster-class__name {
+  font-weight: 700;
+}
+
+.roster-class__sub {
+  flex-basis: 100%;
+  color: var(--brass);
+  font-size: var(--t-sm);
+}
+
+.roster-card__vitals {
+  grid-area: vitals;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.roster-hp {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.roster-hp__bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line-soft);
+}
+
+.roster-hp__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ok);
+}
+
+.roster-hp--bloodied .roster-hp__fill {
+  background: var(--brass);
+}
+
+.roster-hp--down .roster-hp__fill {
+  background: var(--act);
+}
+
+.roster-hp__text {
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.roster-hp__text strong,
+.roster-ac strong {
+  color: var(--ink);
+}
+
+.roster-hp--down .roster-hp__text {
+  color: var(--wax-text);
+}
+
+.roster-hp__temp {
+  color: var(--ink);
+}
+
+.roster-ac {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px 6px 12px 12px;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+/* Інвентар на кроці «Спорядження»: предмет — рамка, «Що це дає» — всередині. */
+.wizard-inventory {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-inv {
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.wizard-inv__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wizard-inv__name {
+  font-weight: 700;
+}
+
+.wizard-inv__qty {
+  color: var(--graphite);
+  font-weight: 400;
+}
+
+.wizard-inv__remove {
+  flex: none;
+  font-size: var(--t-sm);
+}
+
+.wizard-inv__meta {
+  margin-top: 2px;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.wizard-inv__tag {
+  margin-left: 8px;
+}
+
+.wizard-inv .item-facts {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line-soft);
+}
+
+.wizard-inv .item-facts > summary {
+  font-size: var(--t-sm);
+}
+
+#my-characters {
+  scroll-margin-top: 12px;
+}
+
+/* --- Mini App у Telegram --------------------------------------------------- */
+
+.telegram-status {
+  margin: 16px;
+}
+
+.share-panel__telegram {
+  margin-top: 14px;
+}
+
+.share-panel__telegram > .meta {
+  margin: 0 0 6px;
 }
