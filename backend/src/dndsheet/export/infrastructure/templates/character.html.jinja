@@ -131,23 +131,18 @@
   .cols3 { height: 244mm; display: grid; grid-template-columns: 27mm 60mm minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 3mm; margin-top: 1mm; }
   .col { display: flex; flex-direction: column; }
   .col > .grow { flex: 1; }
-  /* Ліворуч — картки характеристик (навички під своєю характеристикою), праворуч — бій. */
-  .cols2 { height: 244mm; display: grid; grid-template-columns: 92mm minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 3.4mm; margin-top: 1mm; }
-  .cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2.6mm; }
-  .acard { padding: 1.6mm 2.2mm 1.6mm; }
-  table.ahead { width: 100%; border-collapse: collapse; margin-bottom: 0.6mm; border-bottom: 0.7pt solid #000; }
-  table.ahead td { padding: 0 0 1mm; vertical-align: middle; }
-  .aname { font-family: var(--caps); font-weight: 700; font-size: 8pt; letter-spacing: 0.06em; text-transform: lowercase; }
-  td.amodc { width: 12mm; text-align: right; }
-  td.ascorec { width: 9mm; text-align: right; }
-  /* Модифікатор — головне число (у рамці), значення — дрібно в овалі поруч. */
-  .amod { display: inline-block; min-width: 10.5mm; text-align: center; font-family: var(--serif); font-weight: 700; font-size: 14pt; line-height: 1.15; border: 1.3pt solid #000; border-radius: 1.6mm; padding: 0.3mm 0.6mm 0; }
-  .ascore { display: inline-block; min-width: 7.5mm; text-align: center; font-family: var(--serif); font-size: 8.6pt; line-height: 1.3; border: 0.7pt solid #000; border-radius: 2.4mm; }
-  tr.save td { font-weight: 700; border-bottom: 0.6pt solid #000 !important; }
-  .lined { flex: 1; height: 100%; min-height: 20mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 5.2mm, #000 5.2mm, #000 5.5mm); }
-  .pill-row { display: grid; grid-template-columns: 1fr; gap: 1.6mm; margin-top: 2.6mm; }
+  /* Шість щитів ділять колонку порівну: без порожніх проміжків між ними. */
+  .col.abil { padding-bottom: 3.4mm; }
+  .col.abil .ability { flex: 1; display: flex; flex-direction: column; justify-content: center; margin: 2.6mm 0 1.6mm; }
+
+  .ability { position: relative; border: 2.2pt double #000; border-radius: 0 0 6mm 6mm; margin-top: 2.6mm; padding: 1.8mm 1mm 5.2mm; text-align: center; }
+  .ability .lbl { font-weight: 700; font-size: 7pt; }
+  .ability .mod { font-family: var(--serif); font-weight: 700; font-size: 24pt; line-height: 1.1; }
+  .ability .score { position: absolute; left: 50%; bottom: -3.2mm; width: 11mm; margin-left: -5.5mm; border: 1.1pt solid #000; border-radius: 3.4mm; background: #fff; font-family: var(--serif); font-size: 10pt; line-height: 5.2mm; }
+
+  .pill-row { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm; margin-top: 2.6mm; }
   .pill { display: flex; align-items: center; gap: 1.6mm; border: 0.7pt solid #000; border-radius: 4mm; padding: 0.8mm 2mm 0.8mm 0.8mm; }
-  .pill .num { width: 6.4mm; height: 6.4mm; border: 1.2pt solid #000; border-radius: 50%; text-align: center; font-family: var(--serif); font-weight: 700; font-size: 9.5pt; line-height: 5.9mm; }
+  .pill .num { width: 8mm; height: 8mm; border: 1.3pt solid #000; border-radius: 50%; text-align: center; font-family: var(--serif); font-weight: 700; font-size: 11pt; line-height: 7.4mm; }
   .pill .lbl { line-height: 1.1; }
 
   table.rows { width: 100%; border-collapse: collapse; }
@@ -267,65 +262,62 @@
     </div>
   </header>
 
-  <div class="cols2">
-    <div class="col">
-      <div class="cards">
-        {% for half in [v.ability_groups[:3], v.ability_groups[3:]] %}
-        <div class="cardcol">
-          {% for a in half %}
-          <div class="frame acard"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-            <table class="ahead"><tr>
-              <td class="aname">{{ a.name }}</td>
-              <td class="amodc"><span class="amod">{{ a.mod }}</span></td>
-              <td class="ascorec"><span class="ascore">{{ a.score }}</span></td>
-            </tr></table>
-            <table class="rows">
-              <tr class="save"><td class="mk">{{ '●' if a.save.proficient else '○' }}</td><td class="v">{{ a.save.value }}</td><td>Рятівний кидок</td></tr>
-              {% for s in a.skills %}
-              <tr>
-                <td class="mk">{{ '◆' if s.expertise else ('●' if s.proficient else '○') }}</td>
-                <td class="v">{{ s.value }}</td>
-                <td>{{ s.name }}{% if s.disadvantage %} <span class="flag">перешкода</span>{% endif %}</td>
-              </tr>
-              {% endfor %}
-            </table>
-          </div>
-          {% endfor %}
-          {% if loop.first %}
-          <div class="pill-row">
-            <div class="pill"><span class="num">{{ '✦' if v.inspiration else '' }}</span><span class="lbl">натхнення</span></div>
-            <div class="pill"><span class="num">{{ v.proficiency_bonus }}</span><span class="lbl">бонус майстер&shy;ності</span></div>
-          </div>
-          <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-            <span class="tag">пасивні показники</span>
-            <table class="rows">
-              {% for label, value in v.passives %}
-              <tr><td class="v">{{ value }}</td><td>{{ label }}</td></tr>
-              {% endfor %}
-            </table>
-          </div>
-          {% endif %}
-        </div>
-        {% endfor %}
+  <div class="cols3">
+    <div class="col abil">
+      {% for a in v.abilities %}
+      <div class="ability"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <div class="lbl">{{ a.name }}</div>
+        <div class="mod">{{ a.mod }}</div>
+        <div class="score">{{ a.score }}</div>
       </div>
-      <div class="legend"><span class="sym">●</span> володіння · <span class="sym">◆</span> експертність (подвійний бонус)</div>
+      {% endfor %}
+    </div>
+
+    <div class="col">
+      <div class="pill-row">
+        <div class="pill"><span class="num">{{ '✦' if v.inspiration else '' }}</span><span class="lbl">натхнення</span></div>
+        <div class="pill"><span class="num">{{ v.proficiency_bonus }}</span><span class="lbl">бонус майстерності</span></div>
+      </div>
 
       <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">рятівні кидки</span>
+        <table class="rows">
+          {% for s in v.saves %}
+          <tr><td class="mk">{{ '●' if s.proficient else '○' }}</td><td class="v">{{ s.value }}</td><td>{{ s.name }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">навички</span>
+        <table class="rows">
+          {% for s in v.skills %}
+          <tr>
+            <td class="mk">{{ '◆' if s.expertise else ('●' if s.proficient else '○') }}</td>
+            <td class="v">{{ s.value }}</td>
+            <td>{{ s.name }}{% if s.disadvantage %} <span class="flag">перешкода</span>{% endif %}</td>
+            <td class="ab lbl">{{ s.ability }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+        <div class="legend"><span class="sym">●</span> володіння · <span class="sym">◆</span> експертність</div>
+      </div>
+
+      <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="tag">пасивні показники</span>
+        <table class="rows">
+          {% for label, value in v.passives %}
+          <tr><td class="v">{{ value }}</td><td>{{ label }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <div class="frame grow"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
         <span class="tag">володіння й мови</span>
         <dl class="kv">
           {% for label, value in v.proficiencies %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
           {% for label, value in v.senses %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
         </dl>
-      </div>
-
-      <div class="frame grow"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-        <span class="tag">уміння й особливості</span>
-        <div class="toc">
-          {% for g in v.features %}{% for f in g['items'] %}<div><b>{{ f.title }}</b> <span class="lv">{{ f.meta }}</span></div>{% endfor %}{% endfor %}
-          {% for f in v.species_traits %}<div><b>{{ f.title }}</b> <span class="lv">вид</span></div>{% endfor %}
-          {% if v.background and v.background.feature %}<div><b>{{ v.background.feature.title }}</b> <span class="lv">передісторія</span></div>{% endif %}
-        </div>
-        {% if not detailed %}<div class="legend">Пояснення — у розширеному листі.</div>{% endif %}
       </div>
     </div>
 
@@ -400,8 +392,13 @@
       {% endif %}
 
       <div class="frame grow"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-        <span class="tag">нотатки в бою</span>
-        <div class="lined"></div>
+        <span class="tag">уміння й особливості</span>
+        <div class="toc">
+          {% for g in v.features %}{% for f in g['items'] %}<div><b>{{ f.title }}</b> <span class="lv">{{ f.meta }}</span></div>{% endfor %}{% endfor %}
+          {% for f in v.species_traits %}<div><b>{{ f.title }}</b> <span class="lv">вид</span></div>{% endfor %}
+          {% if v.background and v.background.feature %}<div><b>{{ v.background.feature.title }}</b> <span class="lv">передісторія</span></div>{% endif %}
+        </div>
+        {% if not detailed %}<div class="legend">Пояснення — у розширеному листі.</div>{% endif %}
       </div>
     </div>
   </div>
