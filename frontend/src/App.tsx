@@ -12,6 +12,7 @@ import {
   fetchCharacter,
   fetchCharacters,
   fetchMe,
+  fetchShared,
   logout,
 } from "./api";
 import { LoginPanel } from "./features/auth/Login";
@@ -31,11 +32,14 @@ type Route =
   | { name: "create" }
   | { name: "character"; id: string; tab?: string }
   | { name: "levelup"; id: string }
+  | { name: "shared"; token: string }
   | { name: "kb"; section?: KbSection; key?: string };
 
 function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "create") return { name: "create" };
+  // Посилання «лише читати»: #/s/<токен> — відкривається без входу.
+  if (hash.startsWith("s/")) return { name: "shared", token: decodeURIComponent(hash.slice(2)) };
   if (hash === "kb" || hash.startsWith("kb/")) {
     const [, section, ...rest] = hash.split("/");
     const key = rest.length ? decodeURIComponent(rest.join("/")) : undefined;
@@ -72,7 +76,9 @@ function useRoute(): [Route, (next: Route) => void] {
             ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
           : next.name === "levelup"
             ? `#/character/${encodeURIComponent(next.id)}/level-up`
-            : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
+            : next.name === "shared"
+              ? `#/s/${encodeURIComponent(next.token)}`
+              : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
     if (window.location.hash === target) setRoute(next);
     else window.location.hash = target;
   }, []);
@@ -173,6 +179,24 @@ function CharacterPage({
       <CharacterView key={id} initial={data.sheet} initialTab={tab} />
     </>
   );
+}
+
+/** Лист за посиланням: той самий вигляд, але без жодних змін; друк і PDF — за посиланням. */
+function SharedPage({ token }: { token: string }) {
+  const { data, isPending, error } = useQuery({
+    queryKey: ["shared", token],
+    queryFn: () => fetchShared(token),
+    retry: false,
+  });
+  if (isPending) return <p className="status">Відкриваємо лист…</p>;
+  if (error || !data) {
+    return (
+      <p className="status status--error">
+        Посилання недійсне або власник його вимкнув. Попросіть нове посилання.
+      </p>
+    );
+  }
+  return <CharacterView key={token} initial={data.sheet} shareToken={token} />;
 }
 
 function LevelUpPage({ id, navigate }: { id: string; navigate: (next: Route) => void }) {
@@ -285,8 +309,9 @@ function Shell() {
   // Лист персонажа має темну «дошку» на всю ширину; решта застосунку світла.
   // Клас ставимо і на <html>, інакше за межами body видно світлий canvas.
   useEffect(() => {
-    document.body.classList.toggle("board", route.name === "character");
-    document.documentElement.classList.toggle("board", route.name === "character");
+    const board = route.name === "character" || route.name === "shared";
+    document.body.classList.toggle("board", board);
+    document.documentElement.classList.toggle("board", board);
     // Нічна сесія = ті самі токени theme.css, лише інші значення.
     return () => {
       document.body.classList.remove("board");
@@ -295,7 +320,7 @@ function Shell() {
   }, [route.name]);
 
   return (
-    <main className={route.name === "character" ? "app app--board" : "app"}>
+    <main className={route.name === "character" || route.name === "shared" ? "app app--board" : "app"}>
       <div className="topbar">
         <p className="badge">
           Книга гравця 2014 ·{" "}
@@ -305,6 +330,8 @@ function Shell() {
               ? "підвищення рівня"
               : route.name === "kb"
                 ? "довідник"
+                : route.name === "shared"
+                  ? "лист персонажа · перегляд"
                 : route.name === "home"
                   ? "головна"
                   : "лист персонажа"}
@@ -390,6 +417,7 @@ function Shell() {
         <CharacterPage id={route.id} tab={route.tab} navigate={navigate} />
       ) : null}
       {user && route.name === "levelup" ? <LevelUpPage id={route.id} navigate={navigate} /> : null}
+      {route.name === "shared" ? <SharedPage token={route.token} /> : null}
     </main>
   );
 }

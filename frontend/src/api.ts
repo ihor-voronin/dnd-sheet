@@ -118,6 +118,34 @@ export function fetchCharacter(id: string): Promise<{ sheet: SheetViewPayload }>
   return getJson<{ sheet: SheetViewPayload }>(`/api/v1/characters/${id}`);
 }
 
+// --- поділитися: посилання «лише читати» ---------------------------------
+
+export interface ShareInfo {
+  token: string | null;
+  path: string | null;
+}
+
+export function fetchShare(id: string): Promise<ShareInfo> {
+  return getJson<ShareInfo>(`/api/v1/characters/${encodeURIComponent(id)}/share`);
+}
+
+export function createShare(id: string): Promise<ShareInfo> {
+  return request<ShareInfo>(`/api/v1/characters/${encodeURIComponent(id)}/share`, { method: "POST", body: "{}" });
+}
+
+export function revokeShare(id: string): Promise<ShareInfo> {
+  return request<ShareInfo>(`/api/v1/characters/${encodeURIComponent(id)}/share`, { method: "DELETE" });
+}
+
+/** Лист за посиланням — без входу, лише для перегляду. */
+export function fetchShared(token: string): Promise<{ sheet: SheetViewPayload; read_only: boolean }> {
+  return getJson(`/api/v1/shared/${encodeURIComponent(token)}`);
+}
+
+export function fetchSharedVersion(token: string): Promise<{ version: number }> {
+  return getJson(`/api/v1/shared/${encodeURIComponent(token)}/version`);
+}
+
 /** Лише номер версії листа — для опитування «чи не змінили його з іншого пристрою». */
 export function fetchCharacterVersion(id: string): Promise<{ version: number }> {
   return getJson<{ version: number }>(`/api/v1/characters/${id}/version`);

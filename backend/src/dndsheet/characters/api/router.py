@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
+import secrets
 from urllib.parse import quote
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
@@ -1084,3 +1085,41 @@ def character_print(
         _print_view(request, character), RenderOptions(show_originals=originals), detailed=detailed
     )
     return HTMLResponse(html)
+
+
+# ---------------------------------------------------------------------------
+# поділитися: посилання «лише читати» (власник створює, замінює, відкликає)
+# ---------------------------------------------------------------------------
+
+
+def _share_payload(token: str | None) -> dict:
+    return {"token": token, "path": f"/#/s/{token}" if token else None}
+
+
+@router.get("/{character_id}/share")
+def share_status(character_id: str, request: Request) -> dict:
+    _wizard_character(request, character_id)
+    return _share_payload(request.app.state.shares.token_of(character_id))
+
+
+@router.post("/{character_id}/share")
+def share_create(character_id: str, request: Request) -> dict:
+    """Нове посилання «лише читати»; попереднє (якщо було) перестає працювати."""
+    _wizard_character(request, character_id)
+    token = secrets.token_urlsafe(16)
+    request.app.state.shares.replace(character_id, token)
+    return _share_payload(token)
+
+
+@router.delete("/{character_id}/share")
+def share_revoke(character_id: str, request: Request) -> dict:
+    _wizard_character(request, character_id)
+    request.app.state.shares.revoke(character_id)
+    return _share_payload(None)
+
+
+def _wizard_character(request: Request, character_id: str):  # noqa: ANN202 — Character
+    try:
+        return _wizard(request).character(character_id)
+    except DomainError as exc:
+        raise _http_error(exc) from exc

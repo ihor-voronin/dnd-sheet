@@ -13,6 +13,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
 import {
   addCharacterItem,
@@ -20,6 +21,8 @@ import {
   exportUrl,
   fetchCharacter,
   fetchCharacterVersion,
+  fetchShared,
+  fetchSharedVersion,
   fetchRenderers,
   patchCharacter,
   prepareCharacterSpells,
@@ -34,6 +37,7 @@ import {
   updateCharacterItem,
 } from "../../api";
 import type { ItemBody, SpellBody } from "../../api";
+import { SharePanel } from "./SharePanel";
 import type { RestReport, SheetViewPayload } from "../wizard/types";
 import {
   ABILITY_LABELS,
@@ -153,14 +157,29 @@ function describeRest(report: RestReport): string {
   return `${report.kind === "long" ? "Тривалий" : "Короткий"} відпочинок · ${parts.join(" · ")}`;
 }
 
+/** Вимкнений fieldset без власної розкладки: усе всередині лише для перегляду. */
+function ReadOnly({ on, children }: { on: boolean; children: ReactNode }) {
+  if (!on) return <>{children}</>;
+  return (
+    <fieldset disabled className="sheet-readonly">
+      {children}
+    </fieldset>
+  );
+}
+
 export function CharacterView({
   initial,
   initialTab,
+  shareToken,
 }: {
   initial: SheetViewPayload;
   /** Вкладка, з якої відкрити лист: після підвищення рівня — «Закляття». */
   initialTab?: string;
+  /** Лист за посиланням «лише читати»: жодних змін, друк і PDF — через посилання. */
+  shareToken?: string;
 }) {
+  const readOnly = Boolean(shareToken);
+  const [shareOpen, setShareOpen] = useState(false);
   const [sheet, setSheet] = useState<SheetViewPayload>(initial);
   const [tab, setTab] = useState(initialTab ?? "actions");
   const [error, setError] = useState<string | null>(null);
@@ -320,15 +339,15 @@ export function CharacterView({
   async function syncFromServer(): Promise<void> {
     if (!quiet.current || document.hidden) return;
     try {
-      const { version } = await fetchCharacterVersion(id);
+      const { version } = await (shareToken ? fetchSharedVersion(shareToken) : fetchCharacterVersion(id));
       if (version <= versionRef.current || !quiet.current) return;
-      const fresh = await fetchCharacter(id);
+      const fresh = await (shareToken ? fetchShared(shareToken) : fetchCharacter(id));
       if (fresh.sheet.character.version <= versionRef.current || !quiet.current) return;
       versionRef.current = fresh.sheet.character.version;
       adoptedVersion.current = Math.max(adoptedVersion.current, versionRef.current);
       setSheet(fresh.sheet);
       setNotesDraft({ ...fresh.sheet.state.notes });
-      setSyncNote("Лист оновлено: його змінили на іншому пристрої.");
+      setSyncNote(readOnly ? "Лист оновлено: власник щойно його змінив." : "Лист оновлено: його змінили на іншому пристрої.");
     } catch {
       // мережа зникла — спробуємо на наступному такті
     }
@@ -627,7 +646,42 @@ export function CharacterView({
             </p>
           </div>
         </div>
+        {readOnly ? (
+          <div className="sheet-top__actions">
+            <p className="sheet-readonly-note">Лише перегляд: змінювати лист може тільки власник.</p>
+            <div className="sheet-export">
+              <span className="sheet-export__label">Роздрукувати</span>
+              {pdfReady ? (
+                <a
+                  className="sheet-btn sheet-btn--link sheet-btn--primary"
+                  href={`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/export/pdf`}
+                  download
+                >
+                  PDF
+                </a>
+              ) : null}
+              <a
+                className="sheet-btn sheet-btn--link"
+                href={`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/print`}
+                target="_blank"
+                rel="noopener"
+                title="Аркуш у вкладці браузера — друк через Ctrl+P"
+              >
+                у браузері
+              </a>
+            </div>
+          </div>
+        ) : (
         <div className="sheet-top__actions">
+          <button
+            type="button"
+            className="sheet-btn"
+            aria-expanded={shareOpen}
+            onClick={() => setShareOpen((open) => !open)}
+            title="Посилання на лист лише для перегляду"
+          >
+            Поділитися
+          </button>
           <a
             className="sheet-btn sheet-btn--link"
             href={`#/character/${encodeURIComponent(id)}/level-up`}
@@ -692,7 +746,10 @@ export function CharacterView({
             </a>
           </div>
         </div>
+        )}
       </header>
+
+      {shareOpen && !readOnly ? <SharePanel characterId={id} onClose={() => setShareOpen(false)} /> : null}
 
       {waiverText ? (
         <p className="sheet-waiver-note" role="note">
@@ -731,6 +788,7 @@ export function CharacterView({
         </p>
       ) : null}
 
+      <ReadOnly on={readOnly}>
       <div className="sheet-strip">
         <ul className="sheet-abilities">
           {ABILITIES.map((ability) => (
@@ -753,11 +811,13 @@ export function CharacterView({
           onHeal={heal}
         />
       </div>
+      </ReadOnly>
 
       {error ? <p className="status status--error sheet-status">{error}</p> : null}
       {busy ? <p className="meta sheet-status">Зберігаємо…</p> : null}
 
       <div className="sheet-grid">
+        <ReadOnly on={readOnly}>
         <div className="sheet-col">
           <section className="sheet-card">
             <h2 className="sheet-card__title">
@@ -816,7 +876,9 @@ export function CharacterView({
             <ProficiencyGroups proficiencies={sheet.proficiencies} />
           </section>
         </div>
+        </ReadOnly>
 
+        <ReadOnly on={readOnly}>
         <div className="sheet-col sheet-col--mid">
           {sheet.warnings?.length ? (
             <div className="sheet-warnings" role="status">
@@ -892,8 +954,10 @@ export function CharacterView({
             </details>
           </section>
         </div>
+        </ReadOnly>
 
         <div className="sheet-col sheet-col--work">
+          <ReadOnly on={readOnly}>
           <section className="sheet-card">
             <h2 className="sheet-card__title">
               <span>Стан</span>
@@ -975,6 +1039,7 @@ export function CharacterView({
             />
           </details>
 
+          </ReadOnly>
           <div className="sheet-work">
             <nav className="sheet-tabs" aria-label="Розділи листа">
               {TABS.map((item) => (
@@ -989,7 +1054,7 @@ export function CharacterView({
                 </button>
               ))}
             </nav>
-            <div className="sheet-work__body">{workTab}</div>
+            <div className="sheet-work__body"><ReadOnly on={readOnly}>{workTab}</ReadOnly></div>
           </div>
         </div>
       </div>

@@ -236,3 +236,34 @@ def test_guest_reads_knowledge_base(monkeypatch: pytest.MonkeyPatch) -> None:
     backgrounds = client.get("/api/v1/kb/backgrounds").json()["items"]
     assert "custom" not in {item["key"] for item in backgrounds}
     assert client.get("/api/v1/characters/wizard/class-features/paladin").status_code == 200
+
+
+def test_share_link_is_read_only_and_revocable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Посилання «лише читати»: гість бачить і друкує лист, але змінити нічого не може."""
+    owner = _app(monkeypatch, "share")
+    owner.post("/api/v1/auth/dev", json={"name": "Аня"})
+    character_id = _create(owner)
+    assert owner.get(f"/api/v1/characters/{character_id}/share").json() == {"token": None, "path": None}
+    token = owner.post(f"/api/v1/characters/{character_id}/share").json()["token"]
+    assert token and len(token) >= 16
+
+    guest = TestClient(owner.app)
+    shared = guest.get(f"/api/v1/shared/{token}")
+    assert shared.status_code == 200
+    assert shared.json()["sheet"]["character"]["id"] == character_id
+    assert shared.json()["read_only"] is True
+    assert guest.get(f"/api/v1/shared/{token}/version").json() == {"version": 1}
+    assert "data:font/woff2" in guest.get(f"/api/v1/shared/{token}/print").text
+    # Посилання не дає прав власника: зміни — лише з входом і своїм листом.
+    assert guest.patch(f"/api/v1/characters/{character_id}", json={"hp": {"damage": 1}}).status_code == 401
+    assert guest.post(f"/api/v1/characters/{character_id}/share").status_code == 401
+
+    stranger = TestClient(owner.app)
+    stranger.post("/api/v1/auth/dev", json={"name": "Богдан"})
+    assert stranger.post(f"/api/v1/characters/{character_id}/share").status_code == 404
+
+    # Нове посилання замінює старе; відкликане — недійсне.
+    fresh = owner.post(f"/api/v1/characters/{character_id}/share").json()["token"]
+    assert guest.get(f"/api/v1/shared/{token}").status_code == 404
+    owner.delete(f"/api/v1/characters/{character_id}/share")
+    assert guest.get(f"/api/v1/shared/{fresh}").status_code == 404

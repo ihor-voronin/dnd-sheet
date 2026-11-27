@@ -1396,6 +1396,73 @@ body {
   flex-basis: 100%;
 }
 
+/* --- поділитися й перегляд за посиланням ------------------------------- */
+
+/* Вимкнений fieldset без власної розкладки: кнопки й поля всередині не діють,
+   а сітка листа лишається такою самою. */
+.sheet-readonly {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.sheet-readonly-note {
+  margin: 0;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.share-panel {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+}
+
+.share-panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.share-panel__title {
+  margin: 0 0 6px;
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+  text-transform: none;
+  letter-spacing: 0;
+  border: 0;
+  padding: 0;
+}
+
+.share-panel__lead {
+  max-width: 46em;
+  margin: 0 0 12px;
+  color: var(--graphite);
+}
+
+.share-panel__link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.share-panel__link input {
+  flex: 1;
+  min-width: 260px;
+}
+
+.share-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
 /* --- головна ------------------------------------------------------------- */
 
 .home {

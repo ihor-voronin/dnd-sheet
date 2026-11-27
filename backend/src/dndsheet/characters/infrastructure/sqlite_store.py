@@ -50,6 +50,11 @@ CREATE TABLE IF NOT EXISTS drafts (
     record TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
+CREATE TABLE IF NOT EXISTS shares (
+    token TEXT PRIMARY KEY,
+    character_id TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
 CREATE TABLE IF NOT EXISTS storage_meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -259,3 +264,39 @@ class SqliteDraftRepository:
                 (owner_id,),
             ).fetchone()
         return None if row is None else row[0]
+
+
+@dataclass(slots=True)
+class SqliteShareRepository:
+    """Посилання «лише читати» на персонажа: одне на персонажа, власник може відкликати.
+
+    Токен — випадковий рядок у самому посиланні (capability URL): хто має
+    посилання, той бачить лист, але змінити нічого не може — публічні
+    ендпоінти лише читають. Нове посилання замінює старе, і старе перестає
+    працювати.
+    """
+
+    store: SqliteStore
+
+    def token_of(self, character_id: str) -> str | None:
+        with closing(self.store.connection()) as connection:
+            row = connection.execute(
+                "SELECT token FROM shares WHERE character_id = ?", (character_id,)
+            ).fetchone()
+        return None if row is None else row[0]
+
+    def character_of(self, token: str) -> str | None:
+        with closing(self.store.connection()) as connection:
+            row = connection.execute("SELECT character_id FROM shares WHERE token = ?", (token,)).fetchone()
+        return None if row is None else row[0]
+
+    def replace(self, character_id: str, token: str) -> None:
+        with closing(self.store.connection()) as connection, connection:
+            connection.execute("DELETE FROM shares WHERE character_id = ?", (character_id,))
+            connection.execute(
+                "INSERT INTO shares (token, character_id) VALUES (?, ?)", (token, character_id)
+            )
+
+    def revoke(self, character_id: str) -> None:
+        with closing(self.store.connection()) as connection, connection:
+            connection.execute("DELETE FROM shares WHERE character_id = ?", (character_id,))

@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.knowledge import router as knowledge_router
+from dndsheet.characters.api.sharing import router as sharing_router
 from dndsheet.characters.api.router import build_cases, router as characters_router
 from dndsheet.characters.application.level_up import LevelUpService
 from dndsheet.characters.application.sheet import SheetService
@@ -24,6 +25,7 @@ from dndsheet.characters.infrastructure.json_store import default_data_dir
 from dndsheet.characters.infrastructure.sqlite_store import (
     SqliteCharacterRepository,
     SqliteDraftRepository,
+    SqliteShareRepository,
     SqliteStore,
 )
 from dndsheet.compendium.api.router import router as compendium_router
@@ -77,6 +79,7 @@ def create_app() -> FastAPI:
     drafts = SqliteDraftRepository(store, rules)
     app.state.characters = characters
     app.state.drafts = drafts
+    app.state.shares = SqliteShareRepository(store)
     _configure_auth(app, database, store)
     app.state.wizard = WizardService(
         drafts=drafts,
@@ -108,6 +111,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(compendium_router)
     app.include_router(knowledge_router)
+    app.include_router(sharing_router)
     app.include_router(characters_router)
 
     @app.get("/healthz", tags=["ops"])
