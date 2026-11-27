@@ -997,6 +997,11 @@ class DerivedChoice:
     feature_type: str = ""
     #: Будь-який рівень від заговорів до найвищого, який має цей клас (Магічні таємниці).
     max_level_of: str = ""
+    #: Рівень закляття — до половини рівня (вгору): «warlock» — рівня чаклуна,
+    #: «total» — рівня персонажа (переписані ритуали).
+    max_level_half: str = ""
+    #: Без ліміту: гравець дописує, скільки знайшов (ритуали в книзі); `count` — стеля.
+    open_ended: bool = False
 
 
 #: Класи, з яких Magic Initiate і Ritual Caster беруть закляття.
@@ -1054,6 +1059,8 @@ FEAT_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
     "ritual-caster": (
         _SPELL_CLASS,
         DerivedChoice("Rituals", 2, "spell", spell_level=1, ritual=True),
+        # Знайдені пізніше ритуали класу — до половини рівня персонажа (PHB, p. 169).
+        DerivedChoice("Copied Rituals", 40, "spell", ritual=True, open_ended=True, max_level_half="total"),
     ),
     "elemental-adept": (
         DerivedChoice("Damage Type", 1, "fixed", options=("acid", "cold", "fire", "lightning", "thunder")),
@@ -1170,6 +1177,21 @@ SUBCLASS_CHOICES: Mapping[str, tuple[tuple[int, DerivedChoice], ...]] = {
 MAGICAL_SECRETS: tuple[tuple[int, int], ...] = ((10, 2), (14, 4), (18, 6))
 
 
+#: Бонус урону люті варвара за рівнем (PHB, p. 48).
+RAGE_DAMAGE = ((16, 4), (9, 3), (1, 2))
+
+
+def rage_damage(level: int) -> int:
+    return next((bonus for threshold, bonus in RAGE_DAMAGE if level >= threshold), 0) if level else 0
+
+
+def dragon_damage_type(ancestor: str) -> str | None:
+    """«Red (fire)» → «fire»: тип урону драконячого предка (PHB, p. 102)."""
+    if "(" not in ancestor:
+        return None
+    return ancestor.rsplit("(", 1)[1].rstrip(")").strip().casefold() or None
+
+
 def magical_secrets_count(level: int) -> int:
     return max((count for threshold, count in MAGICAL_SECRETS if level >= threshold), default=0)
 
@@ -1186,6 +1208,10 @@ CLASS_FEATURE_CHOICES: Mapping[str, tuple[tuple[int, DerivedChoice], ...]] = {
 INVOCATION_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
     "book of ancient secrets": (
         DerivedChoice("Rituals", 2, "spell", spell_level=1, spell_class="*", ritual=True),
+        # Переписані пізніше ритуали будь-якого класу — до половини рівня чаклуна (PHB, p. 110).
+        DerivedChoice(
+            "Copied Rituals", 40, "spell", spell_class="*", ritual=True, open_ended=True, max_level_half="warlock"
+        ),
     ),
 }
 
@@ -1251,6 +1277,8 @@ SUBCLASS_PROFICIENCIES: Mapping[str, tuple[tuple[str, str], ...]] = {
     "armorer": (("armor", "heavy"), ("tool", "smith's tools")),
     "bladesinging": (("armor", "light"), ("skill", "performance")),
     "assassin": (("tool", "disguise kit"), ("tool", "poisoner's kit")),
+    # Драконячий родовід: читаєте й говорите драконячою (PHB, p. 102).
+    "draconic-bloodline": (("language", "draconic"),),
 }
 
 #: Види, що дають рису на 1 рівні (PHB, p. 31; TCoE, p. 8).

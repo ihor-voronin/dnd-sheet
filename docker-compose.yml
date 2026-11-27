@@ -5,6 +5,10 @@
 #   docker compose logs -f app
 #   docker compose down
 #
+#   docker compose --profile test run --rm --build test   → pytest + DDD-гейти в образі
+#   docker compose --profile dev up                      → http://127.0.0.1:5173,
+#       Vite і `uvicorn --reload` з кодом із диска: зміни видно за секунди, без перезбирання
+#
 # Дані (персонажі, чернетки візарда) живуть у ./var на хості — каталог
 # прокинутий у контейнер, тому персонажі не гинуть разом з образом.
 services:
@@ -12,6 +16,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runtime
     image: dndsheet:local
     container_name: dndsheet-app
     environment:
@@ -40,6 +45,55 @@ services:
         - action: rebuild
           path: ./content/translations
 
+  # Тести в образі з корпусом: `docker compose --profile test run --rm --build test`.
+  test:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    image: dndsheet:test
+
+  # Швидкий режим розробки: API з `--reload` і Vite з гарячим оновленням.
+  # Код монтується з диска, тож образ перезбирати не треба.
+  api-dev:
+    profiles: ["dev"]
+    image: dndsheet:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: dndsheet-api-dev
+    environment:
+      DNDSHEET_DATA_DIR: /app/var
+      DNDSHEET_CONTENT_DIR: /app/content
+      PYTHONPATH: /app/backend/src
+    command: ["python", "-m", "uvicorn", "dndsheet.main:app", "--host", "0.0.0.0", "--port", "8000",
+              "--reload", "--reload-dir", "/app/backend/src"]
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./var:/app/var
+      - ./backend/src:/app/backend/src
+      - ./content/translations:/app/content/translations
+
+  web-dev:
+    profiles: ["dev"]
+    image: node:22-alpine
+    container_name: dndsheet-web-dev
+    working_dir: /web
+    environment:
+      # Проксі Vite на API в сусідньому контейнері (див. frontend/vite.config.ts).
+      VITE_API_TARGET: http://api-dev:8000
+    command: ["sh", "-c", "npm ci && npx vite --host 0.0.0.0 --port 5173"]
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/web
+      - dndsheet-web-modules:/web/node_modules
+    depends_on:
+      - api-dev
+
   # PostgreSQL поки не використовується застосунком (стан — файли в var/).
   # Підняти за потреби: docker compose --profile db up -d
   db:
@@ -62,3 +116,5 @@ services:
 
 volumes:
   dndsheet-pgdata:
+  # node_modules для Linux окремо від Windows-копії на диску.
+  dndsheet-web-modules:

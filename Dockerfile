@@ -74,3 +74,25 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=6 \
 
 # 0.0.0.0 обовʼязково: інакше порт назовні контейнера не видно
 CMD ["python", "-m", "uvicorn", "dndsheet.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+# ---------------------------------------------------------------------------
+# 3. Тести: той самий образ + корпус + dev-залежності.
+#    docker compose --profile test run --rm test
+#    (у застосунку `app` ціль — `runtime`, тож цей етап у нього не потрапляє)
+# ---------------------------------------------------------------------------
+FROM runtime AS test
+
+USER root
+
+# Тести читають контракт, глосарій, фронтенд (термінологія) і скрипти нормалізації.
+COPY contract/ /app/contract/
+COPY content/glossary.uk.yml /app/content/glossary.uk.yml
+COPY frontend/src/ /app/frontend/src/
+COPY scripts/ /app/scripts/
+
+RUN pip install "/app/backend[dev,pdf]"
+
+ENV DNDSHEET_DATA_DIR=/tmp/dndsheet-test
+
+CMD ["sh", "-c", "python -m pytest backend -q && lint-imports --config backend/pyproject.toml"]

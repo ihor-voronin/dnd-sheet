@@ -707,6 +707,11 @@ export function CharacterView({
                 <span className="ddb-rows__label">Опір</span>
                 <span>{sheet.resistances.length ? sheet.resistances.map(damageTypeLabel).join(", ") : "—"}</span>
               </li>
+              {(sheet.resistance_notes ?? []).map((note) => (
+                <li key={note}>
+                  <span className="hint">{note}</span>
+                </li>
+              ))}
             </ul>
           </section>
 

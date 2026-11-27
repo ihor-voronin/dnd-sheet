@@ -36,6 +36,7 @@ const GROUP_LABELS: Record<string, string> = {
   "1st-level Spell": "Закляття 1 рівня",
   Rituals: "Ритуали",
   "Damage Type": "Тип урону",
+  "Copied Rituals": "Переписані ритуали",
   Skills: "Навички",
   "Skill or Language": "Навичка або мова",
   "Magical Secrets": "Магічні таємниці",
@@ -103,11 +104,11 @@ function ChoiceGroup({
   onSave: (key: string, values: string[]) => Promise<unknown>;
 }) {
   const [picked, setPicked] = useState<string[]>(group.chosen);
-  const [open, setOpen] = useState(group.chosen.length < group.slots);
+  const [open, setOpen] = useState(!group.open_ended && group.chosen.length < group.slots);
   const [query, setQuery] = useState("");
   useEffect(() => setPicked(group.chosen), [group.chosen]);
 
-  const pending = group.slots - group.chosen.length;
+  const pending = group.open_ended ? 0 : group.slots - group.chosen.length;
   const dirty = picked.join("|") !== group.chosen.join("|");
   const label = groupLabel(group);
   const text = new Map(group.options.map((option) => [option.name_en, option]));
@@ -138,7 +139,7 @@ function ChoiceGroup({
   return (
     <div className={`expertise${pending > 0 ? " expertise--pending" : ""}`}>
       <p className="expertise__head">
-        {label}: {group.chosen.length} з {group.slots}
+        {label}: {group.open_ended ? `обрано ${group.chosen.length}` : `${group.chosen.length} з ${group.slots}`}
         {group.chosen.length
           ? ` — ${group.chosen.map((name) => (text.get(name) ? optionLabel(text.get(name)!) : name)).join(", ")}`
           : ""}
@@ -219,13 +220,13 @@ function ChoiceGroup({
               disabled={busy || !dirty}
               onClick={() =>
                 void onSave(group.key, picked).then(() => {
-                  if (picked.length >= group.slots) setOpen(false);
+                  if (group.open_ended || picked.length >= group.slots) setOpen(false);
                 })
               }
             >
-              Зберегти ({picked.length} з {group.slots})
+              Зберегти ({group.open_ended ? picked.length : `${picked.length} з ${group.slots}`})
             </button>
-            {group.chosen.length >= group.slots ? (
+            {group.open_ended || group.chosen.length >= group.slots ? (
               <button type="button" className="link-button" onClick={() => setOpen(false)}>
                 Скасувати
               </button>

@@ -143,28 +143,42 @@ def _spell_options(
     classes = (*CLASS_UK, "paladin", "ranger") if spell_class == "*" else (spell_class,)
     # Магічні таємниці: від заговорів до найвищого рівня, який має клас (PHB, p. 54).
     top = choice.spell_level
+    bottom = choice.spell_level
     if choice.max_level_of and character is not None and character.has_class(choice.max_level_of):
         definition = character.class_definition(choice.max_level_of)
         top = definition.max_spell_level(character.class_level(choice.max_level_of))
+        bottom = 0
+    if choice.max_level_half and character is not None:
+        # Переписані ритуали: рівень закляття — до половини рівня, вгору (PHB, p. 110, 169).
+        base = character.total_level if choice.max_level_half == "total" else character.class_level(choice.max_level_half)
+        top, bottom = max(1, -(-base // 2)), 1
     found: dict[str, Any] = {}
     for name in classes:
         for entry in compendium.class_spells(name, max_level=top).spells:
             data = entry.data or {}
             level = entry.spell_level if entry.spell_level is not None else -1
-            if (level > top or level < 0) if choice.max_level_of else level != choice.spell_level:
+            if not bottom <= level <= top:
                 continue
             if choice.schools and (entry.spell_school or "") not in choice.schools:
                 continue
             if choice.ritual and not data.get("ritual"):
                 continue
             found.setdefault(entry.name_en.casefold(), entry)
+    # Те саме закляття в іншій групі цього ж джерела (ритуали книги й переписані) — не вдруге.
+    prefix = group_key.rsplit(":", 1)[0] + ":"
+    elsewhere = {
+        name.casefold()
+        for key, values in (character.class_choices.items() if character is not None else ())
+        if key != group_key and key.startswith(prefix)
+        for name in values
+    }
     return [
         {
             "name_en": entry.name_en,
             "name_uk": uk_text.name_uk("spells", entry.name_en),
             "text_en": entry.text_en or "",
             "prerequisite": None,
-            "locked": None,
+            "locked": "уже обрано в іншій групі" if entry.name_en.casefold() in elsewhere else None,
             "school": entry.spell_school,
             "level": entry.spell_level,
         }
@@ -237,6 +251,8 @@ def class_choices_payload(character: Character, compendium: CompendiumService) -
                 "origin": {"kind": kind, "key": owner, "name_uk": _owner_uk(kind, owner)} if derived else None,
                 "slots": slots,
                 "chosen": list(character.active_class_choices.get(key, ())),
+                # Без ліміту (переписані ритуали): лист не нагадує «ще N на вибір».
+                "open_ended": bool(derived and character.derived_choice_groups[key].open_ended),
                 "options": _options(key, compendium, character),
             }
         )

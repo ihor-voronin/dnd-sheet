@@ -269,16 +269,22 @@ def granted_spells(character: Any) -> list[tuple[str, int, str, str, Ability | N
         if choice.kind != "spell":
             continue
         kind, owner, _ = split_key(key)
-        usage = FEAT_CHOICE_SPELL_NOTE.get(owner, "") if choice.spell_level > 0 else ""
+        usage = FEAT_CHOICE_SPELL_NOTE.get(owner, "") if choice.spell_level > 0 or choice.ritual else ""
         spell_class = spell_class_for(key, choice, character.class_choices)
+        # Рівень: фіксований групою або збережений під час вибору (таємниці, переписані ритуали).
+        def level_of(name: str, choice: DerivedChoice = choice) -> int:
+            if choice.max_level_of or choice.max_level_half:
+                return _spell_level(character, name)
+            return choice.spell_level
+
         if choice.group.endswith("Magical Secrets"):
             # Магічні таємниці: закляття барда з будь-якого списку, Харизма (PHB, p. 54).
             for name in active.get(key, ()):
-                rows.append((name, _spell_level(character, name), "secrets", "", Ability.CHA))
+                rows.append((name, level_of(name), "secrets", "", Ability.CHA))
             continue
         if kind == "inv":
             # Книга давніх таємниць: ритуали будь-якого класу, лише як ритуал (PHB, p. 110).
-            rows.extend((name, choice.spell_level, "invocation", "ritual only", Ability.CHA) for name in active.get(key, ()))
+            rows.extend((name, level_of(name), "invocation", "ritual only", Ability.CHA) for name in active.get(key, ()))
             continue
         if kind == "feat":
             source, ability = "feat", _feat_casting(character, by_slug.get(owner, owner), spell_class)
@@ -291,7 +297,7 @@ def granted_spells(character: Any) -> list[tuple[str, int, str, str, Ability | N
         else:
             # Благословенний і Друїдський воїн чарують Мудрістю (TCoE, p. 41, 57).
             source, ability = "fighting-style", Ability.WIS
-        rows.extend((name, choice.spell_level, source, usage, ability) for name in active.get(key, ()))
+        rows.extend((name, level_of(name), source, usage, ability) for name in active.get(key, ()))
     for invocation in character.invocations:
         spell = INVOCATION_SPELLS.get(invocation.casefold())
         if spell is not None:

@@ -554,6 +554,8 @@ export interface SheetViewPayload {
   darkvision: number;
   blindsight?: number;
   resistances: string[];
+  /** Опір за умови: у люті, тотем Ведмедя, Стихійна спорідненість. */
+  resistance_notes?: string[];
   hit_points: {
     maximum: number;
     current: number;
@@ -760,6 +762,8 @@ export type ClassChoiceGroup = {
   /** Хто дав вибір, якщо не клас: риса чи бойовий стиль. */
   origin?: { kind: "feat" | "style" | "sub" | "boon" | "feature" | "inv"; key: string; name_uk: string } | null;
   slots: number;
+  /** Без ліміту (переписані ритуали): `slots` — лише стеля. */
+  open_ended?: boolean;
   chosen: string[];
   options: {
     name_en: string;

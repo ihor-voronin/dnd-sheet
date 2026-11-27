@@ -63,7 +63,12 @@ from dndsheet.export.domain.renderer import RenderOptions, RendererError, Render
 from dndsheet.sheets.application.build_document import build_sheet_document
 from dndsheet.shared.errors import ConflictError, DomainError, NotFoundError
 from dndsheet.shared.kernel import Ability
-from dndsheet.shared.rules import feat_ability_options, natural_weapon_die, natural_weapon_for
+from dndsheet.shared.rules import (
+    dragon_damage_type,
+    feat_ability_options,
+    natural_weapon_die,
+    natural_weapon_for,
+)
 
 router = APIRouter(prefix="/api/v1/characters", tags=["characters"])
 
@@ -115,6 +120,7 @@ def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Cha
     )
     compendium = _compendium(request)
     enrich_spells(payload["spells"], compendium, getattr(request.app.state, "spell_cache", {}))
+    _elemental_affinity(payload["spells"], character, computed)
     enrich_features(
         payload,
         character,
@@ -158,6 +164,23 @@ def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Cha
         else None
     )
     return payload
+
+
+def _elemental_affinity(spells: list[dict[str, Any]], character, computed) -> None:  # noqa: ANN001
+    """Стихійна спорідненість (PHB, p. 102): + Харизма до урону заклять типу драконячого предка.
+
+    Тип урону закляття знає лише довідник, тому примітка дописується тут, після збагачення.
+    """
+    sorcerer = next((entry for entry in character.classes if entry.class_key == "sorcerer"), None)
+    ancestor = character.active_class_choices.get("sub:draconic-bloodline:Dragon Ancestor", ())
+    damage = dragon_damage_type(ancestor[0]) if ancestor else None
+    if sorcerer is None or sorcerer.level < 6 or damage is None:
+        return
+    bonus = computed.ability_modifiers[Ability.CHA]
+    for spell in spells:
+        if (spell.get("damage") or {}).get("type") == damage:
+            text = f"Стихійна спорідненість (Elemental Affinity): {bonus:+d} до одного кидка урону"
+            spell["note"] = "; ".join(filter(None, [spell.get("note"), text]))
 
 
 def _feat_ability_map(compendium: CompendiumService) -> dict[str, list[str]]:

@@ -85,6 +85,7 @@ def computed_sheet(
         "darkvision": computed.darkvision,
         "blindsight": computed.blindsight,
         "resistances": list(computed.resistances),
+        "resistance_notes": list(computed.resistance_notes),
         "hit_points": {
             "maximum": computed.hit_points.maximum,
             "current": computed.hit_points.current,

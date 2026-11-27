@@ -217,3 +217,76 @@ def test_text_only_subclass_choices(rules, compendium) -> None:
     key = "sub:way-of-the-four-elements:Elemental Disciplines"
     assert monk.class_choice_slots[key] == 2
     assert "Fangs of the Fire Snake" in allowed_names(key, compendium, monk)
+
+
+# --- переписані ритуали --------------------------------------------------------
+
+
+def test_copied_rituals_are_open_ended_and_level_capped(rules, compendium) -> None:
+    """Книга давніх таємниць: ритуали до половини рівня чаклуна, скільки знайдете (PHB, p. 110)."""
+    from dndsheet.characters.api.class_choices import allowed_names, class_choices_payload, option_levels
+
+    warlock = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 5, subclass_key="the-fiend")])
+    warlock.set_class_choice("warlock:Pact Boon", ["Pact of the Tome"], ["Pact of the Tome"])
+    warlock.set_class_choice("warlock:Eldritch Invocations", ["Book of Ancient Secrets"], ["Book of Ancient Secrets"])
+    warlock.set_class_choice("inv:book of ancient secrets:Rituals", ["Find Familiar"], ["Find Familiar"])
+    key = "inv:book of ancient secrets:Copied Rituals"
+    options = allowed_names(key, compendium, warlock)
+    levels = option_levels(key, compendium, warlock)
+    assert "Leomund’s Tiny Hut" in options and levels["Leomund’s Tiny Hut"] == 3, "чаклун 5 — до 3 рівня"
+    assert "Find Familiar" not in options, "уже в книзі як стартовий ритуал"
+    assert all(level <= 3 for level in levels.values())
+    warlock.set_class_choice(key, ["Leomund’s Tiny Hut", "Alarm"], options, levels)
+    group = next(item for item in class_choices_payload(warlock, compendium) if item["key"] == key)
+    assert group["open_ended"]
+    granted = {spell.name_en: spell for spell in _sheet(warlock).granted_spells}
+    assert granted["Leomund’s Tiny Hut"].spell_level == 3 and granted["Leomund’s Tiny Hut"].usage == "ritual only"
+
+
+# --- числа з текстових виборів і класові примітки ------------------------------
+
+
+def test_rage_bear_totem_and_aspect(rules, compendium) -> None:
+    barbarian = make_character(
+        rules,
+        abilities=_scores(str=16),
+        classes=[CharacterClass("barbarian", 6, subclass_key="path-of-the-totem-warrior")],
+        inventory=Inventory(items=(InventoryItem(name_en="Greataxe", kind=ItemKind.WEAPON, equipped=True),)),
+    )
+    assert "у люті (Rage): +2 урону" in _attacks(barbarian, compendium)["Greataxe"]["notes"]
+    assert "дробильному" in _sheet(barbarian).resistance_notes[0]
+    capacity = _sheet(barbarian).carrying_capacity
+    barbarian.set_class_choice("sub:path-of-the-totem-warrior:Totem Spirit", ["Bear"], ["Bear", "Wolf"])
+    barbarian.set_class_choice("sub:path-of-the-totem-warrior:Aspect of the Beast", ["Bear"], ["Bear", "Wolf"])
+    sheet = _sheet(barbarian)
+    assert "крім психічного" in sheet.resistance_notes[0]
+    assert sheet.carrying_capacity == 2 * capacity
+
+
+def test_draconic_ancestor_language_and_affinity(rules) -> None:
+    from dndsheet.characters.api.router import _elemental_affinity
+
+    sorcerer = make_character(
+        rules, abilities=_scores(cha=16), classes=[CharacterClass("sorcerer", 6, subclass_key="draconic-bloodline")]
+    )
+    assert sorcerer.all_proficiencies().has(ProficiencyKind.LANGUAGE, "draconic")
+    sorcerer.set_class_choice("sub:draconic-bloodline:Dragon Ancestor", ["Red (fire)"], ["Red (fire)"])
+    spells = [{"name_en": "Fireball", "damage": {"dice": "8d6", "type": "fire"}}, {"name_en": "Ray of Frost", "damage": {"dice": "1d8", "type": "cold"}}]
+    _elemental_affinity(spells, sorcerer, _sheet(sorcerer))
+    assert "+3" in spells[0]["note"] and "note" not in spells[1]
+    assert any("fire" in note for note in _sheet(sorcerer).resistance_notes)
+
+
+def test_class_attack_notes(rules, compendium) -> None:
+    rapier = InventoryItem(name_en="Rapier", kind=ItemKind.WEAPON, equipped=True)
+    rogue = make_character(rules, abilities=_scores(dex=16), classes=[CharacterClass("rogue", 5)], inventory=Inventory(items=(rapier,)))
+    assert "+3d6" in _attacks(rogue, compendium)["Rapier"]["notes"]
+    paladin = make_character(
+        rules, abilities=_scores(str=16, cha=13), classes=[CharacterClass("paladin", 2)], inventory=Inventory(items=(rapier,))
+    )
+    assert "Divine Smite" in _attacks(paladin, compendium)["Rapier"]["notes"]
+    hunter = make_character(
+        rules, abilities=_scores(dex=13, wis=13), classes=[CharacterClass("ranger", 3, subclass_key="hunter")], inventory=Inventory(items=(rapier,))
+    )
+    hunter.set_class_choice("sub:hunter:Hunter's Prey", ["Colossus Slayer"], ["Colossus Slayer"])
+    assert "Colossus Slayer" in _attacks(hunter, compendium)["Rapier"]["notes"]

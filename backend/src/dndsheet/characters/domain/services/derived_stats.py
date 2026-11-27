@@ -46,6 +46,7 @@ from dndsheet.characters.domain import derived_choices
 from dndsheet.shared.rules import (
     ELDRITCH_BLAST_INVOCATIONS,
     ClassMechanics,
+    dragon_damage_type,
     armor_category,
     armor_dex_cap,
 )
@@ -135,6 +136,8 @@ class ComputedSheet:
     blindsight: int = 0
     #: КЗ, що діє лише за умови (Пісня клинка): готові рядки для листа.
     armor_class_notes: tuple[str, ...] = ()
+    #: Опір, що діє лише за умови (у люті, за очко чаклунства): готові рядки.
+    resistance_notes: tuple[str, ...] = ()
     #: Примітки до заклять за назвою (нижній регістр): виклики Містичного розряду.
     spell_notes: dict[str, str] = field(default_factory=dict)
 
@@ -295,9 +298,14 @@ class DerivedStatsCalculator:
             darkvision=self._darkvision(character, species),
             blindsight=10 if character.has_class_choice("blind fighting") else 0,
             armor_class_notes=self._armor_class_notes(character, modifiers_map),
+            resistance_notes=self._resistance_notes(character),
             spell_notes=self._spell_notes(character, modifiers_map),
             resistances=species.resistances if species is not None else (),
-            carrying_capacity=strength * CARRY_PER_STRENGTH,
+            # Аспект звіра: Ведмідь — подвоєна вантажопідйомність (PHB, p. 50).
+            carrying_capacity=strength * CARRY_PER_STRENGTH * (2 if character.has_class_choice("bear") and any(
+                value.casefold() == "bear"
+                for value in character.active_class_choices.get("sub:path-of-the-totem-warrior:Aspect of the Beast", ())
+            ) else 1),
             carried_weight=character.inventory.total_weight,
             modifiers=modifiers,
             feats=character.feats,
@@ -419,6 +427,28 @@ class DerivedStatsCalculator:
                 notes.append(
                     f"Клинкова пісня (Bladesong): +{bonus} до КЗ (Інтелект), поки діє — без середньої й "
                     "важкої броні та щита"
+                )
+        return tuple(notes)
+
+    @staticmethod
+    def _resistance_notes(character: Character) -> tuple[str, ...]:
+        """Опір за умови: лють варвара, тотем Ведмедя, Стихійна спорідненість (PHB, p. 48, 50, 102)."""
+        notes: list[str] = []
+        choices = character.active_class_choices
+        if character.class_level("barbarian"):
+            bear = "bear" in {value.casefold() for value in choices.get("sub:path-of-the-totem-warrior:Totem Spirit", ())}
+            notes.append(
+                "У люті (Rage): опір усім видам урону, крім психічного — Тотемний дух Ведмедя"
+                if bear
+                else "У люті (Rage): опір дробильному, колючому й рубаному урону"
+            )
+        sorcerer = next((entry for entry in character.classes if entry.class_key == "sorcerer"), None)
+        ancestor = choices.get("sub:draconic-bloodline:Dragon Ancestor", ())
+        if sorcerer is not None and sorcerer.level >= 6 and ancestor:
+            damage = dragon_damage_type(ancestor[0])
+            if damage:
+                notes.append(
+                    f"Стихійна спорідненість (Elemental Affinity): 1 очко чаклунства — опір урону «{damage}» на 1 годину"
                 )
         return tuple(notes)
 

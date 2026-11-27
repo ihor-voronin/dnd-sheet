@@ -27,6 +27,7 @@ from dndsheet.shared.rules import (
     martial_arts_die,
     natural_weapon_die,
     natural_weapon_for,
+    rage_damage,
 )
 
 #: `Range (20/60)` або `range 20/60` у властивостях зброї.
@@ -96,6 +97,10 @@ class _AttackRules:
     battle_smith: bool
     feats: frozenset[str]
     kensei: bool
+    rage: int
+    sneak_dice: int
+    smite: bool
+    hunter: frozenset[str]
 
     @classmethod
     def of(cls, character: Character, computed: ComputedSheet) -> "_AttackRules":
@@ -115,6 +120,16 @@ class _AttackRules:
             and subclasses.get("artificer", "").endswith("battle-smith"),
             feats=frozenset(feat.casefold().rsplit("/", 1)[-1] for feat in character.feats),
             kensei=character.kensei_slots > 0,
+            rage=rage_damage(character.class_level("barbarian")),
+            # Підступна атака: 1d6 на 1 рівні плута, +1d6 кожні 2 рівні (PHB, p. 96).
+            sneak_dice=-(-character.class_level("rogue") // 2),
+            smite=character.class_level("paladin") >= 2,
+            hunter=frozenset(
+                value.casefold()
+                for key, values in character.active_class_choices.items()
+                if key.startswith("sub:hunter:")
+                for value in values
+            ),
         )
 
 
@@ -213,6 +228,7 @@ def _weapon_row(
         if "thirsting blade" in rules.invocations:
             view = _note(view, "Спраглий клинок (Thirsting Blade): дві атаки за дію")
     view = _fighting_style(view, properties, character)
+    view = _class_notes(view, rules, ranged=ranged, finesse="finesse" in properties)
     if computed.armor_untrained:
         view = _note(view, "завада: броня без володіння")
     return {
@@ -262,6 +278,8 @@ def _unarmed_rows(character: Character, computed: ComputedSheet, rules: _AttackR
             view = _note(view, text)
         if rules.martial_arts:
             view = _note(view, "ще один удар бонусною дією після атаки")
+        if rules.rage and view.ability is Ability.STR:
+            view = _note(view, f"у люті (Rage): +{rules.rage} урону")
         if computed.armor_untrained and view.ability in (Ability.STR, Ability.DEX):
             view = _note(view, "завада: броня без володіння")
         return {
@@ -343,6 +361,25 @@ def _shillelagh_rows(
             }
         )
     return rows
+
+
+def _class_notes(view, rules: _AttackRules, *, ranged: bool, finesse: bool):  # noqa: ANN001, ANN202
+    """Примітки класових умінь до атаки зброєю: лють, підступна атака, кара, мисливець."""
+    if rules.rage and not ranged and view.ability is Ability.STR:
+        view = _note(view, f"у люті (Rage): +{rules.rage} урону")
+    if rules.sneak_dice and (ranged or finesse):
+        view = _note(view, f"Підступна атака (Sneak Attack): +{rules.sneak_dice}d6 раз на хід, з перевагою чи союзником поруч")
+    if rules.smite and not ranged:
+        view = _note(view, "Божественна кара (Divine Smite): +2d8 променистого за комірку 1 рівня, +1d8 за кожен вищий")
+    if "colossus slayer" in rules.hunter:
+        view = _note(view, "Убивця колосів (Colossus Slayer): +1d8 раз на хід, якщо ціль уже поранена")
+    if "horde breaker" in rules.hunter:
+        view = _note(view, "Руйнівник орди (Horde Breaker): ще одна атака по сусідній цілі раз на хід")
+    if "volley" in rules.hunter and ranged:
+        view = _note(view, "Залп (Volley): атака по всіх у колі 10 фт дією")
+    if "whirlwind attack" in rules.hunter and not ranged:
+        view = _note(view, "Атака вихору (Whirlwind Attack): атака по всіх у межах 5 фт дією")
+    return view
 
 
 def _add_damage(damage: str, bonus: int) -> str:
