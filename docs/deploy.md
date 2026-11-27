@@ -175,6 +175,9 @@ docker compose -f compose.yml start app
 2. **Bot Settings → Menu Button** → URL `https://dnd.voronin.app`, текст
    «Лист персонажа» — кнопка біля поля повідомлення.
 3. Посилання на застосунок: `https://t.me/DnD_Sheet_VoroninAppBot?startapp`.
+4. Аватар бота: `/setuserpic` → бот → надіслати `branding/bot-avatar.png`
+   (640×640, той самий кубик d20, що й іконка сайту; усі іконки генерує
+   `scripts/make_icons.py`).
 
 **Перевірити локально без Telegram**: `.claude/launch.json` → `miniapp-check`
 (тестовий токен `123456:TEST-TOKEN`). Підписати `initData` тим самим токеном
