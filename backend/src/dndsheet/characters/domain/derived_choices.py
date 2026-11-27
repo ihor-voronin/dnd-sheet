@@ -33,6 +33,8 @@ from dndsheet.shared.rules import (
     INVOCATION_SPELLS,
     BOON_CHOICES,
     CLASS_FEATURE_CHOICES,
+    CLASS_FEATURE_SAVES,
+    CLASS_FEATURE_SPELL_USAGE,
     INVOCATION_CHOICES,
     STYLE_CHOICES,
     SUBCLASS_CHOICES,
@@ -166,6 +168,11 @@ def feat_proficiencies(character: Any) -> list[Proficiency]:  # noqa: ANN401 —
                 items.append(Proficiency(kind=ProficiencyKind.SKILL, value=value, source=source))
             else:
                 items.append(Proficiency(kind=_PROFICIENCY_KIND[kind], value=value, source=source))
+    # Діамантова душа (чернець 14), Слизький розум (плут 15) — рятівні кидки.
+    for (class_key, level), abilities in CLASS_FEATURE_SAVES.items():
+        if character.class_level(class_key) >= level:
+            source = GrantSource.of(SourceKind.CLASS, class_key)
+            items.extend(Proficiency(kind=ProficiencyKind.SAVING_THROW, value=value, source=source) for value in abilities)
     for invocation in character.invocations:
         for skill in INVOCATION_SKILLS.get(invocation.casefold(), ()):
             items.append(
@@ -281,6 +288,13 @@ def granted_spells(character: Any) -> list[tuple[str, int, str, str, Ability | N
             # Магічні таємниці: закляття барда з будь-якого списку, Харизма (PHB, p. 54).
             for name in active.get(key, ()):
                 rows.append((name, level_of(name), "secrets", "", Ability.CHA))
+            continue
+        if kind == "feature":
+            # Містичний арканум, Майстерність заклять, Фірмові закляття — уміння класу.
+            usage = next((note for prefix, note in CLASS_FEATURE_SPELL_USAGE.items() if choice.group.startswith(prefix)), "")
+            rows.extend(
+                (name, level_of(name), "feature", usage, CLASS_CASTING_ABILITY.get(owner)) for name in active.get(key, ())
+            )
             continue
         if kind == "inv":
             # Книга давніх таємниць: ритуали будь-якого класу, лише як ритуал (PHB, p. 110).

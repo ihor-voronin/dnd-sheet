@@ -638,8 +638,11 @@ export function InventoryPanel({
   onUpdate,
   onRemove,
   bonds = { pact: false, hex: false },
+  attunementLimit = MAX_ATTUNED,
 }: {
   bonds?: WeaponBonds;
+  /** Артифіцер 10/14/18 настроюється на 4/5/6 предметів (TCoE). */
+  attunementLimit?: number;
   items: SheetItem[];
   money: Record<string, number>;
   carrying: { capacity: number; weight: number };
@@ -798,7 +801,7 @@ export function InventoryPanel({
       <h3 className="sheet-work__title">
         <span>Інвентар</span>
         <span className="short">
-          настроювання {attunedCount} з {MAX_ATTUNED} · вага {carrying.weight} з{" "}
+          настроювання {attunedCount} з {attunementLimit} · вага {carrying.weight} з{" "}
           {carrying.capacity} фнт
         </span>
       </h3>
@@ -1035,7 +1038,7 @@ export function InventoryPanel({
             //: кожній мотузці був би шумом.
             const needsAttunement = data.attunement === true;
             const showAttune = needsAttunement || item.attuned;
-            const attuneBlocked = !item.attuned && attunedCount >= MAX_ATTUNED;
+            const attuneBlocked = !item.attuned && attunedCount >= attunementLimit;
             const statsRows = stats.filter(([label]) => label !== "Настроювання");
             if (showAttune) {
               statsRows.push([
@@ -1073,7 +1076,7 @@ export function InventoryPanel({
                         onClick={() => void onUpdate(index, { attuned: !item.attuned })}
                         title={
                           attuneBlocked
-                            ? `Уже настроєно ${MAX_ATTUNED} предмети — спершу зніміть настроювання з іншого`
+                            ? `Уже настроєно ${attunementLimit} предмети — спершу зніміть настроювання з іншого`
                             : item.attuned
                               ? "Зняти настроювання"
                               : "Настроїтися на предмет"

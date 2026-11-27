@@ -115,7 +115,7 @@ export const SPELL_NAMES: Record<string, string> = {
   "danse macabre": "Танок мертвих",
   "dark star": "Темна зоря",
   "darkness": "Темрява",
-  "darkvision": "Темнозір",
+  "darkvision": "Темний зір",
   "dawn": "Світанок",
   "daylight": "Денне світло",
   "death ward": "Оберіг від смерті",

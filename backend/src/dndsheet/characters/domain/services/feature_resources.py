@@ -171,6 +171,24 @@ RULES: tuple[_Rule, ...] = (
         recharge=LONG,
     ),
     _Rule(
+        key="paladin:cleansing-touch",
+        name_en="Cleansing Touch",
+        class_key="paladin",
+        steps=((14, 1),),
+        ability=Ability.CHA,
+        ability_mode="min1",
+        recharge=LONG,
+    ),
+    _Rule(
+        key="artificer:flash-of-genius",
+        name_en="Flash of Genius",
+        class_key="artificer",
+        steps=((7, 1),),
+        ability=Ability.INT,
+        ability_mode="min1",
+        recharge=LONG,
+    ),
+    _Rule(
         key="paladin:channel-divinity",
         name_en="Channel Divinity",
         class_key="paladin",
@@ -311,6 +329,24 @@ def resources_for(
                     action=ACTIONS.get(rule.key, "other"),
                 )
             )
+    paladin = character.class_level("paladin")
+    if paladin:
+        # Накладання рук: запас хітів 5 × рівень паладина (PHB, p. 84).
+        total = 5 * paladin
+        resources.insert(
+            0,
+            FeatureResource(
+                key="paladin:lay-on-hands",
+                name_en="Lay on Hands",
+                class_key="paladin",
+                class_name="Paladin",
+                level=paladin,
+                total=total,
+                used=min(character.state.feature_used.get("paladin:lay-on-hands", 0), total),
+                recharge=LONG,
+                action="action",
+            ),
+        )
     return tuple(_with_feat_resources(character, resources))
 
 

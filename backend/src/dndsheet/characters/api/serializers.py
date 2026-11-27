@@ -86,6 +86,8 @@ def computed_sheet(
         "blindsight": computed.blindsight,
         "resistances": list(computed.resistances),
         "resistance_notes": list(computed.resistance_notes),
+        "roll_notes": list(computed.roll_notes),
+        "attunement_limit": character.attunement_limit,
         "hit_points": {
             "maximum": computed.hit_points.maximum,
             "current": computed.hit_points.current,

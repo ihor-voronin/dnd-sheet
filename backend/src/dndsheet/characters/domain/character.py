@@ -21,7 +21,7 @@ from typing import Any, Iterable, Mapping
 
 from dndsheet.characters.domain import derived_choices
 from dndsheet.characters.domain.class_level import CharacterClass, MulticlassWaiver
-from dndsheet.characters.domain.inventory import Inventory, InventoryItem
+from dndsheet.characters.domain.inventory import MAX_ATTUNED, Inventory, InventoryItem
 from dndsheet.characters.domain.pick_rules import is_choice_label, validate_pick
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.state import SheetState
@@ -46,6 +46,7 @@ from dndsheet.shared.kernel import MAX_LEVEL, Ability, AbilityScore, Money, Skil
 #: Ключ експертизи для злодійських інструментів (плут, PHB p. 96).
 THIEVES_TOOLS = "thieves' tools"
 from dndsheet.shared.rules import (
+    ARTIFICER_ATTUNEMENT,
     SPECIES_WITH_FEAT,
     BackgroundMechanics,
     ClassMechanics,
@@ -753,6 +754,7 @@ class Character:
     def add_item(self, item: InventoryItem) -> None:
         inventory = self.inventory.add(item)
         self._check_kensei(inventory)
+        self._check_attunement(inventory)
         self.inventory = inventory
         self.bump_version()
 
@@ -761,6 +763,7 @@ class Character:
         item = self.inventory.item_at(index)
         inventory = self.inventory.replace_at(index, replace(item, **fields))
         self._check_kensei(inventory)
+        self._check_attunement(inventory)
         self.inventory = inventory
         self.bump_version()
 
@@ -771,6 +774,17 @@ class Character:
         if entry is None or not (entry.subclass_key or "").endswith("kensei") or entry.level < 3:
             return 0
         return 2 + sum(1 for mark in (6, 11, 17) if entry.level >= mark)
+
+    @property
+    def attunement_limit(self) -> int:
+        """Скільком предметам можна настроїтися: 3, артифіцер 10/14/18 — 4/5/6."""
+        level = self.class_level("artificer")
+        return next((count for threshold, count in ARTIFICER_ATTUNEMENT if level >= threshold), MAX_ATTUNED)
+
+    def _check_attunement(self, inventory: Inventory) -> None:
+        limit = self.attunement_limit
+        if inventory.attuned_count > limit:
+            raise ValidationError(f"одночасно можна настроїтися не більше ніж на {limit} предмети")
 
     def _check_kensei(self, inventory: Inventory) -> None:
         marked = sum(1 for item in inventory.items if item.kensei_weapon)

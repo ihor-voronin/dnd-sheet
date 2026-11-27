@@ -101,6 +101,9 @@ class _AttackRules:
     sneak_dice: int
     smite: bool
     hunter: frozenset[str]
+    crit_range: int
+    brutal_dice: int
+    improved_smite: bool
 
     @classmethod
     def of(cls, character: Character, computed: ComputedSheet) -> "_AttackRules":
@@ -124,6 +127,13 @@ class _AttackRules:
             # Підступна атака: 1d6 на 1 рівні плута, +1d6 кожні 2 рівні (PHB, p. 96).
             sneak_dice=-(-character.class_level("rogue") // 2),
             smite=character.class_level("paladin") >= 2,
+            # Чемпіон: критичне влучання на 19–20 (3), на 18–20 (15) (PHB, p. 72).
+            crit_range=(18 if character.class_level("fighter") >= 15 else 19)
+            if subclasses.get("fighter", "").endswith("champion") and character.class_level("fighter") >= 3
+            else 20,
+            # Брутальний критичний удар: +1/+2/+3 кістки на 9/13/17 (PHB, p. 49).
+            brutal_dice=sum(1 for mark in (9, 13, 17) if character.class_level("barbarian") >= mark),
+            improved_smite=character.class_level("paladin") >= 11,
             hunter=frozenset(
                 value.casefold()
                 for key, values in character.active_class_choices.items()
@@ -371,6 +381,12 @@ def _class_notes(view, rules: _AttackRules, *, ranged: bool, finesse: bool):  # 
         view = _note(view, f"Підступна атака (Sneak Attack): +{rules.sneak_dice}d6 раз на хід, з перевагою чи союзником поруч")
     if rules.smite and not ranged:
         view = _note(view, "Божественна кара (Divine Smite): +2d8 променистого за комірку 1 рівня, +1d8 за кожен вищий")
+    if rules.improved_smite and not ranged:
+        view = _note(view, "Покращена божественна кара (Improved Divine Smite): +1d8 променистого урону щоразу")
+    if rules.crit_range < 20:
+        view = _note(view, f"критичне влучання на {rules.crit_range}–20")
+    if rules.brutal_dice and not ranged:
+        view = _note(view, f"Брутальний критичний удар (Brutal Critical): +{rules.brutal_dice} кістки зброї при критичному")
     if "colossus slayer" in rules.hunter:
         view = _note(view, "Убивця колосів (Colossus Slayer): +1d8 раз на хід, якщо ціль уже поранена")
     if "horde breaker" in rules.hunter:

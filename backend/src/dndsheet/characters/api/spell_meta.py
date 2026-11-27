@@ -22,6 +22,7 @@ from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
 from dndsheet.shared.errors import NotFoundError
+from dndsheet.shared.translations import SPELL_HEADER, spell_body, text_uk
 
 #: Кубик урону разом із типом: «1d6 acid», «2d8 + 3 fire».
 DAMAGE = re.compile(
@@ -48,12 +49,8 @@ SAVE_CODES = {
 
 SPELL_ATTACK = re.compile(r"spell\s+attack", re.IGNORECASE)
 
-#: Перший рядок опису — «2nd-level abjuration» або «Evocation cantrip»:
-#: рівень і школу лист уже показує окремо, у тексті він зайвий.
-HEADER = re.compile(
-    r"^(?:\d+(?:st|nd|rd|th)-level\s+[a-z]+(?:\s*\(ritual\))?|[A-Z][a-z]+\s+cantrip)$",
-    re.IGNORECASE,
-)
+#: Перший рядок опису — «2nd-level abjuration» або «Evocation cantrip» (спільний із перекладом).
+HEADER = SPELL_HEADER
 
 
 def enrich_spells(
@@ -98,6 +95,9 @@ def _meta_for(
         "school": _text(data.get("school")),
         "description": _body(text),
         "at_higher_levels": _text(data.get("at_higher_levels")),
+        # Український текст (content/translations/spells): ключ — хеш оригіналу.
+        "description_uk": text_uk("spells", _body(text)),
+        "at_higher_levels_uk": text_uk("spells", _text(data.get("at_higher_levels")) or ""),
         "damage": (
             {
                 "dice": damage.group(1).replace(" ", "").replace("−", "-"),
@@ -138,9 +138,4 @@ def _text(value: Any) -> str:
 
 def _body(text: str) -> str:
     """Опис без першого рядка «2nd-level abjuration» — він уже є в підписах."""
-    lines = text.splitlines()
-    while lines and not lines[0].strip():
-        lines.pop(0)
-    if lines and HEADER.match(lines[0].strip()):
-        lines.pop(0)
-    return "\n".join(lines).strip()
+    return spell_body(text)

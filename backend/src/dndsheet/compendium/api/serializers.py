@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from dndsheet.compendium.domain.entry import CompendiumEntry
+from dndsheet.shared.translations import entry_name_uk, entry_text_uk
 from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,
@@ -24,7 +25,8 @@ def entry_brief(entry: CompendiumEntry) -> dict[str, Any]:
         "source_id": entry.source_id,
         "category": entry.category.value,
         "name_en": entry.name_en,
-        "name_uk": entry.name_uk,
+        # Назва з шару перекладу (закляття, риси, вибори класу), якщо в записі її немає.
+        "name_uk": entry.name_uk or entry_name_uk(entry.category.value, entry.name_en),
         "display_name": entry.display_name,
         "edition": entry.edition,
         "license": entry.license,
@@ -43,7 +45,7 @@ def entry_full(entry: CompendiumEntry) -> dict[str, Any]:
         {
             "schema": entry.schema,
             "text_en": entry.text_en,
-            "text_uk": entry.text_uk,
+            "text_uk": entry.text_uk or entry_text_uk(entry.category.value, entry.text_en or ""),
             "fetched_at": entry.fetched_at,
             "notes": list(entry.notes),
         }

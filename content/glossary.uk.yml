@@ -494,3 +494,33 @@ terms:
   source: tbd
   citation: null
   status: draft
+- id: rules.challenge_rating
+  en: Challenge Rating
+  uk: Показник небезпеки
+  source: tbd
+  citation: null
+  status: draft
+  note: Скорочено — ПН. Тексти заклять звели до цього варіанта (було три різні).
+  avoid:
+  - '[Рр]ейтинг\w* небезпеки'
+  - '[Рр]ів(?:ень|ня|нем) небезпеки'
+- id: senses.darkvision
+  en: Darkvision
+  uk: Темний зір
+  source: tbd
+  citation: null
+  status: draft
+  avoid:
+  - '[Тт]емноз(?:ір|ор)'
+- id: senses.truesight
+  en: Truesight
+  uk: Істинний зір
+  source: tbd
+  citation: null
+  status: draft
+- id: senses.blindsight
+  en: Blindsight
+  uk: Сліпе чуття
+  source: tbd
+  citation: null
+  status: draft

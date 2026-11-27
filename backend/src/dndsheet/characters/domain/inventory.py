@@ -16,8 +16,10 @@ from dndsheet.shared.kernel import Money
 #: Скільки фунтів тягне одна одиниця Сила (PHB, p. 176).
 CARRY_PER_STRENGTH = 15
 
-#: Скільком предметам можна настроїтися одночасно (PHB, p. 138).
+#: Скільком предметам можна настроїтися одночасно (PHB, p. 138); артифіцер — до 6
+#: (TCoE, p. 12–13), тож тут — абсолютна стеля, а ліміт персонажа перевіряє `Character`.
 MAX_ATTUNED = 3
+ABSOLUTE_MAX_ATTUNED = 6
 
 
 class ItemKind(StrEnum):
@@ -115,9 +117,9 @@ class Inventory:
             raise ValidationError("одночасно можна носити лише одну броню")
         if sum(1 for item in self.items if item.is_shield and item.equipped) > 1:
             raise ValidationError("одночасно можна тримати лише один щит")
-        if self.attuned_count > MAX_ATTUNED:
+        if self.attuned_count > ABSOLUTE_MAX_ATTUNED:
             raise ValidationError(
-                f"одночасно можна настроїтися не більше ніж на {MAX_ATTUNED} предмети"
+                f"одночасно можна настроїтися не більше ніж на {ABSOLUTE_MAX_ATTUNED} предметів"
             )
         if sum(1 for item in self.items if item.pact_weapon) > 1:
             raise ValidationError("зброя угоди буває лише одна (PHB, p. 107)")

@@ -225,6 +225,17 @@ def _rule_modifiers(character) -> list[Modifier]:  # noqa: ANN001, C901 — та
             note="remarkable-athlete" if athlete > jack else "jack-of-all-trades",
         )
 
+    # --- Primal Champion: +4 Сили й Статури, максимум 24 (PHB, p. 49) ---
+    if levels.get("barbarian", 0) >= 20:
+        for ability in (Ability.STR, Ability.CON):
+            room = max(0, min(4, 24 - character.ability_total(ability)))
+            add(ModifierKind.ABILITY, room, SourceKind.CLASS, "barbarian", key=ability.value, note="primal-champion")
+
+    # --- Soul of Artifice: +1 до рятівних кидків за настроєний предмет (TCoE, p. 13) ---
+    if levels.get("artificer", 0) >= 20:
+        attuned = min(6, character.inventory.attuned_count)
+        add(ModifierKind.SAVING_THROW, attuned, SourceKind.CLASS, "artificer", note="soul-of-artifice")
+
     # --- Aura of Protection ---
     if levels.get("paladin", 0) >= 6:
         charisma = (character.ability_total(Ability.CHA) - 10) // 2

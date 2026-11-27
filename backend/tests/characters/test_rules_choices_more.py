@@ -290,3 +290,74 @@ def test_class_attack_notes(rules, compendium) -> None:
     )
     hunter.set_class_choice("sub:hunter:Hunter's Prey", ["Colossus Slayer"], ["Colossus Slayer"])
     assert "Colossus Slayer" in _attacks(hunter, compendium)["Rapier"]["notes"]
+
+
+# --- перевірка правил: вміння класів із числами ---------------------------------
+
+
+def test_primal_champion_and_diamond_soul(rules) -> None:
+    barbarian = make_character(rules, abilities=_scores(str=20, con=18), classes=[CharacterClass("barbarian", 20)])
+    sheet = _sheet(barbarian)
+    assert sheet.abilities[Ability.STR].total == 24 and sheet.abilities[Ability.CON].total == 22
+    monk = make_character(rules, classes=[CharacterClass("monk", 14)])
+    assert all(_sheet(monk).saving_throw_proficiency.values()), "Diamond Soul — усі рятівні кидки"
+    rogue = make_character(rules, classes=[CharacterClass("rogue", 15)])
+    assert _sheet(rogue).saving_throw_proficiency[Ability.WIS], "Slippery Mind"
+
+
+def test_paladin_and_artificer_resources(rules) -> None:
+    paladin = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("paladin", 14)])
+    found = {item.key: item for item in resources_for(paladin, _sheet(paladin).ability_modifiers)}
+    assert found["paladin:lay-on-hands"].total == 70
+    assert found["paladin:cleansing-touch"].total == 3
+    artificer = make_character(rules, abilities=_scores(int=18), classes=[CharacterClass("artificer", 10)])
+    found = {item.key: item for item in resources_for(artificer, _sheet(artificer).ability_modifiers)}
+    assert found["artificer:flash-of-genius"].total == 4
+    assert artificer.attunement_limit == 4
+
+
+def test_artificer_attunes_more_items(rules) -> None:
+    ring = lambda name: InventoryItem(name_en=name, kind=ItemKind.MAGIC, attuned=True)  # noqa: E731
+    artificer = make_character(rules, abilities=_scores(int=13), classes=[CharacterClass("artificer", 14)])
+    for name in ("A", "B", "C", "D", "E"):
+        artificer.add_item(ring(name))
+    with pytest.raises(ValidationError):
+        artificer.add_item(ring("F"))
+    fighter = make_character(rules)
+    for name in ("A", "B", "C"):
+        fighter.add_item(ring(name))
+    with pytest.raises(ValidationError):
+        fighter.add_item(ring("D"))
+
+
+def test_mystic_arcanum_and_signature_spells(rules, compendium) -> None:
+    from dndsheet.characters.api.class_choices import allowed_names
+
+    warlock = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 13, subclass_key="the-fiend")])
+    slots = warlock.class_choice_slots
+    assert slots["feature:warlock:Mystic Arcanum (6th level)"] == 1 and slots["feature:warlock:Mystic Arcanum (7th level)"] == 1
+    assert "feature:warlock:Mystic Arcanum (8th level)" not in slots
+    key = "feature:warlock:Mystic Arcanum (6th level)"
+    options = allowed_names(key, compendium, warlock)
+    assert "Eyebite" in options and "Fireball" not in options
+    warlock.set_class_choice(key, ["Eyebite"], options)
+    granted = {spell.name_en: spell for spell in _sheet(warlock).granted_spells}
+    assert granted["Eyebite"].spell_level == 6 and granted["Eyebite"].usage == "1/long rest"
+    wizard = make_character(rules, abilities=_scores(int=16), classes=[CharacterClass("wizard", 20)])
+    assert wizard.class_choice_slots["feature:wizard:Signature Spells"] == 2
+
+
+def test_class_attack_and_roll_notes(rules, compendium) -> None:
+    longsword = InventoryItem(name_en="Longsword", kind=ItemKind.WEAPON, equipped=True)
+    champion = make_character(
+        rules, abilities=_scores(str=16), classes=[CharacterClass("fighter", 15, subclass_key="champion")],
+        inventory=Inventory(items=(longsword,)),
+    )
+    assert "18–20" in _attacks(champion, compendium)["Longsword"]["notes"]
+    paladin = make_character(
+        rules, abilities=_scores(str=16, cha=13), classes=[CharacterClass("paladin", 11)], inventory=Inventory(items=(longsword,))
+    )
+    assert "Improved Divine Smite" in _attacks(paladin, compendium)["Longsword"]["notes"]
+    barbarian = make_character(rules, abilities=_scores(str=16), classes=[CharacterClass("barbarian", 9)], inventory=Inventory(items=(longsword,)))
+    assert "Brutal Critical" in _attacks(barbarian, compendium)["Longsword"]["notes"]
+    assert any("Danger Sense" in note for note in _sheet(barbarian).roll_notes)

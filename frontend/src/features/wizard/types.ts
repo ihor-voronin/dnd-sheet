@@ -285,6 +285,9 @@ export interface SheetSpell {
   school?: string;
   description?: string;
   at_higher_levels?: string;
+  /** Український текст закляття й абзацу «На вищих рівнях» (content/translations/spells). */
+  description_uk?: string | null;
+  at_higher_levels_uk?: string | null;
   damage?: { dice: string; type: string } | null;
   save?: string | null;
   attack_roll?: boolean;
@@ -556,6 +559,10 @@ export interface SheetViewPayload {
   resistances: string[];
   /** Опір за умови: у люті, тотем Ведмедя, Стихійна спорідненість. */
   resistance_notes?: string[];
+  /** Перевага й особливі правила кидків (Відчуття небезпеки, Надійний талант…). */
+  roll_notes?: string[];
+  /** Скільком предметам можна настроїтися (артифіцер — більше 3). */
+  attunement_limit?: number;
   hit_points: {
     maximum: number;
     current: number;
@@ -587,6 +594,8 @@ export interface SheetViewPayload {
     name_uk?: string | null;
     source_id?: string;
     description: string;
+    /** Український текст риси (content/translations/feats). */
+    description_uk?: string | null;
   }[];
   feature_resources: SheetFeatureResource[];
   background_details: BackgroundDetails | null;

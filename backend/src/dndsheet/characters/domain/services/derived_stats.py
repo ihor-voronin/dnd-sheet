@@ -138,6 +138,8 @@ class ComputedSheet:
     armor_class_notes: tuple[str, ...] = ()
     #: Опір, що діє лише за умови (у люті, за очко чаклунства): готові рядки.
     resistance_notes: tuple[str, ...] = ()
+    #: Перевага й особливі правила кидків (Відчуття небезпеки, Надійний талант…).
+    roll_notes: tuple[str, ...] = ()
     #: Примітки до заклять за назвою (нижній регістр): виклики Містичного розряду.
     spell_notes: dict[str, str] = field(default_factory=dict)
 
@@ -299,6 +301,7 @@ class DerivedStatsCalculator:
             blindsight=10 if character.has_class_choice("blind fighting") else 0,
             armor_class_notes=self._armor_class_notes(character, modifiers_map),
             resistance_notes=self._resistance_notes(character),
+            roll_notes=self._roll_notes(character),
             spell_notes=self._spell_notes(character, modifiers_map),
             resistances=species.resistances if species is not None else (),
             # Аспект звіра: Ведмідь — подвоєна вантажопідйомність (PHB, p. 50).
@@ -431,6 +434,27 @@ class DerivedStatsCalculator:
         return tuple(notes)
 
     @staticmethod
+    def _roll_notes(character: Character) -> tuple[str, ...]:
+        """Перевага й особливі правила кидків від умінь класу (PHB 2014)."""
+        level = character.class_level
+        notes: list[str] = []
+        if level("barbarian") >= 2:
+            notes.append("Відчуття небезпеки (Danger Sense): перевага на рятівні кидки Спритності від видимих ефектів")
+        if level("barbarian") >= 7:
+            notes.append("Дикий інстинкт (Feral Instinct): перевага на ініціативу")
+        if level("rogue") >= 11:
+            notes.append("Надійний талант (Reliable Talent): у перевірках із володінням 9 і менше на d20 — це 10")
+        if level("rogue") >= 14:
+            notes.append("Сліпе чуття (Blindsense): чуєте схованих і невидимих істот у межах 10 фт")
+        if level("ranger") >= 18:
+            notes.append("Дикі чуття (Feral Senses): атаки по невидимих без завади; знаєте про невидимих у межах 30 фт")
+        if level("monk") >= 7:
+            notes.append("Спокій розуму (Stillness of Mind): дією знімаєте з себе зачарування чи переляк")
+        if any(name.casefold() == "war caster" for name in (feat.rsplit("/", 1)[-1].replace("-", " ") for feat in character.feats)):
+            notes.append("Бойовий заклинатель (War Caster): перевага на рятівні кидки Статури для концентрації")
+        return tuple(notes)
+
+    @staticmethod
     def _resistance_notes(character: Character) -> tuple[str, ...]:
         """Опір за умови: лють варвара, тотем Ведмедя, Стихійна спорідненість (PHB, p. 48, 50, 102)."""
         notes: list[str] = []
@@ -442,6 +466,10 @@ class DerivedStatsCalculator:
                 if bear
                 else "У люті (Rage): опір дробильному, колючому й рубаному урону"
             )
+        if character.class_level("monk") >= 10:
+            notes.append("Імунітет до отрути й хвороб (Purity of Body)")
+        if character.class_level("paladin") >= 3:
+            notes.append("Імунітет до хвороб (Divine Health)")
         sorcerer = next((entry for entry in character.classes if entry.class_key == "sorcerer"), None)
         ancestor = choices.get("sub:draconic-bloodline:Dragon Ancestor", ())
         if sorcerer is not None and sorcerer.level >= 6 and ancestor:

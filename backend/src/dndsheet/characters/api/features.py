@@ -23,6 +23,7 @@ from dndsheet.characters.api import classes_uk, subclasses_uk
 from dndsheet.characters.domain.character import Character
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
+from dndsheet.shared.translations import entry_name_uk, entry_text_uk
 
 #: Заголовок класового вміння: рівно три решітки.
 CLASS_HEADING = re.compile(r"^###\s+(.+?)\s*$")
@@ -101,9 +102,10 @@ def _feat_details(
             {
                 "key": key,
                 "name_en": entry.name_en,
-                "name_uk": entry.name_uk,
+                "name_uk": entry.name_uk or entry_name_uk("feat", entry.name_en),
                 "source_id": entry.source_id,
                 "description": entry.text_en or "",
+                "description_uk": entry_text_uk("feat", entry.text_en or ""),
             }
         )
     return details

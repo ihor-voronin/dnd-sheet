@@ -382,4 +382,27 @@ Points). Тому:
 `backend/tests/api/test_translations_spelling.py` ловить регресію: будь-яке
 «хитів»/«хиту» в `content/translations/` валить тести.
 
+## Тексти заклять, рис і опційних умінь
+
+| Шар | Текстів | Де лежить | Де видно |
+|---|---|---|---|
+| Закляття | 723 (опис + «На вищих рівнях») | `content/translations/spells/texts-NN.json` | картка закляття на листі, довідник |
+| Риси | 109 | `content/translations/feats/texts-NN.json` | «Уміння → Риси», вибір риси на рівні й у візарді |
+| Опційні вміння | 151 | `content/translations/optional-features/texts-NN.json` | «Вибори класу й рис» |
+
+Ключ — `sha1(оригіналу)[:10]` (`dndsheet.shared.translations`); для заклять —
+опис без рядка «3rd-level evocation», як його віддає API.
+
+```
+python scripts/rules_uk_prepare.py [--missing]   # черги var/uk/<шар>/input/texts-NN.json + var/uk/NAMES.md
+# переклад за var/uk/RULES_BRIEF.md (терміни — var/uk/GLOSSARY.md, назви — var/uk/NAMES.md)
+python scripts/rules_uk_check.py [шар NN]       # повнота, кістки, числа, довжина, заборонене з глосарію
+python scripts/translations_normalize.py --write # звести відомі варіанти термінів
+```
+
+Переклали 10 агентів паралельно; варіанти термінів, яких не було в глосарії, зведено
+скриптом і внесено в глосарій: «показник небезпеки» (challenge rating), «темний зір»
+(darkvision), «істинний зір» (truesight), «сліпе чуття» (blindsight); навичка
+Investigation — «Розслідування», скорочення Мудрості — «МУД». Закляття Darkvision
+перейменовано з «Темнозір» на «Темний зір».
 

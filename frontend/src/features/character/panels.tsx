@@ -283,6 +283,7 @@ const SPELL_SOURCE_TAGS: Record<string, string> = {
   invocation: "від виклику",
   "pact-boon": "від дару угоди",
   secrets: "магічні таємниці",
+  feature: "від уміння класу",
 };
 
 export function SpellsKnownList({
@@ -394,13 +395,17 @@ export function SpellsKnownList({
                             ? // Власне закляття: текст дав гравець, і навіть
                               // однойменне книжкове не має його підміняти.
                               spell.description ?? ""
-                            : spellText(spell.name_en, spell.description)
+                            : spell.description_uk || spellText(spell.name_en, spell.description)
                         }
                       />
                       {spell.at_higher_levels ? (
                         <div className="spell__higher">
                           <span className="spell__higher-label">На вищих рівнях</span>
-                          <RuleText text={spellHigher(spell.name_en, spell.at_higher_levels)} />
+                          <RuleText
+                            text={withoutHigherLabel(
+                              spell.at_higher_levels_uk || spellHigher(spell.name_en, spell.at_higher_levels),
+                            )}
+                          />
                         </div>
                       ) : null}
                     </div>
@@ -467,12 +472,17 @@ export function FeatsList({
                 ▾
               </span>
             </summary>
-            <RuleText text={feat.description} />
+            <RuleText text={feat.description_uk || feat.description} />
           </details>
         </li>
       ))}
     </ul>
   );
+}
+
+/** «At Higher Levels.» / «**На вищих рівнях.**» на початку — підпис уже є над текстом. */
+function withoutHigherLabel(text: string): string {
+  return text.replace(/^\s*(?:\*\*)?(?:At Higher Levels|На вищих рівнях)\.(?:\*\*)?\s*/i, "");
 }
 
 /** Текст правила як є: абзаци, списки, курсивний підпис рівня. */

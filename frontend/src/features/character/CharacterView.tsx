@@ -453,6 +453,7 @@ export function CharacterView({
           onUpdate={updateItem}
           onRemove={removeItem}
           bonds={sheet.weapon_bonds}
+          attunementLimit={sheet.attunement_limit}
         />
       );
     }
@@ -707,6 +708,11 @@ export function CharacterView({
                 <span className="sheet-rows__label">Опір</span>
                 <span>{sheet.resistances.length ? sheet.resistances.map(damageTypeLabel).join(", ") : "—"}</span>
               </li>
+              {(sheet.roll_notes ?? []).map((note) => (
+                <li key={note}>
+                  <span className="hint">{note}</span>
+                </li>
+              ))}
               {(sheet.resistance_notes ?? []).map((note) => (
                 <li key={note}>
                   <span className="hint">{note}</span>

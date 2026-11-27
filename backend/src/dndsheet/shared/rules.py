@@ -1202,7 +1202,34 @@ CLASS_FEATURE_CHOICES: Mapping[str, tuple[tuple[int, DerivedChoice], ...]] = {
         (level, DerivedChoice("Magical Secrets", count, "spell", spell_class="*", max_level_of="bard"))
         for level, count in MAGICAL_SECRETS
     ),
+    # Містичний арканум: по закляттю 6–9 рівнів, раз на тривалий відпочинок (PHB, p. 108).
+    "warlock": tuple(
+        (level, DerivedChoice(f"Mystic Arcanum ({spell_level}th level)", 1, "spell", spell_level=spell_level, spell_class="warlock"))
+        for level, spell_level in ((11, 6), (13, 7), (15, 8), (17, 9))
+    ),
+    # Майстерність заклять (18) і фірмові закляття (20) мага (PHB, p. 115).
+    "wizard": (
+        (18, DerivedChoice("Spell Mastery (1st level)", 1, "spell", spell_level=1, spell_class="wizard")),
+        (18, DerivedChoice("Spell Mastery (2nd level)", 1, "spell", spell_level=2, spell_class="wizard")),
+        (20, DerivedChoice("Signature Spells", 2, "spell", spell_level=3, spell_class="wizard")),
+    ),
 }
+
+#: Як чаруються закляття вмінь класу (група → примітка).
+CLASS_FEATURE_SPELL_USAGE: Mapping[str, str] = {
+    "Mystic Arcanum": "1/long rest",
+    "Spell Mastery": "at will",
+    "Signature Spells": "1/short rest",
+}
+
+#: Рятівні кидки від умінь класу: (клас, рівень) → характеристики (PHB, p. 79, 96).
+CLASS_FEATURE_SAVES: Mapping[tuple[str, int], tuple[str, ...]] = {
+    ("monk", 14): ("str", "dex", "con", "int", "wis", "cha"),  # Diamond Soul
+    ("rogue", 15): ("wis",),  # Slippery Mind
+}
+
+#: Скільки предметів може настроїти артифіцер (TCoE, p. 12–13); решта — 3.
+ARTIFICER_ATTUNEMENT = ((18, 6), (14, 5), (10, 4))
 
 #: Виклик → вибори: Книга давніх таємниць — 2 ритуали 1 рівня будь-якого класу (PHB, p. 110).
 INVOCATION_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
