@@ -23,7 +23,7 @@ from dndsheet.characters.domain.wizard import (
 )
 from dndsheet.characters.api.species_traits import species_details
 from dndsheet.characters.api.features import class_details
-from dndsheet.characters.api import classes_uk
+from dndsheet.characters.api import classes_uk, subclasses_uk
 from dndsheet.characters.api.background_info import background_details
 from dndsheet.compendium.api.serializers import (
     background_mechanics_full,
@@ -192,6 +192,9 @@ def _class_options(
         if definition.subclass_level == 1:
             for entry in service.subclasses(definition.name_en):
                 brief = entry_brief(entry)
+                # Назва підкласу — з шару перекладу: у TERMS на фронтенді є
+                # не все («Bladesinging» там не було).
+                brief["name_uk"] = subclasses_uk.name_uk(brief["name_en"]) or brief["name_uk"]
                 grants = definition.subclass_spells_for(entry.id)
                 brief["grants"] = (
                     {"prepared": list(grants.prepared), "expanded": list(grants.expanded)}

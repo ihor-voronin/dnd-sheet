@@ -26,7 +26,7 @@ const queryClient = new QueryClient({
 type Route =
   | { name: "home" }
   | { name: "create" }
-  | { name: "character"; id: string }
+  | { name: "character"; id: string; tab?: string }
   | { name: "levelup"; id: string };
 
 function parseRoute(): Route {
@@ -37,7 +37,11 @@ function parseRoute(): Route {
     if (rest.endsWith("/level-up")) {
       return { name: "levelup", id: decodeURIComponent(rest.slice(0, -"/level-up".length)) };
     }
-    return { name: "character", id: decodeURIComponent(rest) };
+    // Вкладку листа можна відкрити напряму: після підвищення рівня екран
+    // веде одразу до «Заклять», де й обирають нові.
+    const [id, query] = rest.split("?");
+    const tab = new URLSearchParams(query ?? "").get("tab") ?? undefined;
+    return { name: "character", id: decodeURIComponent(id), tab };
   }
   return { name: "home" };
 }
@@ -57,7 +61,7 @@ function useRoute(): [Route, (next: Route) => void] {
           ? "#/create"
           : next.name === "levelup"
             ? `#/character/${encodeURIComponent(next.id)}/level-up`
-            : `#/character/${encodeURIComponent(next.id)}`;
+            : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
     if (window.location.hash === target) setRoute(next);
     else window.location.hash = target;
   }, []);
@@ -142,7 +146,15 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
   );
 }
 
-function CharacterPage({ id, navigate }: { id: string; navigate: (next: Route) => void }) {
+function CharacterPage({
+  id,
+  tab,
+  navigate,
+}: {
+  id: string;
+  tab?: string;
+  navigate: (next: Route) => void;
+}) {
   const { data, isPending, error } = useQuery({
     queryKey: ["character", id],
     queryFn: () => fetchCharacter(id),
@@ -163,7 +175,7 @@ function CharacterPage({ id, navigate }: { id: string; navigate: (next: Route) =
           ← до списку
         </button>
       </p>
-      <CharacterView initial={data.sheet} />
+      <CharacterView initial={data.sheet} initialTab={tab} />
     </>
   );
 }
@@ -185,6 +197,7 @@ function LevelUpPage({ id, navigate }: { id: string; navigate: (next: Route) => 
       <LevelUpWizard
         characterId={id}
         onCancel={() => navigate({ name: "character", id })}
+        onOpenSpells={() => navigate({ name: "character", id, tab: "spells" })}
         onDone={(report) => {
           // Лист уже змінився на сервері: стара відповідь у кеші недійсна.
           void queryClient.invalidateQueries({ queryKey: ["character", id] });
@@ -232,7 +245,9 @@ function Shell() {
       {route.name === "create" ? (
         <CreateWizard onFinished={(characterId) => navigate({ name: "character", id: characterId })} />
       ) : null}
-      {route.name === "character" ? <CharacterPage id={route.id} navigate={navigate} /> : null}
+      {route.name === "character" ? (
+        <CharacterPage id={route.id} tab={route.tab} navigate={navigate} />
+      ) : null}
       {route.name === "levelup" ? <LevelUpPage id={route.id} navigate={navigate} /> : null}
     </main>
   );

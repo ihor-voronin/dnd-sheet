@@ -49,6 +49,68 @@ def client(data_dir: Path) -> TestClient:
     return TestClient(app)
 
 
+def test_plan_explains_what_the_level_gives(client: TestClient) -> None:
+    """План показує не лише назви: текст правила, переклад і повний шлях підкласу."""
+    payload = client.get("/api/v1/characters/level-up-fighter/level-up").json()
+    fighter = next(plan for plan in payload["plans"] if plan["class_key"] == "fighter")
+
+    action_surge = next(
+        item for item in fighter["features"] if item["name_en"] == "Action Surge"
+    )
+    # Оригінал книги — для звірки, переклад — для читання.
+    assert action_surge["text"]
+    assert action_surge["name_uk"] == "Приплив сил"
+    assert action_surge["text_uk"]
+
+    # Воїн 2 → 3 обирає підклас: показуємо не лише сьогоднішнє вміння, а весь
+    # шлях спеціалізації — щоб вибір був свідомий.
+    case = next(
+        case for case in client.app.state.golden_cases if case.key == "fighter-1"
+    )
+    second = replace(
+        case.character,
+        id="level-up-fighter-2",
+        classes=[replace(case.character.classes[0], level=2)],
+    )
+    client.app.state.characters.save(second)
+    plan_payload = client.get("/api/v1/characters/level-up-fighter-2/level-up").json()
+    plan = next(item for item in plan_payload["plans"] if item["class_key"] == "fighter")
+    assert plan["new_level"] == 3
+    champion = next(
+        option for option in plan["subclass"]["options"] if option["name_en"] == "Champion"
+    )
+    levels = {item["level"] for item in champion["features"]}
+    assert 3 in levels and max(levels) > 3, "видно, що спеціалізація дасть далі"
+    improved = next(
+        item for item in champion["features"] if item["name_en"] == "Improved Critical"
+    )
+    assert improved["level"] == 3
+    assert improved["new"] is True
+    assert improved["text"], "текст саме того вміння, яке обирають зараз"
+
+
+def test_subclass_features_have_ukrainian_texts() -> None:
+    """Повнота шару підкласів: назва й текст кожної особливості перекладені."""
+    from dndsheet.characters.api import subclasses_uk
+    from dndsheet.characters.api.features import subclass_features
+    from dndsheet.compendium.infrastructure.factory import build_service
+
+    service = build_service()
+    missing: list[str] = []
+    checked = 0
+    for definition in service.class_definitions():
+        for entry in service.subclasses(definition.name_en):
+            for item in subclass_features(service, entry.id):
+                checked += 1
+                if not subclasses_uk.name_uk(item["name_en"]):
+                    missing.append(f"{entry.name_en}: назва {item['name_en']}")
+                if item["description"] and not subclasses_uk.text_uk(item["description"]):
+                    missing.append(f"{entry.name_en}: {item['name_en']}")
+
+    assert checked > 500, "підкласів має бути багато — інакше перевірка нічого не варта"
+    assert not missing, f"без перекладу: {missing[:10]}"
+
+
 def test_plan_for_saved_character(client: TestClient) -> None:
     response = client.get("/api/v1/characters/level-up-fighter/level-up")
     assert response.status_code == 200

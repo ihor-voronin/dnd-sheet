@@ -16,7 +16,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   fetchCharacter,
-  fetchClassSpells,
   fetchFeats,
   fetchLevelUp,
   levelUpCharacter,
@@ -53,10 +52,6 @@ function plural(count: number, one: string, few: string, many: string): string {
   return many;
 }
 
-function spellLevelLabel(level: number): string {
-  return level === 0 ? "заговір" : `${level} рівень`;
-}
-
 /** Скільки нових заклять клас дає цим рівнем (окремо заговори й решта). */
 function spellGain(plan: LevelUpPlan): { cantrips: number; leveled: number } {
   const cantrips = Math.max(0, plan.limits.cantrips.after - plan.limits.cantrips.before);
@@ -77,10 +72,13 @@ export function LevelUpWizard({
   characterId,
   onDone,
   onCancel,
+  onOpenSpells,
 }: {
   characterId: string;
   onDone: (report: LevelUpReport) => void;
   onCancel: () => void;
+  /** Перейти на лист, вкладка «Закляття»: там обирають нові закляття. */
+  onOpenSpells?: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -95,7 +93,6 @@ export function LevelUpWizard({
   const [asiFirst, setAsiFirst] = useState<AbilityCode>("str");
   const [asiSecond, setAsiSecond] = useState<AbilityCode>("dex");
   const [featId, setFeatId] = useState<string | null>(null);
-  const [spells, setSpells] = useState<{ id: string; name_en: string; level: number }[]>([]);
 
   const levelUp = useQuery({
     queryKey: ["level-up", characterId],
@@ -109,13 +106,7 @@ export function LevelUpWizard({
   const view: LevelUpView | undefined = levelUp.data;
   const plan = view?.plans.find((item) => item.class_key === classKey) ?? null;
   const gain = plan ? spellGain(plan) : { cantrips: 0, leveled: 0 };
-  const wantsSpells = gain.cantrips + gain.leveled > 0;
 
-  const classSpells = useQuery({
-    queryKey: ["class-spells", plan?.class_key, plan?.max_spell_level],
-    queryFn: () => fetchClassSpells(plan!.class_key, plan!.max_spell_level),
-    enabled: Boolean(plan && wantsSpells),
-  });
   const feats = useQuery({
     queryKey: ["feats"],
     queryFn: fetchFeats,
@@ -125,7 +116,6 @@ export function LevelUpWizard({
   // Новий клас — нові вимоги: вибір, зроблений для іншого класу, скидаємо.
   useEffect(() => {
     setSubclassKey(null);
-    setSpells([]);
     setAsiMode("two");
     setFeatId(null);
     const first = plan?.subclass?.options[0]?.id ?? null;
@@ -143,17 +133,6 @@ export function LevelUpWizard({
       ? Math.max(1, hpRoll + plan.constitution_modifier)
       : plan.hp.average
     : 0;
-
-  function toggleSpell(entry: { id: string; name_en: string; level: number }) {
-    setSpells((current) => {
-      const exists = current.find((item) => item.id === entry.id);
-      if (exists) return current.filter((item) => item.id !== entry.id);
-      const sameLevel = current.filter((item) => item.level === entry.level);
-      const limit = entry.level === 0 ? gain.cantrips : gain.leveled;
-      if (sameLevel.length >= limit) return current;
-      return [...current, entry];
-    });
-  }
 
   function abilityOptions(skip?: AbilityCode) {
     return ABILITIES.filter((code) => code !== skip).map((code) => {
@@ -192,15 +171,6 @@ export function LevelUpWizard({
           }
           body.ability_increases = { [asiFirst]: 1, [asiSecond]: 1 };
         }
-      }
-      if (spells.length) {
-        body.spells = spells.map((spell) => ({
-          name_en: spell.name_en,
-          level: spell.level,
-          class_key: plan.class_key,
-          entry_id: spell.id,
-          prepared: plan.limits.prepared.after !== null && spell.level > 0,
-        }));
       }
       const result = await levelUpCharacter(characterId, body);
       onDone(result.level_up);
@@ -350,10 +320,39 @@ export function LevelUpWizard({
               </div>
             </section>
 
+            <section className="wizard-block">
+              <h3>{nextStep()}. Нові вміння класу</h3>
+              {plan.features.length ? (
+                <ul className="plain-list">
+                  {plan.features.map((item) => (
+                    <li key={`${item.level}-${item.name_en}`}>
+                      <details className="reckoning" open>
+                        <summary>
+                          {item.name_uk
+                            ? withEnglish(item.name_en, item.name_uk)
+                            : item.name_en}
+                        </summary>
+                        {item.text_uk || item.text ? (
+                          <RuleText text={item.text_uk || item.text || ""} />
+                        ) : (
+                          <p className="hint">
+                            Тексту цього вміння в корпусі немає — назва й рівень
+                            є, пояснення шукайте в книзі.
+                          </p>
+                        )}
+                      </details>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="hint">Цей рівень не додає нових умінь класу.</p>
+              )}
+            </section>
+
             {plan.subclass?.required ? (
               <section className="wizard-block">
                 <h3>
-                  {nextStep()}. {plan.subclass.title ?? "Підклас"}
+                  {nextStep()}. {plan.subclass.title ? termLabel(plan.subclass.title) : "Підклас"}
                 </h3>
                 <p className="hint">
                   Цей рівень дає підклас. Його вміння зʼявляться на листі одразу.
@@ -366,15 +365,58 @@ export function LevelUpWizard({
                       className={`chip chip--column ${subclassKey === option.id ? "chip--active" : ""}`}
                       onClick={() => setSubclassKey(option.id)}
                     >
-                      <span>{withEnglish(subclassLabel(option.name_en), ukSubclass(option.id))}</span>
-                      {option.features.length ? (
+                      <span>
+                        {withEnglish(
+                          subclassLabel(option.name_en),
+                          option.name_uk ?? ukSubclass(option.id),
+                        )}
+                      </span>
+                      {option.features.some((item) => item.new) ? (
                         <span className="meta">
-                          {option.features.map((name) => featureLabel(name)).join(" · ")}
+                          {option.features
+                            .filter((item) => item.new)
+                            .map((item) =>
+                              item.name_uk
+                                ? withEnglish(item.name_en, item.name_uk)
+                                : item.name_en,
+                            )
+                            .join(" · ")}
                         </span>
                       ) : null}
                     </button>
                   ))}
                 </div>
+
+                {(() => {
+                  const option =
+                    plan.subclass?.options.find((item) => item.id === subclassKey) ??
+                    null;
+                  if (!option?.features.length) return null;
+                  return (
+                    <div className="levelup-subclass-path">
+                      <h4>Що ця спеціалізація дасть далі</h4>
+                      <ul className="plain-list">
+                        {option.features.map((item) => (
+                          <li key={`${item.level}-${item.name_en}`}>
+                            {item.level} рівень ·{" "}
+                            {item.name_uk
+                              ? withEnglish(item.name_en, item.name_uk)
+                              : item.name_en}
+                            {item.new ? (
+                              <span className="meta"> · отримуєте зараз</span>
+                            ) : null}
+                            {item.new && (item.text_uk || item.text) ? (
+                              <details className="reckoning">
+                                <summary>Що це дає</summary>
+                                <RuleText text={item.text_uk || item.text || ""} />
+                              </details>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
               </section>
             ) : null}
 
@@ -472,43 +514,27 @@ export function LevelUpWizard({
               </section>
             ) : null}
 
-            {wantsSpells ? (
+            {plan.max_spell_level > 0 ? (
               <section className="wizard-block">
-                <h3>{nextStep()}. Закляття</h3>
+                <h3>{nextStep()}. Закляття — обираються на листі</h3>
                 <p className="hint">
-                  {gain.cantrips ? `Заговорів: +${gain.cantrips}. ` : ""}
+                  {gain.cantrips ? `Цей рівень дає заговорів: +${gain.cantrips}. ` : ""}
                   {gain.leveled ? `Заклять: +${gain.leveled}. ` : ""}
-                  Можна пропустити й додати пізніше.
+                  {gain.cantrips + gain.leveled
+                    ? "Доступні рівні заклять — до "
+                    : "Нових заклять цей рівень не додає. "}
+                  {gain.cantrips + gain.leveled ? `${plan.max_spell_level}-го. ` : ""}
+                  Тут ми їх не обираємо: після підвищення відкрийте{" "}
+                  <strong>лист персонажа → вкладка «Закляття» → «Додати закляття»</strong>.
+                  Там повний список класу з описами, фільтр за рівнем і позначка
+                  «підготовлено» для класів, що готують закляття. Так ви бачите
+                  всі варіанти й можете повернутися до вибору пізніше.
                 </p>
-                {classSpells.isPending ? <p className="meta">Читаємо список класу…</p> : null}
-                {classSpells.error ? (
-                  <p className="status status--error">{messageOf(classSpells.error)}</p>
+                {onOpenSpells ? (
+                  <button type="button" className="button" onClick={onOpenSpells}>
+                    До заклять на листі
+                  </button>
                 ) : null}
-                <div className="spell-grid">
-                  {(classSpells.data?.items ?? [])
-                    .filter((entry) => {
-                      const level = Number((entry.data as { level?: number }).level ?? 0);
-                      if (level === 0) return gain.cantrips > 0;
-                      return gain.leveled > 0 && level <= plan.max_spell_level;
-                    })
-                    .map((entry) => {
-                      const level = Number((entry.data as { level?: number }).level ?? 0);
-                      const active = spells.some((spell) => spell.id === entry.id);
-                      return (
-                        <button
-                          key={entry.id}
-                          type="button"
-                          className={`chip ${active ? "chip--active" : ""}`}
-                          title={spellLevelLabel(level)}
-                          onClick={() =>
-                            toggleSpell({ id: entry.id, name_en: entry.name_en, level })
-                          }
-                        >
-                          {entry.name_uk || entry.name_en}
-                        </button>
-                      );
-                    })}
-                </div>
               </section>
             ) : null}
 
@@ -517,8 +543,12 @@ export function LevelUpWizard({
                 <h3>Нові вміння підкласу</h3>
                 {plan.subclass_features.map((item) => (
                   <details key={item.name_en} className="reckoning">
-                    <summary>{featureLabel(item.name_en)}</summary>
-                    <RuleText text={item.description} />
+                    <summary>
+                      {item.name_uk
+                        ? withEnglish(item.name_en, item.name_uk)
+                        : featureLabel(item.name_en)}
+                    </summary>
+                    <RuleText text={item.text_uk || item.description} />
                   </details>
                 ))}
               </section>
@@ -582,9 +612,6 @@ export function LevelUpWizard({
                       .map((item) => featureLabel(item.name_en, item.name_uk))
                       .join(", ")}
                   </li>
-                ) : null}
-                {spells.length ? (
-                  <li>закляття: {spells.map((spell) => spell.name_en).join(", ")}</li>
                 ) : null}
               </ul>
               <button

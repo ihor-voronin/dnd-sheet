@@ -138,9 +138,16 @@ function describeRest(report: RestReport): string {
   return `${report.kind === "long" ? "Довгий" : "Короткий"} відпочинок · ${parts.join(" · ")}`;
 }
 
-export function CharacterView({ initial }: { initial: SheetViewPayload }) {
+export function CharacterView({
+  initial,
+  initialTab,
+}: {
+  initial: SheetViewPayload;
+  /** Вкладка, з якої відкрити лист: після підвищення рівня — «Закляття». */
+  initialTab?: string;
+}) {
   const [sheet, setSheet] = useState<SheetViewPayload>(initial);
-  const [tab, setTab] = useState("actions");
+  const [tab, setTab] = useState(initialTab ?? "actions");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [restNote, setRestNote] = useState<string | null>(null);

@@ -629,7 +629,7 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
                       className={`chip ${subclassKey === entry.id ? "chip--active" : ""}`}
                       onClick={() => setSubclassKey(entry.id)}
                     >
-                      {withEnglish(subclassLabel(entry.name_en), ukSubclass(entry.id))}
+                      {withEnglish(subclassLabel(entry.name_en), entry.name_uk ?? ukSubclass(entry.id))}
                       {repeatedSubclasses.has(entry.name_en) ? (
                         <span className="meta"> · {entry.source_id}</span>
                       ) : null}

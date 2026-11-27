@@ -19,7 +19,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from dndsheet.characters.api import classes_uk
+from dndsheet.characters.api import classes_uk, subclasses_uk
 from dndsheet.characters.domain.character import Character
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
@@ -61,15 +61,18 @@ def enrich_features(
             if item["level"] > entry.level:
                 continue
             features.append(
-                {
-                    "name_en": item["name_en"],
-                    "level": item["level"],
-                    "class_key": entry.class_key,
-                    "class_name": definition.name_en,
-                    "source": "subclass",
-                    "subclass_name": item["subclass_name"],
-                    "description": item["description"],
-                }
+                subclasses_uk.enrich_feature(
+                    {
+                        "name_en": item["name_en"],
+                        "level": item["level"],
+                        "class_key": entry.class_key,
+                        "class_name": definition.name_en,
+                        "source": "subclass",
+                        "subclass_name": item["subclass_name"],
+                        "subclass_name_uk": item.get("subclass_name_uk"),
+                        "description": item["description"],
+                    }
+                )
             )
 
     features.sort(
@@ -167,15 +170,31 @@ def _subclass_features(
         match = LEVEL_MARK.search(text[:400])
         level = int(match.group(1)) if match else 1
         items.append(
-            {
-                "name_en": name,
-                "level": level,
-                "description": text,
-                "subclass_name": entry.name_en,
-            }
+            subclasses_uk.enrich_feature(
+                {
+                    "name_en": name,
+                    "level": level,
+                    "description": _strip_level_mark(text),
+                    "subclass_name": entry.name_en,
+                    "subclass_name_uk": subclasses_uk.name_uk(entry.name_en),
+                }
+            )
         )
     store[key] = items
     return items
+
+
+def _strip_level_mark(text: str) -> str:
+    """Прибрати курсивний підпис рівня з початку розділу.
+
+    У книзі розділ починається рядком `*10th-level Cleric feature*`; рівень уже
+    є окремим полем, тож у тексті він зайвий — і перекладачеві нема чого
+    перекладати в цьому рядку.
+    """
+    lines = text.lstrip("\n").splitlines()
+    while lines and lines[0].startswith("*") and "level" in lines[0].casefold():
+        lines = lines[1:]
+    return "\n".join(lines).lstrip("\n").strip()
 
 
 def subclass_features(

@@ -40,17 +40,7 @@ def enrich_details(payload: dict[str, Any]) -> dict[str, Any]:
 
 def enrich_feature(feature: dict[str, Any]) -> dict[str, Any]:
     """Одне вміння: `name_uk` для назви, `text_uk` для тексту правила."""
-    title = str(feature.get("name_en") or "")
-    if title:
-        translated_name = name_uk(title)
-        if translated_name:
-            feature["name_uk"] = translated_name
-    body = str(feature.get("text") or feature.get("description") or "")
-    if body:
-        translated_text = text_uk(body)
-        if translated_text:
-            feature["text_uk"] = translated_text
-    return feature
+    return uk_text.enrich_item(feature, LAYER)
 
 
 __all__ = ["LAYER", "enrich_details", "enrich_feature", "name_uk", "text_uk"]

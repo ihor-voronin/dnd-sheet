@@ -88,4 +88,37 @@ def reset() -> None:
     _CACHE.clear()
 
 
-__all__ = ["EMPTY", "folder", "ident", "name_uk", "read", "reset", "text_uk"]
+def enrich_item(
+    payload: dict[str, Any], layer: str, *, text_field: str | None = None
+) -> dict[str, Any]:
+    """Додати `name_uk` і `text_uk` до запису вміння чи риси.
+
+    Поле тексту шукаємо за назвою (`text` у главі класу, `description` у
+    підкласі) або явно — коли воно одне.
+    """
+    title = str(payload.get("name_en") or "")
+    if title:
+        translated = name_uk(layer, title)
+        if translated:
+            payload["name_uk"] = translated
+    if text_field:
+        body = str(payload.get(text_field) or "")
+    else:
+        body = str(payload.get("text") or payload.get("description") or "")
+    if body:
+        translated_text = text_uk(layer, body)
+        if translated_text:
+            payload["text_uk"] = translated_text
+    return payload
+
+
+__all__ = [
+    "EMPTY",
+    "enrich_item",
+    "folder",
+    "ident",
+    "name_uk",
+    "read",
+    "reset",
+    "text_uk",
+]

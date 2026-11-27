@@ -86,6 +86,8 @@ export interface SubclassGrants {
 export interface SubclassView {
   id: string;
   name_en: string;
+  /** Українська назва підкласу — з шару перекладу (не з TERMS за id). */
+  name_uk?: string | null;
   /** Книга, з якої підклас: потрібна, коли назви повторюються (PHB/PSA). */
   source_id?: string;
   grants?: SubclassGrants;
@@ -310,6 +312,8 @@ export interface SheetFeature {
   class_name: string;
   source?: "class" | "subclass";
   subclass_name?: string | null;
+  /** Українська назва підкласу для підпису на листі. */
+  subclass_name_uk?: string | null;
   description?: string;
   /** Українські назва й текст правила — з `content/translations/classes/`. */
   name_uk?: string | null;
@@ -568,8 +572,19 @@ export interface LevelUpSubclassOption {
   id: string;
   name_en: string;
   name_uk: string | null;
-  /** Назви вмінь, які цей підклас дає саме на новому рівні. */
-  features: string[];
+  /** Усі вміння підкласу з рівнями: що він дає зараз і далі. */
+  features: LevelUpSubclassFeature[];
+}
+
+export interface LevelUpSubclassFeature {
+  name_en: string;
+  level: number;
+  /** Вміння саме того рівня, який обирають цим підвищенням. */
+  new?: boolean;
+  name_uk?: string;
+  /** Текст правила: оригінал книги (`text`) і переклад, якщо є (`text_uk`). */
+  text?: string;
+  text_uk?: string;
 }
 
 export interface LevelUpSubclass {
@@ -597,9 +612,16 @@ export interface LevelUpPlan {
   hit_die: number;
   constitution_modifier: number;
   hp: { average: number; best_roll: number };
-  features: { name_en: string; level: number; name_uk?: string }[];
+  features: { name_en: string; level: number; name_uk?: string; text?: string; text_uk?: string }[];
   subclass: LevelUpSubclass | null;
-  subclass_features: { name_en: string; description: string }[];
+  subclass_features: {
+    name_en: string;
+    level?: number;
+    description: string;
+    name_uk?: string;
+    text_uk?: string;
+    subclass_name?: string;
+  }[];
   asi: { slots: number; taken: number; pending: boolean };
   proficiency_bonus: { before: number; after: number };
   limits: LevelUpLimits;

@@ -14,8 +14,8 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
-from dndsheet.characters.api import classes_uk
-from dndsheet.characters.api.features import subclass_features
+from dndsheet.characters.api import classes_uk, subclasses_uk
+from dndsheet.characters.api.features import class_details, subclass_features
 from dndsheet.characters.application.level_up import LevelUpService
 from dndsheet.characters.domain.services.feature_resources import name_of
 from dndsheet.characters.domain.services.level_up import LevelPlan
@@ -58,6 +58,12 @@ def plan_payload(
     current_subclass: str | None = None,
 ) -> dict[str, Any]:
     """Один план: числа домену + вибір із довідника."""
+    # Тексти вмінь класу — щоб екран показав не лише назву, а й що саме дає
+    # рівень (і українською, якщо переклад уже є).
+    class_features = {
+        item["name_en"]: item
+        for item in class_details(compendium, plan.class_key, cache)["features"]
+    }
     return {
         "class_key": plan.class_key,
         "class_name": plan.class_name,
@@ -70,15 +76,7 @@ def plan_payload(
         "constitution_modifier": plan.constitution_modifier,
         "hp": {"average": plan.hp_average, "best_roll": plan.hp_best_roll},
         "features": [
-            {
-                "name_en": feature.name_en,
-                "level": feature.level,
-                **(
-                    {"name_uk": uk_name}
-                    if (uk_name := classes_uk.name_uk(feature.name_en))
-                    else {}
-                ),
-            }
+            _feature_payload(feature, class_features)
             for feature in plan.features
         ],
         "subclass": _subclass_payload(plan, compendium, cache, current=current_subclass),
@@ -128,6 +126,24 @@ def plan_payload(
     }
 
 
+def _feature_payload(feature: Any, details: dict[str, dict[str, Any]]) -> dict[str, Any]:  # noqa: ANN401
+    """Нове вміння класу: назва, рівень і текст правила.
+
+    `text` — оригінал книги (для звірки), `text_uk` — переклад, якщо він є.
+    """
+    row: dict[str, Any] = {"name_en": feature.name_en, "level": feature.level}
+    detail = details.get(feature.name_en)
+    if detail is not None:
+        if detail.get("text"):
+            row["text"] = detail["text"]
+        for key in ("name_uk", "text_uk"):
+            if detail.get(key):
+                row[key] = detail[key]
+    elif (uk_name := classes_uk.name_uk(feature.name_en)) :
+        row["name_uk"] = uk_name
+    return row
+
+
 def _subclass_payload(
     plan: LevelPlan,
     compendium: CompendiumService,
@@ -144,16 +160,44 @@ def _subclass_payload(
             # Лише те, що потрібно для вибору: повний запис довідника тут
             # роздував би відповідь у десять разів (у жреця 20 доменів).
             brief = entry_brief(entry)
+            items = subclass_features(compendium, entry.id, cache)
             options.append(
                 {
                     "id": brief["id"],
                     "name_en": brief["name_en"],
-                    "name_uk": brief["name_uk"],
+                    # Назва підкласу — з шару перекладу (за назвою, а не за
+                    # хвостом id, як у TERMS на фронтенді).
+                    "name_uk": subclasses_uk.name_uk(brief["name_en"])
+                    or brief["name_uk"],
                     "source_id": brief["source_id"],
+                    # Усі вміння підкласу з рівнями: гравець має бачити, що
+                    # обрана спеціалізація дасть не лише сьогодні, а й далі.
                     "features": [
-                        item["name_en"]
-                        for item in subclass_features(compendium, entry.id, cache)
-                        if item["level"] == plan.new_level
+                        {
+                            "name_en": item["name_en"],
+                            "level": item["level"],
+                            "new": item["level"] == plan.new_level,
+                            **(
+                                {"name_uk": item["name_uk"]}
+                                if item.get("name_uk")
+                                else {}
+                            ),
+                            # Текст даємо лише для рівня, який обирають зараз:
+                            # уся історія підкласу — це вже зайві кілобайти.
+                            **(
+                                {"text": item["description"]}
+                                if item["level"] == plan.new_level
+                                and item.get("description")
+                                else {}
+                            ),
+                            **(
+                                {"text_uk": item["text_uk"]}
+                                if item["level"] == plan.new_level
+                                and item.get("text_uk")
+                                else {}
+                            ),
+                        }
+                        for item in items
                     ],
                 }
             )
@@ -172,11 +216,14 @@ def _subclass_features_payload(
     subclass_key: str | None,
     level: int,
 ) -> list[dict[str, Any]]:
-    """Що підклас дає саме на новому рівні."""
+    """Що підклас дає саме на новому рівні.
+
+    Записи вже з перекладом (`name_uk`/`text_uk`): їх готує `subclass_features`.
+    """
     if not subclass_key:
         return []
     return [
-        {"name_en": item["name_en"], "description": item["description"]}
+        item
         for item in subclass_features(compendium, subclass_key, cache)
         if item["level"] == level
     ]

@@ -405,7 +405,7 @@ export function FeaturesList({ features }: { features: SheetViewPayload["feature
               </span>
               <span className="feature-meta">
                 {feature.source === "subclass" && feature.subclass_name
-                  ? `${termLabel(feature.subclass_name)} · `
+                  ? `${feature.subclass_name_uk ?? termLabel(feature.subclass_name)} · `
                   : ""}
                 {termLabel(feature.class_name)}, {feature.level} рівень
               </span>
