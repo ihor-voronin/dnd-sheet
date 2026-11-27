@@ -1,0 +1,278 @@
+{
+ "_about": "Ціни книг на D&D Beyond для головної сторінки. Звірено вручну з маркетплейсом D&D Beyond (marketplace.dndbeyond.com: All Rulebooks, Expansions, Player Options). Ціни цифрові, USD; from=true — у маркетплейсі 'Starting at'. Обкладинки — з бібліотеки D&D Beyond, показуються за посиланням і в репозиторій не копіюються. group: core | player | setting | adventure.",
+ "checked": "2026-11-27",
+ "currency": "USD",
+ "books": {
+  "phb-2014": {
+   "group": "core",
+   "uk": "Книга гравця",
+   "price": "29.99",
+   "cover": "https://www.dndbeyond.com/avatars/10435/389/637248131811862290.jpeg"
+  },
+  "dmg-2014": {
+   "group": "core",
+   "uk": "Посібник Майстра",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10367/593/637245347063211867.jpeg"
+  },
+  "mm-2014": {
+   "group": "core",
+   "uk": "Посібник монстрів",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10434/816/637248105832999293.jpeg"
+  },
+  "basic-rules-2014": {
+   "group": "core",
+   "uk": "Базові правила",
+   "note": "безкоштовно на D&D Beyond",
+   "cover": "https://www.dndbeyond.com/avatars/10434/136/637248073409717512.jpeg"
+  },
+  "xgte": {
+   "group": "player",
+   "uk": "Посібник Ксанатара з усього",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10449/803/637248709455777906.jpeg"
+  },
+  "tcoe": {
+   "group": "player",
+   "uk": "Казан Таші з усього",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/13665/613/637400361423035085.jpeg"
+  },
+  "motm": {
+   "group": "player",
+   "uk": "Мордекайнен: монстри Мультивсесвіту",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/22937/354/637776964748720726.jpeg"
+  },
+  "ftod": {
+   "group": "player",
+   "uk": "Скарбниця драконів Фізбана",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/19075/983/637620380256293999.jpeg"
+  },
+  "gotg": {
+   "group": "player",
+   "uk": "Бігбі: велич велетнів",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/33889/811/638179362850507516.jpeg"
+  },
+  "tbomt": {
+   "group": "player",
+   "uk": "Книга багатьох речей",
+   "price": "29.99",
+   "cover": "https://www.dndbeyond.com/avatars/34541/95/638205353415863412.jpeg"
+  },
+  "vgtm": {
+   "group": "player",
+   "uk": "Посібник Воло з монстрів",
+   "note": "у маркетплейсі немає (позначена Legacy)",
+   "cover": "https://www.dndbeyond.com/avatars/10449/464/637248679743732719.jpeg"
+  },
+  "mtof": {
+   "group": "player",
+   "uk": "Книга ворогів Мордекайнена",
+   "note": "у маркетплейсі немає",
+   "cover": "https://www.dndbeyond.com/avatars/10434/949/637248111148617766.jpeg"
+  },
+  "eepc": {
+   "group": "player",
+   "uk": "Стихійне зло: доповнення для гравців",
+   "note": "безкоштовно на D&D Beyond"
+  },
+  "scag": {
+   "group": "setting",
+   "uk": "Посібник авантюриста Узбережжя Мечів",
+   "price": "29.99",
+   "cover": "https://www.dndbeyond.com/avatars/10435/793/637248149475504723.jpeg"
+  },
+  "egtw": {
+   "group": "setting",
+   "uk": "Путівник Уайлдмаунтом",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10367/769/637245363413951140.jpeg"
+  },
+  "erftlw": {
+   "group": "setting",
+   "uk": "Еберон: відродження після Останньої війни",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10368/6/637245381196842264.jpeg"
+  },
+  "wgte": {
+   "group": "setting",
+   "uk": "Путівник Еберроном",
+   "price": "19.99",
+   "cover": "https://www.dndbeyond.com/avatars/10449/715/637248702538222765.jpeg"
+  },
+  "ggtr": {
+   "group": "setting",
+   "uk": "Посібник гільдмайстра Равніки",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/40948/83/638476689241305817.jpeg"
+  },
+  "moot": {
+   "group": "setting",
+   "uk": "Міфічні одіссеї Тероса",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10434/885/637248108609488365.jpeg"
+  },
+  "vrgtr": {
+   "group": "setting",
+   "uk": "Посібник Ван Ріхтена з Рейвенлофту",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/15973/81/637496917952314322.jpeg"
+  },
+  "sacoc": {
+   "group": "setting",
+   "uk": "Стриксгейвен: навчальний план хаосу",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/18228/52/637587668398315568.jpeg"
+  },
+  "sais": {
+   "group": "setting",
+   "uk": "Спеллджаммер: пригоди в космосі",
+   "price": "49.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/25228/876/637859890823057854.jpeg"
+  },
+  "ai": {
+   "group": "setting",
+   "uk": "Аквізишнз Інкорпорейтед",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10350/905/637244674570907870.jpeg"
+  },
+  "hcs": {
+   "group": "setting",
+   "uk": "Гамблвуд: сеттинг",
+   "price": "49.99",
+   "cover": "https://www.dndbeyond.com/avatars/39695/377/638425036767623471.jpeg"
+  },
+  "ttp": {
+   "group": "setting",
+   "uk": "Пакунок тортла",
+   "price": "9.99",
+   "cover": "https://www.dndbeyond.com/avatars/39/300/636411199124473334.png"
+  },
+  "oga": {
+   "group": "setting",
+   "uk": "Один грунг вище",
+   "price": "4.99",
+   "cover": "https://www.dndbeyond.com/avatars/10435/68/637248116464990081.jpeg"
+  },
+  "dod": {
+   "group": "setting",
+   "uk": "Володіння втіхи",
+   "price": "8.00",
+   "cover": "https://www.dndbeyond.com/avatars/33298/313/638158863440629290.jpeg"
+  },
+  "twbtw": {
+   "group": "adventure",
+   "uk": "Дике за Відьмосвітлом",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/18223/997/637587419509160992.jpeg"
+  },
+  "cos": {
+   "group": "adventure",
+   "uk": "Прокляття Страда",
+   "price": "24.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10349/296/637244603965977140.jpeg"
+  },
+  "toa": {
+   "group": "adventure",
+   "uk": "Гробниця знищення",
+   "price": "24.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10449/339/637248669136195626.jpeg"
+  },
+  "skt": {
+   "group": "adventure",
+   "uk": "Грім короля бурі",
+   "price": "24.99",
+   "cover": "https://www.dndbeyond.com/avatars/19/740/636383501361665378.jpeg"
+  },
+  "oota": {
+   "group": "adventure",
+   "uk": "З безодні",
+   "price": "29.99",
+   "cover": "https://www.dndbeyond.com/avatars/59597/194/639282702010689583.jpeg"
+  },
+  "gos": {
+   "group": "adventure",
+   "uk": "Привиди Солтмаршу",
+   "price": "29.99",
+   "cover": "https://www.dndbeyond.com/avatars/10370/66/637245493047936420.jpeg"
+  },
+  "wdh": {
+   "group": "adventure",
+   "uk": "Вотердип: пограбування дракона",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/343/499/636632335939805190.jpeg"
+  },
+  "wdotmm": {
+   "group": "adventure",
+   "uk": "Вотердип: підземелля божевільного мага",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10449/493/637248684031810278.jpeg"
+  },
+  "bgdia": {
+   "group": "adventure",
+   "uk": "Брама Балдура: спуск в Авернус",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/10350/927/637244675832719441.jpeg"
+  },
+  "idrotf": {
+   "group": "adventure",
+   "uk": "Крижана долина: іній Морозної діви",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/11095/550/637278965847502335.jpeg"
+  },
+  "cotn": {
+   "group": "adventure",
+   "uk": "Critical Role: поклик Незердіпу",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/20906/943/637695655261542821.jpeg"
+  },
+  "jttrc": {
+   "group": "adventure",
+   "uk": "Мандри Сяйливою цитаделлю",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/24454/511/637830510509865265.jpeg"
+  },
+  "pabtso": {
+   "group": "adventure",
+   "uk": "Фанделвер і нижче: розбитий обеліск",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/35214/280/638233891719898500.jpeg"
+  },
+  "sotdq": {
+   "group": "adventure",
+   "uk": "Драгонланс: тінь Драконячої королеви",
+   "price": "29.99",
+   "from": true,
+   "cover": "https://www.dndbeyond.com/avatars/27777/666/637951679601337771.jpeg"
+  }
+ }
+}

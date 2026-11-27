@@ -50,6 +50,7 @@ COPY backend/ /app/backend/
 # Корпус довідника: без нього сервіс піднімається, але лист будувати ні з чого.
 # content/raw (джерельні книги) у образ не кладемо — він потрібен лише ingest.
 COPY content/sources.yml /app/content/sources.yml
+COPY content/books_market.json /app/content/books_market.json
 COPY content/compendium/ /app/content/compendium/
 COPY content/bestiary/ /app/content/bestiary/
 COPY content/index/ /app/content/index/

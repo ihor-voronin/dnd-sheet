@@ -8,22 +8,19 @@ import {
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 import {
-  demoExportUrl,
   fetchAuthConfig,
   fetchCharacter,
   fetchCharacters,
-  fetchDemoSheet,
   fetchMe,
-  fetchRenderers,
   logout,
 } from "./api";
 import { LoginPanel } from "./features/auth/Login";
+import { Home } from "./features/home/Home";
 import { KnowledgeBase, isKbSection } from "./features/knowledge/KnowledgeBase";
 import type { KbSection } from "./features/knowledge/KnowledgeBase";
 import { CharacterView } from "./features/character/CharacterView";
 import { LevelUpWizard } from "./features/character/LevelUp";
 import { CreateWizard } from "./features/wizard/CreateWizard";
-import { SheetView } from "./features/sheet/SheetView";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5_000, retry: 1 } },
@@ -80,43 +77,6 @@ function useRoute(): [Route, (next: Route) => void] {
     else window.location.hash = target;
   }, []);
   return [route, navigate];
-}
-
-function DemoSheet() {
-  const { data, isPending, error } = useQuery({
-    queryKey: ["demo-sheet"],
-    queryFn: fetchDemoSheet,
-  });
-  const renderers = useQuery({ queryKey: ["renderers"], queryFn: fetchRenderers });
-  const pdfReady = renderers.data?.available.includes("pdf") ?? false;
-
-  if (isPending) return <p className="status">Завантаження документа…</p>;
-  if (error) {
-    return (
-      <p className="status status--error">
-        Не вдалося отримати документ: {error instanceof Error ? error.message : String(error)}
-      </p>
-    );
-  }
-  return (
-    <>
-      <div className="export-bar">
-        <a className="button" href={demoExportUrl("markdown")} download>
-          Markdown
-        </a>
-        {pdfReady ? (
-          <a className="button" href={demoExportUrl("pdf")} download>
-            PDF (A4)
-          </a>
-        ) : (
-          <span className="meta" title="На сервері немає WeasyPrint (extra `pdf` + GTK)">
-            PDF недоступний на цьому сервері
-          </span>
-        )}
-      </div>
-      <SheetView document={data} />
-    </>
-  );
 }
 
 function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
@@ -346,7 +306,7 @@ function Shell() {
               : route.name === "kb"
                 ? "довідник"
                 : route.name === "home"
-                  ? "мої персонажі"
+                  ? "головна"
                   : "лист персонажа"}
         </p>
         <nav className="topnav" aria-label="Розділи">
@@ -380,7 +340,7 @@ function Shell() {
         />
       ) : null}
       {user === undefined && route.name !== "kb" ? <p className="status">Перевіряємо вхід…</p> : null}
-      {user === null && (route.name === "home" || needsUser) ? (
+      {user === null && needsUser ? (
         <LoginPanel
           reason={
             needsUser
@@ -389,14 +349,39 @@ function Shell() {
           }
         />
       ) : null}
-      {user && route.name === "home" ? (
-        <>
-          <CharactersList navigate={navigate} />
-          <section className="demo">
-            <h2>Демо-документ експорту</h2>
-            <DemoSheet />
-          </section>
-        </>
+      {route.name === "home" ? (
+        <Home
+          onOpenKb={(section) => navigate({ name: "kb", section: isKbSection(section) ? section : undefined })}
+          account={
+            user === undefined ? null : user ? (
+              <CharactersList navigate={navigate} />
+            ) : (
+              <div id="login">
+                <LoginPanel />
+              </div>
+            )
+          }
+          actions={
+            <>
+              {user ? (
+                <button type="button" className="button button--primary" onClick={() => navigate({ name: "create" })}>
+                  Створити персонажа
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="button button--primary"
+                  onClick={() => document.getElementById("login")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                >
+                  Увійти й створити персонажа
+                </button>
+              )}
+              <button type="button" className="button" onClick={() => navigate({ name: "kb" })}>
+                Відкрити довідник
+              </button>
+            </>
+          }
+        />
       ) : null}
       {user && route.name === "create" ? (
         <CreateWizard onFinished={(characterId) => navigate({ name: "character", id: characterId })} />

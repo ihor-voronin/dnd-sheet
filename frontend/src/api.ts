@@ -495,6 +495,35 @@ export interface CompendiumEntry {
   data: Record<string, unknown>;
 }
 
+// --- головна: книги й зведення довідника ---------------------------------
+
+export interface BookOverview {
+  id: string;
+  title: string;
+  title_uk: string | null;
+  group: "core" | "player" | "setting" | "adventure" | string;
+  price: string | null;
+  price_from: boolean;
+  note: string | null;
+  cover: string | null;
+  url: string | null;
+  counts: Record<string, number>;
+}
+
+export interface BooksOverview {
+  checked: string | null;
+  currency: string;
+  totals: Record<string, number>;
+  sources: number;
+  books: BookOverview[];
+  other_sources: number;
+  other_entries: number;
+}
+
+export function fetchBooksOverview(): Promise<BooksOverview> {
+  return getJson<BooksOverview>("/api/v1/compendium/books");
+}
+
 // --- база знань (без входу) ------------------------------------------------
 
 export function fetchKbSpecies(): Promise<{ items: SpeciesView[] }> {

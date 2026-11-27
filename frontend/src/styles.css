@@ -1395,3 +1395,310 @@ body {
 .inv-catalog__facts {
   flex-basis: 100%;
 }
+
+/* --- головна ------------------------------------------------------------- */
+
+.home {
+  display: grid;
+  gap: 64px;
+}
+
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 40px;
+  align-items: center;
+  min-height: 540px;
+}
+
+.home-hero__title {
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 4.4vw, 3.7rem);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.home-hero__lead {
+  max-width: 33em;
+  margin: 0 0 26px;
+  font-size: var(--t-lg);
+  line-height: 1.55;
+  color: var(--graphite);
+}
+
+.home-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Віяло надрукованих сторінок — єдиний яскравий образ сторінки. */
+.home-sheets {
+  margin: 0;
+}
+
+.home-sheets__stack {
+  position: relative;
+  height: 580px;
+}
+
+.home-sheets__page {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 56%;
+  height: auto;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  transform-origin: 50% 90%;
+  animation: home-fan 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.home-sheets__page--back {
+  --fan: translateX(-72%) rotate(-8deg);
+  transform: var(--fan);
+}
+
+.home-sheets__page--mid {
+  --fan: translateX(-26%) translateY(8px) rotate(6deg);
+  transform: var(--fan);
+  animation-delay: 80ms;
+}
+
+.home-sheets__page--front {
+  --fan: translateX(-52%) translateY(28px) rotate(-2deg);
+  transform: var(--fan);
+  animation-delay: 160ms;
+}
+
+@keyframes home-fan {
+  from {
+    transform: translateX(-50%) translateY(28px) rotate(0deg);
+  }
+  to {
+    transform: var(--fan);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-sheets__page {
+    animation: none;
+  }
+}
+
+.home-sheets__caption {
+  margin-top: 14px;
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  text-align: center;
+}
+
+.home-h2 {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: var(--t-xl);
+  color: var(--ink);
+  text-transform: none;
+  letter-spacing: 0;
+  border: 0;
+  padding: 0;
+}
+
+.home-note {
+  max-width: 46em;
+  margin: 0 0 22px;
+  color: var(--graphite);
+  line-height: 1.5;
+}
+
+/* Зміст довідника: як зміст книги — назва, крапки, число. */
+.home-toc {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 56px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-toc__row {
+  display: flex;
+  align-items: baseline;
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-toc__title {
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+}
+
+.home-toc__note {
+  color: var(--graphite);
+  font-family: var(--sans);
+  font-size: var(--t-sm);
+}
+
+.home-toc__dots {
+  flex: 1;
+  min-width: 24px;
+  margin: 0 10px;
+  border-bottom: 2px dotted var(--field-line);
+  transform: translateY(-5px);
+}
+
+.home-toc__count {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--brass);
+  font-variant-numeric: oldstyle-nums;
+}
+
+.home-toc__row:hover .home-toc__title,
+.home-toc__row:focus-visible .home-toc__title {
+  color: var(--act-text);
+}
+
+.home-toc__row:focus-visible {
+  outline: 2px solid var(--act-text);
+  outline-offset: 2px;
+}
+
+/* Полиця книг: обкладинка, назва, що дає, ціна й посилання. */
+.home-shelf + .home-shelf {
+  margin-top: 34px;
+}
+
+.home-shelf__title {
+  margin: 0 0 2px;
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+  color: var(--ink);
+}
+
+.home-shelf__lead {
+  margin: 0 0 10px;
+  color: var(--graphite);
+  font-size: var(--t-sm);
+}
+
+.home-shelf__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 0 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-book {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.home-book__cover {
+  width: 54px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 2px;
+  background: var(--leaf-hi);
+}
+
+.home-book__cover--blank {
+  display: block;
+  border: 1px solid var(--line);
+}
+
+.home-book__body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.home-book__title {
+  font-family: var(--serif);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.home-book__en {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+
+.home-book__gives {
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+
+.home-book__buy {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  text-align: right;
+  max-width: 11em;
+}
+
+.home-book__price {
+  font-family: var(--serif);
+  font-weight: 700;
+  color: var(--brass);
+  font-size: var(--t-sm);
+}
+
+.home-book__link {
+  color: var(--act-text);
+  font-size: var(--t-xs);
+}
+
+.home-disclaimer {
+  max-width: 70ch;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  color: var(--graphite);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+}
+
+.home-disclaimer__fcp {
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .home-sheets__stack {
+    height: 460px;
+  }
+
+  .home-toc {
+    grid-template-columns: 1fr;
+  }
+
+  .home-shelf__list {
+    grid-template-columns: 1fr;
+  }
+}

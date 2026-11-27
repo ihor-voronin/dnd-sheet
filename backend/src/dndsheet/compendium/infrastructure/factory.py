@@ -15,7 +15,7 @@ from dndsheet.compendium.infrastructure.jsonl_corpus import (
     default_content_dir,
 )
 from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepository
-from dndsheet.compendium.infrastructure.sources_registry import load_titles
+from dndsheet.compendium.infrastructure.sources_registry import load_ddb_slugs, load_market, load_titles
 from dndsheet.compendium.infrastructure.spell_lists import JsonSpellListRepository
 
 
@@ -41,7 +41,13 @@ def build_service(
         classes_path=index_dir / "class-mechanics.json",
         origins_path=index_dir / "origin-mechanics.json",
     )
-    titles = load_titles(
-        Path(sources_file) if sources_file is not None else content / "sources.yml"
+    sources = Path(sources_file) if sources_file is not None else content / "sources.yml"
+    titles = load_titles(sources)
+    return CompendiumService(
+        repository,
+        spell_lists,
+        titles,
+        mechanics,
+        ddb_slugs=load_ddb_slugs(sources),
+        market=load_market(content / "books_market.json"),
     )
-    return CompendiumService(repository, spell_lists, titles, mechanics)

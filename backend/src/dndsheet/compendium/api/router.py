@@ -61,6 +61,12 @@ def summary(service: Service) -> dict:
     }
 
 
+@router.get("/books")
+def books(service: Service) -> dict:
+    """Книги, з яких зібрано довідник: що дає кожна, ціна й посилання на D&D Beyond."""
+    return service.books_overview()
+
+
 @router.get("/mechanics")
 def mechanics_summary(service: Service) -> dict:
     """Зведення механік: скільки класів, видів і передісторій є з числами."""

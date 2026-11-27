@@ -8,13 +8,43 @@
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
+from typing import Any
 
 from dndsheet.compendium.infrastructure.jsonl_corpus import default_content_dir
 
 _ID_RE = re.compile(r"^\s*-\s+id:\s*(?P<id>[A-Za-z0-9._-]+)\s*$")
 _TITLE_RE = re.compile(r"^\s+title:\s*(?P<title>.+?)\s*$")
+_DDB_RE = re.compile(r"^\s+ddb:\s*(?P<ddb>[A-Za-z0-9._-]+)\s*$")
+
+
+def load_ddb_slugs(path: Path) -> dict[str, str]:
+    """`id` книги → її адреса на D&D Beyond (`/sources/dnd/<slug>`), де вона є."""
+    if not path.is_file():
+        return {}
+    slugs: dict[str, str] = {}
+    current: str | None = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = _ID_RE.match(line)
+        if match:
+            current = match.group("id")
+            continue
+        match = _DDB_RE.match(line)
+        if current is not None and match:
+            slugs[current] = match.group("ddb")
+    return slugs
+
+
+def load_market(path: Path) -> dict[str, Any]:
+    """Ціни й обкладинки книг (`content/books_market.json`); немає файлу — порожньо."""
+    if not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
 
 
 def load_titles(path: Path) -> dict[str, str]:

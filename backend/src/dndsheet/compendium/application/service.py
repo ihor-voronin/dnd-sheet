@@ -8,7 +8,7 @@ API — тонка обгортка над цим сервісом, тому к�
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Any, Mapping
 
 from dndsheet.compendium.domain.entry import (
     CATEGORY_ORDER,
@@ -82,8 +82,14 @@ class CompendiumService:
         spell_lists: SpellListRepository | None = None,
         titles: Mapping[str, str] | None = None,
         mechanics: MechanicsRepository | None = None,
+        *,
+        ddb_slugs: Mapping[str, str] | None = None,
+        market: Mapping[str, Any] | None = None,
     ) -> None:
         self._repository = repository
+        self._ddb_slugs = dict(ddb_slugs or {})
+        self._market = dict(market or {})
+        self._overview: dict[str, Any] | None = None
         self._spell_lists = spell_lists
         self._titles = dict(titles or {})
         self._mechanics = mechanics
@@ -91,6 +97,62 @@ class CompendiumService:
         self._books_by_source: dict[str, int] | None = None
 
     # --- зведення -----------------------------------------------------------
+
+    def books_overview(self) -> dict[str, Any]:
+        """Головна сторінка: що в довіднику (унікальні назви) і з яких книг.
+
+        Скільки чого — по кожній книзі; ціни й обкладинки — з
+        `books_market.json` (звірені вручну з маркетплейсом D&D Beyond, з
+        датою перевірки). Рахується один раз: корпус на ходу не змінюється.
+        """
+        if self._overview is not None:
+            return self._overview
+        per_book: dict[str, dict[str, int]] = {}
+        unique: dict[str, set[str]] = {}
+        for category in Category:
+            for entry in self._all(category):
+                per_book.setdefault(entry.source_id, {}).setdefault(category.value, 0)
+                per_book[entry.source_id][category.value] += 1
+                unique.setdefault(category.value, set()).add(entry.name_en.strip().casefold())
+        market_books: Mapping[str, Mapping[str, Any]] = self._market.get("books") or {}
+        books = []
+        for source_id, meta in market_books.items():
+            slug = self._ddb_slugs.get(source_id)
+            books.append(
+                {
+                    "id": source_id,
+                    "title": self._titles.get(source_id, source_id),
+                    "title_uk": meta.get("uk"),
+                    "group": meta.get("group", "other"),
+                    "price": meta.get("price"),
+                    "price_from": bool(meta.get("from")),
+                    "note": meta.get("note"),
+                    "cover": meta.get("cover"),
+                    "url": f"https://www.dndbeyond.com/sources/dnd/{slug}" if slug else None,
+                    "counts": per_book.get(source_id, {}),
+                }
+            )
+        totals = {key: len(value) for key, value in unique.items()}
+        if self.mechanics_available():
+            # Класи й види — з механік, з яких збирається персонаж (артифіцер записаний
+            # у корпусі інакше, а підраси — окремими записами видів).
+            totals["class"] = len(self.class_definitions())
+            species = self.species_list()
+            totals["species"] = len(species)
+            totals["subspecies"] = sum(len(self.subspecies_of(item.name_en)) for item in species)
+            totals["background"] = len(self.backgrounds())
+        listed = set(market_books)
+        others = {key: value for key, value in per_book.items() if key not in listed}
+        self._overview = {
+            "checked": self._market.get("checked"),
+            "currency": self._market.get("currency", "USD"),
+            "totals": totals,
+            "sources": len(per_book),
+            "books": books,
+            "other_sources": len(others),
+            "other_entries": sum(sum(counts.values()) for counts in others.values()),
+        }
+        return self._overview
 
     def summary(self) -> CorpusSummary:
         counts = self._repository.counts()
