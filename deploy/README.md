@@ -10,6 +10,7 @@ SSH) лежать у [`deploy/secrets/`](secrets/) і **шифруються git
 | Файл | Що в ньому |
 | --- | --- |
 | `secrets/prod.env` | змінні `DNDSHEET_*` для продакшну — на сервері стає `.env` поруч з `docker-compose.yml` |
+| `secrets/racknerd.env` | панель VPS (SolusVM) і пароль root — для консолі в панелі; по SSH пароль не пускає |
 | `secrets/cloudflare.env` | `CLOUDFLARE_API_TOKEN` — токен для запису DNS (зона `voronin.app`) |
 | `secrets/ssh/id_ed25519` | ключ деплою: Terraform заходить ним на сервер |
 | `secrets/terraform/terraform.tfvars` | адреса сервера, домен, зона Cloudflare |
@@ -66,9 +67,9 @@ git-crypt add-gpg-user --trusted <відбиток ключа>
 Кожен крок повторюється лише тоді, коли змінилося те, від чого він залежить:
 новий образ, конфіг, `.env` чи скрипт сервера.
 
-Усе, що потрібно Terraform (токен, ключ, змінні, стан), — у `secrets/`,
-зашифроване. Лише локально, поза git (`deploy/local/`): пароль панелі й root
-(`racknerd.env`, Terraform він не потрібен) і тимчасовий `image.tar`.
+Усі доступи (панель і root, токен, ключ, змінні, стан Terraform) — у
+`secrets/`, зашифровані. Поза git лише тимчасовий стиснутий образ
+(`deploy/local/image.tar.gz`).
 
 `deploy.ps1` не запуститься, поки `secrets/` не розблоковано (`git-crypt unlock`).
 Стан Terraform комітьте після кожного деплою — інакше на іншому компʼютері
