@@ -155,6 +155,12 @@ docker compose exec app ls /app/var # те саме зсередини
 docker compose up -d --build     # перезібрати й перезапустити
 ```
 
+**Автоперезбірка.** `watch-docker.cmd` (або `docker compose up -d --build` і потім
+`docker compose watch`) стежить за `frontend/`, `backend/src`, `backend/pyproject.toml` і
+`content/translations`: після збереження файлу образ перезбирається, а контейнер
+перезапускається сам (1–2 хв на збірку). Вікно має лишатися відкритим; закрили — стеження
+зупиниться, а контейнер працюватиме далі з останньою версією.
+
 PostgreSQL у compose є, але застосунок його поки не використовує (стан — файли в `var/`).
 Підняти за потреби: `docker compose --profile db up -d` (порт 5433).
 
