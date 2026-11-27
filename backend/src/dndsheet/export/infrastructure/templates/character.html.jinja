@@ -131,13 +131,16 @@
   .cols3 { height: 244mm; display: grid; grid-template-columns: 27mm 60mm minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 3mm; margin-top: 1mm; }
   .col { display: flex; flex-direction: column; }
   .col > .grow { flex: 1; }
-  /* Шість щитів ділять колонку порівну: без порожніх проміжків між ними. */
-  .col.abil { padding-bottom: 3.4mm; }
-  .col.abil .ability { flex: 1; display: flex; flex-direction: column; justify-content: center; margin: 2.6mm 0 1.6mm; }
+  /* Щити характеристик компактні й ідуть щільно; решту колонки займають малі блоки. */
+  .col.abil .ability { margin: 2.4mm 0 3.8mm; padding: 1.3mm 1mm 4.2mm; }
+  .mini-box { border: 0.7pt solid #000; border-radius: 1.6mm; text-align: center; padding: 0.8mm 0.6mm 0.9mm; margin-top: 1.8mm; }
+  .mini-box .mini-num { font-family: var(--serif); font-weight: 700; font-size: 12pt; line-height: 1.1; min-height: 4.6mm; }
+  .mini-box .lbl { line-height: 1.1; font-size: 6pt; }
+  .mini-box .mini-num.mark { font-size: 7pt; letter-spacing: 0; line-height: 4.6mm; }
 
   .ability { position: relative; border: 2.2pt double #000; border-radius: 0 0 6mm 6mm; margin-top: 2.6mm; padding: 1.8mm 1mm 5.2mm; text-align: center; }
   .ability .lbl { font-weight: 700; font-size: 7pt; }
-  .ability .mod { font-family: var(--serif); font-weight: 700; font-size: 24pt; line-height: 1.1; }
+  .ability .mod { font-family: var(--serif); font-weight: 700; font-size: 17pt; line-height: 1.05; }
   .ability .score { position: absolute; left: 50%; bottom: -3.2mm; width: 11mm; margin-left: -5.5mm; border: 1.1pt solid #000; border-radius: 3.4mm; background: #fff; font-family: var(--serif); font-size: 10pt; line-height: 5.2mm; }
 
   .pill-row { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm; margin-top: 2.6mm; }
@@ -271,14 +274,30 @@
         <div class="score">{{ a.score }}</div>
       </div>
       {% endfor %}
+      <div class="mini-box">
+        <div class="mini-num">{{ '✦' if v.inspiration else '' }}</div>
+        <div class="lbl">натхнення</div>
+      </div>
+      <div class="mini-box">
+        <div class="mini-num">{{ v.proficiency_bonus }}</div>
+        <div class="lbl">бонус майстер&shy;ності</div>
+      </div>
+      {% for label, value in v.passives %}
+      <div class="mini-box">
+        <div class="mini-num">{{ value }}</div>
+        <div class="lbl">пасивна {{ label|lower }}</div>
+      </div>
+      {% endfor %}
+      <div class="mini-box">
+        <div class="mini-num mark">{% for i in range(6) %}{{ '●' if i < v.combat.exhaustion else '○' }}{% endfor %}</div>
+        <div class="lbl">виснаження</div>
+      </div>
+      <div class="mini-box grow">
+        <div class="lbl">стани</div>
+      </div>
     </div>
 
     <div class="col">
-      <div class="pill-row">
-        <div class="pill"><span class="num">{{ '✦' if v.inspiration else '' }}</span><span class="lbl">натхнення</span></div>
-        <div class="pill"><span class="num">{{ v.proficiency_bonus }}</span><span class="lbl">бонус майстерності</span></div>
-      </div>
-
       <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
         <span class="tag">рятівні кидки</span>
         <table class="rows">
@@ -301,15 +320,6 @@
           {% endfor %}
         </table>
         <div class="legend"><span class="sym">●</span> володіння · <span class="sym">◆</span> експертність</div>
-      </div>
-
-      <div class="frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-        <span class="tag">пасивні показники</span>
-        <table class="rows">
-          {% for label, value in v.passives %}
-          <tr><td class="v">{{ value }}</td><td>{{ label }}</td></tr>
-          {% endfor %}
-        </table>
       </div>
 
       <div class="frame grow"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
