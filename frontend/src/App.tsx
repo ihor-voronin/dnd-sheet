@@ -322,7 +322,7 @@ function Shell() {
   return (
     <main className={route.name === "character" || route.name === "shared" ? "app app--board" : "app"}>
       <div className="topbar">
-        <p className="badge">
+        <a className="badge badge--home" href="#/" title="На головну">
           Книга гравця 2014 ·{" "}
           {route.name === "create"
             ? "створення персонажа"
@@ -335,7 +335,7 @@ function Shell() {
                 : route.name === "home"
                   ? "головна"
                   : "лист персонажа"}
-        </p>
+        </a>
         <nav className="topnav" aria-label="Розділи">
           <button
             type="button"
@@ -343,7 +343,7 @@ function Shell() {
             aria-current={route.name === "home" ? "page" : undefined}
             onClick={() => navigate({ name: "home" })}
           >
-            Мої персонажі
+            {user ? "Мої персонажі" : "Головна"}
           </button>
           <button
             type="button"

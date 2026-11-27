@@ -2749,7 +2749,8 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
       <SearchField value={query} onChange={setQuery} placeholder="Пошук закляття за назвою" />
 
       <section className="wizard-block">
-        <h3>
+        {/* Лічильник липкий: список довгий, а скільки ще обрати — видно завжди. */}
+        <h3 className="pick-count" data-full={cantrips.length >= casting.cantrips_limit ? "true" : undefined}>
           <Term k="cantrip">Заговори</Term> — {cantrips.length} з {casting.cantrips_limit}
         </h3>
         <p className="hint">Творяться без обмежень і не витрачають комірок.</p>
@@ -2768,7 +2769,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
       </section>
 
       <section className="wizard-block">
-        <h3>
+        <h3 className="pick-count" data-full={leveled.length >= knownLimit ? "true" : undefined}>
           Закляття 1 рівня — {leveled.length} з {knownLimit}
         </h3>
         <p className="hint">

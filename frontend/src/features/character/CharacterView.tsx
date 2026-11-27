@@ -180,6 +180,9 @@ export function CharacterView({
 }) {
   const readOnly = Boolean(shareToken);
   const [shareOpen, setShareOpen] = useState(false);
+  // На телефоні дії з листом (відпочинок, рівень, експорт) сховані під одну кнопку:
+  // за столом першими мають бути хіти й атаки, а не ряд службових кнопок.
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [sheet, setSheet] = useState<SheetViewPayload>(initial);
   const [tab, setTab] = useState(initialTab ?? "actions");
   const [error, setError] = useState<string | null>(null);
@@ -672,7 +675,17 @@ export function CharacterView({
             </div>
           </div>
         ) : (
-        <div className="sheet-top__actions">
+        <>
+        <button
+          type="button"
+          className="sheet-btn sheet-actions-toggle"
+          aria-expanded={actionsOpen}
+          aria-controls="sheet-actions"
+          onClick={() => setActionsOpen((open) => !open)}
+        >
+          {actionsOpen ? "Сховати дії" : "Дії з листом"}
+        </button>
+        <div id="sheet-actions" className={`sheet-top__actions sheet-top__actions--owner ${actionsOpen ? "is-open" : ""}`}>
           <button
             type="button"
             className="sheet-btn"
@@ -708,17 +721,7 @@ export function CharacterView({
             </button>
           </div>
           <div className="sheet-export">
-            <span className="sheet-export__label">Експорт</span>
-            <a className="sheet-btn sheet-btn--link" href={exportUrl(id, "markdown")} download>
-              Markdown
-            </a>
-            <a
-              className="sheet-btn sheet-btn--link"
-              href={`${exportUrl(id, "markdown")}?originals=false`}
-              download
-            >
-              без англ.
-            </a>
+            <span className="sheet-export__label">Завантажити</span>
             {pdfReady ? (
               <>
                 <a
@@ -730,11 +733,15 @@ export function CharacterView({
                   PDF
                 </a>
               </>
-            ) : (
-              <span className="meta" title="На сервері немає WeasyPrint (extra `pdf` + GTK)">
-                без PDF
-              </span>
-            )}
+            ) : null}
+            <a
+              className="sheet-btn sheet-btn--link"
+              href={exportUrl(id, "markdown")}
+              download
+              title="Текст листа для нотаток і чатів"
+            >
+              Markdown
+            </a>
             <a
               className="sheet-btn sheet-btn--link"
               href={`/api/v1/characters/${encodeURIComponent(id)}/print`}
@@ -742,10 +749,11 @@ export function CharacterView({
               rel="noopener"
               title="Той самий аркуш у вкладці браузера — друк через Ctrl+P"
             >
-              друк
+              Друк
             </a>
           </div>
         </div>
+        </>
         )}
       </header>
 

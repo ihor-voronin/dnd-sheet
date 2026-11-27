@@ -243,7 +243,7 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
                     onClick={() => draftId && void load(draftId, name)}
                   >
                     <span className="step-index">{status?.complete ? "✓" : position + 1}</span>
-                    <span>
+                    <span className="step-label">
                       {STEP_LABELS[name]}
                       {status?.optional ? <span className="step-note"> необовʼязково</span> : null}
                     </span>
@@ -356,6 +356,9 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
 
 const SUMMARY_ABILITIES = ["str", "dex", "con", "int", "wis", "cha"] as const;
 
+/** Класи, яким попередження «немає броні» не потрібне. */
+const NO_ARMOR_CLASSES = new Set(["wizard", "sorcerer", "monk", "barbarian"]);
+
 /** «Ваш персонаж зараз»: що вже обрано — щоб не тримати це в голові між кроками. */
 function DraftSummary({ draft }: { draft: DraftView }) {
   const answers = draft.answers;
@@ -370,7 +373,9 @@ function DraftSummary({ draft }: { draft: DraftView }) {
   const spells = answers.spells?.spells ?? [];
   const missing: string[] = [];
   if (!items.some((item) => item.kind === "weapon")) missing.push("немає зброї");
-  if (!items.some((item) => item.kind === "armor") && guide && guide.primary[0] !== "dex") {
+  // Маг, чародій і монах броню не носять (а варвар зазвичай без неї — Захист без броні):
+  // попередження про броню їм лише заважало б.
+  if (!items.some((item) => item.kind === "armor") && classAnswer?.class_key && !NO_ARMOR_CLASSES.has(classAnswer.class_key)) {
     missing.push("немає броні");
   }
 

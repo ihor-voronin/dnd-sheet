@@ -20,11 +20,13 @@
   --line-soft: #252b38;
   --graphite: #9aa3b5;
   --ink: #eef0f5;
-  --act: #d6404a;
+  /* #c2323d: білий текст 5.5:1, світлий 4.8:1 (WCAG AA); було #d6404a — 4.48:1. */
+  --act: #c2323d;
   --act-ink: #ffffff;
   --act-soft: #3a1c22;
   /* Малиновий як колір тексту: --act на темному тлі дає лише 3.8:1, тут — ≥5:1 (WCAG AA). */
-  --act-text: #f26b74;
+  /* Червоний текст і посилання: ≥5:1 навіть на найсвітлішій темній картці. */
+  --act-text: #f47c84;
   /* Межі полів і кнопок: ≥3:1 до тла (WCAG 1.4.11), --line лишається для декоративних рамок. */
   --field-line: #717a8d;
   --brass: #d1a654;
@@ -215,14 +217,16 @@ h4 {
   color: var(--patina-ink);
 }
 
+/* Печатка — головна дія екрана: на світлому сургучі білий текст мав 2.76:1,
+   тож тло — той самий темніший червоний, що й в основних кнопок. */
 .button--seal {
-  border-color: var(--wax);
-  background: var(--wax);
+  border-color: var(--act);
+  background: var(--act);
   color: #fff;
 }
 
 .button--seal:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--wax) 88%, var(--ink));
+  background: color-mix(in srgb, var(--act) 88%, var(--ink));
 }
 
 .button--quiet {
@@ -309,7 +313,16 @@ textarea:focus {
   cursor: not-allowed;
 }
 
+/* Підпис під назвою в чипі (що дасть рівень) — окремим рядком, а не впритул до тексту. */
+.chip:has(> .chip__sub) {
+  display: inline-grid;
+  justify-items: start;
+  gap: 2px;
+  text-align: left;
+}
+
 .chip__sub {
+  display: block;
   color: var(--graphite);
   font-size: var(--t-xs);
 }
@@ -805,20 +818,50 @@ textarea:focus {
   cursor: not-allowed;
 }
 
+/* Квадратик вибору: помітна рамка, а вибраний — залитий, з галочкою. */
 .option__mark {
   display: inline-grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--line);
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--field-line);
   border-radius: var(--r-field);
-  color: var(--act-text);
+  color: #fff;
   font-family: var(--sans);
   font-size: 13px;
+  font-weight: 700;
 }
 
 .option--active .option__mark {
-  border-color: var(--patina);
+  border-color: var(--act);
+  background: var(--act);
+}
+
+.option--active {
+  border-color: var(--act);
+}
+
+.wizard-block h3.pick-count {
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+
+.pick-count {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 -4px 8px;
+  padding: 8px 4px;
+  background: var(--canvas);
+}
+
+.pick-count[data-full="true"]::after {
+  content: " ✓";
+  color: var(--ok);
 }
 
 .option__meta {
@@ -1464,3 +1507,20 @@ textarea:focus {
 
 .sheet-skill__dis { color: var(--wax); font-weight: 700; font-size: 0.8em; }
 .chip__tag { opacity: .65; font-size: .75em; }
+
+/* Телефон: шість кроків не влазять — номери для всіх, назва лише в поточного
+   (решта назв лишається для читачів екрана). */
+@media (max-width: 620px) {
+  .step-rail .step-chip {
+    padding: 8px 6px;
+  }
+
+  .step-rail .step-chip:not(.step-chip--active) .step-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

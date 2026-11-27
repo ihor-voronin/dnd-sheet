@@ -93,7 +93,10 @@ def _species_options(
     store = cache if cache is not None else {}
     species: list[dict[str, Any]] = []
     choice_classes: set[str] = set()
-    for item in service.species_list():
+    # Спершу види з Книги гравця (їх обирають найчастіше), далі решта — за назвою:
+    # інакше список із 69 видів починався з «Ааракокри».
+    ordered = sorted(service.species_list(), key=lambda s: (s.source_id.casefold() != "phb", s.name_en.casefold()))
+    for item in ordered:
         payload = _species_entry(item, service, store)
         payload["subspecies"] = [
             _species_entry(child, service, store, parent=item.name_en)
