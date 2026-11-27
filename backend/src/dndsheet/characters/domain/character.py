@@ -50,7 +50,9 @@ from dndsheet.shared.rules import (
     SpeciesMechanics,
     ability_bonus_totals,
     ability_spread,
+    class_choice_slots,
     prepared_spell_limit,
+    with_subclass_casting,
 )
 
 
@@ -90,6 +92,10 @@ class Character:
     #: інструменти з подвоєним бонусом майстерності. Значення — ключі навичок
     #: (`stealth`) або `thieves' tools`.
     expertise: tuple[str, ...] = ()
+    #: Риса → характеристика, яку вона підвищила на 1 (Actor, Resilient…).
+    feat_abilities: dict[str, Ability] = field(default_factory=dict)
+    #: Вибори класу «клас:група» → назви: {"fighter:Fighting Style": ("Defense",)}.
+    class_choices: dict[str, tuple[str, ...]] = field(default_factory=dict)
     #: Скільки разів гравець уже взяв покращення характеристик або рису.
     #: Їх дають рівні з рисою «Ability Score Improvement», тож кількість
     #: використаних мусить бути не більшою за кількість таких рівнів.
@@ -157,7 +163,10 @@ class Character:
         return self.class_level(class_key) > 0
 
     def class_entries(self) -> tuple[tuple[CharacterClass, ClassMechanics], ...]:
-        return tuple((entry, self.class_definition(entry.class_key)) for entry in self.classes)
+        return tuple(
+            (entry, with_subclass_casting(self.class_definition(entry.class_key), entry.subclass_key))
+            for entry in self.classes
+        )
 
     def spellcasting_classes(self) -> tuple[tuple[CharacterClass, ClassMechanics], ...]:
         return tuple(
@@ -219,6 +228,34 @@ class Character:
         ):
             options.append(THIEVES_TOOLS)
         return tuple(options)
+
+    @property
+    def class_choice_slots(self) -> dict[str, int]:
+        """Скільки бойових стилів, втаємничень, прийомів… дали рівні."""
+        return class_choice_slots(self.class_entries())
+
+    def has_class_choice(self, name: str) -> bool:
+        """Чи обрано варіант (без регістру): `has_class_choice("archery")`."""
+        wanted = name.casefold()
+        return any(value.casefold() == wanted for values in self.class_choices.values() for value in values)
+
+    def set_class_choice(self, group_key: str, values: Iterable[str], allowed: Iterable[str]) -> None:
+        """Обрати варіанти групи; `allowed` — назви з довідника або книги."""
+        slots = self.class_choice_slots.get(group_key, 0)
+        if not slots:
+            raise ValidationError(f"рівні персонажа не дають вибору {group_key!r}")
+        options = {option.casefold(): option for option in allowed}
+        chosen: list[str] = []
+        for raw in values:
+            value = options.get(str(raw).strip().casefold())
+            if value is None:
+                raise ValidationError(f"{raw!r} не є варіантом {group_key}")
+            if value not in chosen:
+                chosen.append(value)
+        if len(chosen) > slots:
+            raise ValidationError(f"{group_key}: можна обрати {slots}, надіслано {len(chosen)}")
+        self.class_choices = {**self.class_choices, group_key: tuple(chosen)}
+        self.bump_version()
 
     def set_expertise(self, values: Iterable[str]) -> None:
         """Обрати експертність (PHB, p. 96 і 54): не більше, ніж дали рівні."""
@@ -586,6 +623,16 @@ class Character:
                 for name in background.tool_proficiencies
                 if not is_choice_label(name)
             )
+        # Resilient: володіння порятунком обраної характеристики (PHB, p. 168).
+        items.extend(
+            Proficiency(
+                kind=ProficiencyKind.SAVING_THROW,
+                value=ability.value,
+                source=GrantSource.of(SourceKind.FEAT, feat),
+            )
+            for feat, ability in self.feat_abilities.items()
+            if feat.rsplit("/", 1)[-1] == "resilient"
+        )
         collected = Proficiencies(items=tuple(items)).merge(self.chosen)
         return collected
 
@@ -734,7 +781,7 @@ class Character:
         if isinstance(amount, bool) or not isinstance(amount, int) or amount < 1:
             raise ValidationError("покращення характеристики має бути додатним цілим")
         base = self.abilities[ability].value
-        total = base + self.ability_bonus_from_origin(ability) + amount
+        total = base + self.ability_bonus_from_origin(ability) + self.ability_bonus_from_feats(ability) + amount
         if total > 20:
             raise ValidationError(
                 f"{ability.value}: підсумок не може бути більшим за 20 "
@@ -747,6 +794,7 @@ class Character:
         *,
         increases: Mapping[Ability, int] | None = None,
         feat_key: str | None = None,
+        feat_ability: Ability | None = None,
     ) -> None:
         """Використати одне покращення характеристик: +2/+1+1 **або** риса."""
         if self.asi_taken >= self.asi_slots:
@@ -772,6 +820,8 @@ class Character:
                 self.increase_ability(ability, amount)
         if feat_key:
             self.add_feat(feat_key)
+            if feat_ability is not None:
+                self.feat_abilities = {**self.feat_abilities, feat_key.strip().casefold(): feat_ability}
         self.asi_taken += 1
         self.bump_version()
 
@@ -801,7 +851,17 @@ class Character:
 
     def ability_total(self, ability: Ability) -> int:
         """Підсумок характеристики на листі: база + бонуси виду."""
-        return self.abilities[ability].value + self.ability_bonus_from_origin(ability)
+        return (
+            self.abilities[ability].value
+            + self.ability_bonus_from_origin(ability)
+            + self.ability_bonus_from_feats(ability)
+        )
+
+    def ability_bonus_from_feats(self, ability: Ability) -> int:
+        """+1 від рис на кшталт Actor, але не вище 20 (PHB, p. 165)."""
+        count = sum(1 for chosen in self.feat_abilities.values() if chosen is ability)
+        room = 20 - self.abilities[ability].value - self.ability_bonus_from_origin(ability)
+        return max(0, min(count, room))
 
     def prepare_spells(self, class_key: str, spells: Iterable[KnownSpell]) -> None:
         """Підготовка на день: **замінити** підготовлені закляття класу.
@@ -859,6 +919,21 @@ class Character:
             for spell in self.spells
             if spell.class_key != wanted or spell.is_cantrip or spell.custom
         )
+        if wanted == "wizard":
+            # Маг готує лише з книги заклять, а непідготовлені лишаються в ній
+            # (PHB, p. 114) — інакше підготовка стирала б книгу.
+            book = {
+                spell.name_en.casefold(): spell
+                for spell in self.spells
+                if spell.class_key == wanted and not spell.is_cantrip and not spell.custom
+            }
+            missing = [spell.name_en for spell in chosen if spell.name_en.casefold() not in book]
+            if missing:
+                raise ValidationError(
+                    f"маг готує лише закляття зі своєї книги; немає: {', '.join(missing)}"
+                )
+            picked = {spell.name_en.casefold() for spell in chosen}
+            kept += tuple(spell.prepare(False) for key, spell in book.items() if key not in picked)
         updated = kept + tuple(chosen)
         # Власні закляття теж рахуються: вони вже підготовлені й займають місце.
         prepared_total = sum(
@@ -1002,12 +1077,24 @@ class Character:
     def _validate_chosen(self) -> None:
         accepted = Proficiencies()
         for item in self.chosen.items:
-            validate_pick(self.rules, item, existing=accepted)
+            validate_pick(
+                self.rules, item, existing=accepted, multiclass=self._is_multiclass_source(item)
+            )
             accepted = accepted.add(item)
+
+    def _is_multiclass_source(self, pick: Proficiency) -> bool:
+        """Навичка від класу, який не перший у списку, — вибір мультикласу."""
+        return (
+            pick.source.kind is SourceKind.CLASS
+            and bool(self.classes)
+            and pick.source.key != self.classes[0].class_key
+        )
 
     def _validate_pick(self, pick: Proficiency, *, existing: Proficiencies) -> None:
         """Ті самі правила, що й у візарді — див. `pick_rules.validate_pick`."""
-        validate_pick(self.rules, pick, existing=existing)
+        validate_pick(
+            self.rules, pick, existing=existing, multiclass=self._is_multiclass_source(pick)
+        )
 
     def _validate_spell_choices(self) -> None:
         species = self.species

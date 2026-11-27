@@ -18,8 +18,9 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Any
@@ -295,6 +296,8 @@ class SubclassSpells:
 
     prepared: tuple[str, ...] = ()
     expanded: tuple[str, ...] = ()
+    #: Завжди підготовлені за рівнем класу: {1: (bless, cure wounds), 3: (…)}.
+    by_level: Mapping[int, tuple[str, ...]] = field(default_factory=lambda: MappingProxyType({}))
 
 
 @dataclass(frozen=True, slots=True)
@@ -779,3 +782,128 @@ def _optional_str(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+# ---------------------------------------------------------------------------
+# заклинателі-третинки: чарують через підклас (PHB, p. 74 і 97)
+# ---------------------------------------------------------------------------
+
+#: Відомі закляття містичного лицаря й таємного пройдисвіта за рівнем класу.
+_THIRD_CASTER_KNOWN = (0, 0, 3, 4, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 11, 12, 13)
+
+#: Підклас → заговори (3–9 рівень, 10+). Пройдисвіт має ще Mage Hand.
+THIRD_CASTER_SUBCLASSES: Mapping[str, tuple[int, int]] = {
+    "eldritch-knight": (2, 3),
+    "arcane-trickster": (3, 4),
+}
+
+
+def with_subclass_casting(definition: ClassMechanics, subclass_key: str | None) -> ClassMechanics:
+    """Воїн чи плут з магічним підкласом чарує як третинний заклинатель.
+
+    Інтелект, список мага, слоти власної таблиці = таблиця за рівнем
+    заклинателя ⌈рівень / 3⌉ (з 3 рівня класу).
+
+    shortcut: обмеження шкіл (огородження й втілення / чари й ілюзія) не
+    перевіряється — додати, коли закляття в агрегаті матимуть школу.
+    """
+    slug = (subclass_key or "").strip().casefold().rsplit("/", 1)[-1]
+    cantrips = THIRD_CASTER_SUBCLASSES.get(slug)
+    if cantrips is None or definition.casts_spells:
+        return definition
+    levels = range(1, MAX_LEVEL + 1)
+    return replace(
+        definition,
+        spellcasting_ability=Ability.INT,
+        caster_progression=CasterProgression.THIRD,
+        cantrips_known=tuple(0 if lvl < 3 else cantrips[lvl >= 10] for lvl in levels),
+        spells_known=_THIRD_CASTER_KNOWN,
+        spell_slots=tuple(spell_slots(-(-lvl // 3)) if lvl >= 3 else spell_slots(0) for lvl in levels),
+    )
+
+
+# ---------------------------------------------------------------------------
+# риси з +1 до характеристики (PHB, p. 165–170)
+# ---------------------------------------------------------------------------
+
+_FEAT_INCREASE = re.compile(r"Increase (?:your|the chosen) (.*?)(?: score)? by 1", re.I)
+
+
+def feat_ability_options(text: str) -> tuple[Ability, ...]:
+    """Які характеристики риса дає підвищити на 1; порожньо — риса без +1.
+
+    «Increase your Strength or Dexterity score by 1» → (STR, DEX);
+    «Increase the chosen ability score by 1» (Resilient) → усі шість.
+    """
+    match = _FEAT_INCREASE.search(text or "")
+    if match is None:
+        return ()
+    phrase = match.group(1).casefold()
+    if "chosen" in match.group(0).casefold() or "ability" in phrase:
+        return tuple(Ability)
+    names = {
+        "strength": Ability.STR,
+        "dexterity": Ability.DEX,
+        "constitution": Ability.CON,
+        "intelligence": Ability.INT,
+        "wisdom": Ability.WIS,
+        "charisma": Ability.CHA,
+    }
+    return tuple(ability for name, ability in names.items() if name in phrase)
+
+
+#: Навичка, яку клас дає при мультикласі (PHB, p. 164): бард — будь-яку,
+#: слідопит і плут — зі свого списку. Решта класів навичок не дає.
+MULTICLASS_SKILLS: Mapping[str, int] = {"bard": 1, "ranger": 1, "rogue": 1}
+
+
+# ---------------------------------------------------------------------------
+# вибори класу: бойовий стиль, втаємничення, метамагія, прийоми… (PHB 2014)
+# ---------------------------------------------------------------------------
+
+#: Група → тип запису `optionalfeature` у довіднику ({cls} — ключ класу).
+CHOICE_FEATURE_TYPES: Mapping[str, str] = {
+    "Fighting Style": "fighting style ({cls})",
+    "Eldritch Invocations": "eldritch invocation",
+    "Metamagic": "metamagic",
+    "Pact Boon": "pact boon",
+    "Maneuvers": "maneuver (battle master)",
+    "Infusions": "artificer infusion",
+}
+
+#: Групи, варіанти яких — не записи довідника, а перелік із книги (PHB, p. 91).
+CHOICE_FIXED_OPTIONS: Mapping[str, tuple[str, ...]] = {
+    "Favored Enemy": (
+        "aberrations", "beasts", "celestials", "constructs", "dragons", "elementals",
+        "fey", "fiends", "giants", "monstrosities", "oozes", "plants", "undead",
+        "humanoids (two races)",
+    ),
+    "Natural Explorer": (
+        "arctic", "coast", "desert", "forest", "grassland", "mountain", "swamp", "underdark",
+    ),
+}
+
+#: Вибори, яких індекс механік не має: (клас, підклас або None, група) → [(рівень, скільки)].
+_EXTRA_CHOICES: Mapping[tuple[str, str | None, str], tuple[tuple[int, int], ...]] = {
+    ("fighter", "battle-master", "Maneuvers"): ((3, 3), (7, 5), (10, 7), (15, 9)),
+    ("fighter", "champion", "Fighting Style"): ((10, 1),),  # Additional Fighting Style
+    ("ranger", None, "Favored Enemy"): ((1, 1), (6, 2), (14, 3)),
+    ("ranger", None, "Natural Explorer"): ((1, 1), (6, 2), (10, 3)),
+}
+
+
+def class_choice_slots(entries: Iterable[tuple[Any, ClassMechanics]]) -> dict[str, int]:
+    """Скільки варіантів кожної групи дали рівні: {"fighter:Fighting Style": 1}."""
+    slots: dict[str, int] = {}
+    for entry, definition in entries:
+        subclass = (entry.subclass_key or "").casefold().rsplit("/", 1)[-1] or None
+        groups = {name: definition.optional_feature_count(name, entry.level) for name in definition.optional_features}
+        for (klass, needs, group), steps in _EXTRA_CHOICES.items():
+            if klass == entry.class_key and needs in (None, subclass):
+                groups[group] = groups.get(group, 0) + max(
+                    (count for level, count in steps if level <= entry.level), default=0
+                )
+        for group, count in groups.items():
+            if count > 0 and (group in CHOICE_FEATURE_TYPES or group in CHOICE_FIXED_OPTIONS):
+                slots[f"{entry.class_key}:{group}"] = count
+    return slots

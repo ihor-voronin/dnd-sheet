@@ -176,7 +176,9 @@ export function fetchClassSpells(
   maxLevel: number,
 ): Promise<{ items: ClassSpell[]; total: number }> {
   const params = new URLSearchParams({ max_level: String(maxLevel) });
-  return getJson(`/api/v1/compendium/classes/${encodeURIComponent(classKey)}/spells?${params}`);
+  // Воїн і плут чарують лише як містичний лицар / таємний пройдисвіт — зі списку мага.
+  const listKey = classKey === "fighter" || classKey === "rogue" ? "wizard" : classKey;
+  return getJson(`/api/v1/compendium/classes/${encodeURIComponent(listKey)}/spells?${params}`);
 }
 
 /** Усі риси корпусу — для вибору на рівні покращення характеристик. */
@@ -258,6 +260,18 @@ export function setCharacterExpertise(
   return request<SheetMutation>(`/api/v1/characters/${id}/expertise`, {
     method: "POST",
     body: JSON.stringify({ expertise, version }),
+  });
+}
+
+export function setCharacterClassChoice(
+  id: string,
+  group: string,
+  values: string[],
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/class-choices`, {
+    method: "POST",
+    body: JSON.stringify({ group, values, version }),
   });
 }
 

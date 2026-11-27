@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   fetchCharacter,
+  fetchClassSpells,
   fetchEntry,
   fetchFeats,
   fetchLevelUp,
@@ -29,6 +30,7 @@ import {
   abilityModifier,
   classGuide,
   modifierLabel,
+  skillLabel,
   sourceLabel,
   subclassLabel,
 } from "../../labels";
@@ -100,6 +102,9 @@ export function LevelUpWizard({
   const [asiFirst, setAsiFirst] = useState<AbilityCode>("str");
   const [asiSecond, setAsiSecond] = useState<AbilityCode>("dex");
   const [featId, setFeatId] = useState<string | null>(null);
+  const [featAbility, setFeatAbility] = useState<string | null>(null);
+  const [skill, setSkill] = useState<string | null>(null);
+  const [replaceSpell, setReplaceSpell] = useState<{ from: string; to: string }>({ from: "", to: "" });
 
   const levelUp = useQuery({
     queryKey: ["level-up", characterId],
@@ -114,6 +119,24 @@ export function LevelUpWizard({
   const plan = view?.plans.find((item) => item.class_key === classKey) ?? null;
   const gain = plan ? spellGain(plan) : { cantrips: 0, leveled: 0 };
 
+  // Відомі закляття класу, які можна замінити одним новим (бард, чаклун, чародій…).
+  const knownSpells =
+    plan && !plan.is_new_class && plan.limits.spells_known.after !== null
+      ? (sheet.data?.sheet.spells ?? []).filter(
+          (spell) => spell.class_key === plan.class_key && spell.level > 0 && !spell.always_prepared,
+        )
+      : [];
+  const classSpells = useQuery({
+    queryKey: ["class-spells", plan?.class_key, plan?.max_spell_level],
+    queryFn: () => fetchClassSpells(plan!.class_key, plan!.max_spell_level),
+    enabled: Boolean(plan && replaceSpell.from),
+  });
+  const replacements = (classSpells.data?.items ?? []).filter(
+    (entry) =>
+      Number(entry.data.level ?? 0) > 0 &&
+      !knownSpells.some((spell) => spell.name_en.toLowerCase() === entry.name_en.toLowerCase()),
+  );
+
   const feats = useQuery({
     queryKey: ["feats"],
     queryFn: fetchFeats,
@@ -125,6 +148,8 @@ export function LevelUpWizard({
     setSubclassKey(null);
     setAsiMode("two");
     setFeatId(null);
+    setSkill(null);
+    setReplaceSpell({ from: "", to: "" });
     // Підклас не обирається за гравця: раніше перший варіант ставав
     // «вибраним» сам, і його легко було не помітити.
     setSubclassKey(null);
@@ -204,6 +229,7 @@ export function LevelUpWizard({
         if (asiMode === "feat") {
           if (!featId) throw new Error("оберіть рису або покращення характеристик");
           body.feat_key = featId;
+          if (featAbility) body.feat_ability = featAbility;
         } else if (asiMode === "two") {
           body.ability_increases = { [asiFirst]: 2 };
         } else {
@@ -212,6 +238,17 @@ export function LevelUpWizard({
           }
           body.ability_increases = { [asiFirst]: 1, [asiSecond]: 1 };
         }
+      }
+      if (plan.skill_options?.length) {
+        if (!skill) throw new Error("оберіть навичку, яку дає новий клас");
+        body.skill = skill;
+      }
+      if (replaceSpell.from) {
+        if (!replaceSpell.to.trim()) throw new Error("впишіть, яке закляття стає на місце забутого");
+        body.replace_spell = replaceSpell.from;
+        const entry = replacements.find((item) => item.name_en === replaceSpell.to);
+        if (!entry) throw new Error("оберіть нове закляття зі списку класу");
+        body.spells = [{ name_en: entry.name_en, level: Number(entry.data.level ?? 1), entry_id: entry.id }];
       }
       const result = await levelUpCharacter(characterId, body);
       onDone(result.level_up);
@@ -533,15 +570,88 @@ export function LevelUpWizard({
                     <FeatPicker
                       feats={feats.data ?? []}
                       value={featId}
-                      onChange={setFeatId}
+                      onChange={(id) => {
+                        setFeatId(id);
+                        setFeatAbility(view?.feat_abilities?.[id]?.[0] ?? null);
+                      }}
                     />
-                    <p className="hint hint--warn">
-                      Числові ефекти риси (+1 до характеристики, +2 хіти за рівень тощо)
-                      застосунок поки не додає сам. Після підвищення впишіть їх на листі як
-                      виправлення відповідного поля — ми нагадаємо.
+                    {featId && (view?.feat_abilities?.[featId]?.length ?? 0) > 1 ? (
+                      <label className="field">
+                        <span>Риса дає +1 до характеристики — оберіть яку</span>
+                        <select
+                          className="select"
+                          value={featAbility ?? ""}
+                          onChange={(event) => setFeatAbility(event.target.value)}
+                        >
+                          {view?.feat_abilities?.[featId]?.map((code) => (
+                            <option key={code} value={code}>
+                              {ABILITY_LABELS[code as AbilityCode] ?? code}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+                    <p className="hint">
+                      +1 до характеристики, Tough, Alert, Mobile, Observant і Resilient лист
+                      рахує сам. Інші ефекти рис (переваги, нові дії) — текстом в «Уміннях».
                     </p>
                   </div>
                 )}
+              </section>
+            ) : null}
+
+            {plan.skill_options?.length ? (
+              <section className="wizard-block">
+                <h3>{nextStep()}. Навичка нового класу</h3>
+                <p className="hint">
+                  Мультиклас у {plan.class_name} дає володіння однією навичкою (PHB, с. 164).
+                </p>
+                <select className="select" value={skill ?? ""} onChange={(event) => setSkill(event.target.value || null)}>
+                  <option value="">— оберіть навичку —</option>
+                  {plan.skill_options.map((code) => (
+                    <option key={code} value={code}>
+                      {skillLabel(code)}
+                    </option>
+                  ))}
+                </select>
+              </section>
+            ) : null}
+
+            {knownSpells.length ? (
+              <section className="wizard-block">
+                <h3>{nextStep()}. Заміна закляття (за бажанням)</h3>
+                <p className="hint">
+                  На кожному рівні класу можна забути одне відоме закляття й вивчити замість нього
+                  інше зі списку класу доступного рівня.
+                </p>
+                <div className="inline-row">
+                  <select
+                    className="select"
+                    value={replaceSpell.from}
+                    onChange={(event) => setReplaceSpell({ from: event.target.value, to: "" })}
+                  >
+                    <option value="">не замінювати</option>
+                    {knownSpells.map((spell) => (
+                      <option key={spell.name_en} value={spell.name_en}>
+                        {spell.name_en} ({spell.level} рів.)
+                      </option>
+                    ))}
+                  </select>
+                  {replaceSpell.from ? (
+                    <select
+                      className="select"
+                      value={replaceSpell.to}
+                      onChange={(event) => setReplaceSpell({ ...replaceSpell, to: event.target.value })}
+                    >
+                      <option value="">{classSpells.isPending ? "читаємо список…" : "— нове закляття —"}</option>
+                      {replacements.map((entry) => (
+                        <option key={entry.id} value={entry.name_en}>
+                          {entry.name_uk ? `${entry.name_uk} · ${entry.name_en}` : entry.name_en} ({Number(entry.data.level)} рів.)
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+                </div>
               </section>
             ) : null}
 
@@ -549,6 +659,9 @@ export function LevelUpWizard({
               <section className="wizard-block">
                 <h3>{nextStep()}. Закляття — обираються на листі</h3>
                 <p className="hint">
+                  {plan.class_key === "wizard"
+                    ? "Маг вписує в книгу заклять 2 нові закляття доступного рівня (PHB, с. 114); готує він лише з книги. "
+                    : ""}
                   {gain.cantrips ? `Цей рівень дає заговорів: +${gain.cantrips}. ` : ""}
                   {gain.leveled ? `Заклять: +${gain.leveled}. ` : ""}
                   {gain.cantrips + gain.leveled

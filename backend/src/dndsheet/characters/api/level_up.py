@@ -28,6 +28,9 @@ from dndsheet.characters.domain.services.feature_resources import name_of
 from dndsheet.characters.domain.services.level_up import LevelPlan
 from dndsheet.compendium.api.serializers import entry_brief
 from dndsheet.compendium.application.service import CompendiumService
+from dndsheet.characters.domain.proficiencies import ProficiencyKind
+from dndsheet.shared.kernel import Skill
+from dndsheet.shared.rules import MULTICLASS_SKILLS, feat_ability_options
 
 
 def level_up_payload(
@@ -45,16 +48,35 @@ def level_up_payload(
         "total_level": character.total_level,
         "max_level": 20,
         "can_level_up": bool(plans),
+        # Риси з +1 до характеристики: id → можливі характеристики (Actor → cha).
+        "feat_abilities": {
+            entry.id: [ability.value for ability in options]
+            for entry in compendium.feats()
+            if (options := feat_ability_options(entry.text_en or ""))
+        },
         "plans": [
-            plan_payload(
-                plan,
-                compendium,
-                cache,
-                current_subclass=_current_subclass(character, plan.class_key),
-            )
+            {
+                **plan_payload(
+                    plan,
+                    compendium,
+                    cache,
+                    current_subclass=_current_subclass(character, plan.class_key),
+                ),
+                "skill_options": _multiclass_skills(character, plan),
+            }
             for plan in plans
         ],
     }
+
+
+def _multiclass_skills(character, plan: LevelPlan) -> list[str]:  # noqa: ANN001
+    """Навички, з яких новий клас дає одну (бард — будь-яка; PHB, p. 164)."""
+    if not plan.is_new_class or plan.class_key not in MULTICLASS_SKILLS:
+        return []
+    definition = character.class_definition(plan.class_key)
+    pool = tuple(Skill) if definition.skill_any else definition.skill_options()
+    owned = character.all_proficiencies()
+    return [skill.value for skill in pool if not owned.has(ProficiencyKind.SKILL, skill.value)]
 
 
 def plan_payload(

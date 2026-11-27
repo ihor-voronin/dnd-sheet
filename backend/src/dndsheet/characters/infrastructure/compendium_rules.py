@@ -18,7 +18,9 @@ from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,
     SpeciesMechanics,
+    feat_ability_options,
 )
+from dndsheet.shared.kernel import Ability
 
 #: Ключ власної передісторії: її текст гравець пише сам, правила вибору —
 #: стандартні (2 навички, 1 інструмент, 1 мова).
@@ -105,6 +107,13 @@ class CompendiumFeatCatalog:
         if not cleaned:
             return False
         return cleaned in self._index()
+
+    def ability_options(self, feat_key: str) -> tuple[Ability, ...]:
+        try:
+            entry = self.service.entry(feat_key.strip().casefold())
+        except NotFoundError:
+            return ()
+        return feat_ability_options(entry.text_en or "")
 
     def _index(self) -> set[str]:
         if self._keys is None:

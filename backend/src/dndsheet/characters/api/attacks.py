@@ -76,6 +76,9 @@ def attacks_for(
         )
         if view is None:
             continue
+        # Fighting Style: Archery — +2 до атак дальньою зброєю (PHB, p. 72).
+        if "ammunition" in profile.properties.casefold() and character.has_class_choice("archery"):
+            view = replace(view, attack_bonus=view.attack_bonus + 2)
         if item.damage:
             view = replace(view, damage=item.damage.strip())
         if item.notes:

@@ -139,6 +139,9 @@ class ModifierResolver:
 # числа з правил класу, підкласу, виду й рис (PHB 2014)
 # ---------------------------------------------------------------------------
 
+#: Вимога Сили важкої броні (PHB, p. 145).
+_ARMOR_STRENGTH = {"chain mail": 13, "splint": 15, "splint armor": 15, "plate": 15, "plate armor": 15}
+
 #: Unarmored Movement ченця (PHB, p. 78): +10 фт з 2 рівня, далі +5 кожні 4.
 _MONK_SPEED = ((18, 30), (14, 25), (10, 20), (6, 15), (2, 10))
 
@@ -231,6 +234,10 @@ def _rule_modifiers(character) -> list[Modifier]:  # noqa: ANN001, C901 — та
     if monk and armor is None and shield is None:
         bonus = next((value for level, value in _MONK_SPEED if monk >= level), 0)
         add(ModifierKind.SPEED, bonus, SourceKind.CLASS, "monk", note="unarmored-movement")
+    # Важка броня без потрібної Сили: −10 фт (PHB, p. 144); дворфів не сповільнює.
+    need = _ARMOR_STRENGTH.get(armor.name_en.strip().casefold()) if armor is not None else None
+    if need and character.ability_total(Ability.STR) < need and character.species_key != "dwarf":
+        add(ModifierKind.SPEED, -10, SourceKind.ITEM, armor.name_en, note="heavy-armor-strength")
     if levels.get("barbarian", 0) >= 5 and not heavy_armor:
         add(ModifierKind.SPEED, 10, SourceKind.CLASS, "barbarian", note="fast-movement")
 
@@ -240,7 +247,14 @@ def _rule_modifiers(character) -> list[Modifier]:  # noqa: ANN001, C901 — та
     if subclasses.get("sorcerer") == "draconic-bloodline":
         add(ModifierKind.MAX_HIT_POINTS, levels.get("sorcerer", 0), SourceKind.CLASS, "sorcerer", note="draconic-resilience")
 
+    # --- бойовий стиль: Defense +1 КБ у броні (PHB, p. 72) ---
+    # shortcut: Dueling/Great Weapon/Two-Weapon лише як текст, автоматично не рахуються.
+    if armor is not None and character.has_class_choice("defense"):
+        add(ModifierKind.ARMOR_CLASS, 1, SourceKind.CLASS, "fighting-style", note="defense")
+
     # --- риси ---
+    for ability in Ability:
+        add(ModifierKind.ABILITY, character.ability_bonus_from_feats(ability), SourceKind.FEAT, "feat", key=ability.value, note="feat")
     if "alert" in feats:
         add(ModifierKind.INITIATIVE, 5, SourceKind.FEAT, "alert", note="alert")
     if "mobile" in feats:

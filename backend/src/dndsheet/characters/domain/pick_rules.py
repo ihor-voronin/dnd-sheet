@@ -20,6 +20,7 @@ from dndsheet.characters.domain.proficiencies import (
 )
 from dndsheet.shared.errors import NotFoundError, ValidationError
 from dndsheet.shared.kernel import Skill
+from dndsheet.shared.rules import MULTICLASS_SKILLS
 
 #: Підписи, які не є володінням, а описують вибір («three musical instruments
 #: of your choice»). Такий вибір робить гравець, і він приходить як `pick`.
@@ -42,6 +43,7 @@ def validate_pick(
     pick: Proficiency,
     *,
     existing: Proficiencies,
+    multiclass: bool = False,
 ) -> None:
     """Перевірити одне володіння проти правил його джерела.
 
@@ -66,9 +68,12 @@ def validate_pick(
                 f"клас {definition.name_en!r} не дає навички {skill.value!r}"
             )
         used = count_picks(existing, ProficiencyKind.SKILL, source)
-        if used + 1 > definition.skill_limit:
+        # Другий клас дає не «2 зі списку», а таблицю мультикласу (PHB, p. 164).
+        limit = MULTICLASS_SKILLS.get(definition.key, 0) if multiclass else definition.skill_limit
+        if used + 1 > limit:
             raise ValidationError(
-                f"клас {definition.name_en!r} дає не більше {definition.skill_limit} навичок"
+                f"клас {definition.name_en!r} дає не більше {limit} навичок"
+                + (" при мультикласі" if multiclass else "")
             )
         return
     if source.kind is SourceKind.SPECIES:

@@ -182,8 +182,7 @@ def _multiclass(rules: RulesSource) -> GoldenCase:
         chosen=_picks(
             _skill(Skill.PERCEPTION, SourceKind.CLASS, "fighter"),
             _skill(Skill.SURVIVAL, SourceKind.CLASS, "fighter"),
-            _skill(Skill.ARCANA, SourceKind.CLASS, "wizard"),
-            _skill(Skill.INVESTIGATION, SourceKind.CLASS, "wizard"),
+            # Маг другим класом навичок не дає (PHB, p. 164).
         ),
         spells=(
             KnownSpell(

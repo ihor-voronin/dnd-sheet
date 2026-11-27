@@ -509,6 +509,8 @@ export interface SheetViewPayload {
   skills: Record<string, { value: number; proficient: boolean; expertise?: boolean }>;
   /** Експертність: скільки дали рівні, що обрано, з чого можна обрати. */
   expertise?: { slots: number; chosen: string[]; options: string[] };
+  /** Бойовий стиль, втаємничення, метамагія, прийоми… (ключ «клас:група»). */
+  class_choices?: ClassChoiceGroup[];
   armor_class: { value: number; parts: { label: string; value: number }[] };
   initiative: number;
   speed: number;
@@ -656,6 +658,8 @@ export interface LevelUpPlan {
   allowed: boolean;
   blocked_reason: string | null;
   requirements: string[];
+  /** Новий клас барда/слідопита/плута дає одну навичку (PHB, p. 164). */
+  skill_options?: string[];
 }
 
 export interface LevelUpView {
@@ -666,6 +670,8 @@ export interface LevelUpView {
   max_level: number;
   can_level_up: boolean;
   plans: LevelUpPlan[];
+  /** Риса → характеристики, одну з яких вона підвищує на 1. */
+  feat_abilities?: Record<string, string[]>;
 }
 
 export interface LevelUpReport {
@@ -707,3 +713,12 @@ export interface FeatEntry {
   name_uk: string | null;
   source_id: string;
 }
+
+export type ClassChoiceGroup = {
+  key: string;
+  class_key: string;
+  group: string;
+  slots: number;
+  chosen: string[];
+  options: { name_en: string; text_en: string; prerequisite?: string | null }[];
+};

@@ -234,9 +234,7 @@ class LevelUpPlanner:
     ) -> tuple[bool, str | None]:
         """Вимоги мультикласу: і новий клас, і всі наявні (PHB, p. 163)."""
         scores = {
-            ability: character.abilities[ability].value
-            + character.ability_bonus_from_origin(ability)
-            for ability in character.abilities
+            ability: character.ability_total(ability) for ability in character.abilities
         }
         if not definition.satisfies_multiclass(scores):
             return False, (

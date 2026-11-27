@@ -113,7 +113,8 @@ function PreparedClass({
 
   const options = useMemo(() => {
     const map = new Map<string, Pick>();
-    for (const entry of list.data?.items ?? []) {
+    // Маг готує лише з книги заклять (PHB, p. 114), а не з усього списку класу.
+    for (const entry of casting.key === "wizard" ? [] : list.data?.items ?? []) {
       const level = spellLevelOf(entry);
       // Заговори не готують: вони змінюються лише з рівнем.
       if (level === 0) continue;

@@ -21,6 +21,7 @@ import {
   fetchRenderers,
   patchCharacter,
   prepareCharacterSpells,
+  setCharacterClassChoice,
   setCharacterExpertise,
   removeCharacterItem,
   removeCharacterSpell,
@@ -53,6 +54,7 @@ import { InventoryPanel } from "./inventory";
 import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
 import { BackgroundPanel } from "./background";
+import { ClassChoices } from "./classChoices";
 import { ExpertisePicker } from "./expertise";
 import { ActionPanel } from "./actions";
 import { AddSpellForm, SpellsPreparePanel } from "./spells";
@@ -454,6 +456,20 @@ export function CharacterView({
                 resources={sheet.feature_resources}
                 disabled={busy}
                 onChange={setFeatureUse}
+              />
+            </>
+          ) : null}
+          {sheet.class_choices?.length ? (
+            <>
+              <h3 className="ddb-work__title">
+                <span>Вибори класу</span>
+              </h3>
+              <ClassChoices
+                groups={sheet.class_choices}
+                busy={busy}
+                onSave={(group, values) =>
+                  run(setCharacterClassChoice(id, group, values, versionRef.current))
+                }
               />
             </>
           ) : null}

@@ -34,7 +34,14 @@ from dndsheet.characters.domain.services.level_up import (
 )
 from dndsheet.characters.domain.spells import KnownSpell
 from dndsheet.shared.errors import ConflictError, NotFoundError, ValidationError
+from dndsheet.characters.domain.proficiencies import (
+    GrantSource,
+    Proficiency,
+    ProficiencyKind,
+    SourceKind,
+)
 from dndsheet.shared.kernel import Ability
+from dndsheet.shared.rules import MULTICLASS_SKILLS
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +136,7 @@ class LevelUpService:
         subclass_key = self._subclass(plan, payload.get("subclass_key"))
         hp_mode, hp_roll = _hp_choice(payload.get("hp"), plan)
         increases, feat_key = self._asi_choice(plan, payload)
+        feat_ability = self._feat_ability(feat_key, payload.get("feat_ability"))
         spells = _spells(payload.get("spells"), plan.class_key)
 
         before = self.calculator.compute(character)
@@ -139,6 +147,19 @@ class LevelUpService:
             character.add_class(plan.class_key, 1)
         else:
             character.raise_level(plan.class_key)
+
+        # 1б. навичка від мультикласу (бард, слідопит, плут — PHB, p. 164)
+        skill = _optional_text(payload.get("skill"))
+        if skill is not None:
+            if not plan.is_new_class or plan.class_key not in MULTICLASS_SKILLS:
+                raise ValidationError(f"{plan.class_name}: цей рівень не дає навички на вибір")
+            character.pick(
+                Proficiency(
+                    kind=ProficiencyKind.SKILL,
+                    value=skill.casefold().replace(" ", "_"),
+                    source=GrantSource.of(SourceKind.CLASS, plan.class_key),
+                )
+            )
 
         # 1а. позначка «взято без вимог» — уже після появи класу в списку
         if waived:
@@ -154,7 +175,7 @@ class LevelUpService:
 
         # 4. покращення характеристик або риса
         if increases or feat_key:
-            character.take_asi(increases=increases, feat_key=feat_key)
+            character.take_asi(increases=increases, feat_key=feat_key, feat_ability=feat_ability)
 
         # 5. закляття
         added: list[str] = []
@@ -162,13 +183,23 @@ class LevelUpService:
         # клас готує на день (жрець з низькою МУД). Такі лишаються відомими,
         # а не ламають увесь запит: підготовку можна змінити на листі.
         prepared_room = None
-        definition = character.class_definition(plan.class_key)
+        # З урахуванням підкласу: містичний лицар має ліміт відомих заклять.
+        definition = dict(
+            (entry.class_key, item) for entry, item in character.class_entries()
+        )[plan.class_key]
         if definition.prepares_spells:
             prepared_room = character.prepared_limit(plan.class_key) - sum(
                 1
                 for spell in character.spells_of(plan.class_key)
                 if spell.prepared and not spell.is_cantrip
             )
+        # Заміна одного відомого закляття на новому рівні (бард, чаклун,
+        # чародій, слідопит, третинки — PHB, p. 53, 101, 107, 91).
+        replaced = _optional_text(payload.get("replace_spell"))
+        if replaced is not None:
+            if definition.spells_known_at(plan.new_level) is None:
+                raise ValidationError(f"{plan.class_name} не замінює закляття з рівнем — він їх готує")
+            character.forget_spell(replaced, plan.class_key)
         for spell in spells:
             character.learn_spell(spell.prepare(False))
             added.append(spell.name_en)
@@ -281,6 +312,25 @@ class LevelUpService:
                 raise ValidationError(f"невідома риса {feat_key!r}")
             return {}, feat_key
         return increases, None
+
+    def _feat_ability(self, feat_key: str | None, raw: Any) -> Ability | None:  # noqa: ANN401
+        """Яку характеристику підвищує риса: одна можлива — сама, кілька — вибір гравця."""
+        if feat_key is None or self.feats is None:
+            return None
+        options = self.feats.ability_options(feat_key)
+        if not options:
+            return None
+        if raw is None and len(options) == 1:
+            return options[0]
+        try:
+            chosen = Ability(str(raw or "").strip().casefold())
+        except ValueError as exc:
+            names = ", ".join(option.value.upper() for option in options)
+            raise ValidationError(f"риса дає +1 до однієї з: {names} — оберіть характеристику") from exc
+        if chosen not in options:
+            names = ", ".join(option.value.upper() for option in options)
+            raise ValidationError(f"ця риса підвищує лише {names}")
+        return chosen
 
 
 # ---------------------------------------------------------------------------

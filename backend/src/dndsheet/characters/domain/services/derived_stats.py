@@ -406,11 +406,18 @@ class DerivedStatsCalculator:
             spells = definition.subclass_spells_for(entry.subclass_key)
             if spells is None:
                 continue
-            for name in spells.prepared:
-                views.append(
+            table = spells.by_level or ({1: spells.prepared} if spells.prepared else {})
+            for class_level, names in sorted(table.items()):
+                if class_level > entry.level:
+                    continue
+                # Рівень закляття — найвищий, що клас має на рівні таблиці:
+                # жрець 3 → 2-й, паладин 9 → 3-й.
+                spell_level = definition.max_spell_level(class_level) or 1
+                views.extend(
                     GrantedSpellView(
-                        name_en=name, spell_level=1, source="subclass", prepared=True
+                        name_en=name, spell_level=spell_level, source="subclass", prepared=True
                     )
+                    for name in names
                 )
         return tuple(views)
 

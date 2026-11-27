@@ -169,3 +169,10 @@ def test_background_mechanics_endpoint(client: TestClient) -> None:
     payload = client.get("/api/v1/compendium/backgrounds/acolyte/mechanics").json()
     assert payload["skill_proficiencies"] == ["insight", "religion"]
     assert payload["languages_any_standard"] == 2
+
+
+def test_golden_fighter_class_choices(client: TestClient) -> None:
+    sheet = client.get("/api/v1/characters/golden/fighter-1").json()["sheet"]
+    (style,) = sheet["class_choices"]
+    assert style["key"] == "fighter:Fighting Style" and style["slots"] == 1
+    assert "Defense" in {option["name_en"] for option in style["options"]}

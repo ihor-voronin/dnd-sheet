@@ -12,7 +12,9 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass, field, replace
+from types import MappingProxyType
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -23,6 +25,7 @@ from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,
     SpeciesMechanics,
+    SubclassSpells,
 )
 
 CLASS_SCHEMA = "class-mechanics/1"
@@ -145,6 +148,38 @@ class JsonMechanicsRepository:
                 self._warnings.append(f"механіки класу {key!r}: {exc}")
         if not self._classes:
             self._warnings.append("індекс класів порожній")
+        self._merge_subclass_tables()
+
+    def _merge_subclass_tables(self) -> None:
+        """Закляття домену, клятви тощо за всіма рівнями — з тексту підкласу.
+
+        Індекс зберігає лише 1 рівень, а повна таблиця («| Cleric Level |
+        Spells |») є в тексті підкласу в корпусі поруч із індексом.
+        """
+        assert self.classes_path is not None
+        root = self.classes_path.parent.parent / "compendium"
+        for path in sorted(root.glob("*/subclass.jsonl")):
+            for line in path.read_text(encoding="utf-8").splitlines():
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                klass = str((record.get("data") or {}).get("class") or "").casefold()
+                definition = self._classes.get(klass)
+                table = subclass_spell_table(str(record.get("text_en") or ""), klass)
+                if definition is None or not table:
+                    continue
+                slug = str(record.get("id") or "").rsplit("/", 1)[-1]
+                old = definition.subclass_spells.get(slug) or SubclassSpells()
+                merged = dict(definition.subclass_spells)
+                merged[slug] = replace(
+                    old,
+                    by_level=MappingProxyType(table),
+                    prepared=old.prepared or table.get(1, ()),
+                )
+                self._classes[klass] = replace(
+                    definition, subclass_spells=MappingProxyType(merged)
+                )
 
     def _load_origins(self) -> None:
         payload = self._read(self.origins_path, ORIGIN_SCHEMA, "видів")
@@ -194,3 +229,26 @@ class JsonMechanicsRepository:
             )
             return None
         return payload
+
+
+_SPELL_TABLE = re.compile(r"^\|\s*(\w+) Level\s*\|\s*(?:Circle\s+)?Spells?\s*\|[^\n]*\n\|[- |]+\|\n((?:\|[^\n]*\|\n?)+)", re.M)
+
+
+def subclass_spell_table(text: str, class_key: str) -> dict[int, tuple[str, ...]]:
+    """«| Cleric Level | Spells |» → {1: ("bless", "cure wounds"), 3: (…)}.
+
+    shortcut: таблиць класу в тексті кілька (Circle of the Land — по одній на
+    місцевість) — повертаємо порожньо; потрібен вибір місцевості.
+    """
+    tables = [m for m in _SPELL_TABLE.finditer(text) if m.group(1).casefold() == class_key]
+    if len(tables) != 1:
+        return {}
+    result: dict[int, tuple[str, ...]] = {}
+    for row in tables[0].group(2).splitlines():
+        cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
+        level = re.match(r"\d+", cells[0]) if cells else None
+        if level and len(cells) > 1:
+            result[int(level.group())] = tuple(
+                name.strip() for name in cells[1].split(",") if name.strip()
+            )
+    return result

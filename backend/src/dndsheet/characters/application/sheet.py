@@ -257,6 +257,23 @@ class SheetService:
         self.characters.save(character)
         return character
 
+    def set_class_choice(
+        self,
+        character_id: str,
+        payload: Mapping[str, Any],
+        *,
+        allowed: list[str],
+        expected_version: int | None = None,
+    ) -> Character:
+        """Обрати бойовий стиль, втаємничення тощо; `allowed` — з довідника."""
+        character = self._load_versioned(character_id, expected_version)
+        raw = payload.get("values") or []
+        if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
+            raise ValidationError("values має бути списком назв")
+        character.set_class_choice(str(payload.get("group")), raw, allowed)
+        self.characters.save(character)
+        return character
+
     # ------------------------------------------------------------------
     # інвентар
     # ------------------------------------------------------------------

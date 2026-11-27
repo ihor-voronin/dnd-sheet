@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from dndsheet.shared.kernel import Ability
+
 from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,
@@ -73,6 +75,9 @@ class FeatCatalog(Protocol):
 
     def has(self, feat_key: str) -> bool:
         """Чи є така риса в довіднику."""
+
+    def ability_options(self, feat_key: str) -> tuple[Ability, ...]:
+        """Які характеристики риса дає підвищити на 1; порожньо — без вибору."""
 
 
 @runtime_checkable

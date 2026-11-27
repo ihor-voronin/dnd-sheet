@@ -48,6 +48,9 @@ class Feats:
     def has(self, feat_key: str) -> bool:
         return feat_key.strip().casefold() in self._keys
 
+    def ability_options(self, feat_key: str) -> tuple:
+        return ()
+
 
 class Repository:
     def __init__(self, character) -> None:  # noqa: ANN001

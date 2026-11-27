@@ -28,6 +28,7 @@ from dndsheet.characters.api.serializers import (
 )
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.background_info import enrich_background
+from dndsheet.characters.api.class_choices import allowed_names, class_choices_payload
 from dndsheet.characters.api import classes_uk
 from dndsheet.characters.api.features import (
     class_texts_all,
@@ -115,6 +116,7 @@ def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Cha
         compendium,
         getattr(request.app.state, "background_cache", {}),
     )
+    payload["class_choices"] = class_choices_payload(character, compendium)
     return payload
 
 
@@ -548,6 +550,32 @@ def set_expertise(
         character = _sheet_service(request).set_expertise(
             character_id, body, expected_version=version
         )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.post("/{character_id}/class-choices")
+def set_class_choice(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Вибір класу: `{"group": "fighter:Fighting Style", "values": ["Defense"], "version": N}`."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    group = body.get("group")
+    if not isinstance(group, str) or ":" not in group:
+        raise HTTPException(status_code=422, detail="group має бути «клас:група»")
+    try:
+        character = _sheet_service(request).set_class_choice(
+            character_id,
+            body,
+            allowed=allowed_names(group, _compendium(request)),
+            expected_version=version,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=422, detail=f"невідома група {group!r}") from exc
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
