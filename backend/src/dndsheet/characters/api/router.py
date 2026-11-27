@@ -962,7 +962,7 @@ def character_export(
     render_format: str,
     request: Request,
     originals: bool = True,
-    detailed: bool = False,
+    detailed: bool = True,
 ) -> Response:
     """Лист гравця у PDF або Markdown — зі станом, а не з демо-персонажа.
 
@@ -1016,7 +1016,7 @@ def _print_renderer(request: Request):  # noqa: ANN202 — PdfRenderer
     return renderer
 
 
-def _character_pdf(request: Request, character, options: RenderOptions, *, detailed: bool = False) -> Response:  # noqa: ANN001
+def _character_pdf(request: Request, character, options: RenderOptions, *, detailed: bool = True) -> Response:  # noqa: ANN001
     renderer = _print_renderer(request)
     try:
         result = renderer.render_character(_print_view(request, character), options, detailed=detailed)
@@ -1024,8 +1024,7 @@ def _character_pdf(request: Request, character, options: RenderOptions, *, detai
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except RendererError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-    suffix = " — пояснення" if detailed else ""
-    name = quote(f"{character.name or 'character'}{suffix}.pdf")
+    name = quote(f"{character.name or 'character'}.pdf")
     return Response(
         content=result.content,
         media_type=result.media_type,
@@ -1035,7 +1034,7 @@ def _character_pdf(request: Request, character, options: RenderOptions, *, detai
 
 @router.get("/{character_id}/print", response_class=HTMLResponse)
 def character_print(
-    character_id: str, request: Request, originals: bool = True, detailed: bool = False
+    character_id: str, request: Request, originals: bool = True, detailed: bool = True
 ) -> HTMLResponse:
     """Той самий аркуш, що й PDF, як сторінка: друк із браузера (Ctrl+P) працює і без WeasyPrint."""
     try:

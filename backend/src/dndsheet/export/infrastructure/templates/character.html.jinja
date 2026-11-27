@@ -90,12 +90,11 @@
   .frame > .tag {
     position: absolute;
     bottom: -2.1mm;
-    left: 0;
-    right: 0;
-    margin: 0 auto;
-    width: max-content;
-    max-width: 90%;
-    text-align: center;
+    /* Центр через translateX: WeasyPrint не знає `max-content`, і підпис на всю
+       ширину своїм білим тлом перекривав нижню лінію рамки. */
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
     padding: 0 2mm;
     background: #fff;
     font-family: var(--caps);
@@ -226,6 +225,14 @@
   .coin .lbl { font-weight: 700; }
   .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 3mm; }
   .note-text { text-align: justify; }
+
+  /* --- журнал пригод ------------------------------------------------------ */
+  table.jtable { table-layout: fixed; }
+  table.jtable th:nth-child(1) { width: 22mm; }
+  table.jtable th:nth-child(3) { width: 32mm; }
+  table.jtable td { height: 5.9mm; border-bottom: 0.4pt solid #000; border-right: 0.3pt dotted #000; }
+  table.jtable td:last-child { border-right: 0; }
+  table.jtable tr:last-child td { border-bottom: 0; }
 
   /* --- розширений лист: тексти правил ---------------------------------- */
   .cols { columns: 2; column-gap: 5mm; column-rule: 0.3pt solid #000; }
@@ -408,7 +415,7 @@
           {% for f in v.species_traits %}<div><b>{{ f.title }}</b> <span class="lv">вид</span></div>{% endfor %}
           {% if v.background and v.background.feature %}<div><b>{{ v.background.feature.title }}</b> <span class="lv">передісторія</span></div>{% endif %}
         </div>
-        {% if not detailed %}<div class="legend">Пояснення — у розширеному листі.</div>{% endif %}
+        {% if detailed %}<div class="legend">Що дає кожне вміння — на додаткових аркушах наприкінці.</div>{% endif %}
       </div>
     </div>
   </div>
@@ -509,10 +516,24 @@
   </div>
 </section>
 
+{# ============== журнал пригод: записи подій олівцем ============== #}
+<section class="page">
+  <div class="page-title"><h2>Журнал пригод</h2><span class="lbl">{{ v.name }}</span></div>
+  <div class="frame journal"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+    <span class="tag">записи подій</span>
+    <table class="grid jtable">
+      <thead><tr><th>сесія · дата</th><th>що сталося: місця, люди, рішення, борги, підказки</th><th>здобуто</th></tr></thead>
+      <tbody>
+      {% for i in range(40) %}<tr><td></td><td></td><td></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
 {# ============== 4+. розширений лист: пояснення ============== #}
 {% if detailed %}
 <section class="page">
-  <div class="page-title"><h2>Уміння й особливості — пояснення</h2><span class="lbl">{{ v.name }}</span></div>
+  <div class="page-title"><h2>Додатковий аркуш · уміння й особливості</h2><span class="lbl">{{ v.name }}</span></div>
   <div class="cols">
     {% for g in v.features %}
       <div class="group-title">{{ g.title }}</div>
@@ -543,7 +564,7 @@
 
 {% if v.spellcasting and v.spellcasting.levels %}
 <section class="page">
-  <div class="page-title"><h2>Закляття — описи</h2><span class="lbl">{{ v.name }}</span></div>
+  <div class="page-title"><h2>Додатковий аркуш · закляття</h2><span class="lbl">{{ v.name }}</span></div>
   <div class="cols">
     {% for lv in v.spellcasting.levels %}
       <div class="group-title">{{ lv.title }}</div>

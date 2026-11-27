@@ -92,12 +92,13 @@ class PdfRenderer:
     # --- лист персонажа для друку -------------------------------------------
 
     def character_html(
-        self, view: Mapping[str, Any], options: RenderOptions | None = None, *, detailed: bool = False
+        self, view: Mapping[str, Any], options: RenderOptions | None = None, *, detailed: bool = True
     ) -> str:
         """HTML аркуша з даних `print_view`.
 
-        Без `detailed` — аркуш для гри (головна, закляття, спорядження й нотатки);
-        з `detailed` — ще й пояснення: тексти умінь, особливостей і заклять.
+        Спершу аркуш для гри (головна, закляття, спорядження й нотатки), далі —
+        додаткові аркуші з повними текстами умінь, особливостей і заклять.
+        `detailed=False` лишає лише аркуш для гри.
         """
         opts = options or RenderOptions()
         template = self._env.get_template("character.html.jinja")
@@ -108,7 +109,7 @@ class PdfRenderer:
         view: Mapping[str, Any],
         options: RenderOptions | None = None,
         *,
-        detailed: bool = False,
+        detailed: bool = True,
         filename: str = "character-sheet.pdf",
     ) -> RenderResult:
         html = self.character_html(view, options, detailed=detailed)

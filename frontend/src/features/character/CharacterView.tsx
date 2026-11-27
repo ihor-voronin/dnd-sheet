@@ -667,17 +667,9 @@ export function CharacterView({
                   className="sheet-btn sheet-btn--link sheet-btn--primary"
                   href={exportUrl(id, "pdf")}
                   download
-                  title="Аркуш для гри: головна, закляття, спорядження й нотатки"
+                  title="Аркуш для гри (головна, закляття, спорядження) і додаткові аркуші з повними текстами умінь і заклять"
                 >
-                  PDF для гри
-                </a>
-                <a
-                  className="sheet-btn sheet-btn--link"
-                  href={`${exportUrl(id, "pdf")}?detailed=true`}
-                  download
-                  title="Аркуш для гри й пояснення: тексти умінь, особливостей і заклять"
-                >
-                  з поясненнями
+                  PDF
                 </a>
               </>
             ) : (

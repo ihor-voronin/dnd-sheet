@@ -174,15 +174,16 @@ def test_print_sheet_is_for_the_table(client: TestClient) -> None:
     for label in ("рятівні кидки", "навички", "клас захисту", "атаки й заговори", "спорядження"):
         assert label in html
     assert "Атлетика" in html and "Спостережливість" in html
-    assert "Уміння й особливості — пояснення" not in html
+    # Додаткові аркуші з повними текстами — у тому самому файлі, наприкінці.
+    assert "Додатковий аркуш · уміння й особливості" in html
     # Шрифти вбудовані: аркуш однаково виглядає з диска, з сервера й у PDF.
     assert "data:font/woff2;base64," in html
 
 
-def test_detailed_print_adds_explanations(client: TestClient) -> None:
+def test_print_without_explanations_on_request(client: TestClient) -> None:
     character_id = _export_character(client)
-    html = client.get(f"/api/v1/characters/{character_id}/print", params={"detailed": "true"}).text
-    assert "Уміння й особливості — пояснення" in html
+    html = client.get(f"/api/v1/characters/{character_id}/print", params={"detailed": "false"}).text
+    assert "Додатковий аркуш" not in html
 
 
 def test_detailed_pdf_is_either_bytes_or_honest_503(client: TestClient) -> None:

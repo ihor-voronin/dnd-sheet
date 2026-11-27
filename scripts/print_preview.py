@@ -43,8 +43,6 @@ def main(pdf: bool) -> None:
         if pdf:
             result = renderer.render_character(view, RenderOptions())
             (out / f"{case.key}.pdf").write_bytes(result.content)
-            detailed = renderer.render_character(view, RenderOptions(), detailed=True)
-            (out / f"{case.key}-full.pdf").write_bytes(detailed.content)
             print("pdf: ", out / f"{case.key}.pdf")
 
 
