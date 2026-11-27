@@ -382,6 +382,11 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
                     "entry_id": item.entry_id,
                     "armor_base": item.armor_base,
                     "dex_cap": item.dex_cap,
+                    # Нотатки й власний урон — частина предмета: без них
+                    # «від передісторії» губилося, і повторний вхід у крок
+                    # додавав спорядження передісторії вдруге.
+                    "notes": item.notes,
+                    "damage": item.damage,
                 }
                 for item in draft.items
             ],

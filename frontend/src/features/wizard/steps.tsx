@@ -5,7 +5,7 @@
  * сервер повернув. Тому кнопка «Далі» ніколи не «вгадує» валідність.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ABILITY_SHORT,
@@ -44,10 +44,11 @@ import type {
 import { searchItems } from "../../api";
 import type { ItemSearchResult } from "../../api";
 import { RuleText } from "../character/panels";
-import { bodyFromEntry } from "../character/inventory";
+import { ItemFacts, bodyFromEntry } from "../character/inventory";
 import {
   featureLabel,
   featureText,
+  itemKey,
   itemLabel,
   speciesLabel,
   spellLabel,
@@ -1351,13 +1352,38 @@ export function EquipmentStep({
 
   const background = options.background ?? null;
 
+  /** Українські назви предметів передісторії: у книзі це фрази («a trophy
+   * taken from a fallen enemy»), яких немає в каталозі, тож словник предметів
+   * їх не знає. */
+  const backgroundNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const row of options.background?.equipment ?? []) {
+      if (row.text_uk) map[row.text] = row.text_uk;
+      row.choices.forEach((choice, position) => {
+        const translated = row.choices_uk?.[position];
+        if (translated) map[choice] = translated;
+      });
+    }
+    return map;
+  }, [options.background]);
+
   // Спорядження передісторії додається саме: раніше його треба було вписувати
   // руками, хоч у книзі воно вже є. Позначка в нотатках показує, що предмет
   // прийшов із передісторії, і не дає додати його вдруге.
   useEffect(() => {
     if (!background || appliedOnce.current) return;
     appliedOnce.current = true;
-    if (items.some((item) => (item.notes ?? "").startsWith(BACKGROUND_MARK))) {
+    // Ознака «вже додано» — не лише нотатка: у старих чернетках нотатки
+    // губилися, і повторний вхід у крок додавав те саме спорядження вдруге.
+    const names = new Set<string>();
+    for (const row of background.equipment) {
+      names.add(row.text);
+      for (const choice of row.choices) names.add(choice);
+    }
+    const already = items.some(
+      (item) => (item.notes ?? "").startsWith(BACKGROUND_MARK) || names.has(item.name_en),
+    );
+    if (already) {
       setBgApplied(true);
       return;
     }
@@ -1439,7 +1465,13 @@ export function EquipmentStep({
     setSearching(true);
     try {
       const payload = await searchItems(query.trim());
-      setResults(payload.items);
+      // Один предмет у кількох книгах — один раз у списку, як у каталозі листа.
+      const seen = new Map<string, ItemSearchResult>();
+      for (const row of payload.items) {
+        const key = itemKey(row.name_en);
+        if (!seen.has(key)) seen.set(key, row);
+      }
+      setResults([...seen.values()]);
     } catch {
       setResults([]);
     } finally {
@@ -1615,13 +1647,23 @@ export function EquipmentStep({
           <ul className="plain-list">
             {items.map((item, index) => (
               <li key={`${item.name_en}-${index}`}>
-                {itemLabel(item.name_en)} · {ITEM_KIND_LABELS[item.kind] ?? item.kind}
+                {backgroundNames[item.name_en] ?? itemLabel(item.name_en)} ·{" "}
+                {ITEM_KIND_LABELS[item.kind] ?? item.kind}
                 {item.armor_base ? ` · КЗ ${item.armor_base}${item.dex_cap !== null && item.dex_cap !== undefined ? ` (СПР ≤ ${item.dex_cap})` : ""}` : ""}
                 {item.weight_lb ? ` · ${item.weight_lb} фнт` : ""}
                 {item.equipped ? " · споряджено" : ""}{" "}
                 <button type="button" className="link-button" onClick={() => setItems(items.filter((_, position) => position !== index))}>
                   прибрати
                 </button>
+                <ItemFacts
+                  nameEn={item.name_en}
+                  entryId={item.entry_id ?? null}
+                  kind={item.kind}
+                  damage={item.damage ?? null}
+                  armorBase={item.armor_base ?? null}
+                  dexCap={item.dex_cap ?? null}
+                  weightLb={item.weight_lb ?? 0}
+                />
               </li>
             ))}
           </ul>
@@ -1673,7 +1715,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
       <div className="wizard-step">
         <p className="hint">{options.hint ?? "Цей клас не чарує — крок можна пропустити."}</p>
         <button type="button" className="button button--primary" disabled={busy} onClick={() => onSubmit({ spells: [] })}>
-          Далі
+          Створити персонажа
         </button>
       </div>
     );
@@ -1718,7 +1760,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
   return (
     <div className="wizard-step">
       <p className="hint">
-        {casting.name_en}: чарує від {casting.ability ? abilityLabel(casting.ability) : "—"}
+        {termLabel(casting.name_en)}: чарує від {casting.ability ? abilityLabel(casting.ability) : "—"}
         {casting.prepares
           ? ` · готує до ${casting.prepared_limit} заклять`
           : ` · знає до ${casting.spells_known_limit ?? 0}`}
@@ -1737,7 +1779,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
                 className={`chip ${active ? "chip--active" : ""}`}
                 onClick={() => toggle(entry, 0, casting.cantrips_limit)}
               >
-                {entry.name_en}
+                {spellLabel(entry.name_en)}
               </button>
             );
           })}
@@ -1752,7 +1794,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
             return (
               <div key={entry.id} className={`chip chip--row ${active ? "chip--active" : ""}`}>
                 <button type="button" className="link-button" onClick={() => toggle(entry, 1, knownLimit)}>
-                  {entry.name_en}
+                  {spellLabel(entry.name_en)}
                 </button>
                 {active && casting.prepares ? (
                   <label className="prepared">
@@ -1776,7 +1818,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
       </section>
 
       <button type="button" className="button button--primary" disabled={busy} onClick={() => onSubmit({ spells: selected })}>
-        Далі
+        Створити персонажа
       </button>
     </div>
   );

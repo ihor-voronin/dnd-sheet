@@ -602,6 +602,47 @@ def test_2022_spread_cannot_break_the_twenty_cap(client: TestClient) -> None:
     assert "20" in response.text
 
 
+def test_equipment_step_keeps_notes_and_weapon_damage(client: TestClient) -> None:
+    """Нотатки предмета й власний урон зброї переживають «Далі».
+
+    Без цього «від передісторії» зникало після збереження, і повторний вхід
+    у крок додавав спорядження передісторії вдруге.
+    """
+    draft = _start(client)
+    draft_id = draft["draft"]["id"]
+    for step, payload in FIGHTER_STEPS[:-1]:
+        response = client.put(
+            f"/api/v1/characters/wizard/{draft_id}/steps/{step}", json=payload
+        )
+        assert response.status_code == 200, response.text
+    items = [
+        {
+            "name_en": "common clothes",
+            "kind": "gear",
+            "quantity": 1,
+            "notes": "від передісторії",
+        },
+        {
+            "name_en": "longsword",
+            "kind": "weapon",
+            "quantity": 1,
+            "damage": "1d8 slashing",
+        },
+    ]
+    response = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/equipment",
+        json={"items": items, "money": {"gp": 10}},
+    )
+    assert response.status_code == 200, response.text
+
+    answers = client.get(
+        f"/api/v1/characters/wizard/{draft_id}/steps/equipment"
+    ).json()["answers"]
+    saved = {row["name_en"]: row for row in answers["items"]}
+    assert saved["common clothes"]["notes"] == "від передісторії"
+    assert saved["longsword"]["damage"] == "1d8 slashing"
+
+
 def test_warlock_patron_expands_spell_choices(client: TestClient) -> None:
     draft = _start(client)
     draft_id = draft["draft"]["id"]

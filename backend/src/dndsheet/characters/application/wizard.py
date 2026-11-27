@@ -284,6 +284,7 @@ def _items(values: Any) -> tuple[InventoryItem, ...]:
                     armor_base=record.get("armor_base"),
                     dex_cap=record.get("dex_cap"),
                     notes=record.get("notes") or None,
+                    damage=record.get("damage") or None,
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:

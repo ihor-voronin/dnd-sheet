@@ -330,7 +330,7 @@ def _spells_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
     if not definition.casts_spells:
         return {
             "casting": None,
-            "hint": f"{definition.name_en} на 1 рівні не чарує — крок можна пропустити.",
+            "hint": "Цей клас на 1 рівні не чарує — крок можна пропустити.",
         }
     spells = service.class_spells(definition.key, max_level=1)
     cantrips = [entry_brief(entry) for entry in spells.spells if entry.data.get("level") == 0]

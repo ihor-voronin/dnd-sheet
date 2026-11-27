@@ -885,11 +885,31 @@ export function componentsLabel(raw: string | null | undefined): string {
   return raw.replace(/\s*\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
 }
 
-/** Урон зброї: «1d8+3 slashing» → «1d8+3 рубляча». */
+/** Урон зброї: «1d8+3 slashing» → «1d8+3 рубаний».
+ *
+ * У книгах тип трапляється скороченням («1d8 (1d10) s»), тому крім повних
+ * назв знаємо літери: b — дробильний, p — колотий, s — рубаний.
+ */
+const DAMAGE_LETTER: Record<string, string> = {
+  b: "дробильний",
+  p: "колотий",
+  s: "рубаний",
+};
+
+/** Тип урону зброї — чоловічого роду, бо це «урон», а не «шкода»:
+ * «1d4 колюча» читалося б неправильно. */
+const WEAPON_DAMAGE: Record<string, string> = {
+  bludgeoning: "дробильний",
+  piercing: "колотий",
+  slashing: "рубаний",
+};
+
 export function weaponDamage(raw: string): string {
   const match = raw.match(/^(.*?)\s+([a-z]+)$/i);
   if (!match) return raw;
-  const type = DAMAGE_TYPE_LABELS[match[2].toLowerCase()] ?? match[2];
+  const tail = match[2].toLowerCase();
+  const type =
+    WEAPON_DAMAGE[tail] ?? DAMAGE_TYPE_LABELS[tail] ?? DAMAGE_LETTER[tail] ?? match[2];
   return `${match[1].trim()} ${type}`;
 }
 

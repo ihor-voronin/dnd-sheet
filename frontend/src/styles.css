@@ -360,6 +360,17 @@ body {
   max-width: 900px;
 }
 
+/* «Що це дає» на кроці «Спорядження» бере сітку з листа, а там вона для
+   темної панелі: значення там білі. У світлому візарді їх треба перефарбувати,
+   інакше видно самі підписи. */
+.wizard-step .item-detail__stat dd {
+  color: inherit;
+}
+
+.wizard-step .item-facts {
+  margin-top: 4px;
+}
+
 .wizard-block {
   padding: 14px 16px;
   border: 1px solid var(--line);

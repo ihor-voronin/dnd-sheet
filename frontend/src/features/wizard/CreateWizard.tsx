@@ -105,14 +105,22 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
         setView(updated);
         const index = STEP_ORDER.indexOf(step as (typeof STEP_ORDER)[number]);
         const next = STEP_ORDER[index + 1];
-        if (next) await load(draftId, next);
+        if (next) {
+          await load(draftId, next);
+          return;
+        }
+        // Останній крок: «Далі» означає «створити персонажа». Раніше тут не
+        // було наступного кроку, і кнопка мовчки нічого не робила.
+        const finished = await finishDraft(draftId);
+        window.localStorage.removeItem(DRAFT_KEY);
+        onFinished(finished.character_id);
       } catch (failure) {
         setError(messageOf(failure));
       } finally {
         setBusy(false);
       }
     },
-    [draftId, step, load],
+    [draftId, step, load, onFinished],
   );
 
   async function finish() {
@@ -158,6 +166,9 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
   const statuses = new Map(view.draft.steps.map((item) => [item.step, item]));
   const index = STEP_ORDER.indexOf(step as (typeof STEP_ORDER)[number]);
   const previous = index > 0 ? STEP_ORDER[index - 1] : null;
+  //: Останній крок сам веде до створення персонажа, тож кнопка в підвалі
+  //: тут не потрібна — інакше їх дві.
+  const isLastStep = index === STEP_ORDER.length - 1;
 
   return (
     <section className="wizard">
@@ -268,7 +279,7 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
         </div>
         <div className="wizard-actions">
           {busy ? <span className="meta">Зберігаємо…</span> : null}
-          {view.draft.ready_to_finish ? (
+          {view.draft.ready_to_finish && !isLastStep ? (
             <button type="button" className="button button--primary" disabled={busy} onClick={() => void finish()}>
               Створити персонажа
             </button>

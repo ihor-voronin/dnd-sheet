@@ -296,8 +296,10 @@ function catalogMeta(entry: ItemSearchResult, titles: Record<string, string>): s
 /** Що з запису довідника варто показати в розгорнутому рядку. */
 function statsOf(data: Record<string, unknown>): [string, string][] {
   const rows: [string, string][] = [];
-  const rarity = RARITY_LABELS[String(data.rarity ?? "").toLowerCase()];
-  if (rarity) rows.push(["Рідкість", rarity]);
+  const rarityRaw = String(data.rarity ?? "").toLowerCase();
+  const rarity = RARITY_LABELS[rarityRaw];
+  // «unknown (magic)» — це не рідкість, а позначка, що в книзі її немає.
+  if (rarity && !rarityRaw.includes("unknown")) rows.push(["Рідкість", rarity]);
   if (data.armor_class) rows.push(["Клас захисту", String(data.armor_class)]);
   if (data.damage) rows.push(["Урон", weaponDamage(String(data.damage))]);
   if (data.properties) rows.push(["Властивості", weaponNotes(String(data.properties))]);
@@ -307,9 +309,19 @@ function statsOf(data: Record<string, unknown>): [string, string][] {
 }
 
 /** Рядок таблиці спорядження («Chain Mail · 75 gp · 55 lb. · AC 16») — це не
- * опис, а цифри: їх показує сітка характеристик, а не текст правила. */
+ * опис, а цифри: їх показує сітка характеристик, а не текст правила. Так само
+ * не опис — службовий рядок «Weapon (longsword), unknown (magic)». */
 function isStatLine(text: string): boolean {
-  return text.length < 220 && (text.match(/ · /g)?.length ?? 0) >= 2;
+  if (text.length >= 260) return false;
+  if ((text.match(/ · /g)?.length ?? 0) >= 2) return true;
+  if (
+    /^(Weapon|Armor|Shield|Wondrous item|Potion|Ring|Rod|Staff|Wand|Scroll|Ammunition)\b/i.test(
+      text,
+    )
+  ) {
+    return true;
+  }
+  return /^(?:[^.]{0,80},?\s*){1,4}(?:\d+\s*(?:lb\.|gp|ft\.)|unknown \(magic\))\s*$/i.test(text);
 }
 
 export function InventoryPanel({
@@ -1032,5 +1044,139 @@ export function InventoryPanel({
         <p className="hint">Порожньо. Відкрийте каталог і додайте предмет.</p>
       )}
     </>
+  );
+}
+
+/** «Що це дає» — числа й опис речі, без панелі інвентаря.
+ *
+ * Потрібен там, де предмет показують у списку, а панелі ще немає: на кроці
+ * «Спорядження» візарда. Числа беруться з запису довідника (урон,
+ * властивості, КЗ, ціна, вага), опис — з українського словника, а якщо його
+ * немає — з книги англійською. Для власного предмета лишаються його власні
+ * поля, бо запису в довіднику в нього немає.
+ */
+export function ItemFacts({
+  nameEn,
+  entryId,
+  kind,
+  damage,
+  armorBase,
+  dexCap,
+  weightLb,
+}: {
+  nameEn: string;
+  entryId?: string | null;
+  kind: string;
+  damage?: string | null;
+  armorBase?: number | null;
+  dexCap?: number | null;
+  weightLb?: number;
+}) {
+  const [uk, setUk] = useState<Record<string, { name?: string; text?: string }>>({});
+  const [entry, setEntry] = useState<CompendiumEntry | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showEnglish, setShowEnglish] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    void fetchItemsUk().then((texts) => {
+      if (alive) setUk(texts);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    void (async () => {
+      let found: CompendiumEntry | null = null;
+      if (entryId) {
+        try {
+          found = await fetchEntry(entryId);
+        } catch {
+          found = null;
+        }
+      }
+      if (!found) {
+        try {
+          const payload = await searchItems(nameEn, 8);
+          const key = itemKey(nameEn);
+          const words = key.split(" ").filter(Boolean);
+          const hit =
+            payload.items.find((row) => itemKey(row.name_en) === key) ??
+            payload.items.find((row) => {
+              const theirs = new Set(itemKey(row.name_en).split(" "));
+              return words.every((word) => theirs.has(word));
+            }) ??
+            payload.items.find(
+              (row) =>
+                itemKey(row.name_en).includes(key) || key.includes(itemKey(row.name_en)),
+            );
+          if (hit) found = await fetchEntry(hit.id);
+        } catch {
+          found = null;
+        }
+      }
+      if (!alive) return;
+      setEntry(found);
+      setLoading(false);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [nameEn, entryId]);
+
+  const translated = uk[itemKey(nameEn)]?.text ?? "";
+  const raw = entry?.text_en?.trim() ?? "";
+  const english = raw && !isStatLine(raw) ? raw : "";
+
+  const stats: [string, string][] = (() => {
+    const fromEntry = entry ? statsOf((entry.data ?? {}) as Record<string, unknown>) : [];
+    if (fromEntry.length) return fromEntry;
+    const own: [string, string][] = [];
+    const kindLabel = ITEM_KIND_LABELS[kind];
+    if (kindLabel) own.push(["Тип", kindLabel]);
+    if (damage) own.push(["Урон", weaponDamage(damage)]);
+    if (armorBase) own.push(["Клас захисту", String(armorBase)]);
+    if (dexCap !== null && dexCap !== undefined) own.push(["Межа СПР", String(dexCap)]);
+    if (weightLb) own.push(["Вага", `${weightLb} фнт`]);
+    return own;
+  })();
+
+  return (
+    <details className="reckoning item-facts">
+      <summary>Що це дає</summary>
+      {loading && !translated ? <p className="hint">Шукаємо опис…</p> : null}
+      {stats.length ? (
+        <dl className="item-detail__stats">
+          {stats.map(([label, value]) => (
+            <div key={label} className="item-detail__stat">
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {translated || english ? (
+        <RuleText text={showEnglish && english ? english : translated || english} />
+      ) : null}
+      {!loading && !translated && !english ? (
+        <p className="hint">
+          Опису в книзі немає — лише числа вище. Свої нотатки можна дописати на
+          екрані персонажа.
+        </p>
+      ) : null}
+      {english && translated ? (
+        <button
+          type="button"
+          className="link-button item-detail__toggle"
+          onClick={() => setShowEnglish((value) => !value)}
+        >
+          {showEnglish ? "показати українською" : "показати оригінал"}
+        </button>
+      ) : null}
+    </details>
   );
 }
