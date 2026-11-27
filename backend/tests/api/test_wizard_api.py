@@ -663,6 +663,24 @@ def test_class_features_endpoint_explains_every_feature(client: TestClient) -> N
     assert not rows["Sorcerous Origin feature"].get("text")
 
 
+def test_subclass_endpoint_gives_description_and_path(client: TestClient) -> None:
+    """Вибір підкласу: назва, опис-вступ і всі вміння з рівнями й текстами."""
+    response = client.get(
+        "/api/v1/characters/wizard/subclass/phb-2014/subclass/wild-magic"
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+
+    assert data["name_uk"] == "Дика магія"
+    assert data["description_uk"], "вступ до глави теж перекладений"
+    levels = {feature["level"] for feature in data["features"]}
+    assert {1, 6, 14, 18} <= levels, "видно, що підклас дає далі"
+    assert all(feature.get("name_uk") for feature in data["features"])
+    assert all(
+        feature.get("text_uk") for feature in data["features"] if feature["description"]
+    )
+
+
 def test_warlock_patron_expands_spell_choices(client: TestClient) -> None:
     draft = _start(client)
     draft_id = draft["draft"]["id"]

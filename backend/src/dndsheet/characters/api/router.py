@@ -29,7 +29,13 @@ from dndsheet.characters.api.serializers import (
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.background_info import enrich_background
 from dndsheet.characters.api import classes_uk
-from dndsheet.characters.api.features import class_texts_all, enrich_features, strip_level_line
+from dndsheet.characters.api.features import (
+    class_texts_all,
+    enrich_features,
+    strip_level_line,
+    subclass_features,
+    subclass_intro,
+)
 from dndsheet.characters.api.level_up import level_up_payload, report_payload
 from dndsheet.characters.api.spell_meta import enrich_spells
 from dndsheet.characters.api.wizard_options import build_options
@@ -280,6 +286,32 @@ def class_features(class_key: str, request: Request) -> dict:
         strip_level_line(row)
         rows.append(row)
     return {"class_key": definition.key, "features": rows}
+
+
+@router.get("/wizard/subclass/{subclass_key:path}")
+def subclass_details(subclass_key: str, request: Request) -> dict:
+    """Підклас цілком для вибору: назва, опис-вступ і всі вміння з текстами.
+
+    Вантажиться, коли гравець натиснув на варіант: вбудовувати це в крок
+    «Клас» означало б віддавати описи й тексти всіх підкласів класу (у жреця
+    їх двадцять) ще до вибору.
+    """
+    service = _compendium(request)
+    cache = getattr(request.app.state, "feature_cache", {})
+    try:
+        entry = service.entry(subclass_key)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    intro = subclass_intro(service, subclass_key, cache)
+    return {
+        "id": entry.id,
+        "name_en": entry.name_en,
+        "name_uk": intro.get("name_uk"),
+        "description": intro.get("description", ""),
+        "description_uk": intro.get("description_uk"),
+        "corrupt": bool(intro.get("corrupt")),
+        "features": subclass_features(service, subclass_key, cache),
+    }
 
 
 @router.get("/wizard/{draft_id}")

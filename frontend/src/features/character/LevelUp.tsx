@@ -27,6 +27,7 @@ import {
   subclassLabel,
 } from "../../labels";
 import type { LevelUpPlan, LevelUpReport, LevelUpView } from "../wizard/types";
+import { SubclassBrief } from "../wizard/SubclassBrief";
 import { RuleText } from "./panels";
 import { featureLabel, termLabel, ukSubclass, withEnglish } from "./uk";
 
@@ -387,36 +388,12 @@ export function LevelUpWizard({
                   ))}
                 </div>
 
-                {(() => {
-                  const option =
-                    plan.subclass?.options.find((item) => item.id === subclassKey) ??
-                    null;
-                  if (!option?.features.length) return null;
-                  return (
-                    <div className="levelup-subclass-path">
-                      <h4>Що ця спеціалізація дасть далі</h4>
-                      <ul className="plain-list">
-                        {option.features.map((item) => (
-                          <li key={`${item.level}-${item.name_en}`}>
-                            {item.level} рівень ·{" "}
-                            {item.name_uk
-                              ? withEnglish(item.name_en, item.name_uk)
-                              : item.name_en}
-                            {item.new ? (
-                              <span className="meta"> · отримуєте зараз</span>
-                            ) : null}
-                            {item.new && (item.text_uk || item.text) ? (
-                              <details className="reckoning">
-                                <summary>Що це дає</summary>
-                                <RuleText text={item.text_uk || item.text || ""} />
-                              </details>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  );
-                })()}
+                {subclassKey ? (
+                  <SubclassBrief
+                    subclassKey={subclassKey}
+                    highlightLevel={plan.new_level}
+                  />
+                ) : null}
               </section>
             ) : null}
 

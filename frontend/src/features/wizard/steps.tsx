@@ -45,6 +45,7 @@ import { fetchClassFeatures, searchItems } from "../../api";
 import type { ClassFeatureRow, ItemSearchResult } from "../../api";
 import { RuleText } from "../character/panels";
 import { ItemFacts, bodyFromEntry } from "../character/inventory";
+import { SubclassBrief } from "./SubclassBrief";
 import {
   featureLabel,
   featureText,
@@ -662,6 +663,9 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
                     </button>
                   ))}
                 </div>
+                {subclassKey ? (
+                  <SubclassBrief subclassKey={subclassKey} highlightLevel={1} />
+                ) : null}
                 {!subclassKey ? (
                   <p className="hint hint--warn">
                     {termLabel(selected.name_en)} обирає{" "}

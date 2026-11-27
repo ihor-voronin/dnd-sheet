@@ -338,12 +338,58 @@ def strip_level_line(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+#: Заголовок глави підкласу: `# Path of the Berserker`.
+SUBCLASS_TITLE = re.compile(r"(?m)^#\s+.*\n")
+
+
+def subclass_intro(
+    service: CompendiumService,
+    subclass_key: str,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Назва підкласу й проза на початку глави («що це таке»).
+
+    Потрібно на кроці «Клас»: гравець обирає спеціалізацію, і йому треба
+    побачити, що вона собою являє, а не лише назву.
+    """
+    store = cache if cache is not None else {}
+    key = f"subclass-intro:{subclass_key}"
+    if key in store:
+        return store[key]
+    payload: dict[str, Any] = {"description": ""}
+    try:
+        entry = service.entry(subclass_key)
+    except NotFoundError:
+        store[key] = payload
+        return payload
+    head = re.split(r"(?m)^##\s+", entry.text_en or "", maxsplit=1)[0]
+    head = SUBCLASS_TITLE.sub("", head, count=1).strip()
+    # У корпусі трапляється запис без жодного `##`: це не глава підкласу, а
+    # чужий текст (у «Lunar Sorcery» з SotDQ — російський переклад цілого
+    # розділу пригоди). Показувати його як «опис» було б гірше, ніж чесно
+    # сказати, що джерело пошкоджене.
+    corrupt = "## " not in (entry.text_en or "") and len(entry.text_en or "") > 1500
+    payload = {"name_en": entry.name_en, "description": "" if corrupt else head}
+    if corrupt:
+        payload["corrupt"] = True
+    translated_name = subclasses_uk.name_uk(entry.name_en)
+    if translated_name:
+        payload["name_uk"] = translated_name
+    if head and not corrupt:
+        translated_text = subclasses_uk.text_uk(head)
+        if translated_text:
+            payload["description_uk"] = translated_text
+    store[key] = payload
+    return payload
+
+
 __all__ = [
     "class_details",
     "class_texts_all",
     "enrich_features",
     "strip_level_line",
     "subclass_features",
+    "subclass_intro",
 ]
 
 

@@ -15,7 +15,11 @@ from dataclasses import asdict
 from typing import Any
 
 from dndsheet.characters.api import classes_uk, subclasses_uk
-from dndsheet.characters.api.features import class_details, subclass_features
+from dndsheet.characters.api.features import (
+    class_details,
+    subclass_features,
+    subclass_intro,
+)
 from dndsheet.characters.application.level_up import LevelUpService
 from dndsheet.characters.domain.services.feature_resources import name_of
 from dndsheet.characters.domain.services.level_up import LevelPlan
@@ -161,6 +165,7 @@ def _subclass_payload(
             # роздував би відповідь у десять разів (у жреця 20 доменів).
             brief = entry_brief(entry)
             items = subclass_features(compendium, entry.id, cache)
+            intro = subclass_intro(compendium, entry.id, cache)
             options.append(
                 {
                     "id": brief["id"],
@@ -170,6 +175,9 @@ def _subclass_payload(
                     "name_uk": subclasses_uk.name_uk(brief["name_en"])
                     or brief["name_uk"],
                     "source_id": brief["source_id"],
+                    # Вступ до глави: «що це за спеціалізація».
+                    "description": intro.get("description", ""),
+                    "description_uk": intro.get("description_uk"),
                     # Усі вміння підкласу з рівнями: гравець має бачити, що
                     # обрана спеціалізація дасть не лише сьогодні, а й далі.
                     "features": [

@@ -521,6 +521,20 @@ body {
   margin-top: 8px;
 }
 
+/* Картка підкласу: «що це таке» + вміння за рівнями (крок «Клас» і
+   підвищення рівня). Опис — як опис класу, тому сірий. */
+.subclass-brief {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.subclass-brief__text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .choice {
   display: flex;
   flex-direction: column;

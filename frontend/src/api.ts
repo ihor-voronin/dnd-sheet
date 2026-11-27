@@ -141,6 +141,35 @@ export function fetchClassFeatures(
   );
 }
 
+/** Підклас цілком: назва, опис-вступ і всі вміння з текстами. */
+export interface SubclassBriefPayload {
+  id: string;
+  name_en: string;
+  name_uk: string | null;
+  description: string;
+  description_uk: string | null;
+  /** Запис у корпусі пошкоджений (чужий текст без структури) — показуємо примітку. */
+  corrupt?: boolean;
+  features: {
+    name_en: string;
+    level: number;
+    name_uk?: string;
+    description: string;
+    text_uk?: string;
+    subclass_name: string;
+    subclass_name_uk?: string | null;
+  }[];
+}
+
+export function fetchSubclassDetails(subclassKey: string): Promise<SubclassBriefPayload> {
+  return getJson(
+    `/api/v1/characters/wizard/subclass/${subclassKey
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/")}`,
+  );
+}
+
 /** Закляття класу до рівня включно — зі «Spell Lists» книг. */
 export function fetchClassSpells(
   classKey: string,
