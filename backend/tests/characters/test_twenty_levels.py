@@ -158,7 +158,22 @@ def test_every_pair_of_casters_uses_multiclass_table(classes) -> None:
                 combined = _contribution(
                     definition_a.caster_progression, level_a
                 ) + _contribution(definition_b.caster_progression, level_b)
-                expected = spell_slots(combined)
+                # Таблиця мультикласу — лише коли «Spellcasting» мають обидва
+                # класи (PHB, p. 164). Pact Magic чаклуна — окрема риса, а
+                # паладин і слідопит на 1 рівні ще не заклинателі: тоді слоти
+                # дає власна таблиця другого класу.
+                standard = [
+                    (definition, level)
+                    for definition, level in ((definition_a, level_a), (definition_b, level_b))
+                    if not definition.is_pact_magic
+                    and (definition.max_spell_level(level) > 0 or definition.cantrips_at(level) > 0)
+                ]
+                if len(standard) > 1:
+                    expected = spell_slots(combined)
+                elif standard:
+                    expected = standard[0][0].slots_at(standard[0][1])
+                else:
+                    expected = ()
                 casting = SpellSlotService().compute(
                     [
                         (CharacterClass(first, level_a), definition_a),

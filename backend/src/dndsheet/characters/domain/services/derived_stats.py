@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.inventory import CARRY_PER_STRENGTH
@@ -115,6 +115,10 @@ class ComputedSheet:
     #: Які поля гравець виправив вручну (ключі зі `SheetState.overrides`).
     overridden: frozenset[str] = frozenset()
     warnings: tuple[str, ...] = ()
+    #: Навички з експертністю: бонус майстерності додано двічі.
+    skill_expertise: dict[Skill, bool] = field(default_factory=dict)
+    passive_investigation: int = 10
+    passive_insight: int = 10
 
     # --- зручні похідні для рендерів --------------------------------------
 
@@ -151,7 +155,9 @@ class DerivedStatsCalculator:
             for ability in Ability
         }
         saving_throws = {
-            ability: modifiers_map[ability] + (proficiency if saving_proficiency[ability] else 0)
+            ability: modifiers_map[ability]
+            + (proficiency if saving_proficiency[ability] else 0)
+            + modifiers.total(ModifierKind.SAVING_THROW)
             for ability in Ability
         }
         for ability in Ability:
@@ -163,9 +169,15 @@ class DerivedStatsCalculator:
         skill_proficiency = {
             skill: proficiencies.has(ProficiencyKind.SKILL, skill.value) for skill in Skill
         }
+        expert = set(character.expertise)
+        skill_expertise = {
+            skill: skill_proficiency[skill] and skill.value in expert for skill in Skill
+        }
         skills = {
             skill: modifiers_map[SKILL_ABILITY[skill]]
             + (proficiency if skill_proficiency[skill] else 0)
+            + (proficiency if skill_expertise[skill] else 0)
+            + modifiers.total(ModifierKind.SKILL, skill.value)
             for skill in Skill
         }
         for skill in Skill:
@@ -179,7 +191,7 @@ class DerivedStatsCalculator:
             armor_class = overrides["armor_class"]
             ac_parts = (ArmorClassPart(label="override", value=armor_class),)
             applied.add("armor_class")
-        hit_points = self._hit_points(character, modifiers_map, warnings)
+        hit_points = self._hit_points(character, modifiers_map, warnings, modifiers)
         if "hit_points_max" in overrides:
             maximum = overrides["hit_points_max"]
             current = character.hp.current
@@ -209,7 +221,17 @@ class DerivedStatsCalculator:
             initiative = overrides["initiative"]
             applied.add("initiative")
 
-        passive = PASSIVE_BASE + skills[Skill.PERCEPTION]
+        passive = (
+            PASSIVE_BASE
+            + skills[Skill.PERCEPTION]
+            + modifiers.total(ModifierKind.PASSIVE, "perception")
+        )
+        passive_investigation = (
+            PASSIVE_BASE
+            + skills[Skill.INVESTIGATION]
+            + modifiers.total(ModifierKind.PASSIVE, "investigation")
+        )
+        passive_insight = PASSIVE_BASE + skills[Skill.INSIGHT]
         if "passive_perception" in overrides:
             passive = overrides["passive_perception"]
             applied.add("passive_perception")
@@ -224,11 +246,14 @@ class DerivedStatsCalculator:
             saving_throw_proficiency=saving_proficiency,
             skills=skills,
             skill_proficiency=skill_proficiency,
+            skill_expertise=skill_expertise,
             initiative=initiative,
             speed=speed,
             armor_class=armor_class,
             armor_class_parts=ac_parts,
             passive_perception=passive,
+            passive_investigation=passive_investigation,
+            passive_insight=passive_insight,
             hit_points=hit_points,
             hit_dice=hit_dice_pool(character.class_entries()),
             spellcasting=spellcasting,
@@ -275,22 +300,42 @@ class DerivedStatsCalculator:
             if capped:
                 parts.append(ArmorClassPart(label="dexterity", value=capped))
         else:
-            parts.append(ArmorClassPart(label="unarmored", value=UNARMORED_BASE))
-            second = next(
-                (
-                    UNARMORED_DEFENSE[entry.class_key]
-                    for entry in character.classes
-                    if entry.class_key in UNARMORED_DEFENSE and entry.level > 0
-                ),
-                None,
-            )
-            parts.append(ArmorClassPart(label="dexterity", value=dexterity))
-            if second is not None:
-                parts.append(
-                    ArmorClassPart(
-                        label=f"unarmored-defense:{second.value}", value=modifiers[second]
+            # Без броні — найкращий з доступних способів, а не перший і не сума
+            # (PHB, p. 14: «якщо кілька способів рахувати КЗ — оберіть один»):
+            # 10 + СПР; варвар 10 + СПР + СТА (щит дозволено); чернець 10 + СПР
+            # + МУД, лише без щита; драконячий родовід 13 + СПР.
+            has_shield = character.inventory.worn_shield is not None
+            options: list[list[ArmorClassPart]] = [
+                [
+                    ArmorClassPart(label="unarmored", value=UNARMORED_BASE),
+                    ArmorClassPart(label="dexterity", value=dexterity),
+                ]
+            ]
+            for entry in character.classes:
+                if entry.level <= 0:
+                    continue
+                second = UNARMORED_DEFENSE.get(entry.class_key)
+                if second is not None and not (entry.class_key == "monk" and has_shield):
+                    options.append(
+                        [
+                            ArmorClassPart(label="unarmored", value=UNARMORED_BASE),
+                            ArmorClassPart(label="dexterity", value=dexterity),
+                            ArmorClassPart(
+                                label=f"unarmored-defense:{second.value}", value=modifiers[second]
+                            ),
+                        ]
                     )
-                )
+                if entry.class_key == "sorcerer" and (entry.subclass_key or "").endswith(
+                    "draconic-bloodline"
+                ):
+                    options.append(
+                        [
+                            ArmorClassPart(label="draconic-resilience", value=13),
+                            ArmorClassPart(label="dexterity", value=dexterity),
+                        ]
+                    )
+            best = max(options, key=lambda option: sum(part.value for part in option))
+            parts.extend(part for part in best if part.value or part.label != "dexterity")
         if character.inventory.worn_shield is not None:
             parts.append(ArmorClassPart(label="shield", value=SHIELD_AC_BONUS))
         bonus = collected.total(ModifierKind.ARMOR_CLASS)
@@ -303,13 +348,21 @@ class DerivedStatsCalculator:
         character: Character,
         modifiers: dict[Ability, int],
         warnings: list[str],
+        collected: ModifierSet | None = None,
     ) -> HitPointsView:
         maximum, parts = hit_point_maximum(
             character.class_entries(), modifiers[Ability.CON], character.hp
         )
-        per_level = 0  # риси на кшталт Tough — етап 7; поле лишається для них
-        if per_level:
-            maximum += per_level * max(1, character.total_level)
+        # Правила, що додають хіти за рівні: пагорбовий дворф, драконячий
+        # родовід, риса Tough. Ручне значення максимуму (override) їх не чіпає.
+        if collected is not None and character.hp.override_max is None:
+            extra = collected.of(ModifierKind.MAX_HIT_POINTS)
+            for item in extra:
+                maximum += item.value
+            parts = parts + tuple(
+                HitPointPart(label=item.note_en or "bonus", value=item.value, source=item.source)
+                for item in extra
+            )
         state = character.hp
         # Незадані хіти показуємо як максимум; нуль лишається нулем, бо це
         # непритомний персонаж, а не «повний».

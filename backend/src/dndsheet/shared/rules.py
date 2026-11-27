@@ -172,13 +172,34 @@ def spell_slots(level: int) -> tuple[int, ...]:
     return CASTER_SLOT_TABLE[_check_level(level) - 1]
 
 
-def prepared_spell_limit(modifier: int, class_level: int) -> int:
-    """Скільки заклять готує клас на день (PHB, p. 201): мод + рівень, мінімум 1.
+def prepared_spell_limit(
+    modifier: int,
+    class_level: int,
+    progression: "CasterProgression | None" = None,
+) -> int:
+    """Скільки заклять клас готує на день, мінімум 1.
+
+    * жрець, друїд, маг — модифікатор + рівень класу (PHB, p. 58, 66, 114);
+    * паладин — модифікатор + **половина** рівня паладина, вниз (PHB, p. 84);
+    * артифіцер — модифікатор + половина рівня, вниз (TCE, p. 10).
 
     Формула одна на обчислювач листа й на щоденну підготовку: якщо їх дві,
     екран і перевірка рано чи пізно розійдуться.
     """
+    if progression in (CasterProgression.HALF, CasterProgression.ARTIFICER):
+        return max(1, modifier + class_level // 2)
     return max(1, modifier + class_level)
+
+
+#: Вимоги мультикласу (PHB, p. 163), де індекс механік помиляється: таблицю
+#: книги «Strength 13 or Dexterity 13» розбір склеїв в одну умову «і».
+MULTICLASS_REQUIREMENT_FIXES: Mapping[str, tuple[Mapping[Ability, int], ...]] = {
+    "fighter": ({Ability.STR: 13}, {Ability.DEX: 13}),
+}
+
+#: Що з книги може бути бронею; решта рядка («druids will not wear armor
+#: made of metal») — не володіння, а шум розбору.
+ARMOR_KINDS = frozenset({"light", "medium", "heavy", "shield"})
 
 
 #: Види, де підраса **обовʼязкова**: вона визначає числа (PHB p. 20–24 —
@@ -472,7 +493,9 @@ class ClassMechanics:
                 for choice in record.get("skill_choices") or ()
             ),
             skill_any=int(record.get("skill_any") or 0),
-            armor_training=tuple(str(item) for item in record.get("armor_training") or ()),
+            armor_training=tuple(
+                str(item) for item in record.get("armor_training") or () if str(item) in ARMOR_KINDS
+            ),
             weapon_training=tuple(str(item) for item in record.get("weapon_training") or ()),
             tool_training=tuple(str(item) for item in record.get("tool_training") or ()),
             spellcasting_ability=_optional_ability(record.get("spellcasting_ability")),
@@ -490,8 +513,10 @@ class ClassMechanics:
             subclass_level=(
                 int(record["subclass_level"]) if record.get("subclass_level") else None
             ),
-            multiclass_requirements=requirements,
-            multiclass_armor=tuple(str(item) for item in gained.get("armor") or ()),
+            multiclass_requirements=MULTICLASS_REQUIREMENT_FIXES.get(key, requirements),
+            multiclass_armor=tuple(
+                str(item) for item in gained.get("armor") or () if str(item) in ARMOR_KINDS
+            ),
             multiclass_weapons=tuple(str(item) for item in gained.get("weapons") or ()),
             multiclass_tools=tuple(str(item) for item in gained.get("tools") or ()),
             features=tuple(

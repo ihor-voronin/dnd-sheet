@@ -50,8 +50,18 @@ def computed_sheet(
             for ability in Ability
         },
         "skills": {
-            skill: {"value": value, "proficient": computed.skill_proficiency[skill]}
+            skill: {
+                "value": value,
+                "proficient": computed.skill_proficiency[skill],
+                "expertise": computed.skill_expertise.get(skill, False),
+            }
             for skill, value in computed.skills.items()
+        },
+        # Експертність: скільки дали рівні, що обрано і з чого можна обрати.
+        "expertise": {
+            "slots": character.expertise_slots,
+            "chosen": list(character.expertise),
+            "options": list(character.expertise_options()),
         },
         "armor_class": {
             "value": computed.armor_class,
@@ -60,6 +70,8 @@ def computed_sheet(
         "initiative": computed.initiative,
         "speed": computed.speed,
         "passive_perception": computed.passive_perception,
+        "passive_investigation": computed.passive_investigation,
+        "passive_insight": computed.passive_insight,
         "darkvision": computed.darkvision,
         "resistances": list(computed.resistances),
         "hit_points": {

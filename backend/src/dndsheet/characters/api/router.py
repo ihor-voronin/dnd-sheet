@@ -535,6 +535,24 @@ def prepare_spells(
     return {"sheet": _sheet_payload(request, character), "version": character.version}
 
 
+@router.post("/{character_id}/expertise")
+def set_expertise(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Експертність: `{"expertise": ["stealth", "thieves' tools"], "version": N}`."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    try:
+        character = _sheet_service(request).set_expertise(
+            character_id, body, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
 def _pop_version(body: dict[str, Any]) -> int | None:
     version = body.pop("version", None)
     if version is not None and (isinstance(version, bool) or not isinstance(version, int)):

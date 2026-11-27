@@ -89,23 +89,36 @@ class SpellSlotService:
         abilities: Mapping[Ability, int],
         proficiency_bonus: int,
     ) -> Spellcasting:
+        # Паладин і слідопит отримують «Spellcasting» лише на 2 рівні (PHB, p. 84,
+        # 91): на 1 рівні в них ні слотів, ні заговорів — і заклинателем для
+        # таблиці мультикласу такий клас ще не є.
         casters = [
             (entry, definition)
             for entry, definition in classes
-            if definition.casts_spells and entry.level > 0
+            if definition.casts_spells
+            and entry.level > 0
+            and (definition.max_spell_level(entry.level) > 0 or definition.cantrips_at(entry.level) > 0)
         ]
         if not casters:
             return Spellcasting(caster_level=0, slots=SpellSlots(), classes=())
-
         combined = caster_level(
             (definition.caster_progression, entry.level) for entry, definition in casters
         )
-        if len(casters) > 1:
+        # Таблиця мультикласу — лише коли «Spellcasting» мають два класи й
+        # більше; Pact Magic чаклуна сюди не рахується (PHB, p. 164–165):
+        # паладин 5 + чаклун 1 бере слоти з таблиці паладина.
+        standard_casters = [
+            (entry, definition) for entry, definition in casters if not definition.is_pact_magic
+        ]
+        if len(standard_casters) > 1:
             standard = spell_slots(combined) if combined else ()
             slots_from = "multiclass"
+        elif standard_casters:
+            entry, definition = standard_casters[0]
+            standard = definition.slots_at(entry.level)
+            slots_from = "class"
         else:
-            entry, definition = casters[0]
-            standard = () if definition.is_pact_magic else definition.slots_at(entry.level)
+            standard = ()
             slots_from = "class"
         pact: PactMagic | None = None
         for entry, definition in casters:
@@ -127,7 +140,7 @@ class SpellSlotService:
             modifier = (score - 10) // 2
             known = definition.spells_known_at(entry.level)
             prepared = (
-                prepared_spell_limit(modifier, entry.level)
+                prepared_spell_limit(modifier, entry.level, definition.caster_progression)
                 if definition.prepares_spells
                 else None
             )

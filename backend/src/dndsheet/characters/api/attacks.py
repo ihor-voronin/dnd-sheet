@@ -14,6 +14,7 @@ from typing import Any
 from dndsheet.characters.domain.attacks import WeaponProfile, attack_profile
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.inventory import InventoryItem, ItemKind
+from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.characters.domain.services.derived_stats import ComputedSheet
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
@@ -71,6 +72,7 @@ def attacks_for(
             strength_modifier=strength,
             dexterity_modifier=dexterity,
             proficiency=computed.proficiency_bonus,
+            proficient=_weapon_proficient(profile, computed),
         )
         if view is None:
             continue
@@ -90,6 +92,36 @@ def attacks_for(
             }
         )
     return attacks
+
+
+def _singular(value: str) -> str:
+    """«longswords» → «longsword», «crossbow, light» → «light crossbow»."""
+    text = value.strip().casefold().replace("’", "'")
+    if "," in text:
+        head, _, tail = text.partition(",")
+        text = f"{tail.strip()} {head.strip()}"
+    return text[:-1] if text.endswith("s") and not text.endswith("ss") else text
+
+
+def _weapon_proficient(profile: WeaponProfile, computed: ComputedSheet) -> bool:
+    """Чи володіє персонаж цією зброєю: категорією («simple»/«martial») або назвою.
+
+    Власна зброя без групи в довіднику вважається знайомою — інакше вписаний
+    гравцем магічний меч раптом втратив би бонус майстерності.
+    """
+    owned = {
+        _singular(item.value)
+        for item in computed.proficiencies.items
+        if item.kind is ProficiencyKind.WEAPON
+    }
+    group = profile.group.casefold()
+    if not group:
+        return True
+    if group.startswith("simple") and "simple" in owned:
+        return True
+    if group.startswith("martial") and "martial" in owned:
+        return True
+    return _singular(profile.name_en) in owned
 
 
 def _profile(
@@ -121,6 +153,7 @@ def _profile(
                 name_en=entry.name_en,
                 damage=damage.strip(),
                 properties=str(data.get("properties") or ""),
+                group=str(data.get("group") or ""),
             )
     cache[key] = profile
     return profile

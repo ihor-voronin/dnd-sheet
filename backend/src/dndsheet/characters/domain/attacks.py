@@ -30,6 +30,8 @@ class WeaponProfile:
     name_en: str
     damage: str | None = None
     properties: str = ""
+    #: Група з довідника: «Simple Melee Weapons», «Martial Ranged Weapons».
+    group: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +51,7 @@ def attack_profile(
     strength_modifier: int,
     dexterity_modifier: int,
     proficiency: int,
+    proficient: bool = True,
 ) -> AttackProfile | None:
     """Порахувати атаку; `None`, якщо в довіднику немає кубика урону."""
     if not profile.damage:
@@ -59,6 +62,8 @@ def attack_profile(
     if not dice:
         return None
     properties = profile.properties.casefold()
+    # Метальна зброя ближнього бою (кинджал, ручна сокира) кидається тією ж
+    # характеристикою, що й б'є: Сила, або краща для finesse (PHB, p. 147).
     if FINESSE in properties:
         ability = (
             Ability.STR if strength_modifier >= dexterity_modifier else Ability.DEX
@@ -73,7 +78,8 @@ def attack_profile(
         damage = f"{damage} {damage_type}"
     return AttackProfile(
         name_en=profile.name_en,
-        attack_bonus=proficiency + modifier,
+        # Бонус майстерності — лише до зброї, якою персонаж володіє (PHB, p. 146).
+        attack_bonus=(proficiency if proficient else 0) + modifier,
         damage=damage,
         ability=ability,
         notes=profile.properties,

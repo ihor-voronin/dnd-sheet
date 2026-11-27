@@ -40,7 +40,10 @@ from dndsheet.shared.events import (
     DomainEvent,
     LevelGained,
 )
-from dndsheet.shared.kernel import MAX_LEVEL, Ability, AbilityScore, Money
+from dndsheet.shared.kernel import MAX_LEVEL, Ability, AbilityScore, Money, Skill
+
+#: Ключ експертності для злодійських інструментів (плут, PHB p. 96).
+THIEVES_TOOLS = "thieves' tools"
 from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,
@@ -83,6 +86,10 @@ class Character:
     #: Самі бонуси виду (thaumaturgy тифлінга) не зберігаються — вони похідні.
     spell_choices: tuple[str, ...] = ()
     feats: tuple[str, ...] = ()
+    #: Експертність (PHB: плут 1/6, бард 3/10): навички або злодійські
+    #: інструменти з подвоєним бонусом майстерності. Значення — ключі навичок
+    #: (`stealth`) або `thieves' tools`.
+    expertise: tuple[str, ...] = ()
     #: Скільки разів гравець уже взяв покращення характеристик або рису.
     #: Їх дають рівні з рисою «Ability Score Improvement», тож кількість
     #: використаних мусить бути не більшою за кількість таких рівнів.
@@ -182,6 +189,58 @@ class Character:
             for feature in definition.features_at(entry.level)
             if feature.name_en == "Ability Score Improvement"
         )
+
+    @property
+    def expertise_slots(self) -> int:
+        """Скільки експертностей дали рівні: кожне вміння «Expertise» — дві.
+
+        Рахується з умінь класу, як і покращення характеристик: плут має його
+        на 1 і 6 рівнях, бард — на 3 і 10.
+        """
+        return 2 * sum(
+            1
+            for entry, definition in self.class_entries()
+            for feature in definition.features_at(entry.level)
+            if feature.name_en == "Expertise"
+        )
+
+    def expertise_options(self) -> tuple[str, ...]:
+        """Що можна взяти в експертність: навички з володінням + злодійські інструменти плута."""
+        proficiencies = self.all_proficiencies()
+        options = [
+            skill.value
+            for skill in Skill
+            if proficiencies.has(ProficiencyKind.SKILL, skill.value)
+        ]
+        is_rogue = any(entry.class_key == "rogue" for entry, _ in self.class_entries())
+        if is_rogue and (
+            proficiencies.has(ProficiencyKind.TOOL, "thieves' tools")
+            or proficiencies.has(ProficiencyKind.TOOL, "thieves’ tools")
+        ):
+            options.append(THIEVES_TOOLS)
+        return tuple(options)
+
+    def set_expertise(self, values: Iterable[str]) -> None:
+        """Обрати експертність (PHB, p. 96 і 54): не більше, ніж дали рівні."""
+        chosen: list[str] = []
+        for raw in values:
+            value = str(raw).strip().casefold().replace("’", "'")
+            if value and value not in chosen:
+                chosen.append(value)
+        slots = self.expertise_slots
+        if len(chosen) > slots:
+            raise ValidationError(
+                f"експертностей можна обрати {slots}, надіслано {len(chosen)}"
+            )
+        allowed = set(self.expertise_options())
+        wrong = [value for value in chosen if value not in allowed]
+        if wrong:
+            raise ValidationError(
+                "експертність можна взяти лише для навичок, якими персонаж володіє"
+                f" (або злодійських інструментів плута): {', '.join(wrong)}"
+            )
+        self.expertise = tuple(chosen)
+        self.bump_version()
 
     def roll_index_for(self, class_key: str) -> int:
         """Місце кидка хіт-дайса для наступного рівня в `hp.rolls`.
@@ -455,9 +514,12 @@ class Character:
     def all_proficiencies(self) -> Proficiencies:
         """Усі володіння: правила класу, виду, передісторії + вибір гравця.
 
-        Володіння кидками порятунку, бронею й зброєю дає **лише перший клас**:
-        за PHB (p. 164) мультиклас не додає цих володінь, тільки частину
-        (легка броня, проста зброя) — її візард додає окремо, коли бере рівень.
+        Перший клас дає все: порятунки, броню, зброю, інструменти. Кожен
+        наступний — лише те, що таблиця мультикласу (PHB, p. 164) називає для
+        нього: у воїна легка й середня броня, щити, проста й військова зброя, у
+        плута — легка броня й злодійські інструменти, у мага — нічого. Порятунків
+        мультиклас не дає взагалі. Навички на вибір (бард, слідопит, плут) — це
+        вибір гравця, вони живуть у `chosen`.
         """
         items: list[Proficiency] = []
         for index, (entry, definition) in enumerate(self.class_entries()):
@@ -477,9 +539,20 @@ class Character:
                     Proficiency(kind=ProficiencyKind.WEAPON, value=name, source=source)
                     for name in definition.weapon_training
                 )
+                tools = definition.tool_training
+            else:
+                items.extend(
+                    Proficiency(kind=ProficiencyKind.ARMOR, value=name, source=source)
+                    for name in definition.multiclass_armor
+                )
+                items.extend(
+                    Proficiency(kind=ProficiencyKind.WEAPON, value=name, source=source)
+                    for name in definition.multiclass_weapons
+                )
+                tools = definition.multiclass_tools
             items.extend(
                 Proficiency(kind=ProficiencyKind.TOOL, value=name, source=source)
-                for name in definition.tool_training
+                for name in tools
                 if not is_choice_label(name)
             )
         species = self.species
@@ -722,7 +795,9 @@ class Character:
                 f"{definition.name_en}: клас не готує закляття на день"
             )
         modifier = (self.ability_total(ability) - 10) // 2
-        return prepared_spell_limit(modifier, self.class_level(wanted))
+        return prepared_spell_limit(
+            modifier, self.class_level(wanted), definition.caster_progression
+        )
 
     def ability_total(self, ability: Ability) -> int:
         """Підсумок характеристики на листі: база + бонуси виду."""

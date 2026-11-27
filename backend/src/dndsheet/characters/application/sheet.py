@@ -239,6 +239,24 @@ class SheetService:
         self.characters.save(character)
         return character
 
+    def set_expertise(
+        self,
+        character_id: str,
+        payload: Mapping[str, Any],
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        """Обрати експертність (навички з подвоєним бонусом майстерності)."""
+        character = self._load_versioned(character_id, expected_version)
+        raw = payload.get("expertise")
+        if raw is None:
+            raw = []
+        if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
+            raise ValidationError("expertise має бути списком назв навичок")
+        character.set_expertise(raw)
+        self.characters.save(character)
+        return character
+
     # ------------------------------------------------------------------
     # інвентар
     # ------------------------------------------------------------------

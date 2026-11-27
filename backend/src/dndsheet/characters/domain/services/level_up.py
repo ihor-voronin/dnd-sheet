@@ -295,9 +295,13 @@ def _pact(computed: ComputedSheet) -> tuple[int, int] | None:
 
 
 def _requirements_text(definition: ClassMechanics) -> tuple[str, ...]:
-    """Вимоги одним рядком на альтернативу: «STR 13 або DEX 13»."""
+    """Вимоги одним рядком на альтернативу.
+
+    Усередині альтернативи умови діють разом («DEX 13 і WIS 13» у ченця), а
+    між альтернативами — «або» (воїн: «STR 13» або «DEX 13»).
+    """
     return tuple(
-        " або ".join(f"{ability.value.upper()} {score}" for ability, score in alternative.items())
+        " і ".join(f"{ability.value.upper()} {score}" for ability, score in alternative.items())
         for alternative in definition.multiclass_requirements
     )
 

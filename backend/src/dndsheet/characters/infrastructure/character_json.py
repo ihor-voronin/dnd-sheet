@@ -310,6 +310,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
         "spells": spells_to_record(character.spells),
         "spell_choices": list(character.spell_choices),
         "feats": list(character.feats),
+        "expertise": list(character.expertise),
         "asi_taken": character.asi_taken,
         "hp": {
             "current": character.hp.current,
@@ -359,6 +360,7 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
         spells=spells_from_record(record.get("spells")),
         spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
         feats=tuple(str(item) for item in record.get("feats") or ()),
+        expertise=tuple(str(item) for item in record.get("expertise") or ()),
         asi_taken=int(record.get("asi_taken") or 0),
         hp=HitPointState(
             current=_hp_current(hp, legacy=legacy),
