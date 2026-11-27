@@ -3,9 +3,11 @@
 #   .\deploy.ps1            # зібрати образ і застосувати (Terraform покаже план і спитає)
 #   .\deploy.ps1 -NoBuild   # без перезбирання образу (лише конфіг або .env)
 #   .\deploy.ps1 -Plan      # лише показати, що зміниться
+#   .\deploy.ps1 -AutoApprove   # без питання «yes» (план усе одно друкується)
 param(
     [switch]$NoBuild,
-    [switch]$Plan
+    [switch]$Plan,
+    [switch]$AutoApprove
 )
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path "$PSScriptRoot\..\.."
@@ -52,5 +54,9 @@ Push-Location $PSScriptRoot
 try {
     & $terraform init -input=false | Out-Null
     $action = if ($Plan) { "plan" } else { "apply" }
-    & $terraform $action -var-file="..\secrets\terraform\terraform.tfvars" -var "image_id=$imageId"
+    # Масив явно: `if` розгорнув би масив з одного елемента в рядок.
+    [string[]]$extra = @()
+    if ($AutoApprove -and -not $Plan) { $extra += "-auto-approve" }
+    & $terraform $action -var-file="..\secrets\terraform\terraform.tfvars" -var "image_id=$imageId" @extra
+    if ($LASTEXITCODE -ne 0) { throw "terraform $action завершився з помилкою" }
 } finally { Pop-Location }

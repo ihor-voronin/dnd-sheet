@@ -3,7 +3,8 @@
 # RackNerd не має API для Terraform, тож сам сервер Terraform не створює — він
 # доводить уже наявний VPS до потрібного стану по SSH:
 #   1. bootstrap — Docker, файрвол, swap, щоденний бекап бази, вхід лише ключем;
-#   2. image     — образ, зібраний тут (`docker compose build app`), їде на сервер;
+#   2. image     — образ, зібраний тут (`docker compose build app`), їде на сервер
+#                  стиснутим (files/save-image.ps1);
 #                  його id передає deploy.ps1 (провайдер external до Docker Desktop
 #                  не достукується, а local-exec — так);
 #   3. app       — compose з Caddy, .env із deploy/secrets/prod.env, запуск і перевірка /healthz.
@@ -22,7 +23,7 @@ locals {
   })
   env = sensitive(replace(file(var.env_file), "\r\n", "\n"))
 
-  image_tar = abspath("${path.module}/../local/image.tar")
+  image_tar = abspath("${path.module}/../local/image.tar.gz")
   site_url  = "https://${var.domain}/"
 }
 
@@ -54,8 +55,10 @@ resource "terraform_data" "image" {
   triggers_replace = [var.image_id]
   depends_on       = [terraform_data.bootstrap]
 
+  # docker save + gzip: на сервер їде ~105 МБ замість ~470 МБ tar.
   provisioner "local-exec" {
-    command = "docker save -o \"${local.image_tar}\" ${var.image}"
+    interpreter = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", abspath("${local.files}/save-image.ps1"), var.image]
+    command     = local.image_tar
   }
 
   connection {
@@ -68,13 +71,13 @@ resource "terraform_data" "image" {
 
   provisioner "file" {
     source      = local.image_tar
-    destination = "/tmp/dndsheet-image.tar"
+    destination = "/tmp/dndsheet-image.tar.gz"
   }
 
   provisioner "remote-exec" {
     inline = [
-      "docker load -i /tmp/dndsheet-image.tar",
-      "rm -f /tmp/dndsheet-image.tar",
+      "docker load -i /tmp/dndsheet-image.tar.gz",
+      "rm -f /tmp/dndsheet-image.tar.gz",
     ]
   }
 }
