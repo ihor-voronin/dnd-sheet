@@ -20,7 +20,6 @@ from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
-from dndsheet.shared.errors import NotFoundError
 
 #: `#### Feature: Military Rank` — так оформлені риси передісторій.
 FEATURE_HEAD = re.compile(r"^#{2,4}\s+Feature:\s*(.+?)\s*$", re.IGNORECASE)
@@ -62,11 +61,7 @@ def _details(service: CompendiumService, character: Character) -> dict[str, Any]
     equipment_rows, equipment_money = parse_equipment(equipment)
 
     items = character.all_proficiencies().items
-    mine = [
-        item
-        for item in items
-        if item.source.kind.value == "background" and item.source.key == background.key
-    ]
+    mine = [item for item in items if item.source.kind.value == "background" and item.source.key == background.key]
 
     def values(kind: ProficiencyKind) -> list[str]:
         return sorted({str(item.value) for item in mine if item.kind is kind})
@@ -97,21 +92,15 @@ def _details(service: CompendiumService, character: Character) -> dict[str, Any]
             "languages": values(ProficiencyKind.LANGUAGE),
             "skill_any": remaining(ProficiencyKind.SKILL, background.skill_any),
             "tools_any": remaining(ProficiencyKind.TOOL, background.tools_any),
-            "languages_any": remaining(
-                ProficiencyKind.LANGUAGE, background.languages_any_standard
-            ),
+            "languages_any": remaining(ProficiencyKind.LANGUAGE, background.languages_any_standard),
         }
     )
 
 
-def _custom_details(
-    character: Character, custom: dict[str, Any]
-) -> dict[str, Any]:
+def _custom_details(character: Character, custom: dict[str, Any]) -> dict[str, Any]:
     """Власна передісторія: текст гравця, володіння — як обрав."""
     background = character.background
-    custom_items = [
-        row for row in (custom.get("items") or []) if str(row.get("name_en") or "").strip()
-    ]
+    custom_items = [row for row in (custom.get("items") or []) if str(row.get("name_en") or "").strip()]
     if custom_items:
         # Предмети обрані з каталогу — рядок збираємо для листа, а рядки
         # лишаємо структурою (як у книжкових передісторій).
@@ -127,8 +116,7 @@ def _custom_details(
     mine = [
         item
         for item in items
-        if item.source.kind.value == "background"
-        and item.source.key == (background.key if background else "custom")
+        if item.source.kind.value == "background" and item.source.key == (background.key if background else "custom")
     ]
 
     def values(kind: ProficiencyKind) -> list[str]:
@@ -137,8 +125,7 @@ def _custom_details(
     chosen = [
         item
         for item in character.chosen.items
-        if item.source.kind.value == "background"
-        and item.source.key == (background.key if background else "custom")
+        if item.source.kind.value == "background" and item.source.key == (background.key if background else "custom")
     ]
 
     def remaining(kind: ProficiencyKind, total: int) -> int:
@@ -173,9 +160,7 @@ def _entry(service: CompendiumService, name: str):  # noqa: ANN202
     """Запис довідника за точною назвою (без «базових правил»)."""
     page = service.entries(EntryQuery(category=Category.BACKGROUND, q=name, limit=100))
     wanted = name.strip().casefold()
-    matches = [
-        entry for entry in page.items if entry.name_en.strip().casefold() == wanted
-    ]
+    matches = [entry for entry in page.items if entry.name_en.strip().casefold() == wanted]
     if not matches:
         return None
     matches.sort(key=lambda entry: (entry.source_id == "basic-rules-2014", entry.id))

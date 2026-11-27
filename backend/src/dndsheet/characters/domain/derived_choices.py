@@ -26,16 +26,16 @@ from dndsheet.characters.domain.proficiencies import (
 )
 from dndsheet.shared.kernel import Ability, Skill
 from dndsheet.shared.rules import (
-    FEAT_CHOICE_SPELL_NOTE,
-    FEAT_CHOICES,
-    FEAT_PROFICIENCIES,
-    FEAT_SPELLS,
-    INVOCATION_SPELLS,
     BOON_CHOICES,
     CLASS_FEATURE_CHOICES,
     CLASS_FEATURE_SAVES,
     CLASS_FEATURE_SPELL_USAGE,
+    FEAT_CHOICE_SPELL_NOTE,
+    FEAT_CHOICES,
+    FEAT_PROFICIENCIES,
+    FEAT_SPELLS,
     INVOCATION_CHOICES,
+    INVOCATION_SPELLS,
     STYLE_CHOICES,
     SUBCLASS_CHOICES,
     SUBCLASS_EXPERTISE,
@@ -80,12 +80,7 @@ def skill_of(value: str) -> Skill | None:
 
 def fighting_styles(class_choices: dict[str, tuple[str, ...]]) -> tuple[str, ...]:
     """Обрані бойові стилі — класом чи рисою «Учень бою» (Fighting Initiate)."""
-    return tuple(
-        value
-        for key, values in class_choices.items()
-        if key.endswith(":Fighting Style")
-        for value in values
-    )
+    return tuple(value for key, values in class_choices.items() if key.endswith(":Fighting Style") for value in values)
 
 
 def subclass_slug(subclass_key: str | None) -> str:
@@ -172,7 +167,9 @@ def feat_proficiencies(character: Any) -> list[Proficiency]:  # noqa: ANN401 —
     for (class_key, level), abilities in CLASS_FEATURE_SAVES.items():
         if character.class_level(class_key) >= level:
             source = GrantSource.of(SourceKind.CLASS, class_key)
-            items.extend(Proficiency(kind=ProficiencyKind.SAVING_THROW, value=value, source=source) for value in abilities)
+            items.extend(
+                Proficiency(kind=ProficiencyKind.SAVING_THROW, value=value, source=source) for value in abilities
+            )
     for invocation in character.invocations:
         for skill in INVOCATION_SKILLS.get(invocation.casefold(), ()):
             items.append(
@@ -278,6 +275,7 @@ def granted_spells(character: Any) -> list[tuple[str, int, str, str, Ability | N
         kind, owner, _ = split_key(key)
         usage = FEAT_CHOICE_SPELL_NOTE.get(owner, "") if choice.spell_level > 0 or choice.ritual else ""
         spell_class = spell_class_for(key, choice, character.class_choices)
+
         # Рівень: фіксований групою або збережений під час вибору (таємниці, переписані ритуали).
         def level_of(name: str, choice: DerivedChoice = choice) -> int:
             if choice.max_level_of or choice.max_level_half:
@@ -291,14 +289,19 @@ def granted_spells(character: Any) -> list[tuple[str, int, str, str, Ability | N
             continue
         if kind == "feature":
             # Містичний арканум, Майстерність заклять, Фірмові закляття — уміння класу.
-            usage = next((note for prefix, note in CLASS_FEATURE_SPELL_USAGE.items() if choice.group.startswith(prefix)), "")
+            usage = next(
+                (note for prefix, note in CLASS_FEATURE_SPELL_USAGE.items() if choice.group.startswith(prefix)), ""
+            )
             rows.extend(
-                (name, level_of(name), "feature", usage, CLASS_CASTING_ABILITY.get(owner)) for name in active.get(key, ())
+                (name, level_of(name), "feature", usage, CLASS_CASTING_ABILITY.get(owner))
+                for name in active.get(key, ())
             )
             continue
         if kind == "inv":
             # Книга давніх таємниць: ритуали будь-якого класу, лише як ритуал (PHB, p. 110).
-            rows.extend((name, level_of(name), "invocation", "ritual only", Ability.CHA) for name in active.get(key, ()))
+            rows.extend(
+                (name, level_of(name), "invocation", "ritual only", Ability.CHA) for name in active.get(key, ())
+            )
             continue
         if kind == "feat":
             source, ability = "feat", _feat_casting(character, by_slug.get(owner, owner), spell_class)

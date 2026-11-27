@@ -52,7 +52,10 @@ def load(path: Path) -> list[dict]:
 
 def check_file(layer: str, name: str, avoid: list[tuple[str, re.Pattern[str]]]) -> list[str]:
     source = {row["id"]: row for row in load(ROOT / "var" / "uk" / layer / "input" / name)}
-    output = {str(row.get("id")): str(row.get("text_uk") or "") for row in load(ROOT / "content" / "translations" / layer / name)}
+    output = {
+        str(row.get("id")): str(row.get("text_uk") or "")
+        for row in load(ROOT / "content" / "translations" / layer / name)
+    }
     problems: list[str] = []
     for key, row in source.items():
         text = output.get(key, "").strip()

@@ -5,7 +5,6 @@
  * варіанти — це навички, якими персонаж уже володіє, і злодійські інструменти
  * плута. Тут лише вибір і збереження.
  */
-
 import { useEffect, useState } from "react";
 
 import { Term } from "../../components/Term";
@@ -57,8 +56,8 @@ export function ExpertisePicker({
       </p>
       {pending > 0 ? (
         <p className="hint hint--warn">
-          Клас дає експертизу ще в {pending} {pending === 1 ? "навичці" : "навичках"}: бонус
-          майстерності для них подвоюється. Оберіть серед навичок, якими ви володієте.
+          Клас дає експертизу ще в {pending} {pending === 1 ? "навичці" : "навичках"}: бонус майстерності для них
+          подвоюється. Оберіть серед навичок, якими ви володієте.
         </p>
       ) : null}
       {open ? (
@@ -78,9 +77,7 @@ export function ExpertisePicker({
             ))}
           </div>
           {!expertise.options.length ? (
-            <p className="hint">
-              Немає навичок із володінням — спершу оберіть навички класу.
-            </p>
+            <p className="hint">Немає навичок із володінням — спершу оберіть навички класу.</p>
           ) : null}
           <div className="inline-row">
             <button

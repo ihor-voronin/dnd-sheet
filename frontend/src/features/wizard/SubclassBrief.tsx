@@ -5,7 +5,6 @@
  * Опис і вміння приходять окремим запитом: вбудовувати їх у крок означало б
  * віддавати тексти всіх підкласів класу ще до вибору.
  */
-
 import { useEffect, useState } from "react";
 
 import { fetchSubclassDetails } from "../../api";
@@ -51,8 +50,8 @@ export function SubclassBrief({
     <div className="subclass-brief">
       {data.corrupt ? (
         <p className="hint hint--warn">
-          У корпусі текст цього підкласу пошкоджений: чужа мова й жодного
-          поділу на вміння. Показуємо лише назву — правило беріть із книги.
+          У корпусі текст цього підкласу пошкоджений: чужа мова й жодного поділу на вміння. Показуємо лише назву —
+          правило беріть із книги.
         </p>
       ) : null}
       {description ? (
@@ -70,12 +69,8 @@ export function SubclassBrief({
                 <details className="reckoning">
                   <summary>
                     {feature.level} рівень ·{" "}
-                    {feature.name_uk
-                      ? withEnglish(feature.name_en, feature.name_uk)
-                      : featureLabel(feature.name_en)}
-                    {feature.level === highlightLevel ? (
-                      <span className="meta"> · отримуєте зараз</span>
-                    ) : null}
+                    {feature.name_uk ? withEnglish(feature.name_en, feature.name_uk) : featureLabel(feature.name_en)}
+                    {feature.level === highlightLevel ? <span className="meta"> · отримуєте зараз</span> : null}
                   </summary>
                   {feature.text_uk || feature.description ? (
                     <RuleText text={feature.text_uk || feature.description} />

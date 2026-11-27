@@ -25,9 +25,9 @@ from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemK
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
 from dndsheet.characters.domain.spells import KnownSpell
@@ -205,19 +205,14 @@ def state_from_record(record: Mapping[str, Any] | None) -> SheetState:
         slots_used=slots,
         pact_used=int(payload.get("pact_used") or 0),
         hit_dice_used=dice,
-        feature_used={
-            str(key): int(value)
-            for key, value in (payload.get("feature_used") or {}).items()
-        },
+        feature_used={str(key): int(value) for key, value in (payload.get("feature_used") or {}).items()},
         death_saves=DeathSaves(
             successes=int(saves.get("successes") or 0),
             failures=int(saves.get("failures") or 0),
         ),
         inspiration=bool(payload.get("inspiration")),
         exhaustion=int(payload.get("exhaustion") or 0),
-        overrides={
-            str(key): int(value) for key, value in (payload.get("overrides") or {}).items()
-        },
+        overrides={str(key): int(value) for key, value in (payload.get("overrides") or {}).items()},
         notes={str(key): str(value) for key, value in (payload.get("notes") or {}).items()},
     )
 
@@ -290,9 +285,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
         "version": character.version,
         "abilities": abilities_to_record(character.abilities),
         "ability_bonus_choices": [ability.value for ability in character.ability_bonus_choices],
-        "ability_spread": {
-            ability.value: amount for ability, amount in character.ability_spread.items()
-        },
+        "ability_spread": {ability.value: amount for ability, amount in character.ability_spread.items()},
         "classes": [
             {
                 "class_key": entry.class_key,
@@ -337,10 +330,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
 def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Character:
     schema = str(record.get("schema") or "")
     if schema != CHARACTER_SCHEMA and schema not in LEGACY_CHARACTER_SCHEMAS:
-        raise ValidationError(
-            f"невідома схема персонажа {record.get('schema')!r}, "
-            f"очікується {CHARACTER_SCHEMA!r}"
-        )
+        raise ValidationError(f"невідома схема персонажа {record.get('schema')!r}, очікується {CHARACTER_SCHEMA!r}")
     legacy = schema != CHARACTER_SCHEMA
     hp = record.get("hp") or {}
     return Character(
@@ -356,9 +346,7 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
             )
             for entry in record.get("classes") or ()
         ],
-        ability_bonus_choices=tuple(
-            Ability(str(name)) for name in record.get("ability_bonus_choices") or ()
-        ),
+        ability_bonus_choices=tuple(Ability(str(name)) for name in record.get("ability_bonus_choices") or ()),
         ability_spread=ability_spread_from_record(record.get("ability_spread")),
         multiclass_waivers=multiclass_waivers_from_record(record.get("multiclass_waivers")),
         species_key=record.get("species_key") or None,
@@ -376,21 +364,15 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
             str(key): tuple(str(value) for value in values)
             for key, values in (record.get("class_choices") or {}).items()
         },
-        feat_abilities={
-            str(key): Ability(str(value)) for key, value in (record.get("feat_abilities") or {}).items()
-        },
+        feat_abilities={str(key): Ability(str(value)) for key, value in (record.get("feat_abilities") or {}).items()},
         species_feat=record.get("species_feat") or None,
         species_source=record.get("species_source") or None,
-        choice_spell_levels={
-            str(key): int(value) for key, value in (record.get("choice_spell_levels") or {}).items()
-        },
+        choice_spell_levels={str(key): int(value) for key, value in (record.get("choice_spell_levels") or {}).items()},
         asi_taken=int(record.get("asi_taken") or 0),
         hp=HitPointState(
             current=_hp_current(hp, legacy=legacy),
             temporary=int(hp.get("temporary") or 0),
-            rolls=tuple(
-                None if value is None else int(value) for value in hp.get("rolls") or ()
-            ),
+            rolls=tuple(None if value is None else int(value) for value in hp.get("rolls") or ()),
             bonus=int(hp.get("bonus") or 0),
             override_max=hp.get("override_max"),
         ),
@@ -429,9 +411,7 @@ def draft_to_record(draft: Draft) -> dict[str, Any]:
         "species_key": draft.species_key,
         "subspecies_key": draft.subspecies_key,
         "ability_choices": [ability.value for ability in draft.ability_choices],
-        "ability_spread": {
-            ability.value: amount for ability, amount in draft.ability_spread.items()
-        },
+        "ability_spread": {ability.value: amount for ability, amount in draft.ability_spread.items()},
         "class_key": draft.class_key,
         "subclass_key": draft.subclass_key,
         "ability_method": draft.ability_method.value if draft.ability_method else None,
@@ -454,9 +434,7 @@ def draft_to_record(draft: Draft) -> dict[str, Any]:
 
 def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
     if record.get("schema") != DRAFT_SCHEMA:
-        raise ValidationError(
-            f"невідома схема чернетки {record.get('schema')!r}, очікується {DRAFT_SCHEMA!r}"
-        )
+        raise ValidationError(f"невідома схема чернетки {record.get('schema')!r}, очікується {DRAFT_SCHEMA!r}")
     inventory = inventory_from_record(record.get("inventory"))
     method = record.get("ability_method")
     return Draft(
@@ -466,17 +444,12 @@ def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
         name=str(record.get("name") or ""),
         species_key=record.get("species_key") or None,
         subspecies_key=record.get("subspecies_key") or None,
-        ability_choices=tuple(
-            Ability(str(name)) for name in record.get("ability_choices") or ()
-        ),
+        ability_choices=tuple(Ability(str(name)) for name in record.get("ability_choices") or ()),
         ability_spread=ability_spread_from_record(record.get("ability_spread")),
         class_key=record.get("class_key") or None,
         subclass_key=record.get("subclass_key") or None,
         ability_method=AbilityMethod(str(method)) if method else None,
-        ability_scores={
-            Ability(str(key)): int(value)
-            for key, value in (record.get("ability_scores") or {}).items()
-        },
+        ability_scores={Ability(str(key)): int(value) for key, value in (record.get("ability_scores") or {}).items()},
         roll_set=tuple(int(value) for value in record.get("roll_set") or ()),
         background_key=record.get("background_key") or None,
         custom_background=dict(record.get("custom_background") or {}) or None,
@@ -497,6 +470,3 @@ def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
             Ability(str(record["species_feat_ability"])) if record.get("species_feat_ability") else None
         ),
     )
-
-
-

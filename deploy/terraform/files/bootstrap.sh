@@ -6,10 +6,14 @@ export DEBIAN_FRONTEND=noninteractive
 
 DISABLE_PASSWORD_LOGIN="${1:-true}"
 
+# shellcheck source=/dev/null  # файл існує лише на сервері
 . /etc/os-release
 case "$ID" in
-  ubuntu|debian) ;;
-  *) echo "Непідтримувана ОС: $ID (потрібна Ubuntu або Debian)" >&2; exit 1 ;;
+  ubuntu | debian) ;;
+  *)
+    echo "Непідтримувана ОС: $ID (потрібна Ubuntu або Debian)" >&2
+    exit 1
+    ;;
 esac
 
 apt-get update -q
@@ -21,7 +25,7 @@ if ! command -v docker >/dev/null 2>&1; then
   curl -fsSL "https://download.docker.com/linux/${ID}/gpg" -o /etc/apt/keyrings/docker.asc
   chmod a+r /etc/apt/keyrings/docker.asc
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${ID} ${VERSION_CODENAME} stable" \
-    > /etc/apt/sources.list.d/docker.list
+    >/etc/apt/sources.list.d/docker.list
   apt-get update -q
   apt-get install -yq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 fi
@@ -34,7 +38,7 @@ if ! swapon --show | grep -q '/swapfile'; then
   mkswap /swapfile
   swapon /swapfile
 fi
-grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >>/etc/fstab
 
 # Файрвол: лише SSH і веб.
 ufw allow 22/tcp
@@ -47,7 +51,7 @@ install -d -m 0755 /opt/dndsheet /opt/dndsheet/backups
 install -d -m 0755 -o 10001 -g 10001 /opt/dndsheet/var
 
 # Щоденний бекап бази, тримаємо 14 днів.
-cat > /etc/cron.daily/dndsheet-backup <<'CRON'
+cat >/etc/cron.daily/dndsheet-backup <<'CRON'
 #!/bin/sh
 set -e
 DB=/opt/dndsheet/var/dndsheet.sqlite3
@@ -60,7 +64,7 @@ chmod 0755 /etc/cron.daily/dndsheet-backup
 # Вхід по SSH лише ключем. Terraform щойно зайшов ключем — отже, ключ працює.
 if [ "$DISABLE_PASSWORD_LOGIN" = "true" ]; then
   install -d /etc/ssh/sshd_config.d
-  cat > /etc/ssh/sshd_config.d/10-dndsheet.conf <<'SSHD'
+  cat >/etc/ssh/sshd_config.d/10-dndsheet.conf <<'SSHD'
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 PermitRootLogin prohibit-password

@@ -16,6 +16,7 @@
 
 Запуск:  python scripts/ingest/diff_5etools.py [--list]
 """
+
 from __future__ import annotations
 
 import json
@@ -29,13 +30,56 @@ REPO = Path(__file__).resolve().parents[2]
 IDX = REPO / "content" / "raw" / "_index"
 
 # Лінійка 2024+ — поза скоупом (порівнюємо лише 2014).
-OTHER_EDITION = {"XPHB", "XDMG", "XMM", "XSAC", "XScreen", "FRHoF", "EFA", "RHW",
-                 "AU", "PL", "WoW", "LFL", "ABH", "NF", "FRAiF", "CaBoMP", "HFLotT",
-                 "XScreenRHW", "AUD", "DDE", "ICC", "SoS", "RWG", "BQDD", "WttHC",
-                 "HotB", "HBTD", "BQGT", "DrDe-DaS", "DrDe-BD", "DrDe-TWoO",
-                 "DrDe-FWtVC", "DrDe-TDoN", "DrDe-TFV", "DrDe-BtS", "DrDe-SD",
-                 "DrDe-ACfaS", "DrDe-DotSC", "UtHftLH", "ScoEE", "LRDT", "FRAiF-TLLoL",
-                 "FFotR", "VNotEE", "HFStCM", "PaF", "TD", "DMTCRG"}
+OTHER_EDITION = {
+    "XPHB",
+    "XDMG",
+    "XMM",
+    "XSAC",
+    "XScreen",
+    "FRHoF",
+    "EFA",
+    "RHW",
+    "AU",
+    "PL",
+    "WoW",
+    "LFL",
+    "ABH",
+    "NF",
+    "FRAiF",
+    "CaBoMP",
+    "HFLotT",
+    "XScreenRHW",
+    "AUD",
+    "DDE",
+    "ICC",
+    "SoS",
+    "RWG",
+    "BQDD",
+    "WttHC",
+    "HotB",
+    "HBTD",
+    "BQGT",
+    "DrDe-DaS",
+    "DrDe-BD",
+    "DrDe-TWoO",
+    "DrDe-FWtVC",
+    "DrDe-TDoN",
+    "DrDe-TFV",
+    "DrDe-BtS",
+    "DrDe-SD",
+    "DrDe-ACfaS",
+    "DrDe-DotSC",
+    "UtHftLH",
+    "ScoEE",
+    "LRDT",
+    "FRAiF-TLLoL",
+    "FFotR",
+    "VNotEE",
+    "HFStCM",
+    "PaF",
+    "TD",
+    "DMTCRG",
+}
 
 # Текст книг, які лежать у content/raw, але ще не розібрані. Обчислюється з
 # самих файлів дзеркала: у кожному є "id" (PS-A, ToA, LR…), тому id → тека.
@@ -62,9 +106,20 @@ def downloaded_books() -> dict[str, str]:
 
 # Дзеркало позначає частину книг коротким source, але файлом — довгим id
 # (PSA у записах = книга PS-A). Тут — лише такі розбіжності.
-ALIASES = {"PSA": "PS-A", "PSI": "PS-I", "PSK": "PS-K", "PSD": "PS-D",
-           "PSZ": "PS-Z", "PSX": "PS-X", "MCV1SC": "MCV1SC", "MisMV1": "MisMV1",
-           "MFF": "MFF", "VD": "VD", "RMR": "RMR", "ESK": "ESK"}
+ALIASES = {
+    "PSA": "PS-A",
+    "PSI": "PS-I",
+    "PSK": "PS-K",
+    "PSD": "PS-D",
+    "PSZ": "PS-Z",
+    "PSX": "PS-X",
+    "MCV1SC": "MCV1SC",
+    "MisMV1": "MisMV1",
+    "MFF": "MFF",
+    "VD": "VD",
+    "RMR": "RMR",
+    "ESK": "ESK",
+}
 
 # Джерела, які ми вже розібрали, але в каталозі дзеркала їх немає як книг:
 # Basic Rules — це PHB/MM/DMG з прапорцем basicRules, EEPC — PDF WotC,
@@ -76,15 +131,13 @@ def held_sources() -> set[str]:
     """id дзеркала, текст яких у нас уже є (розібраний або лише завантажений)."""
     held = set(downloaded_books()) | set(ALIASES.values()) | PARSED_ELSEWHERE
     catalog = {}
-    for name, key in (("books-5etools.json", "book"),
-                      ("adventures-5etools.json", "adventure")):
+    for name, key in (("books-5etools.json", "book"), ("adventures-5etools.json", "adventure")):
         for entry in load_json(name)[key]:
             catalog[norm(entry.get("name", ""))] = entry["id"]
     try:
         import yaml
 
-        sources = yaml.safe_load(
-            (REPO / "content" / "sources.yml").read_text(encoding="utf-8"))["sources"]
+        sources = yaml.safe_load((REPO / "content" / "sources.yml").read_text(encoding="utf-8"))["sources"]
     except Exception:  # noqa: BLE001 - без реєстру працює лише часткова помітка
         return held
     for src in sources:
@@ -156,8 +209,7 @@ def mirror_records():
 
 def source_titles():
     titles = {}
-    for name, key in (("books-5etools.json", "book"),
-                      ("adventures-5etools.json", "adventure")):
+    for name, key in (("books-5etools.json", "book"), ("adventures-5etools.json", "adventure")):
         for entry in load_json(name)[key]:
             titles[entry["id"]] = entry.get("name", entry["id"])
     return titles
@@ -186,16 +238,14 @@ def main() -> None:
 
     print(f"{'категорія':16s} {'дзеркало':>9s} {'збіглося':>9s} {'бракує':>7s}")
     for cat in sorted(per_cat_total):
-        print(f"{cat:16s} {per_cat_total[cat]:9d} {per_cat_hit[cat]:9d} "
-              f"{per_cat_total[cat] - per_cat_hit[cat]:7d}")
+        print(f"{cat:16s} {per_cat_total[cat]:9d} {per_cat_hit[cat]:9d} {per_cat_total[cat] - per_cat_hit[cat]:7d}")
 
     print("\n--- брак за книгою-джерелом (лінійка 2014) ---")
     for cat in sorted(missing):
         by_src: dict[str, list[str]] = defaultdict(list)
         for source, name in missing[cat]:
             by_src[source].append(name)
-        rows = [(src, names) for src, names in by_src.items()
-                if src not in OTHER_EDITION]
+        rows = [(src, names) for src, names in by_src.items() if src not in OTHER_EDITION]
         if not rows:
             continue
         print(f"\n## {cat}")

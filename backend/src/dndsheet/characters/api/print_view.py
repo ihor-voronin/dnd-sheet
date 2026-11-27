@@ -19,6 +19,7 @@ from dndsheet.characters.api.species_traits import species_details
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
+from dndsheet.shared.kernel import SKILL_ABILITY, Ability, Skill
 from dndsheet.sheets.domain.labels import (
     ALIGNMENT_LABELS,
     DEMO_ABILITIES,
@@ -26,7 +27,6 @@ from dndsheet.sheets.domain.labels import (
     LANGUAGE_LABELS,
     NOTE_LABELS,
 )
-from dndsheet.shared.kernel import SKILL_ABILITY, Ability, Skill
 
 ABILITY_ORDER = (Ability.STR, Ability.DEX, Ability.CON, Ability.INT, Ability.WIS, Ability.CHA)
 ABILITY_SHORT = {
@@ -70,6 +70,7 @@ def weapon_notes(text: str) -> str:
     for english, ukrainian in WEAPON_PROPERTIES.items():
         value = re.sub(rf"\b{re.escape(english)}\b", ukrainian, value, flags=re.IGNORECASE)
     return value[:1].upper() + value[1:] if value else value
+
 
 DAMAGE_TYPES = {
     "acid": "кислота",
@@ -326,7 +327,10 @@ def _table(lines: list[str]) -> dict[str, Any] | None:
     cells = [[cell.strip() for cell in line[1:-1].split("|")] for line in rows]
     if not all(re.match(r"^:?-{2,}:?$", cell) for cell in cells[1]):
         return None
-    return {"header": [_clean(cell) for cell in cells[0]], "rows": [[_clean(cell) for cell in row] for row in cells[2:]]}
+    return {
+        "header": [_clean(cell) for cell in cells[0]],
+        "rows": [[_clean(cell) for cell in row] for row in cells[2:]],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -372,9 +376,7 @@ def build_print_view(
         return item_names.get(entry_id) if entry_id else None
 
     classes = character["classes"]
-    class_line = " / ".join(
-        f"{_uk(display_name(entry['name_en']))} {entry['level']}" for entry in classes
-    )
+    class_line = " / ".join(f"{_uk(display_name(entry['name_en']))} {entry['level']}" for entry in classes)
     subclasses = [
         entry.get("subclass_name_uk") or entry.get("subclass_name") or entry["subclass"].rsplit("/", 1)[-1]
         for entry in classes
@@ -647,7 +649,9 @@ def _spellcasting(
     spells = sheet.get("spells") or []
     classes = casting.get("classes") or []
     pact_slots = (casting.get("slots") or {}).get("pact") or {}
-    pact = {"total": pact_slots.get("slots", 0), "level": pact_slots.get("level", 0)} if pact_slots.get("slots") else None
+    pact = (
+        {"total": pact_slots.get("slots", 0), "level": pact_slots.get("level", 0)} if pact_slots.get("slots") else None
+    )
     if not spells and not classes and not pact:
         return None
     slots_state = (sheet.get("resources") or {}).get("slots") or {}
@@ -690,7 +694,14 @@ def _spellcasting(
                 "class": _uk(display_name(spell.get("class_key", "").title())) if spell.get("class_key") else "",
                 "group": spell.get("class_key") or f"src:{spell.get('source') or 'other'}",
                 "blocks": rule_blocks(spell.get("description_uk") or spell.get("description")),
-                "higher": rule_blocks(re.sub(r"^\s*(?:\*\*)?(?:At Higher Levels|На вищих рівнях)\.(?:\*\*)?\s*", "", higher, flags=re.IGNORECASE)),
+                "higher": rule_blocks(
+                    re.sub(
+                        r"^\s*(?:\*\*)?(?:At Higher Levels|На вищих рівнях)\.(?:\*\*)?\s*",
+                        "",
+                        higher,
+                        flags=re.IGNORECASE,
+                    )
+                ),
             }
         )
     # У мультикласі закляття групуються за класом усередині рівня: від класу
@@ -722,7 +733,10 @@ def _spellcasting(
                 "groups": [
                     {
                         "key": key,
-                        **(info.get(key) or {"title": OTHER_SOURCES.get(key, "Інші джерела"), "dc": None, "attack": None}),
+                        **(
+                            info.get(key)
+                            or {"title": OTHER_SOURCES.get(key, "Інші джерела"), "dc": None, "attack": None}
+                        ),
                         "spells": groups[key],
                     }
                     for key in sorted(groups, key=group_rank)
@@ -791,7 +805,13 @@ def _notes(notes: Mapping[str, str]) -> list[dict[str, Any]]:
     titles = {"backstory": "Історія персонажа", "allies": "Союзники й організації"}
     rows = []
     for key in order:
-        rows.append({"title": titles.get(key) or NOTE_LABELS.get(key, (key, ""))[0], "blocks": rule_blocks(notes.get(key, "")), "key": key})
+        rows.append(
+            {
+                "title": titles.get(key) or NOTE_LABELS.get(key, (key, ""))[0],
+                "blocks": rule_blocks(notes.get(key, "")),
+                "key": key,
+            }
+        )
     for key, text in notes.items():
         if key not in order and text:
             rows.append({"title": NOTE_LABELS.get(key, (key, ""))[0], "blocks": rule_blocks(text), "key": key})

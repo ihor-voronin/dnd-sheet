@@ -115,16 +115,21 @@ def _derived_options(
         seen: dict[str, dict[str, Any]] = {}
         for entry in compendium.optional_features(choice.feature_type):
             prerequisite = (entry.data or {}).get("prerequisite")
-            seen.setdefault(entry.name_en.casefold(), {
-                "name_en": entry.name_en,
-                "name_uk": uk_text.name_uk(LAYER, entry.name_en),
-                "text_en": entry.text_en or "",
-                "text_uk": uk_text.text_uk(LAYER, entry.text_en or ""),
-                "prerequisite": prerequisite,
-                "source": entry.source_id,
-                # Містичний адепт (Eldritch Adept) бере лише виклики без передумов.
-                "locked": "потрібна передумова чаклуна" if prerequisite and "invocation" in choice.feature_type else None,
-            })
+            seen.setdefault(
+                entry.name_en.casefold(),
+                {
+                    "name_en": entry.name_en,
+                    "name_uk": uk_text.name_uk(LAYER, entry.name_en),
+                    "text_en": entry.text_en or "",
+                    "text_uk": uk_text.text_uk(LAYER, entry.text_en or ""),
+                    "prerequisite": prerequisite,
+                    "source": entry.source_id,
+                    # Містичний адепт (Eldritch Adept) бере лише виклики без передумов.
+                    "locked": "потрібна передумова чаклуна"
+                    if prerequisite and "invocation" in choice.feature_type
+                    else None,
+                },
+            )
         rows = sorted(seen.values(), key=lambda item: item["name_en"])
     if choice.kind == "spell":
         rows = _spell_options(group_key, choice, compendium, character)
@@ -150,7 +155,9 @@ def _spell_options(
         bottom = 0
     if choice.max_level_half and character is not None:
         # Переписані ритуали: рівень закляття — до половини рівня, вгору (PHB, p. 110, 169).
-        base = character.total_level if choice.max_level_half == "total" else character.class_level(choice.max_level_half)
+        base = (
+            character.total_level if choice.max_level_half == "total" else character.class_level(choice.max_level_half)
+        )
         top, bottom = max(1, -(-base // 2)), 1
     found: dict[str, Any] = {}
     for name in classes:
@@ -186,7 +193,9 @@ def _spell_options(
     ]
 
 
-def _options(group_key: str, compendium: CompendiumService, character: Character | None = None) -> list[dict[str, Any]]:
+def _options(
+    group_key: str, compendium: CompendiumService, character: Character | None = None
+) -> list[dict[str, Any]]:
     derived = character.derived_choice_groups.get(group_key) if character is not None else None
     if derived is not None:
         return _derived_options(group_key, derived, compendium, character)
@@ -200,17 +209,20 @@ def _options(group_key: str, compendium: CompendiumService, character: Character
     seen: dict[str, dict[str, Any]] = {}
     for entry in compendium.optional_features(feature_type):
         # однойменні записи з різних книг зливаються в перший (PHB раніше за TCoE).
-        seen.setdefault(entry.name_en.casefold(), {
-            "name_en": entry.name_en,
-            "name_uk": uk_text.name_uk(LAYER, entry.name_en),
-            "text_en": entry.text_en or "",
-            "text_uk": uk_text.text_uk(LAYER, entry.text_en or ""),
-            "prerequisite": (entry.data or {}).get("prerequisite"),
-            "source": entry.source_id,
-            "locked": missing_prerequisite((entry.data or {}).get("prerequisite"), character, class_key)
-            if character is not None
-            else None,
-        })
+        seen.setdefault(
+            entry.name_en.casefold(),
+            {
+                "name_en": entry.name_en,
+                "name_uk": uk_text.name_uk(LAYER, entry.name_en),
+                "text_en": entry.text_en or "",
+                "text_uk": uk_text.text_uk(LAYER, entry.text_en or ""),
+                "prerequisite": (entry.data or {}).get("prerequisite"),
+                "source": entry.source_id,
+                "locked": missing_prerequisite((entry.data or {}).get("prerequisite"), character, class_key)
+                if character is not None
+                else None,
+            },
+        )
     return sorted(seen.values(), key=lambda item: item["name_en"])
 
 

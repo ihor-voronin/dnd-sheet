@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.inventory import InventoryItem, ItemKind
 from dndsheet.characters.domain.pick_rules import (
     validate_origin_pick,
@@ -11,9 +10,9 @@ from dndsheet.characters.domain.pick_rules import (
 )
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
 from dndsheet.characters.domain.spells import KnownSpell
@@ -25,7 +24,6 @@ from dndsheet.characters.domain.wizard import (
 )
 from dndsheet.shared.errors import NotFoundError, ValidationError
 from dndsheet.shared.kernel import Ability, Money
-
 from helpers import make_character  # noqa: F401
 
 A = Ability
@@ -133,9 +131,7 @@ def test_subspecies_optional_for_human(draft: Draft) -> None:
 def test_species_ability_choice_must_match(draft: Draft) -> None:
     with pytest.raises(ValidationError, match="обрати 2"):
         draft.apply_species(name="Хтось", species_key="half-elf", ability_choices=(A.STR,))
-    draft.apply_species(
-        name="Хтось", species_key="half-elf", ability_choices=(A.STR, A.DEX)
-    )
+    draft.apply_species(name="Хтось", species_key="half-elf", ability_choices=(A.STR, A.DEX))
     assert draft.ability_choices == (A.STR, A.DEX)
 
 
@@ -184,17 +180,13 @@ def test_spread_accepts_three_ones(draft: Draft) -> None:
 )
 def test_spread_shape_is_validated(draft: Draft, spread: dict) -> None:
     with pytest.raises(ValidationError):
-        draft.apply_species(
-            name="Хтось", species_key="custom lineage", ability_spread=spread
-        )
+        draft.apply_species(name="Хтось", species_key="custom lineage", ability_spread=spread)
 
 
 def test_spread_is_not_allowed_for_fixed_species(draft: Draft) -> None:
     """Людина має фіксовані +1 до всіх — вільний розподіл для неї зайвий."""
     with pytest.raises(ValidationError, match="фіксовані"):
-        draft.apply_species(
-            name="Хтось", species_key="human", ability_spread={"str": 2, "dex": 1}
-        )
+        draft.apply_species(name="Хтось", species_key="human", ability_spread={"str": 2, "dex": 1})
 
 
 def test_character_spread_counts_and_survives_reload(rules) -> None:  # noqa: ANN001
@@ -267,7 +259,7 @@ def test_point_buy_budget(draft: Draft) -> None:
         method=AbilityMethod.POINT_BUY,
         scores=_scores(str=15, dex=15, con=14, int=10, wis=8, cha=8),
     )
-    with pytest.raises(ValidationError, match="0 8..15|8..15"):
+    with pytest.raises(ValidationError, match=r"0 8..15|8..15"):
         draft.apply_abilities(
             method=AbilityMethod.POINT_BUY,
             scores=_scores(str=16, dex=15, con=14, int=10, wis=8, cha=8),
@@ -335,9 +327,7 @@ def test_pick_must_belong_to_class_list(draft: Draft) -> None:
 
 
 def test_species_skill_choices_are_required(draft: Draft) -> None:
-    draft.apply_species(
-        name="Хтось", species_key="half-elf", ability_choices=(A.STR, A.DEX)
-    )
+    draft.apply_species(name="Хтось", species_key="half-elf", ability_choices=(A.STR, A.DEX))
     draft.apply_class(class_key="fighter")
     draft.apply_abilities(
         method=AbilityMethod.STANDARD_ARRAY,
@@ -422,15 +412,10 @@ def test_spell_limits_for_warlock(draft: Draft) -> None:
     )
     with pytest.raises(ValidationError, match="заговорів"):
         draft.apply_spells(
-            spells=tuple(
-                KnownSpell(name_en=f"Cantrip {index}", level=0, class_key="warlock")
-                for index in range(3)
-            )
+            spells=tuple(KnownSpell(name_en=f"Cantrip {index}", level=0, class_key="warlock") for index in range(3))
         )
     with pytest.raises(ValidationError, match="рівня"):
-        draft.apply_spells(
-            spells=(KnownSpell(name_en="Misty Step", level=2, class_key="warlock"),)
-        )
+        draft.apply_spells(spells=(KnownSpell(name_en="Misty Step", level=2, class_key="warlock"),))
     draft.apply_spells(
         spells=(
             KnownSpell(name_en="Eldritch Blast", level=0, class_key="warlock"),
@@ -443,9 +428,7 @@ def test_spell_limits_for_warlock(draft: Draft) -> None:
 def test_non_caster_cannot_have_spells(draft: Draft) -> None:
     _fill_fighter(draft)
     with pytest.raises(ValidationError, match="не чарує"):
-        draft.apply_spells(
-            spells=(KnownSpell(name_en="Fire Bolt", level=0, class_key="fighter"),)
-        )
+        draft.apply_spells(spells=(KnownSpell(name_en="Fire Bolt", level=0, class_key="fighter"),))
     assert draft.is_complete(WizardStep.SPELLS) is True
 
 
@@ -576,4 +559,3 @@ def test_2022_species_are_rejected(draft: Draft) -> None:
 def test_class_without_choice_rejects_spell_choices(draft: Draft) -> None:
     with pytest.raises(ValidationError, match="не дає вибору"):
         draft.apply_species(name="Людина", species_key="human", spell_choices=("light",))
-

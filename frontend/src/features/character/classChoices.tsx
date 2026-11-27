@@ -3,13 +3,13 @@
  * Скільки обирати і з чого — каже сервер (`sheet.class_choices`): кількість — з
  * рівнів класу й підкласу, варіанти — з довідника. Тут лише вибір і збереження.
  */
-
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { fetchFeats } from "../../api";
 import { ABILITY_LABELS, DAMAGE_TYPE_LABELS, LANGUAGE_LABELS, TOOL_LABELS } from "../../labels";
 import type { ClassChoiceGroup, SheetViewPayload } from "../wizard/types";
+
 import { FeatPicker } from "./LevelUp";
 import { featLabel, itemLabel, withEnglish } from "./uk";
 
@@ -161,9 +161,8 @@ function ChoiceGroup({
       </p>
       {pending > 0 ? (
         <p className="hint hint--warn">
-          {group.origin ? ORIGIN_GIVES[group.origin.kind] ?? "Дає" : "Рівні класу дають"}{" "}
-          ще {pending} на вибір. Наведіть на варіант, щоб прочитати опис; сірі варіанти
-          потребують передумови або вже є у персонажа.
+          {group.origin ? (ORIGIN_GIVES[group.origin.kind] ?? "Дає") : "Рівні класу дають"} ще {pending} на вибір.
+          Наведіть на варіант, щоб прочитати опис; сірі варіанти потребують передумови або вже є у персонажа.
         </p>
       ) : null}
       {open && !group.options.length ? (
@@ -215,8 +214,7 @@ function ChoiceGroup({
           {picked.map((name) =>
             text.get(name)?.text_en ? (
               <p key={name} className="hint">
-                <strong>{optionLabel(text.get(name)!)}.</strong>{" "}
-                {text.get(name)?.text_uk || text.get(name)?.text_en}
+                <strong>{optionLabel(text.get(name)!)}.</strong> {text.get(name)?.text_uk || text.get(name)?.text_en}
               </p>
             ) : null,
           )}
@@ -320,7 +318,7 @@ export function SpeciesFeat({
     const entry = feats.data?.find((feat) => feat.id === value.chosen);
     return entry ? withEnglish(entry.name_en, entry.name_uk ?? featLabel(entry.name_en)) : value.chosen;
   })();
-  const abilities = featId ? value.feat_abilities[featId] ?? [] : [];
+  const abilities = featId ? (value.feat_abilities[featId] ?? []) : [];
 
   return (
     <div className={`expertise${value.chosen ? "" : " expertise--pending"}`}>
@@ -338,8 +336,8 @@ export function SpeciesFeat({
       </p>
       {!value.chosen ? (
         <p className="hint hint--warn">
-          Варіантна людина й власна лінія беруть рису на 1 рівні. Вибори риси (навички, закляття)
-          з’являться нижче, щойно її оберете.
+          Варіантна людина й власна лінія беруть рису на 1 рівні. Вибори риси (навички, закляття) з’являться нижче,
+          щойно її оберете.
         </p>
       ) : null}
       {open ? (
@@ -370,7 +368,9 @@ export function SpeciesFeat({
               type="button"
               className="button button--primary"
               disabled={busy || !featId || (featId === value.chosen && ability === value.ability)}
-              onClick={() => featId && void onSave(featId, abilities.length ? ability : null).then(() => setOpen(false))}
+              onClick={() =>
+                featId && void onSave(featId, abilities.length ? ability : null).then(() => setOpen(false))
+              }
             >
               Зберегти рису
             </button>

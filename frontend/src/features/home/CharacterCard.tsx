@@ -6,11 +6,10 @@
  * рівень у шестикутнику, вид і передісторія, класи з підкласами, і стан —
  * хіти смужкою (поранений герой видно ще до відкриття) та КЗ.
  */
-
 import type { CharacterRosterEntry } from "../../api";
+import { subclassLabel } from "../../labels";
 import { initials } from "../character/sheetParts";
 import { speciesLabel, termLabel, ukSubclass, withEnglish } from "../character/uk";
-import { subclassLabel } from "../../labels";
 
 /** «Маг (Wizard)» → ["Маг", "Wizard"]: українська — головна, англійська — дрібно поруч. */
 function splitLabel(label: string): [string, string | null] {

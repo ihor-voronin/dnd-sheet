@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.api.spell_meta import enrich_spells
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.infrastructure.factory import build_service
@@ -15,9 +14,7 @@ from dndsheet.compendium.infrastructure.jsonl_corpus import default_content_dir
 
 CONTENT = default_content_dir()
 
-pytestmark = pytest.mark.skipif(
-    not (CONTENT / "compendium").is_dir(), reason="корпусу content/compendium немає"
-)
+pytestmark = pytest.mark.skipif(not (CONTENT / "compendium").is_dir(), reason="корпусу content/compendium немає")
 
 
 @pytest.fixture(scope="module")

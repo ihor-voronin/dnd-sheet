@@ -36,9 +36,7 @@ def with_english(name_en: str, uk: str | None) -> str:
     return f"{uk} ({name_en})"
 
 
-def enrich_item(
-    payload: dict[str, Any], layer: str, *, text_field: str | None = None
-) -> dict[str, Any]:
+def enrich_item(payload: dict[str, Any], layer: str, *, text_field: str | None = None) -> dict[str, Any]:
     """Додати `name_uk` і `text_uk` до запису вміння чи риси.
 
     Поле тексту шукаємо за назвою (`text` у главі класу, `description` у
@@ -61,7 +59,6 @@ def enrich_item(
 
 
 __all__ = [
-    "with_english",
     "EMPTY",
     "enrich_item",
     "folder",
@@ -70,4 +67,5 @@ __all__ = [
     "read",
     "reset",
     "text_uk",
+    "with_english",
 ]

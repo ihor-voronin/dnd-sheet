@@ -10,12 +10,10 @@ from __future__ import annotations
 from itertools import product
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.services.level_up import CLASS_KEYS, LevelUpPlanner
 from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepository
 from dndsheet.shared.kernel import Ability, AbilityScore
-
 from helpers import make_character
 
 #: Таблиця PHB: альтернативи «АБО», усередині — «І».
@@ -89,8 +87,7 @@ def test_pair(rules, first: str, second: str) -> None:  # noqa: ANN001
             lowered = {**enough, ability: 12}
             # Воїну досить іншої альтернативи — якщо вона вже є, бракувати не буде.
             other_ok = any(
-                all(lowered.get(item, 8) >= 13 for item in alternative)
-                for alternative in REQUIREMENTS[class_key][1:]
+                all(lowered.get(item, 8) >= 13 for item in alternative) for alternative in REQUIREMENTS[class_key][1:]
             )
             if other_ok:
                 continue

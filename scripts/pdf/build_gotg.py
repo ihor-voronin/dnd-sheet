@@ -6,6 +6,7 @@ items are sliced mechanically and their stat line is parsed into `data`.
 
     python scripts/pdf/build_gotg.py
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -496,8 +497,8 @@ def parse_item(entry: dict, ref_fallback: str | None = None) -> dict:
         data["item_type"] = re.sub(r"\s+", " ", match.group("kind")).lower()
         rarity = match.group("rarity").title().lower()
         data["rarity"] = "varies" if rarity.startswith("var") else rarity
-        data["attunement"] = bool(ATTR_RE.search(body[match.start():match.start() + 120]))
-        body = body[match.start():]
+        data["attunement"] = bool(ATTR_RE.search(body[match.start() : match.start() + 120]))
+        body = body[match.start() :]
         # A later entry's stat line means this body ran into the next item.
         following = NEXT_STAT_RE.search(body, 120)
         if following:
@@ -540,9 +541,7 @@ def reference_items() -> dict[str, str]:
 def load_items() -> list[dict]:
     raw = json.loads((LOGS / "gotg_items.json").read_text(encoding="utf-8"))
     refs = reference_items()
-    entries = [
-        parse_item(entry, ref_fallback=refs.get(entry["name"])) for entry in raw["entries"]
-    ]
+    entries = [parse_item(entry, ref_fallback=refs.get(entry["name"])) for entry in raw["entries"]]
     # Items whose own OCR came out unusable are transcribed by hand below.
     by_name = {item["name"]: item for item in entries}
     for name, override in MANUAL_ITEMS.items():
@@ -618,6 +617,7 @@ MANUAL_ITEMS = {
 
 # --- records -------------------------------------------------------------
 
+
 def record(category: str, slug: str, name: str, text: str, data: dict, page: int | None, stamp: str) -> dict:
     return {
         "id": f"{SOURCE}/{category}/{slug}",
@@ -651,21 +651,37 @@ def main() -> None:
 
     records: dict[str, list[dict]] = {}
     records["subclass"] = [
-        record("subclass", slugify(SUBCLASS["name"]), SUBCLASS["name"], SUBCLASS["text"], SUBCLASS["data"], SUBCLASS["page"], stamp)
+        record(
+            "subclass",
+            slugify(SUBCLASS["name"]),
+            SUBCLASS["name"],
+            SUBCLASS["text"],
+            SUBCLASS["data"],
+            SUBCLASS["page"],
+            stamp,
+        )
     ]
     records["background"] = [
-        record("background", slugify(bg["name"]), bg["name"], bg["text"], {"feature": bg["feature"]}, bg["page"], stamp)
+        record(
+            "background", slugify(bg["name"]), bg["name"], bg["text"], {"feature": bg["feature"]}, bg["page"], stamp
+        )
         for bg in BACKGROUNDS
     ]
     records["feat"] = [
-        record("feat", slugify(feat["name"]), feat["name"], feat["text"], {"prerequisite": feat["prerequisite"]}, feat["page"], stamp)
+        record(
+            "feat",
+            slugify(feat["name"]),
+            feat["name"],
+            feat["text"],
+            {"prerequisite": feat["prerequisite"]},
+            feat["page"],
+            stamp,
+        )
         for feat in FEATS
     ]
     items = []
     for item in load_items():
-        items.append(
-            record("item", slugify(item["name"]), item["name"], item["text"], item["data"], None, stamp)
-        )
+        items.append(record("item", slugify(item["name"]), item["name"], item["text"], item["data"], None, stamp))
     records["item"] = items
     records["rule"] = [
         record("rule", rule["slug"], rule["name"], rule["text"], {}, rule["page"], stamp) for rule in RULES

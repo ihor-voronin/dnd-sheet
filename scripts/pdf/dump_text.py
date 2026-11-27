@@ -1,7 +1,7 @@
 """Dump a text-layer PDF page by page, so the structure can be read directly."""
+
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 

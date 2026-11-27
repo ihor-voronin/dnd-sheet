@@ -18,8 +18,8 @@ import sys
 
 import yaml
 
-from . import closure, config, discover, fetch, indexes, records, session
 from ..normalize import canonical as compendium_format
+from . import closure, config, discover, fetch, indexes, records, session
 
 
 def _sources_by_tier(tiers: set[str]) -> list[str]:
@@ -82,19 +82,12 @@ def _run_status() -> None:
             if not directory.exists():
                 continue
             for file in sorted(directory.glob("*.jsonl")):
-                count = sum(
-                    1
-                    for line in file.read_text(encoding="utf-8").splitlines()
-                    if line.strip()
-                )
+                count = sum(1 for line in file.read_text(encoding="utf-8").splitlines() if line.strip())
                 by_category[file.stem] = by_category.get(file.stem, 0) + count
         total_records = sum(by_category.values())
         if pages or done or total_records:
             categories = ", ".join(f"{k}={v}" for k, v in sorted(by_category.items()))
-            print(
-                f"{source:22} {str(entry.get('scope', '')):10} {pages:6} {done:7} "
-                f"{total_records:8}  {categories}"
-            )
+            print(f"{source:22} {entry.get('scope', '')!s:10} {pages:6} {done:7} {total_records:8}  {categories}")
         totals[0] += pages
         totals[1] += done
         totals[2] += total_records
@@ -138,9 +131,7 @@ def _force_utf8() -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="scripts.ingest", description="D&D Beyond -> компендіум"
-    )
+    parser = argparse.ArgumentParser(prog="scripts.ingest", description="D&D Beyond -> компендіум")
     parser.add_argument(
         "command",
         choices=[

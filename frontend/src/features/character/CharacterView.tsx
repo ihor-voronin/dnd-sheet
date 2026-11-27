@@ -10,7 +10,6 @@
  * характеристик-гексагонів, далі три колонки — рятівні кидки й володіння,
  * ініціатива з навичками, робоча панель із вкладками.
  */
-
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent, ReactNode } from "react";
@@ -21,26 +20,23 @@ import {
   exportUrl,
   fetchCharacter,
   fetchCharacterVersion,
+  fetchRenderers,
   fetchShared,
   fetchSharedVersion,
-  fetchRenderers,
   linkWithToken,
   patchCharacter,
   prepareCharacterSpells,
-  setCharacterClassChoice,
-  setCharacterSpeciesFeat,
-  setCharacterSpeciesSource,
-  setCharacterExpertise,
   removeCharacterItem,
   removeCharacterSpell,
   restCharacter,
+  setCharacterClassChoice,
+  setCharacterExpertise,
+  setCharacterSpeciesFeat,
+  setCharacterSpeciesSource,
   spendHitDie,
   updateCharacterItem,
 } from "../../api";
 import type { ItemBody, SpellBody } from "../../api";
-import { SharePanel } from "./SharePanel";
-import { inTelegram, openTelegramFile } from "../../telegram";
-import type { RestReport, SheetViewPayload } from "../wizard/types";
 import {
   ABILITY_LABELS,
   ALIGNMENT_LABELS,
@@ -50,33 +46,23 @@ import {
   modifierLabel,
   subclassLabel,
 } from "../../labels";
-import {
-  AbilityHex,
-  HexStat,
-  PassiveList,
-  ProficiencyGroups,
-  SavePills,
-  SkillTable,
-  initials,
-} from "./sheetParts";
+import { inTelegram, openTelegramFile } from "../../telegram";
+import type { RestReport, SheetViewPayload } from "../wizard/types";
+
+import { SharePanel } from "./SharePanel";
+import { ActionPanel } from "./actions";
+import { BackgroundPanel } from "./background";
+import { ClassChoices, SpeciesFeat, SpeciesSource } from "./classChoices";
 import { EditableNumber, NumberField, Pips } from "./editing";
+import { ExpertisePicker } from "./expertise";
 import { HitDiceBlock, HitPointsBlock } from "./hp";
 import { InventoryPanel } from "./inventory";
 import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
-import { BackgroundPanel } from "./background";
-import { ClassChoices, SpeciesFeat, SpeciesSource } from "./classChoices";
-import { ExpertisePicker } from "./expertise";
-import { ActionPanel } from "./actions";
+import { CastingBlock, FeatsList, FeatureResources, FeaturesList, ProficienciesList, SpellsKnownList } from "./panels";
+import { AbilityHex, HexStat, PassiveList, ProficiencyGroups, SavePills, SkillTable, initials } from "./sheetParts";
 import { AddSpellForm, SpellsPreparePanel } from "./spells";
 import { speciesLabel, termLabel, ukSubclass, withEnglish } from "./uk";
-import {
-  CastingBlock,
-  FeatureResources,
-  FeatsList,
-  FeaturesList,
-  ProficienciesList,
-  SpellsKnownList,} from "./panels";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
 
@@ -261,23 +247,17 @@ export function CharacterView({
     }
   }
 
-  const patch = (body: Record<string, unknown>) =>
-    run(patchCharacter(id, { ...body, version: versionRef.current }));
+  const patch = (body: Record<string, unknown>) => run(patchCharacter(id, { ...body, version: versionRef.current }));
 
   const damage = (amount: number) => patch({ hp: { damage: amount } });
   const heal = (amount: number) => patch({ hp: { heal: amount } });
-  const setHitPoints = (fields: { current?: number; temporary?: number }) =>
-    patch({ hp: fields });
+  const setHitPoints = (fields: { current?: number; temporary?: number }) => patch({ hp: fields });
   const addItem = (item: ItemBody) =>
     run(addCharacterItem(id, item, versionRef.current)).then((result) => result !== null);
   const updateItem = (index: number, fields: Partial<ItemBody>) =>
-    run(updateCharacterItem(id, index, fields, versionRef.current)).then(
-      (result) => result !== null,
-    );
+    run(updateCharacterItem(id, index, fields, versionRef.current)).then((result) => result !== null);
   const removeItem = (index: number) =>
-    run(removeCharacterItem(id, index, versionRef.current)).then(
-      (result) => result !== null,
-    );
+    run(removeCharacterItem(id, index, versionRef.current)).then((result) => result !== null);
 
   // Закляття: помилки не ковтаємо — форма показує текст відмови сервера
   // («можна 5», «клас не готує»), а не загальне «не вдалося».
@@ -300,9 +280,7 @@ export function CharacterView({
   async function removeSpell(spell: SheetViewPayload["spells"][number]): Promise<boolean> {
     if (!spell.class_key) return false;
     try {
-      await applySpellChange(
-        removeCharacterSpell(id, spell.name_en, spell.class_key, versionRef.current),
-      );
+      await applySpellChange(removeCharacterSpell(id, spell.name_en, spell.class_key, versionRef.current));
       return true;
     } catch (failure) {
       setError(messageOf(failure));
@@ -314,9 +292,7 @@ export function CharacterView({
     classKey: string,
     picks: { name_en: string; level: number; entry_id: string | null }[],
   ): Promise<boolean> {
-    await applySpellChange(
-      prepareCharacterSpells(id, classKey, picks, versionRef.current),
-    );
+    await applySpellChange(prepareCharacterSpells(id, classKey, picks, versionRef.current));
     return true;
   }
 
@@ -366,7 +342,9 @@ export function CharacterView({
       adoptedVersion.current = Math.max(adoptedVersion.current, versionRef.current);
       setSheet(fresh.sheet);
       setNotesDraft({ ...fresh.sheet.state.notes });
-      setSyncNote(readOnly ? "Лист оновлено: власник щойно його змінив." : "Лист оновлено: його змінили на іншому пристрої.");
+      setSyncNote(
+        readOnly ? "Лист оновлено: власник щойно його змінив." : "Лист оновлено: його змінили на іншому пристрої.",
+      );
     } catch {
       // мережа зникла — спробуємо на наступному такті
     }
@@ -408,9 +386,7 @@ export function CharacterView({
       const result = await patchCharacter(id, { notes: next });
       versionRef.current = Math.max(versionRef.current, result.sheet.character.version);
       setNotesStatus("saved");
-      setNotesSavedAt(
-        new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }),
-      );
+      setNotesSavedAt(new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }));
     } catch (failure) {
       setNotesStatus("error");
       setError(messageOf(failure));
@@ -471,9 +447,7 @@ export function CharacterView({
   // Класи, узяті без вимог мультикласу: лист каже це прямо, а не мовчить.
   const waiverText = (character.multiclass_waivers ?? [])
     .map((waiver) => {
-      const name =
-        character.classes.find((item) => item.key === waiver.class_key)?.name_en ??
-        waiver.class_key;
+      const name = character.classes.find((item) => item.key === waiver.class_key)?.name_en ?? waiver.class_key;
       const required = abilityCodesUk(waiver.requirements.join(" або "));
       return required ? `${termLabel(name)} · ${required}` : termLabel(name);
     })
@@ -507,8 +481,7 @@ export function CharacterView({
           </h3>
           {sheet.armor_untrained?.length ? (
             <p className="hint hint--warn">
-              Поки вдягнено {sheet.armor_untrained.join(", ")} без володіння, чарувати закляття не можна
-              (PHB, с. 144).
+              Поки вдягнено {sheet.armor_untrained.join(", ")} без володіння, чарувати закляття не можна (PHB, с. 144).
             </p>
           ) : null}
           <CastingBlock
@@ -524,12 +497,7 @@ export function CharacterView({
             }}
             onPactUsed={(used) => patch({ pact_used: used })}
           />
-          <SpellsPreparePanel
-            casting={casting}
-            spells={sheet.spells}
-            busy={busy}
-            onSave={savePrepared}
-          />
+          <SpellsPreparePanel casting={casting} spells={sheet.spells} busy={busy} onSave={savePrepared} />
           <h3 className="sheet-work__title">
             <span>Відомі закляття</span>
             <span className="short">натисніть, щоб читати</span>
@@ -567,11 +535,7 @@ export function CharacterView({
                 <span>Ресурси класу</span>
                 <span className="short">витрачено</span>
               </h3>
-              <FeatureResources
-                resources={sheet.feature_resources}
-                disabled={busy}
-                onChange={setFeatureUse}
-              />
+              <FeatureResources resources={sheet.feature_resources} disabled={busy} onChange={setFeatureUse} />
             </>
           ) : null}
           {sheet.class_choices?.length || sheet.species_feat || sheet.species_source ? (
@@ -590,17 +554,13 @@ export function CharacterView({
                 <SpeciesFeat
                   value={sheet.species_feat}
                   busy={busy}
-                  onSave={(featKey, ability) =>
-                    run(setCharacterSpeciesFeat(id, featKey, ability, versionRef.current))
-                  }
+                  onSave={(featKey, ability) => run(setCharacterSpeciesFeat(id, featKey, ability, versionRef.current))}
                 />
               ) : null}
               <ClassChoices
                 groups={sheet.class_choices ?? []}
                 busy={busy}
-                onSave={(group, values) =>
-                  run(setCharacterClassChoice(id, group, values, versionRef.current))
-                }
+                onSave={(group, values) => run(setCharacterClassChoice(id, group, values, versionRef.current))}
               />
             </>
           ) : null}
@@ -676,7 +636,11 @@ export function CharacterView({
                   className="sheet-btn sheet-btn--link sheet-btn--primary"
                   href={`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/export/pdf`}
                   download
-                  onClick={telegramFile(`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/export/pdf`, pdfName, false)}
+                  onClick={telegramFile(
+                    `/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/export/pdf`,
+                    pdfName,
+                    false,
+                  )}
                 >
                   PDF
                 </a>
@@ -686,7 +650,7 @@ export function CharacterView({
                 href={`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/print`}
                 onClick={telegramFile(`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/print`, undefined, false)}
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 title="Аркуш у вкладці браузера — друк через Ctrl+P"
               >
                 у браузері
@@ -694,79 +658,77 @@ export function CharacterView({
             </div>
           </div>
         ) : (
-        <>
-        <button
-          type="button"
-          className="sheet-btn sheet-actions-toggle"
-          aria-expanded={actionsOpen}
-          aria-controls="sheet-actions"
-          onClick={() => setActionsOpen((open) => !open)}
-        >
-          {actionsOpen ? "Сховати дії" : "Дії з листом"}
-        </button>
-        <div id="sheet-actions" className={`sheet-top__actions sheet-top__actions--owner ${actionsOpen ? "is-open" : ""}`}>
-          <button
-            type="button"
-            className="sheet-btn"
-            aria-expanded={shareOpen}
-            onClick={() => setShareOpen((open) => !open)}
-            title="Посилання на лист лише для перегляду"
-          >
-            Поділитися
-          </button>
-          <a
-            className="sheet-btn sheet-btn--link"
-            href={`#/character/${encodeURIComponent(id)}/level-up`}
-            title="Узяти наступний рівень: клас, хіти, підклас, характеристики"
-          >
-            +1 рівень
-          </a>
-          <div className="sheet-rest">
+          <>
             <button
               type="button"
-              className="sheet-btn"
-              disabled={busy}
-              onClick={() => void rest("short")}
+              className="sheet-btn sheet-actions-toggle"
+              aria-expanded={actionsOpen}
+              aria-controls="sheet-actions"
+              onClick={() => setActionsOpen((open) => !open)}
             >
-              Короткий відпочинок
+              {actionsOpen ? "Сховати дії" : "Дії з листом"}
             </button>
-            <button
-              type="button"
-              className="sheet-btn sheet-btn--primary"
-              disabled={busy}
-              onClick={() => void rest("long")}
+            <div
+              id="sheet-actions"
+              className={`sheet-top__actions sheet-top__actions--owner ${actionsOpen ? "is-open" : ""}`}
             >
-              Тривалий відпочинок
-            </button>
-          </div>
-          <div className="sheet-export">
-            <span className="sheet-export__label">{pdfReady ? "Завантажити" : "Роздрукувати"}</span>
-            {pdfReady ? (
-              <>
-                <a
-                  className="sheet-btn sheet-btn--link sheet-btn--primary"
-                  href={exportUrl(id, "pdf")}
-                  download
-                  onClick={telegramFile(exportUrl(id, "pdf"), pdfName)}
-                  title="Аркуш для гри (головна, закляття, спорядження) і додаткові аркуші з повними текстами умінь і заклять"
+              <button
+                type="button"
+                className="sheet-btn"
+                aria-expanded={shareOpen}
+                onClick={() => setShareOpen((open) => !open)}
+                title="Посилання на лист лише для перегляду"
+              >
+                Поділитися
+              </button>
+              <a
+                className="sheet-btn sheet-btn--link"
+                href={`#/character/${encodeURIComponent(id)}/level-up`}
+                title="Узяти наступний рівень: клас, хіти, підклас, характеристики"
+              >
+                +1 рівень
+              </a>
+              <div className="sheet-rest">
+                <button type="button" className="sheet-btn" disabled={busy} onClick={() => void rest("short")}>
+                  Короткий відпочинок
+                </button>
+                <button
+                  type="button"
+                  className="sheet-btn sheet-btn--primary"
+                  disabled={busy}
+                  onClick={() => void rest("long")}
                 >
-                  PDF
+                  Тривалий відпочинок
+                </button>
+              </div>
+              <div className="sheet-export">
+                <span className="sheet-export__label">{pdfReady ? "Завантажити" : "Роздрукувати"}</span>
+                {pdfReady ? (
+                  <>
+                    <a
+                      className="sheet-btn sheet-btn--link sheet-btn--primary"
+                      href={exportUrl(id, "pdf")}
+                      download
+                      onClick={telegramFile(exportUrl(id, "pdf"), pdfName)}
+                      title="Аркуш для гри (головна, закляття, спорядження) і додаткові аркуші з повними текстами умінь і заклять"
+                    >
+                      PDF
+                    </a>
+                  </>
+                ) : null}
+                <a
+                  className="sheet-btn sheet-btn--link"
+                  href={`/api/v1/characters/${encodeURIComponent(id)}/print`}
+                  onClick={telegramFile(`/api/v1/characters/${encodeURIComponent(id)}/print`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Той самий аркуш у вкладці браузера — друк через Ctrl+P"
+                >
+                  Друк
                 </a>
-              </>
-            ) : null}
-            <a
-              className="sheet-btn sheet-btn--link"
-              href={`/api/v1/characters/${encodeURIComponent(id)}/print`}
-              onClick={telegramFile(`/api/v1/characters/${encodeURIComponent(id)}/print`)}
-              target="_blank"
-              rel="noopener"
-              title="Той самий аркуш у вкладці браузера — друк через Ctrl+P"
-            >
-              Друк
-            </a>
-          </div>
-        </div>
-        </>
+              </div>
+            </div>
+          </>
         )}
       </header>
 
@@ -775,8 +737,8 @@ export function CharacterView({
       {waiverText ? (
         <p className="sheet-waiver-note" role="note">
           <span>
-            Вимоги мультикласу проігноровано: {waiverText}. Це правило дому — PHB вимагає
-            13 у ключовій характеристиці класу.
+            Вимоги мультикласу проігноровано: {waiverText}. Це правило дому — PHB вимагає 13 у ключовій характеристиці
+            класу.
           </span>
         </p>
       ) : null}
@@ -810,28 +772,25 @@ export function CharacterView({
       ) : null}
 
       <ReadOnly on={readOnly}>
-      <div className="sheet-strip">
-        <ul className="sheet-abilities">
-          {ABILITIES.map((ability) => (
-            <AbilityHex key={ability} code={ability} ability={sheet.abilities[ability]} />
-          ))}
-        </ul>
+        <div className="sheet-strip">
+          <ul className="sheet-abilities">
+            {ABILITIES.map((ability) => (
+              <AbilityHex key={ability} code={ability} ability={sheet.abilities[ability]} />
+            ))}
+          </ul>
 
-        <HexStat label="Майстерність" value={modifierLabel(sheet.proficiency_bonus)} />
-        <HexStat
-          label="Швидкість"
-          value={overrideNumber("speed", sheet.speed, "Швидкість", " фт")}
-        />
+          <HexStat label="Майстерність" value={modifierLabel(sheet.proficiency_bonus)} />
+          <HexStat label="Швидкість" value={overrideNumber("speed", sheet.speed, "Швидкість", " фт")} />
 
-        <HitPointsBlock
-          hitPoints={sheet.hit_points}
-          maxField={overrideNumber("hit_points_max", sheet.hit_points.maximum, "Максимум хітів")}
-          disabled={busy}
-          onSet={setHitPoints}
-          onDamage={damage}
-          onHeal={heal}
-        />
-      </div>
+          <HitPointsBlock
+            hitPoints={sheet.hit_points}
+            maxField={overrideNumber("hit_points_max", sheet.hit_points.maximum, "Максимум хітів")}
+            disabled={busy}
+            onSet={setHitPoints}
+            onDamage={damage}
+            onHeal={heal}
+          />
+        </div>
       </ReadOnly>
 
       {error ? <p className="status status--error sheet-status">{error}</p> : null}
@@ -839,227 +798,213 @@ export function CharacterView({
 
       <div className="sheet-grid">
         <ReadOnly on={readOnly}>
-        <div className="sheet-col">
-          <section className="sheet-card">
-            <h2 className="sheet-card__title">
-              <span>Рятівні кидки</span>
-            </h2>
-            <SavePills saves={sheet.saving_throws} render={overrideNumber} />
-          </section>
+          <div className="sheet-col">
+            <section className="sheet-card">
+              <h2 className="sheet-card__title">
+                <span>Рятівні кидки</span>
+              </h2>
+              <SavePills saves={sheet.saving_throws} render={overrideNumber} />
+            </section>
 
-          <section className="sheet-card">
-            <h2 className="sheet-card__title">
-              <span>Пасивні показники</span>
-            </h2>
-            <PassiveList items={passives} />
-          </section>
+            <section className="sheet-card">
+              <h2 className="sheet-card__title">
+                <span>Пасивні показники</span>
+              </h2>
+              <PassiveList items={passives} />
+            </section>
 
-          <section className="sheet-card">
-            <h2 className="sheet-card__title">
-              <span>Чуття та опір</span>
-            </h2>
-            <ul className="sheet-rows">
-              <li>
-                <span className="sheet-rows__label">Темний зір</span>
-                <span>{sheet.darkvision ? `${sheet.darkvision} фт` : "—"}</span>
-              </li>
-              {sheet.blindsight ? (
+            <section className="sheet-card">
+              <h2 className="sheet-card__title">
+                <span>Чуття та опір</span>
+              </h2>
+              <ul className="sheet-rows">
                 <li>
-                  <span className="sheet-rows__label">Сліпе чуття</span>
-                  <span>{sheet.blindsight} фт</span>
+                  <span className="sheet-rows__label">Темний зір</span>
+                  <span>{sheet.darkvision ? `${sheet.darkvision} фт` : "—"}</span>
                 </li>
-              ) : null}
-              <li>
-                <span className="sheet-rows__label">Швидкість</span>
-                <span>{sheet.speed} фт</span>
-              </li>
-              <li>
-                <span className="sheet-rows__label">Опір</span>
-                <span>{sheet.resistances.length ? sheet.resistances.map(damageTypeLabel).join(", ") : "—"}</span>
-              </li>
-              {(sheet.roll_notes ?? []).map((note) => (
-                <li key={note}>
-                  <span className="hint">{note}</span>
+                {sheet.blindsight ? (
+                  <li>
+                    <span className="sheet-rows__label">Сліпе чуття</span>
+                    <span>{sheet.blindsight} фт</span>
+                  </li>
+                ) : null}
+                <li>
+                  <span className="sheet-rows__label">Швидкість</span>
+                  <span>{sheet.speed} фт</span>
                 </li>
-              ))}
-              {(sheet.resistance_notes ?? []).map((note) => (
-                <li key={note}>
-                  <span className="hint">{note}</span>
+                <li>
+                  <span className="sheet-rows__label">Опір</span>
+                  <span>{sheet.resistances.length ? sheet.resistances.map(damageTypeLabel).join(", ") : "—"}</span>
                 </li>
-              ))}
-            </ul>
-          </section>
+                {(sheet.roll_notes ?? []).map((note) => (
+                  <li key={note}>
+                    <span className="hint">{note}</span>
+                  </li>
+                ))}
+                {(sheet.resistance_notes ?? []).map((note) => (
+                  <li key={note}>
+                    <span className="hint">{note}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
 
-          <section className="sheet-card">
-            <h2 className="sheet-card__title">
-              <span>Володіння</span>
-            </h2>
-            <ProficiencyGroups proficiencies={sheet.proficiencies} />
-          </section>
-        </div>
+            <section className="sheet-card">
+              <h2 className="sheet-card__title">
+                <span>Володіння</span>
+              </h2>
+              <ProficiencyGroups proficiencies={sheet.proficiencies} />
+            </section>
+          </div>
         </ReadOnly>
 
         <ReadOnly on={readOnly}>
-        <div className="sheet-col sheet-col--mid">
-          {sheet.warnings?.length ? (
-            <div className="sheet-warnings" role="status">
-              {sheet.warnings.map((warning) => (
-                <p key={warning} className="hint hint--warn">
-                  {warning}
-                </p>
-              ))}
-            </div>
-          ) : null}
-          <div className="sheet-hexrow">
-            <HexStat
-              label="Ініціатива"
-              value={overrideNumber("initiative", sheet.initiative, "Ініціатива")}
-            />
-            <HexStat
-              label="Клас захисту"
-              value={overrideNumber("armor_class", sheet.armor_class.value, "Клас захисту")}
-              note="КЗ"
-              title={[partList(sheet.armor_class.parts), ...(sheet.armor_class.notes ?? [])].join("\n")}
-            />
-          </div>
-          {sheet.armor_class.notes?.length ? (
-            <p className="hint">{sheet.armor_class.notes.join("; ")}</p>
-          ) : null}
-
-          <section className="sheet-card">
-            <h2 className="sheet-card__title">
-              <span>Навички</span>
-            </h2>
-            <SkillTable skills={sheet.skills} render={overrideNumber} />
-            {sheet.expertise && sheet.expertise.slots > 0 ? (
-              <ExpertisePicker
-                expertise={sheet.expertise}
-                busy={busy}
-                onSave={(values) =>
-                  run(setCharacterExpertise(id, values, versionRef.current))
-                }
-              />
+          <div className="sheet-col sheet-col--mid">
+            {sheet.warnings?.length ? (
+              <div className="sheet-warnings" role="status">
+                {sheet.warnings.map((warning) => (
+                  <p key={warning} className="hint hint--warn">
+                    {warning}
+                  </p>
+                ))}
+              </div>
             ) : null}
-            <details className="reckoning">
-              <summary>Звідки числа</summary>
-              <ul className="reckoning-list">
-                {ABILITIES.map((ability) => {
-                  const value = sheet.abilities[ability];
-                  const save = sheet.saving_throws[ability];
-                  const parts = [String(value.base)];
-                  if (value.bonus) {
-                    parts.push(`${value.bonus > 0 ? "+" : "−"} ${Math.abs(value.bonus)}`);
-                  }
-                  return (
-                    <li key={ability} className="reckoning-row">
-                      <span className="reckoning-row__name">{abilityLabel(ability)}</span>
-                      <span className="reckoning-row__total" title="Підсумок характеристики">
-                        {value.total}
-                      </span>
-                      <span className="reckoning-row__math">
-                        {parts.join(" ")} = {value.total} · мод {modifierLabel(value.modifier)}
-                      </span>
-                      <span className="reckoning-row__save">
-                        рятівний кидок{" "}
-                        {overrideNumber(
-                          `save:${ability}`,
-                          save.value,
-                          `Рятівний кидок ${ABILITY_LABELS[ability]}`,
-                        )}
-                        {save.proficient ? <span className="dot" title="володіє" /> : null}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </details>
-          </section>
-        </div>
+            <div className="sheet-hexrow">
+              <HexStat label="Ініціатива" value={overrideNumber("initiative", sheet.initiative, "Ініціатива")} />
+              <HexStat
+                label="Клас захисту"
+                value={overrideNumber("armor_class", sheet.armor_class.value, "Клас захисту")}
+                note="КЗ"
+                title={[partList(sheet.armor_class.parts), ...(sheet.armor_class.notes ?? [])].join("\n")}
+              />
+            </div>
+            {sheet.armor_class.notes?.length ? <p className="hint">{sheet.armor_class.notes.join("; ")}</p> : null}
+
+            <section className="sheet-card">
+              <h2 className="sheet-card__title">
+                <span>Навички</span>
+              </h2>
+              <SkillTable skills={sheet.skills} render={overrideNumber} />
+              {sheet.expertise && sheet.expertise.slots > 0 ? (
+                <ExpertisePicker
+                  expertise={sheet.expertise}
+                  busy={busy}
+                  onSave={(values) => run(setCharacterExpertise(id, values, versionRef.current))}
+                />
+              ) : null}
+              <details className="reckoning">
+                <summary>Звідки числа</summary>
+                <ul className="reckoning-list">
+                  {ABILITIES.map((ability) => {
+                    const value = sheet.abilities[ability];
+                    const save = sheet.saving_throws[ability];
+                    const parts = [String(value.base)];
+                    if (value.bonus) {
+                      parts.push(`${value.bonus > 0 ? "+" : "−"} ${Math.abs(value.bonus)}`);
+                    }
+                    return (
+                      <li key={ability} className="reckoning-row">
+                        <span className="reckoning-row__name">{abilityLabel(ability)}</span>
+                        <span className="reckoning-row__total" title="Підсумок характеристики">
+                          {value.total}
+                        </span>
+                        <span className="reckoning-row__math">
+                          {parts.join(" ")} = {value.total} · мод {modifierLabel(value.modifier)}
+                        </span>
+                        <span className="reckoning-row__save">
+                          рятівний кидок{" "}
+                          {overrideNumber(`save:${ability}`, save.value, `Рятівний кидок ${ABILITY_LABELS[ability]}`)}
+                          {save.proficient ? <span className="dot" title="володіє" /> : null}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </details>
+            </section>
+          </div>
         </ReadOnly>
 
         <div className="sheet-col sheet-col--work">
           <ReadOnly on={readOnly}>
-          <section className="sheet-card">
-            <h2 className="sheet-card__title">
-              <span>Стан</span>
-            </h2>
-            <div className="state-row">
-              <span>
-                Натхнення:{" "}
-                <button
-                  type="button"
-                  className={`chip ${sheet.state.inspiration ? "chip--active" : ""}`}
-                  onClick={() => patch({ inspiration: !sheet.state.inspiration })}
-                >
-                  {sheet.state.inspiration ? "є" : "немає"}
-                </button>
-              </span>
-              <span>
-                Виснаження:{" "}
-                <NumberField
-                  value={sheet.state.exhaustion}
-                  min={0}
-                  max={6}
-                  size="sm"
-                  disabled={busy}
-                  title="Рівень виснаження"
-                  onChange={(value) => patch({ exhaustion: value })}
-                />
-              </span>
-              <span className="state-row__wide">
-                Кидки смерті: успіхи{" "}
-                <Pips
-                  count={sheet.state.death_saves.successes}
-                  max={3}
-                  title="Успіхи кидків смерті"
-                  onChange={(value) =>
-                    patch({
-                      death_saves: {
-                        successes: value,
-                        failures: sheet.state.death_saves.failures,
-                      },
-                    })
-                  }
-                />{" "}
-                провали{" "}
-                <Pips
-                  count={sheet.state.death_saves.failures}
-                  max={3}
-                  title="Провали кидків смерті"
-                  onChange={(value) =>
-                    patch({
-                      death_saves: {
-                        successes: sheet.state.death_saves.successes,
-                        failures: value,
-                      },
-                    })
-                  }
-                />
-              </span>
-            </div>
-          </section>
+            <section className="sheet-card">
+              <h2 className="sheet-card__title">
+                <span>Стан</span>
+              </h2>
+              <div className="state-row">
+                <span>
+                  Натхнення:{" "}
+                  <button
+                    type="button"
+                    className={`chip ${sheet.state.inspiration ? "chip--active" : ""}`}
+                    onClick={() => patch({ inspiration: !sheet.state.inspiration })}
+                  >
+                    {sheet.state.inspiration ? "є" : "немає"}
+                  </button>
+                </span>
+                <span>
+                  Виснаження:{" "}
+                  <NumberField
+                    value={sheet.state.exhaustion}
+                    min={0}
+                    max={6}
+                    size="sm"
+                    disabled={busy}
+                    title="Рівень виснаження"
+                    onChange={(value) => patch({ exhaustion: value })}
+                  />
+                </span>
+                <span className="state-row__wide">
+                  Кидки смерті: успіхи{" "}
+                  <Pips
+                    count={sheet.state.death_saves.successes}
+                    max={3}
+                    title="Успіхи кидків смерті"
+                    onChange={(value) =>
+                      patch({
+                        death_saves: {
+                          successes: value,
+                          failures: sheet.state.death_saves.failures,
+                        },
+                      })
+                    }
+                  />{" "}
+                  провали{" "}
+                  <Pips
+                    count={sheet.state.death_saves.failures}
+                    max={3}
+                    title="Провали кидків смерті"
+                    onChange={(value) =>
+                      patch({
+                        death_saves: {
+                          successes: sheet.state.death_saves.successes,
+                          failures: value,
+                        },
+                      })
+                    }
+                  />
+                </span>
+              </div>
+            </section>
 
-          {/* Кістки хітів не є ключовим блоком (хіти — так), тому згорнуті:
+            {/* Кістки хітів не є ключовим блоком (хіти — так), тому згорнуті:
               розгортає гравець, коли справді витрачає кістку. */}
-          <details className="sheet-card sheet-card--collapsible">
-            <summary className="sheet-card__title">
-              <span>
-                <span className="sheet-caret" aria-hidden>
-                  ▸
-                </span>{" "}
-                Кістки хітів
-              </span>
-            </summary>
-            <HitDiceBlock
-              resources={sheet.resources}
-              conModifier={sheet.abilities.con?.modifier ?? 0}
-              disabled={busy}
-              onSpend={(die, roll) =>
-              run(spendHitDie(id, die, roll)).then((result) => result !== null)
-            }
-            />
-          </details>
-
+            <details className="sheet-card sheet-card--collapsible">
+              <summary className="sheet-card__title">
+                <span>
+                  <span className="sheet-caret" aria-hidden>
+                    ▸
+                  </span>{" "}
+                  Кістки хітів
+                </span>
+              </summary>
+              <HitDiceBlock
+                resources={sheet.resources}
+                conModifier={sheet.abilities.con?.modifier ?? 0}
+                disabled={busy}
+                onSpend={(die, roll) => run(spendHitDie(id, die, roll)).then((result) => result !== null)}
+              />
+            </details>
           </ReadOnly>
           <div className="sheet-work">
             <nav className="sheet-tabs" aria-label="Розділи листа">
@@ -1075,7 +1020,9 @@ export function CharacterView({
                 </button>
               ))}
             </nav>
-            <div className="sheet-work__body"><ReadOnly on={readOnly}>{workTab}</ReadOnly></div>
+            <div className="sheet-work__body">
+              <ReadOnly on={readOnly}>{workTab}</ReadOnly>
+            </div>
           </div>
         </div>
       </div>

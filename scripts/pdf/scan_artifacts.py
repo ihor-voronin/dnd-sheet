@@ -1,4 +1,5 @@
 """Scan item texts for residual OCR artifacts before publishing them."""
+
 from __future__ import annotations
 
 import json
@@ -37,4 +38,3 @@ for line in PATH.read_text(encoding="utf-8").splitlines():
         print(record["name_en"])
         for hit in sorted(set(hits)):
             print("   ", hit)
-

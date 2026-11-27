@@ -11,13 +11,13 @@
  * Числа не рахуються тут: ліміт і найвищий рівень прийшли з сервера
  * (`spellcasting.classes`), а перевірку все одно робить агрегат.
  */
-
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import { fetchClassSpells } from "../../api";
 import type { SpellBody } from "../../api";
 import type { SheetSpell, SheetSpellcasting } from "../wizard/types";
+
 import { spellLabel, termLabel } from "./uk";
 
 type CastingClass = SheetSpellcasting["classes"][number];
@@ -66,13 +66,7 @@ export function SpellsPreparePanel({
         <span className="short">зі списку класу</span>
       </h3>
       {preparing.map((item) => (
-        <PreparedClass
-          key={item.key}
-          casting={item}
-          spells={spells}
-          busy={busy}
-          onSave={onSave}
-        />
+        <PreparedClass key={item.key} casting={item} spells={spells} busy={busy} onSave={onSave} />
       ))}
     </>
   );
@@ -116,7 +110,7 @@ function PreparedClass({
   const options = useMemo(() => {
     const map = new Map<string, Pick>();
     // Маг готує лише з книги заклять (PHB, p. 114), а не з усього списку класу.
-    for (const entry of casting.key === "wizard" ? [] : list.data?.items ?? []) {
+    for (const entry of casting.key === "wizard" ? [] : (list.data?.items ?? [])) {
       const level = spellLevelOf(entry);
       // Заговори не готують: вони змінюються лише з рівнем.
       if (level === 0) continue;
@@ -137,7 +131,7 @@ function PreparedClass({
     return Array.from(map.values()).sort(
       (left, right) => left.level - right.level || left.name_en.localeCompare(right.name_en),
     );
-  }, [list.data, learned]);
+  }, [list.data, learned, casting.key]);
 
   const needle = query.trim().toLocaleLowerCase();
   const visible = needle
@@ -158,9 +152,7 @@ function PreparedClass({
   function toggle(nameEn: string) {
     setError(null);
     setSelected((current) =>
-      current.includes(nameEn)
-        ? current.filter((item) => item !== nameEn)
-        : [...current, nameEn],
+      current.includes(nameEn) ? current.filter((item) => item !== nameEn) : [...current, nameEn],
     );
   }
 
@@ -211,9 +203,7 @@ function PreparedClass({
 
       {error ? <p className="status status--error">{error}</p> : null}
       {list.isPending ? <p className="hint">Читаємо список класу…</p> : null}
-      {list.error ? (
-        <p className="hint hint--warn">Список не завантажився: {messageOf(list.error)}</p>
-      ) : null}
+      {list.error ? <p className="hint hint--warn">Список не завантажився: {messageOf(list.error)}</p> : null}
 
       <div className="spell-prep__list">
         {visible.map((option) => (
@@ -230,15 +220,12 @@ function PreparedClass({
             <span className="meta">{levelLabel(option.level)}</span>
           </label>
         ))}
-        {!visible.length && !list.isPending ? (
-          <p className="hint">Нічого не знайшли — змініть пошук.</p>
-        ) : null}
+        {!visible.length && !list.isPending ? <p className="hint">Нічого не знайшли — змініть пошук.</p> : null}
       </div>
 
       {over ? (
         <p className="hint hint--warn">
-          Більше, ніж клас готує на день: приберіть {used - limit} — сервер інакше
-          відмовить.
+          Більше, ніж клас готує на день: приберіть {used - limit} — сервер інакше відмовить.
         </p>
       ) : null}
 
@@ -249,8 +236,7 @@ function PreparedClass({
       ) : null}
       {custom.length ? (
         <p className="hint">
-          Власні закляття завжди доступні й займають місце в ліміті:{" "}
-          {custom.map((item) => item.name_en).join(", ")}.
+          Власні закляття завжди доступні й займають місце в ліміті: {custom.map((item) => item.name_en).join(", ")}.
         </p>
       ) : null}
     </section>
@@ -314,12 +300,16 @@ export function AddSpellForm({
       level: spellLevelOf(entry),
       entry_id: entry.id,
     }))
-    .filter((entry) => !needle || spellLabel(entry.name_en).toLocaleLowerCase().includes(needle) ||
-      entry.name_en.toLocaleLowerCase().includes(needle))
+    .filter(
+      (entry) =>
+        !needle ||
+        spellLabel(entry.name_en).toLocaleLowerCase().includes(needle) ||
+        entry.name_en.toLocaleLowerCase().includes(needle),
+    )
     .slice(0, 40);
 
   async function submit() {
-    const finalName = custom ? name.trim() : picked?.name_en ?? "";
+    const finalName = custom ? name.trim() : (picked?.name_en ?? "");
     if (!finalName) {
       setError(custom ? "Впишіть назву власного закляття" : "Оберіть закляття зі списку");
       return;
@@ -333,8 +323,8 @@ export function AddSpellForm({
       const body: SpellBody = {
         class_key: classKey,
         name_en: finalName,
-        level: custom ? level : picked?.level ?? 0,
-        entry_id: custom ? null : picked?.entry_id ?? null,
+        level: custom ? level : (picked?.level ?? 0),
+        entry_id: custom ? null : (picked?.entry_id ?? null),
         prepared,
         custom,
         description: custom ? description.trim() || null : null,
@@ -412,11 +402,7 @@ export function AddSpellForm({
             </label>
             <label className="field">
               Рівень
-              <select
-                className="select"
-                value={level}
-                onChange={(event) => setLevel(Number(event.target.value))}
-              >
+              <select className="select" value={level} onChange={(event) => setLevel(Number(event.target.value))}>
                 <option value={0}>заговір</option>
                 {Array.from({ length: 9 }, (_, index) => index + 1).map((value) => (
                   <option key={value} value={value}>
@@ -450,9 +436,7 @@ export function AddSpellForm({
             </label>
             <div className="spell-add__results">
               {list.isPending ? <p className="hint">Читаємо список класу…</p> : null}
-              {list.error ? (
-                <p className="hint hint--warn">Список не завантажився: {messageOf(list.error)}</p>
-              ) : null}
+              {list.error ? <p className="hint hint--warn">Список не завантажився: {messageOf(list.error)}</p> : null}
               {options.map((option) => (
                 <button
                   key={option.name_en}
@@ -467,9 +451,7 @@ export function AddSpellForm({
                 </button>
               ))}
               {!options.length && !list.isPending ? (
-                <p className="hint">
-                  У списку нічого не знайшли. Якщо це ваше закляття — увімкніть «власне».
-                </p>
+                <p className="hint">У списку нічого не знайшли. Якщо це ваше закляття — увімкніть «власне».</p>
               ) : null}
             </div>
           </>
@@ -477,17 +459,12 @@ export function AddSpellForm({
 
         {custom ? (
           <p className="hint inv-form__wide">
-            Власне закляття завжди підготовлене: у нього немає списку класу, з
-            якого його готувати. Місце в денному ліміті воно займає — якщо місця
-            немає, спершу зніміть підготовку з іншого закляття.
+            Власне закляття завжди підготовлене: у нього немає списку класу, з якого його готувати. Місце в денному
+            ліміті воно займає — якщо місця немає, спершу зніміть підготовку з іншого закляття.
           </p>
         ) : (
           <label className="field inv-form__check inv-form__wide">
-            <input
-              type="checkbox"
-              checked={prepared}
-              onChange={(event) => setPrepared(event.target.checked)}
-            />
+            <input type="checkbox" checked={prepared} onChange={(event) => setPrepared(event.target.checked)} />
             підготовлене зараз
           </label>
         )}

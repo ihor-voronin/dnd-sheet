@@ -10,6 +10,7 @@ DoSI, HAT-TG, NRH-*, AitFR-ISF/DN/FCD, DrDe-*, книги 2024+.
 
 Запуск:  python scripts/ingest/fetch_5etools_batch.py
 """
+
 from __future__ import annotations
 
 import json
@@ -70,7 +71,7 @@ def main() -> None:
     total = 0
     for kind, sid, slug in TARGETS:
         rel = f"{kind}/{kind}-{sid}.json"
-        dest = ROOT / "content" / "raw" / slug / rel.split("/")[-1]
+        dest = ROOT / "content" / "raw" / slug / rel.rsplit("/", maxsplit=1)[-1]
         if dest.exists():
             print(f"--- {slug:14s} уже є ({dest.stat().st_size // 1024} KB)")
             continue

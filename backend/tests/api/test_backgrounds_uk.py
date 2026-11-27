@@ -14,10 +14,9 @@ import os
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
 from dndsheet.characters.api import backgrounds_uk, uk_text
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(scope="module")
@@ -100,12 +99,8 @@ def test_equipment_row_keeps_choices(content: Path) -> None:
 
 def test_wizard_background_step_gives_ukrainian_soldier(client) -> None:  # noqa: ANN001
     draft = client.post("/api/v1/characters/wizard").json()
-    step = client.get(
-        f"/api/v1/characters/wizard/{draft['draft']['id']}/steps/background"
-    ).json()
-    soldier = next(
-        item for item in step["options"]["backgrounds"] if item["name_en"] == "Soldier"
-    )
+    step = client.get(f"/api/v1/characters/wizard/{draft['draft']['id']}/steps/background").json()
+    soldier = next(item for item in step["options"]["backgrounds"] if item["name_en"] == "Soldier")
 
     assert soldier["description_uk"].startswith("Війна була вашим життям")
     assert soldier["feature_uk"] == "Військове звання"

@@ -1,7 +1,7 @@
 """Перевірити повноту перекладу передісторій: чи кожен вхід має вихід.
 
-    python scripts/backgrounds_uk_check.py           # звіт
-    python scripts/backgrounds_uk_check.py --strict  # код виходу 1, якщо є діри
+python scripts/backgrounds_uk_check.py           # звіт
+python scripts/backgrounds_uk_check.py --strict  # код виходу 1, якщо є діри
 """
 
 from __future__ import annotations
@@ -34,10 +34,7 @@ def main(strict: bool) -> int:
     for path in sorted(INPUT.glob("*.json")):
         field = "name_uk" if path.name == "names.json" else "text_uk"
         expected = {str(row.get("id")) for row in load(path)}
-        got = {
-            str(row.get("id")): str(row.get(field) or "")
-            for row in load(OUTPUT / path.name)
-        }
+        got = {str(row.get("id")): str(row.get(field) or "") for row in load(OUTPUT / path.name)}
         total_expected += len(expected)
         total_done += sum(1 for key in expected if got.get(key, "").strip())
         missing = sorted(expected - set(got))

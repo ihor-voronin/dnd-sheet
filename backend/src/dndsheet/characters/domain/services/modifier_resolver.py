@@ -176,11 +176,7 @@ def _rule_modifiers(character) -> list[Modifier]:  # noqa: ANN001, C901 — та
 
     items: list[Modifier] = []
     levels = {entry.class_key: entry.level for entry in character.classes if entry.level > 0}
-    subclasses = {
-        entry.class_key: _slug(entry.subclass_key)
-        for entry in character.classes
-        if entry.subclass_key
-    }
+    subclasses = {entry.class_key: _slug(entry.subclass_key) for entry in character.classes if entry.subclass_key}
     feats = {_slug(feat) for feat in character.feats}
     total_level = max(1, character.total_level)
     proficiency = proficiency_bonus(total_level)
@@ -202,11 +198,7 @@ def _rule_modifiers(character) -> list[Modifier]:  # noqa: ANN001, C901 — та
 
     # --- перевірки без володіння: Jack of All Trades / Remarkable Athlete ---
     jack = proficiency // 2 if levels.get("bard", 0) >= 2 else 0
-    athlete = (
-        -(-proficiency // 2)
-        if levels.get("fighter", 0) >= 7 and subclasses.get("fighter") == "champion"
-        else 0
-    )
+    athlete = -(-proficiency // 2) if levels.get("fighter", 0) >= 7 and subclasses.get("fighter") == "champion" else 0
     if jack or athlete:
         owned = character.all_proficiencies()
         for skill in Skill:
@@ -214,7 +206,11 @@ def _rule_modifiers(character) -> list[Modifier]:  # noqa: ANN001, C901 — та
                 continue
             physical = SKILL_ABILITY[skill] in (Ability.STR, Ability.DEX, Ability.CON)
             best = max(jack, athlete if physical else 0)
-            source = ("fighter", "remarkable-athlete") if best == athlete and physical and athlete > jack else ("bard", "jack-of-all-trades")
+            source = (
+                ("fighter", "remarkable-athlete")
+                if best == athlete and physical and athlete > jack
+                else ("bard", "jack-of-all-trades")
+            )
             add(ModifierKind.SKILL, best, SourceKind.CLASS, source[0], key=skill.value, note=source[1])
         best_init = max(jack, athlete)
         add(
@@ -257,7 +253,13 @@ def _rule_modifiers(character) -> list[Modifier]:  # noqa: ANN001, C901 — та
     if _slug(character.subspecies_key) == "hill dwarf":
         add(ModifierKind.MAX_HIT_POINTS, total_level, SourceKind.SPECIES, "hill dwarf", note="dwarven-toughness")
     if subclasses.get("sorcerer") == "draconic-bloodline":
-        add(ModifierKind.MAX_HIT_POINTS, levels.get("sorcerer", 0), SourceKind.CLASS, "sorcerer", note="draconic-resilience")
+        add(
+            ModifierKind.MAX_HIT_POINTS,
+            levels.get("sorcerer", 0),
+            SourceKind.CLASS,
+            "sorcerer",
+            note="draconic-resilience",
+        )
 
     # --- бойовий стиль: Defense +1 КБ у броні (PHB, p. 72) ---
     # shortcut: Dueling/Great Weapon/Two-Weapon лише як текст, автоматично не рахуються.
@@ -266,7 +268,14 @@ def _rule_modifiers(character) -> list[Modifier]:  # noqa: ANN001, C901 — та
 
     # --- риси ---
     for ability in Ability:
-        add(ModifierKind.ABILITY, character.ability_bonus_from_feats(ability), SourceKind.FEAT, "feat", key=ability.value, note="feat")
+        add(
+            ModifierKind.ABILITY,
+            character.ability_bonus_from_feats(ability),
+            SourceKind.FEAT,
+            "feat",
+            key=ability.value,
+            note="feat",
+        )
     if "alert" in feats:
         add(ModifierKind.INITIATIVE, 5, SourceKind.FEAT, "alert", note="alert")
     if "mobile" in feats:

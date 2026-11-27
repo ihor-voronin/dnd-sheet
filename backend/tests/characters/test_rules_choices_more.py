@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
 from dndsheet.characters.domain.proficiencies import ProficiencyKind
@@ -15,7 +14,6 @@ from dndsheet.characters.domain.services.feature_resources import resources_for
 from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepository
 from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.kernel import Ability, AbilityScore, Skill
-
 from helpers import make_character
 
 
@@ -73,7 +71,9 @@ def test_knowledge_domain_skills_get_expertise(rules, compendium) -> None:
 def test_college_of_lore_waits_for_third_level(rules) -> None:
     bard = make_character(rules, abilities=_scores(cha=13), classes=[CharacterClass("bard", 2)])
     assert not any(key.startswith("sub:") for key in bard.class_choice_slots)
-    lore = make_character(rules, abilities=_scores(cha=13), classes=[CharacterClass("bard", 3, subclass_key="college-of-lore")])
+    lore = make_character(
+        rules, abilities=_scores(cha=13), classes=[CharacterClass("bard", 3, subclass_key="college-of-lore")]
+    )
     assert lore.class_choice_slots["sub:college-of-lore:Skills"] == 3
 
 
@@ -99,7 +99,9 @@ def test_samurai_takes_skill_or_language(rules) -> None:
 def test_pact_of_the_tome_cantrips_any_class(rules, compendium) -> None:
     from dndsheet.characters.api.class_choices import allowed_names
 
-    warlock = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 3, subclass_key="the-fiend")])
+    warlock = make_character(
+        rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 3, subclass_key="the-fiend")]
+    )
     warlock.set_class_choice("warlock:Pact Boon", ["Pact of the Tome"], ["Pact of the Tome"])
     key = "boon:pact of the tome:Cantrips"
     options = allowed_names(key, compendium, warlock)
@@ -122,7 +124,9 @@ def test_lucky_and_superiority_dice_resources(rules) -> None:
     assert dice["feat:superiority-dice"].total == 1 and dice["feat:superiority-dice"].recharge == "short"
 
     master = make_character(
-        rules, classes=[CharacterClass("fighter", 3, subclass_key="battle-master")], feats=("phb-2014/feat/martial-adept",)
+        rules,
+        classes=[CharacterClass("fighter", 3, subclass_key="battle-master")],
+        feats=("phb-2014/feat/martial-adept",),
     )
     dice = {item.key: item for item in resources_for(master, _sheet(master).ability_modifiers)}
     assert dice["fighter:superiority-dice"].total == 4 + 1, "кістка риси додається до запасу майстра битви"
@@ -138,7 +142,13 @@ def test_kensei_weapons_are_monk_weapons(rules, compendium) -> None:
         rules,
         abilities=_scores(str=10, dex=16, wis=13),
         classes=[CharacterClass("monk", 3, subclass_key="way-of-the-kensei")],
-        inventory=Inventory(items=(longsword, InventoryItem(name_en="Longbow", kind=ItemKind.WEAPON), InventoryItem(name_en="Greatsword", kind=ItemKind.WEAPON))),
+        inventory=Inventory(
+            items=(
+                longsword,
+                InventoryItem(name_en="Longbow", kind=ItemKind.WEAPON),
+                InventoryItem(name_en="Greatsword", kind=ItemKind.WEAPON),
+            )
+        ),
     )
     assert monk.kensei_slots == 2
     assert _attacks(monk, compendium)["Longsword"]["attack_bonus"] == 0, "без позначки — без володіння, Сила 10"
@@ -192,9 +202,13 @@ def test_bard_magical_secrets_count_in_spells_known(rules, compendium) -> None:
 def test_lore_additional_secrets_and_book_of_ancient_secrets(rules, compendium) -> None:
     from dndsheet.characters.api.class_choices import allowed_names
 
-    lore = make_character(rules, abilities=_scores(cha=13), classes=[CharacterClass("bard", 6, subclass_key="college-of-lore")])
+    lore = make_character(
+        rules, abilities=_scores(cha=13), classes=[CharacterClass("bard", 6, subclass_key="college-of-lore")]
+    )
     assert lore.class_choice_slots["sub:college-of-lore:Additional Magical Secrets"] == 2
-    warlock = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 3, subclass_key="the-fiend")])
+    warlock = make_character(
+        rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 3, subclass_key="the-fiend")]
+    )
     warlock.set_class_choice("warlock:Pact Boon", ["Pact of the Tome"], ["Pact of the Tome"])
     warlock.set_class_choice("warlock:Eldritch Invocations", ["Book of Ancient Secrets"], ["Book of Ancient Secrets"])
     key = "inv:book of ancient secrets:Rituals"
@@ -208,11 +222,15 @@ def test_lore_additional_secrets_and_book_of_ancient_secrets(rules, compendium) 
 def test_text_only_subclass_choices(rules, compendium) -> None:
     from dndsheet.characters.api.class_choices import allowed_names
 
-    hunter = make_character(rules, abilities=_scores(dex=13, wis=13), classes=[CharacterClass("ranger", 7, subclass_key="hunter")])
+    hunter = make_character(
+        rules, abilities=_scores(dex=13, wis=13), classes=[CharacterClass("ranger", 7, subclass_key="hunter")]
+    )
     slots = hunter.class_choice_slots
     assert slots["sub:hunter:Hunter's Prey"] == 1 and slots["sub:hunter:Defensive Tactics"] == 1
     assert "sub:hunter:Multiattack" not in slots
-    hunter.set_class_choice("sub:hunter:Hunter's Prey", ["Colossus Slayer"], allowed_names("sub:hunter:Hunter's Prey", compendium, hunter))
+    hunter.set_class_choice(
+        "sub:hunter:Hunter's Prey", ["Colossus Slayer"], allowed_names("sub:hunter:Hunter's Prey", compendium, hunter)
+    )
     monk = make_character(rules, classes=[CharacterClass("monk", 6, subclass_key="way-of-the-four-elements")])
     key = "sub:way-of-the-four-elements:Elemental Disciplines"
     assert monk.class_choice_slots[key] == 2
@@ -226,7 +244,9 @@ def test_copied_rituals_are_open_ended_and_level_capped(rules, compendium) -> No
     """Книга давніх таємниць: ритуали до половини рівня чаклуна, скільки знайдете (PHB, p. 110)."""
     from dndsheet.characters.api.class_choices import allowed_names, class_choices_payload, option_levels
 
-    warlock = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 5, subclass_key="the-fiend")])
+    warlock = make_character(
+        rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 5, subclass_key="the-fiend")]
+    )
     warlock.set_class_choice("warlock:Pact Boon", ["Pact of the Tome"], ["Pact of the Tome"])
     warlock.set_class_choice("warlock:Eldritch Invocations", ["Book of Ancient Secrets"], ["Book of Ancient Secrets"])
     warlock.set_class_choice("inv:book of ancient secrets:Rituals", ["Find Familiar"], ["Find Familiar"])
@@ -271,7 +291,10 @@ def test_draconic_ancestor_language_and_affinity(rules) -> None:
     )
     assert sorcerer.all_proficiencies().has(ProficiencyKind.LANGUAGE, "draconic")
     sorcerer.set_class_choice("sub:draconic-bloodline:Dragon Ancestor", ["Red (fire)"], ["Red (fire)"])
-    spells = [{"name_en": "Fireball", "damage": {"dice": "8d6", "type": "fire"}}, {"name_en": "Ray of Frost", "damage": {"dice": "1d8", "type": "cold"}}]
+    spells = [
+        {"name_en": "Fireball", "damage": {"dice": "8d6", "type": "fire"}},
+        {"name_en": "Ray of Frost", "damage": {"dice": "1d8", "type": "cold"}},
+    ]
     _elemental_affinity(spells, sorcerer, _sheet(sorcerer))
     assert "+3" in spells[0]["note"] and "note" not in spells[1]
     assert any("fire" in note for note in _sheet(sorcerer).resistance_notes)
@@ -279,14 +302,22 @@ def test_draconic_ancestor_language_and_affinity(rules) -> None:
 
 def test_class_attack_notes(rules, compendium) -> None:
     rapier = InventoryItem(name_en="Rapier", kind=ItemKind.WEAPON, equipped=True)
-    rogue = make_character(rules, abilities=_scores(dex=16), classes=[CharacterClass("rogue", 5)], inventory=Inventory(items=(rapier,)))
+    rogue = make_character(
+        rules, abilities=_scores(dex=16), classes=[CharacterClass("rogue", 5)], inventory=Inventory(items=(rapier,))
+    )
     assert "+3d6" in _attacks(rogue, compendium)["Rapier"]["notes"]
     paladin = make_character(
-        rules, abilities=_scores(str=16, cha=13), classes=[CharacterClass("paladin", 2)], inventory=Inventory(items=(rapier,))
+        rules,
+        abilities=_scores(str=16, cha=13),
+        classes=[CharacterClass("paladin", 2)],
+        inventory=Inventory(items=(rapier,)),
     )
     assert "Divine Smite" in _attacks(paladin, compendium)["Rapier"]["notes"]
     hunter = make_character(
-        rules, abilities=_scores(dex=13, wis=13), classes=[CharacterClass("ranger", 3, subclass_key="hunter")], inventory=Inventory(items=(rapier,))
+        rules,
+        abilities=_scores(dex=13, wis=13),
+        classes=[CharacterClass("ranger", 3, subclass_key="hunter")],
+        inventory=Inventory(items=(rapier,)),
     )
     hunter.set_class_choice("sub:hunter:Hunter's Prey", ["Colossus Slayer"], ["Colossus Slayer"])
     assert "Colossus Slayer" in _attacks(hunter, compendium)["Rapier"]["notes"]
@@ -333,9 +364,14 @@ def test_artificer_attunes_more_items(rules) -> None:
 def test_mystic_arcanum_and_signature_spells(rules, compendium) -> None:
     from dndsheet.characters.api.class_choices import allowed_names
 
-    warlock = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 13, subclass_key="the-fiend")])
+    warlock = make_character(
+        rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 13, subclass_key="the-fiend")]
+    )
     slots = warlock.class_choice_slots
-    assert slots["feature:warlock:Mystic Arcanum (6th level)"] == 1 and slots["feature:warlock:Mystic Arcanum (7th level)"] == 1
+    assert (
+        slots["feature:warlock:Mystic Arcanum (6th level)"] == 1
+        and slots["feature:warlock:Mystic Arcanum (7th level)"] == 1
+    )
     assert "feature:warlock:Mystic Arcanum (8th level)" not in slots
     key = "feature:warlock:Mystic Arcanum (6th level)"
     options = allowed_names(key, compendium, warlock)
@@ -350,14 +386,24 @@ def test_mystic_arcanum_and_signature_spells(rules, compendium) -> None:
 def test_class_attack_and_roll_notes(rules, compendium) -> None:
     longsword = InventoryItem(name_en="Longsword", kind=ItemKind.WEAPON, equipped=True)
     champion = make_character(
-        rules, abilities=_scores(str=16), classes=[CharacterClass("fighter", 15, subclass_key="champion")],
+        rules,
+        abilities=_scores(str=16),
+        classes=[CharacterClass("fighter", 15, subclass_key="champion")],
         inventory=Inventory(items=(longsword,)),
     )
     assert "18–20" in _attacks(champion, compendium)["Longsword"]["notes"]
     paladin = make_character(
-        rules, abilities=_scores(str=16, cha=13), classes=[CharacterClass("paladin", 11)], inventory=Inventory(items=(longsword,))
+        rules,
+        abilities=_scores(str=16, cha=13),
+        classes=[CharacterClass("paladin", 11)],
+        inventory=Inventory(items=(longsword,)),
     )
     assert "Improved Divine Smite" in _attacks(paladin, compendium)["Longsword"]["notes"]
-    barbarian = make_character(rules, abilities=_scores(str=16), classes=[CharacterClass("barbarian", 9)], inventory=Inventory(items=(longsword,)))
+    barbarian = make_character(
+        rules,
+        abilities=_scores(str=16),
+        classes=[CharacterClass("barbarian", 9)],
+        inventory=Inventory(items=(longsword,)),
+    )
     assert "Brutal Critical" in _attacks(barbarian, compendium)["Longsword"]["notes"]
     assert any("Danger Sense" in note for note in _sheet(barbarian).roll_notes)

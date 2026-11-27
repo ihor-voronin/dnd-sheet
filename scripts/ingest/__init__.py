@@ -16,4 +16,4 @@
 Сесія: cookies у content/.session/cookies.json (не комітяться, живі креденшели).
 """
 
-__all__ = ["config", "session", "discover", "fetch", "html2md", "records", "cli"]
+__all__ = ["cli", "config", "discover", "fetch", "html2md", "records", "session"]

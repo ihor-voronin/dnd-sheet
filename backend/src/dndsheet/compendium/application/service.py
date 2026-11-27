@@ -161,9 +161,7 @@ class CompendiumService:
             warnings.extend(self._mechanics.warnings())
         total = sum(counts.values())
         if total == 0:
-            warnings.append(
-                "корпус не знайдено або він порожній: перевірте DNDSHEET_CONTENT_DIR"
-            )
+            warnings.append("корпус не знайдено або він порожній: перевірте DNDSHEET_CONTENT_DIR")
 
         books = tuple(
             BookSummary(
@@ -173,11 +171,7 @@ class CompendiumService:
             )
             for source_id, count in sorted(self._book_counts().items())
         )
-        categories = tuple(
-            (category, counts[category])
-            for category in CATEGORY_ORDER
-            if counts.get(category)
-        )
+        categories = tuple((category, counts[category]) for category in CATEGORY_ORDER if counts.get(category))
         return CorpusSummary(
             entries=total,
             categories=categories,
@@ -226,9 +220,7 @@ class CompendiumService:
         return bool(self._mechanics and self._mechanics.available())
 
     def mechanics_warnings(self) -> tuple[str, ...]:
-        return tuple(self._mechanics.warnings()) if self._mechanics else (
-            "механіки класів не підключені",
-        )
+        return tuple(self._mechanics.warnings()) if self._mechanics else ("механіки класів не підключені",)
 
     def class_definitions(self) -> tuple[ClassMechanics, ...]:
         """Усі класи 2014 з механіками, за назвою."""
@@ -277,9 +269,7 @@ class CompendiumService:
     def backgrounds(self) -> tuple[BackgroundMechanics, ...]:
         if self._mechanics is None:
             return ()
-        return tuple(
-            sorted(self._mechanics.backgrounds().values(), key=lambda item: item.name_en)
-        )
+        return tuple(sorted(self._mechanics.backgrounds().values(), key=lambda item: item.name_en))
 
     def background_mechanics(self, name: str) -> BackgroundMechanics:
         if self._mechanics is None:
@@ -291,9 +281,7 @@ class CompendiumService:
 
     # --- закляття -----------------------------------------------------------
 
-    def class_spells(
-        self, class_name: str, max_level: int = MAX_SPELL_LEVEL
-    ) -> ClassSpells:
+    def class_spells(self, class_name: str, max_level: int = MAX_SPELL_LEVEL) -> ClassSpells:
         """Закляття класу до `max_level` включно."""
         if not 0 <= max_level <= MAX_SPELL_LEVEL:
             max_level = MAX_SPELL_LEVEL
@@ -303,9 +291,7 @@ class CompendiumService:
             if names:
                 spells = self._resolve_spell_names(names, max_level)
                 if spells:
-                    return ClassSpells(
-                        class_name=class_name, spells=spells, source="spell-lists"
-                    )
+                    return ClassSpells(class_name=class_name, spells=spells, source="spell-lists")
 
         by_data = self._spells_from_entry_data(class_name, max_level)
         if by_data:
@@ -314,9 +300,7 @@ class CompendiumService:
 
     # --- інше ---------------------------------------------------------------
 
-    def optional_features(
-        self, feature_type: str | None = None
-    ) -> tuple[CompendiumEntry, ...]:
+    def optional_features(self, feature_type: str | None = None) -> tuple[CompendiumEntry, ...]:
         return self._all(Category.OPTIONAL_FEATURE, feature_type=feature_type)
 
     def feats(self) -> tuple[CompendiumEntry, ...]:
@@ -387,9 +371,7 @@ class CompendiumService:
                 result.append(entry)
         return tuple(result)
 
-    def _spells_from_entry_data(
-        self, class_name: str, max_level: int
-    ) -> tuple[CompendiumEntry, ...]:
+    def _spells_from_entry_data(self, class_name: str, max_level: int) -> tuple[CompendiumEntry, ...]:
         wanted = search_key(class_name)
         found: list[CompendiumEntry] = []
         for entry in self._all(Category.SPELL):

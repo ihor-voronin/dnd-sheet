@@ -10,12 +10,12 @@ from __future__ import annotations
 from typing import Any
 
 from dndsheet.compendium.domain.entry import CompendiumEntry
-from dndsheet.shared.translations import entry_name_uk, entry_text_uk
 from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,
     SpeciesMechanics,
 )
+from dndsheet.shared.translations import entry_name_uk, entry_text_uk
 
 
 def entry_brief(entry: CompendiumEntry) -> dict[str, Any]:
@@ -67,8 +67,7 @@ def class_mechanics_full(item: ClassMechanics) -> dict[str, Any]:
         "hit_die": item.hit_die,
         "saving_throws": [ability.value for ability in sorted(item.saving_throws, key=_order)],
         "skill_choices": [
-            {"count": choice.count, "from": [skill.value for skill in choice.options]}
-            for choice in item.skill_choices
+            {"count": choice.count, "from": [skill.value for skill in choice.options]} for choice in item.skill_choices
         ],
         "skill_any": item.skill_any,
         "skill_limit": item.skill_limit,
@@ -78,9 +77,7 @@ def class_mechanics_full(item: ClassMechanics) -> dict[str, Any]:
         "spellcasting": (
             {
                 "ability": item.spellcasting_ability.value,
-                "progression": item.caster_progression.value
-                if item.caster_progression
-                else None,
+                "progression": item.caster_progression.value if item.caster_progression else None,
                 "prepares": item.prepares_spells,
             }
             if item.spellcasting_ability
@@ -90,11 +87,7 @@ def class_mechanics_full(item: ClassMechanics) -> dict[str, Any]:
         "spells_known": list(item.spells_known or ()),
         "spell_slots": [list(row) for row in item.spell_slots],
         "pact_slots": [list(row) for row in item.pact_slots],
-        "subclass": (
-            {"title": item.subclass_title, "level": item.subclass_level}
-            if item.subclass_title
-            else None
-        ),
+        "subclass": ({"title": item.subclass_title, "level": item.subclass_level} if item.subclass_title else None),
         "multiclass_requirements": [
             {ability.value: score for ability, score in alternative.items()}
             for alternative in item.multiclass_requirements
@@ -104,9 +97,7 @@ def class_mechanics_full(item: ClassMechanics) -> dict[str, Any]:
             "weapons": list(item.multiclass_weapons),
             "tools": list(item.multiclass_tools),
         },
-        "features": [
-            {"name_en": feature.name_en, "level": feature.level} for feature in item.features
-        ],
+        "features": [{"name_en": feature.name_en, "level": feature.level} for feature in item.features],
         "optional_features": {
             name: [{"level": level, "count": count} for level, count in steps]
             for name, steps in item.optional_features.items()

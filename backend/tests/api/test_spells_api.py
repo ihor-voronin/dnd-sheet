@@ -12,9 +12,8 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
+from fastapi.testclient import TestClient
 
 DATA_DIR = Path(__file__).resolve().parent / "_tmp_spells_api"
 
@@ -120,11 +119,7 @@ def test_preparation_replaces_yesterdays_set(client: TestClient) -> None:
 
 def test_preparation_over_the_limit_is_refused(client: TestClient) -> None:
     sheet = _clone(client, "fighter-2-wizard-3", "spells-over-limit")
-    limit = next(
-        item["prepared_limit"]
-        for item in sheet["spellcasting"]["classes"]
-        if item["key"] == "wizard"
-    )
+    limit = next(item["prepared_limit"] for item in sheet["spellcasting"]["classes"] if item["key"] == "wizard")
     assert limit == 5
 
     response = client.post(

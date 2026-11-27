@@ -4,39 +4,25 @@
  * зберігає відповідь, або повертає причину відмови. Тому «назад» не втрачає
  * нічого, а перезавантаження сторінки не починає створення заново.
  */
-
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { StepJumpBar } from "./StepJumpBar";
-import { ActiveGloss, GlossProvider, Term } from "../../components/Term";
-import {
-  ABILITY_SHORT,
-  STEP_LABELS,
-  STEP_ORDER,
-  abilityModifier,
-  classGuide,
-  modifierLabel,
-} from "../../labels";
 import { finishDraft, readDraft, readStep, startWizard, writeStep } from "../../api";
-import {
-  AbilitiesStep,
-  BackgroundStep,
-  ClassStep,
-  EquipmentStep,
-  SpeciesStep,
-  SpellsStep,
-} from "./steps";
+import { ActiveGloss, GlossProvider, Term } from "../../components/Term";
+import { ABILITY_SHORT, STEP_LABELS, STEP_ORDER, abilityModifier, classGuide, modifierLabel } from "../../labels";
+import { speciesLabel, termLabel, titleCaseKey } from "../character/uk";
+
+import { StepJumpBar } from "./StepJumpBar";
+import { AbilitiesStep, BackgroundStep, ClassStep, EquipmentStep, SpeciesStep, SpellsStep } from "./steps";
 import type {
   AbilitiesOptions,
   BackgroundOptions,
   ClassView,
+  DraftView,
   EquipmentOptions,
   SpeciesView,
   SpellsOptions,
   StepView,
-  DraftView,
 } from "./types";
-import { speciesLabel, termLabel, titleCaseKey } from "../character/uk";
 
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -205,8 +191,8 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
   if (!view) {
     return (
       <p className="status status--error">
-        Не вдалося почати створення: {error ?? "невідома помилка"}. Оновіть сторінку; якщо не
-        допоможе — перевірте, чи запущено сервер застосунку.
+        Не вдалося почати створення: {error ?? "невідома помилка"}. Оновіть сторінку; якщо не допоможе — перевірте, чи
+        запущено сервер застосунку.
       </p>
     );
   }
@@ -225,8 +211,7 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
           <div>
             <h1>Створення персонажа</h1>
             <p className="meta">
-              {view.draft.name || "Без імені"} · правила Книги гравця (2014) · чернетка
-              зберігається сама
+              {view.draft.name || "Без імені"} · правила Книги гравця (2014) · чернетка зберігається сама
             </p>
           </div>
           <button type="button" className="link-button" onClick={() => void restart()}>
@@ -358,8 +343,7 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
           <ActiveGloss
             fallback={
               <p className="margin__tip">
-                Слова з пунктиром — <Term k="proficiency">терміни</Term>. Натисніть, і тут
-                зʼявиться пояснення.
+                Слова з пунктиром — <Term k="proficiency">терміни</Term>. Натисніть, і тут зʼявиться пояснення.
               </p>
             }
           />
@@ -391,7 +375,11 @@ function DraftSummary({ draft }: { draft: DraftView }) {
   if (!items.some((item) => item.kind === "weapon")) missing.push("немає зброї");
   // Маг, чародій і монах броню не носять (а варвар зазвичай без неї — Захист без броні):
   // попередження про броню їм лише заважало б.
-  if (!items.some((item) => item.kind === "armor") && classAnswer?.class_key && !NO_ARMOR_CLASSES.has(classAnswer.class_key)) {
+  if (
+    !items.some((item) => item.kind === "armor") &&
+    classAnswer?.class_key &&
+    !NO_ARMOR_CLASSES.has(classAnswer.class_key)
+  ) {
     missing.push("немає броні");
   }
 
@@ -401,7 +389,9 @@ function DraftSummary({ draft }: { draft: DraftView }) {
       <dl className="facts facts--compact">
         <div className="facts__row">
           <dt>Вид</dt>
-          <dd>{species?.species_key ? speciesLabel(titleCaseKey(species.subspecies_key ?? species.species_key)) : "—"}</dd>
+          <dd>
+            {species?.species_key ? speciesLabel(titleCaseKey(species.subspecies_key ?? species.species_key)) : "—"}
+          </dd>
         </div>
         <div className="facts__row">
           <dt>Клас</dt>
@@ -418,7 +408,7 @@ function DraftSummary({ draft }: { draft: DraftView }) {
       {hasScores ? (
         <ul className="summary__abilities" aria-label="Характеристики з бонусами виду">
           {SUMMARY_ABILITIES.map((code) => {
-            const value = (scores[code] ?? 0) + (scores[code] ? bonuses[code] ?? 0 : 0);
+            const value = (scores[code] ?? 0) + (scores[code] ? (bonuses[code] ?? 0) : 0);
             const key = guide?.primary.includes(code);
             return (
               <li key={code} className={key ? "summary__ability--key" : undefined}>

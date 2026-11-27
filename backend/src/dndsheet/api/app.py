@@ -10,8 +10,9 @@ from fastapi.staticfiles import StaticFiles
 
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.knowledge import router as knowledge_router
+from dndsheet.characters.api.router import build_cases
+from dndsheet.characters.api.router import router as characters_router
 from dndsheet.characters.api.sharing import router as sharing_router
-from dndsheet.characters.api.router import build_cases, router as characters_router
 from dndsheet.characters.application.level_up import LevelUpService
 from dndsheet.characters.application.sheet import SheetService
 from dndsheet.characters.application.wizard import WizardService
@@ -31,12 +32,13 @@ from dndsheet.characters.infrastructure.sqlite_store import (
 from dndsheet.compendium.api.router import router as compendium_router
 from dndsheet.compendium.infrastructure.factory import build_service
 from dndsheet.export.application.registry import RendererRegistry
-from dndsheet.identity.api.router import LOCAL_USER, auth_enabled, router as auth_router
-from dndsheet.identity.application.auth import AuthService, LoginResult
-from dndsheet.identity.infrastructure.sqlite_identity import SqliteIdentityStore
-from dndsheet.export.domain.renderer import RenderOptions, RendererError, RendererUnavailable
+from dndsheet.export.domain.renderer import RendererError, RendererUnavailable, RenderOptions
 from dndsheet.export.infrastructure.markdown_renderer import MarkdownRenderer
 from dndsheet.export.infrastructure.pdf_renderer import PdfRenderer
+from dndsheet.identity.api.router import LOCAL_USER, auth_enabled
+from dndsheet.identity.api.router import router as auth_router
+from dndsheet.identity.application.auth import AuthService, LoginResult
+from dndsheet.identity.infrastructure.sqlite_identity import SqliteIdentityStore
 from dndsheet.sheets.application.demo import build_demo_character, build_demo_document
 
 
@@ -201,7 +203,5 @@ def _demo_document(app: FastAPI):
         )
     character = build_demo_character(app.state.rules)
     computed = DerivedStatsCalculator().compute(character)
-    attacks = attacks_for(
-        character, computed, app.state.compendium, app.state.attack_cache
-    )
+    attacks = attacks_for(character, computed, app.state.compendium, app.state.attack_cache)
     return build_demo_document(app.state.rules, attacks)

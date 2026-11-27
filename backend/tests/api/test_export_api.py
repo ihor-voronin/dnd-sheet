@@ -11,9 +11,8 @@ import shutil
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
+from fastapi.testclient import TestClient
 
 DATA_DIR = Path(__file__).resolve().parent / "_tmp_export_api"
 
@@ -120,9 +119,7 @@ def test_markdown_export_contains_the_state(client: TestClient) -> None:
 
 def test_markdown_export_can_hide_originals(client: TestClient) -> None:
     character_id = _export_character(client)
-    response = client.get(
-        f"/api/v1/characters/{character_id}/export/markdown?originals=false"
-    )
+    response = client.get(f"/api/v1/characters/{character_id}/export/markdown?originals=false")
     text = response.content.decode("utf-8")
     assert "Strength" not in text
     assert "Сила" in text
@@ -149,9 +146,7 @@ def test_unknown_format_is_404(client: TestClient) -> None:
 
 
 def test_unknown_character_is_404(client: TestClient) -> None:
-    response = client.get(
-        "/api/v1/characters/00000000-0000-0000-0000-000000000000/export/markdown"
-    )
+    response = client.get("/api/v1/characters/00000000-0000-0000-0000-000000000000/export/markdown")
     assert response.status_code == 404
 
 

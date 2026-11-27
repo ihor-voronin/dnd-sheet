@@ -1,6 +1,6 @@
 """Перевірити переклад опційних умінь класів (24 тексти поза главою PHB).
 
-    python scripts/classes_uk_extra_validate.py
+python scripts/classes_uk_extra_validate.py
 """
 
 from __future__ import annotations
@@ -49,10 +49,7 @@ def main() -> int:
         if numbers_src != numbers_uk:
             problems.append(f"{row['name_en']}: числа {numbers_src} → {numbers_uk}")
         if paragraphs(row["text_en"]) != paragraphs(text_uk):
-            problems.append(
-                f"{row['name_en']}: абзаців "
-                f"{paragraphs(row['text_en'])} → {paragraphs(text_uk)}"
-            )
+            problems.append(f"{row['name_en']}: абзаців {paragraphs(row['text_en'])} → {paragraphs(text_uk)}")
     for problem in problems[:20]:
         print("  !", problem)
     print(f"перевірено: {len(source)}; проблем: {len(problems)}")

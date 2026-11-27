@@ -14,6 +14,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from dndsheet.characters.api import classes_uk, subclasses_uk
+from dndsheet.characters.api.background_info import background_details, parse_equipment
+from dndsheet.characters.api.features import class_details
+from dndsheet.characters.api.species_traits import species_details
 from dndsheet.characters.domain.wizard import (
     POINT_BUY_BUDGET,
     POINT_BUY_COSTS,
@@ -21,10 +25,6 @@ from dndsheet.characters.domain.wizard import (
     Draft,
     WizardStep,
 )
-from dndsheet.characters.api.species_traits import species_details
-from dndsheet.characters.api.features import class_details
-from dndsheet.characters.api import classes_uk, subclasses_uk
-from dndsheet.characters.api.background_info import background_details, parse_equipment
 from dndsheet.compendium.api.serializers import (
     background_mechanics_full,
     class_mechanics_full,
@@ -56,6 +56,7 @@ ALIGNMENTS: tuple[str, ...] = (
     "neutral evil",
     "chaotic evil",
 )
+
 
 def build_options(
     step: WizardStep,
@@ -99,8 +100,7 @@ def _species_options(
     for item in ordered:
         payload = _species_entry(item, service, store)
         payload["subspecies"] = [
-            _species_entry(child, service, store, parent=item.name_en)
-            for child in service.subspecies_of(item.name_en)
+            _species_entry(child, service, store, parent=item.name_en) for child in service.subspecies_of(item.name_en)
         ]
         # Природна зброя, кістка якої залежить від книги (VGM чи MPMM).
         natural = natural_weapon_for(payload.get("key"), None)
@@ -134,10 +134,7 @@ def _species_options(
             for entry in service.feats()
             if (options := feat_ability_options(entry.text_en or ""))
         },
-        "hint": (
-            "Підраса успадковує числа батьківського виду: «Hill Dwarf» уже "
-            "несе +2 CON і +1 WIS."
-        ),
+        "hint": ("Підраса успадковує числа батьківського виду: «Hill Dwarf» уже несе +2 CON і +1 WIS."),
     }
 
 
@@ -155,11 +152,7 @@ def _species_entry(
     payload["description"] = (details or {}).get("description") or ""
     payload["description_uk"] = (details or {}).get("description_uk") or ""
     payload["text_lang"] = (details or {}).get("lang")
-    payload["text_from"] = (
-        (details or {}).get("from_parent") or (details or {}).get("from_rule")
-        if details
-        else None
-    )
+    payload["text_from"] = (details or {}).get("from_parent") or (details or {}).get("from_rule") if details else None
     # Підраса обовʼязкова лише там, де вона визначає числа (PHB: дворф, ельф,
     # гном, напіврослик; EEPC: genasi; ERLW: shifter; EGtW: aasimar; gith).
     payload["subspecies_required"] = requires_subspecies(item.key)
@@ -196,11 +189,7 @@ def _class_options(
         payload["features"] = [
             {
                 **feature,
-                **(
-                    {"name_uk": uk_name}
-                    if (uk_name := classes_uk.name_uk(feature["name_en"]))
-                    else {}
-                ),
+                **({"name_uk": uk_name} if (uk_name := classes_uk.name_uk(feature["name_en"])) else {}),
             }
             for feature in payload["features"]
         ]
@@ -266,10 +255,7 @@ def _abilities_options(draft: Draft) -> dict[str, Any]:
             "min": min(POINT_BUY_COSTS),
             "max": max(POINT_BUY_COSTS),
         },
-        "species_bonuses": {
-            ability.value: draft.ability_bonuses.get(ability, 0)
-            for ability in draft.ability_bonuses
-        },
+        "species_bonuses": {ability.value: draft.ability_bonuses.get(ability, 0) for ability in draft.ability_bonuses},
         "hint": (
             "Оцінки тут — базові. Бонуси виду додаються на листі й показуються "
             "окремо, щоб було видно, звідки взялося число."
@@ -377,15 +363,9 @@ def _equipment_options(
             # Власна передісторія: рядок спорядження написав гравець —
             # розбираємо його тим самим парсером, що й рядки з книг.
             custom = draft.custom_background
-            custom_items = [
-                row
-                for row in (custom.get("items") or [])
-                if str(row.get("name_en") or "").strip()
-            ]
+            custom_items = [row for row in (custom.get("items") or []) if str(row.get("name_en") or "").strip()]
             if custom_items:
-                rows = [
-                    {"text": str(row["name_en"]), "choices": []} for row in custom_items
-                ]
+                rows = [{"text": str(row["name_en"]), "choices": []} for row in custom_items]
             else:
                 rows, _ = parse_equipment(str(custom.get("equipment") or ""))
             money = {"gp": int(custom.get("money_gp") or 0)} if custom.get("money_gp") else {}
@@ -398,9 +378,7 @@ def _equipment_options(
         else:
             # Спорядження передісторії додається одразу; де книга дає вибір
             # («bone dice or deck of cards») — вибір показує екран.
-            details = background_details(
-                service, background.name_en, background.feature_en, store
-            )
+            details = background_details(service, background.name_en, background.feature_en, store)
             options["background"] = {
                 "key": background.key,
                 "name_en": background.name_en,
@@ -463,10 +441,7 @@ def _spells_options(draft: Draft, service: CompendiumService) -> dict[str, Any]:
         "spells": leveled,
         "granted": reserved,
         "expanded": [entry["name_en"] for entry in expanded],
-        "hint": (
-            "Список — зі «Spell Lists» книг. Закляття належить класу, тому "
-            "вони й лежать у кроці класу."
-        ),
+        "hint": ("Список — зі «Spell Lists» книг. Закляття належить класу, тому вони й лежать у кроці класу."),
     }
 
 
@@ -494,9 +469,7 @@ def _granted_for_draft(draft: Draft) -> list[dict[str, Any]]:
         spells = definition.subclass_spells_for(draft.subclass_key)
         if spells is not None:
             for name in spells.prepared:
-                granted.append(
-                    {"name_en": name, "level": 1, "source": "subclass", "prepared": True}
-                )
+                granted.append({"name_en": name, "level": 1, "source": "subclass", "prepared": True})
     return granted
 
 
@@ -520,4 +493,3 @@ def _expanded_for_draft(draft: Draft, service: CompendiumService) -> list[dict[s
         if exact is not None:
             entries.append(entry_brief(exact))
     return entries
-

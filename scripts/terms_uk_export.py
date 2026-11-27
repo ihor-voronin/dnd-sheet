@@ -31,8 +31,7 @@ def main() -> None:
         for en, uk in PAIR.findall(block(text, name)):
             pairs.setdefault(en.strip().casefold(), uk)
     rows = [
-        {"id": hashlib.sha1(en.encode()).hexdigest()[:10], "en": en, "name_uk": uk}
-        for en, uk in sorted(pairs.items())
+        {"id": hashlib.sha1(en.encode()).hexdigest()[:10], "en": en, "name_uk": uk} for en, uk in sorted(pairs.items())
     ]
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     TARGET.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")

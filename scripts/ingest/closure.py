@@ -67,11 +67,7 @@ def missing(source: str) -> tuple[list[str], list[str]]:
             if tail and tail not in seen:
                 seen[tail] = rel
 
-    unknown = sorted(
-        rel
-        for tail, rel in seen.items()
-        if tail not in known_tails and (source, tail) not in IGNORE
-    )
+    unknown = sorted(rel for tail, rel in seen.items() if tail not in known_tails and (source, tail) not in IGNORE)
     absent = [rel for rel in pages if discover.tail_of(rel) and not saved(source, rel)]
     return unknown, absent
 

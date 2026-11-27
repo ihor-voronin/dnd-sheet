@@ -65,12 +65,7 @@ def collect() -> tuple[dict[str, str], dict[str, dict], dict[str, dict]]:
         # Підрасу треба розбирати з батьком: половина з них описана в тексті
         # батьківського виду, і без `parent_name_en` їхні вміння не знайдуться.
         for child in service.subspecies_of(species.name_en):
-            resolved = (
-                species_details(
-                    service, child.name_en, parent_name_en=species.name_en
-                )
-                or {}
-            )
+            resolved = species_details(service, child.name_en, parent_name_en=species.name_en) or {}
             take_description(child.name_en, resolved.get("description"))
             for trait in resolved.get("traits") or []:
                 take(trait["name_en"], trait["text"])
@@ -83,9 +78,7 @@ def write_chunks(folder: Path, prefix: str, items: list[dict], size: int) -> int
     for start in range(0, len(items), size):
         chunk = items[start : start + size]
         path = folder / f"{prefix}-{count + 1:02d}.json"
-        path.write_text(
-            json.dumps(chunk, ensure_ascii=False, indent=1), encoding="utf-8"
-        )
+        path.write_text(json.dumps(chunk, ensure_ascii=False, indent=1), encoding="utf-8")
         count += 1
     return count
 
@@ -113,9 +106,7 @@ def main() -> int:
         done_names, done_texts = existing_ids("name_uk"), existing_ids("text_uk")
         names = {key: value for key, value in names.items() if value not in done_names}
         texts = {key: row for key, row in texts.items() if key not in done_texts}
-        descriptions = {
-            key: row for key, row in descriptions.items() if key not in done_texts
-        }
+        descriptions = {key: row for key, row in descriptions.items() if key not in done_texts}
         for old in input_dir.glob("*.json"):
             old.unlink()
 
@@ -140,9 +131,7 @@ def main() -> int:
         {"id": key, "species": row["species"], "text_en": row["text_en"]}
         for key, row in sorted(descriptions.items(), key=lambda kv: kv[1]["species"])
     ]
-    description_chunks = write_chunks(
-        input_dir, f"{prefix}descriptions", description_rows, DESCRIPTIONS_PER_CHUNK
-    )
+    description_chunks = write_chunks(input_dir, f"{prefix}descriptions", description_rows, DESCRIPTIONS_PER_CHUNK)
 
     print(f"назв: {len(names)}")
     print(f"унікальних текстів умінь: {len(text_rows)} → {text_chunks} файлів")
@@ -157,6 +146,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-

@@ -7,7 +7,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace as _replace
+from dataclasses import dataclass, field
+from dataclasses import replace as _replace
 from enum import StrEnum
 
 from dndsheet.shared.errors import ValidationError
@@ -70,13 +71,9 @@ class InventoryItem:
             raise ValidationError(f"{self.name_en}: вага не може бути відʼємною")
         if self.kind is ItemKind.ARMOR:
             if self.armor_base is None or self.armor_base < 10:
-                raise ValidationError(
-                    f"{self.name_en}: броня без базового КЗ (мінімум 10)"
-                )
+                raise ValidationError(f"{self.name_en}: броня без базового КЗ (мінімум 10)")
         elif self.armor_base is not None:
-            raise ValidationError(
-                f"{self.name_en}: базовий КЗ буває лише в броні"
-            )
+            raise ValidationError(f"{self.name_en}: базовий КЗ буває лише в броні")
         if self.dex_cap is not None and self.dex_cap < 0:
             raise ValidationError(f"{self.name_en}: межа Спритності не може бути відʼємною")
         if (self.pact_weapon or self.hex_weapon or self.kensei_weapon) and self.kind is not ItemKind.WEAPON:
@@ -85,9 +82,7 @@ class InventoryItem:
             if not str(self.damage).strip():
                 raise ValidationError(f"{self.name_en}: порожній урон зброї")
             if self.kind is not ItemKind.WEAPON:
-                raise ValidationError(
-                    f"{self.name_en}: власний урон буває лише у зброї"
-                )
+                raise ValidationError(f"{self.name_en}: власний урон буває лише у зброї")
 
     @property
     def total_weight(self) -> float:
@@ -118,9 +113,7 @@ class Inventory:
         if sum(1 for item in self.items if item.is_shield and item.equipped) > 1:
             raise ValidationError("одночасно можна тримати лише один щит")
         if self.attuned_count > ABSOLUTE_MAX_ATTUNED:
-            raise ValidationError(
-                f"одночасно можна настроїтися не більше ніж на {ABSOLUTE_MAX_ATTUNED} предметів"
-            )
+            raise ValidationError(f"одночасно можна настроїтися не більше ніж на {ABSOLUTE_MAX_ATTUNED} предметів")
         if sum(1 for item in self.items if item.pact_weapon) > 1:
             raise ValidationError("зброя угоди буває лише одна (PHB, p. 107)")
         if sum(1 for item in self.items if item.hex_weapon) > 1:
@@ -140,11 +133,7 @@ class Inventory:
             if item.equipped and (item.is_armor or item.is_shield):
                 current = [
                     other.equipped_copy(False)
-                    if other.equipped
-                    and (
-                        (item.is_armor and other.is_armor)
-                        or (item.is_shield and other.is_shield)
-                    )
+                    if other.equipped and ((item.is_armor and other.is_armor) or (item.is_shield and other.is_shield))
                     else other
                     for other in current
                 ]
@@ -165,9 +154,7 @@ class Inventory:
             for position, other in enumerate(items):
                 if position == index or not other.equipped:
                     continue
-                if (item.is_armor and other.is_armor) or (
-                    item.is_shield and other.is_shield
-                ):
+                if (item.is_armor and other.is_armor) or (item.is_shield and other.is_shield):
                     items[position] = other.equipped_copy(False)
         items[index] = None  # type: ignore[call-overload] — місце звільняється для нової позначки
         items = _release_bonds(items, item)
@@ -213,13 +200,11 @@ class Inventory:
             found = True
             if equipped and item.is_armor:
                 updated = [
-                    other.equipped_copy(False) if other.is_armor and other.equipped else other
-                    for other in updated
+                    other.equipped_copy(False) if other.is_armor and other.equipped else other for other in updated
                 ]
             if equipped and item.is_shield:
                 updated = [
-                    other.equipped_copy(False) if other.is_shield and other.equipped else other
-                    for other in updated
+                    other.equipped_copy(False) if other.is_shield and other.equipped else other for other in updated
                 ]
             updated.append(item.equipped_copy(equipped))
         if not found:

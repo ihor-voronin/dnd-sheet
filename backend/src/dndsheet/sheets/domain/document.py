@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field as PydField
+from pydantic import BaseModel, ConfigDict
+from pydantic import Field as PydField
 
 SCHEMA_VERSION = "1.0"
 

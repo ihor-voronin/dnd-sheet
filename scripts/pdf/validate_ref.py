@@ -11,6 +11,7 @@ exactly the axis on which two OCRs differ without either being wrong
 
     python scripts/pdf/validate_ref.py [--report logs/gotg_validation.txt]
 """
+
 from __future__ import annotations
 
 import difflib
@@ -88,7 +89,7 @@ def locate(pages: list[Page], text: str, hint: int | None) -> tuple[int, int, fl
     stat = STAT_END.search(text)
     offsets = []
     if stat:
-        offsets.append(len(squash_with_map(text[:stat.end()])[0]) + 10)
+        offsets.append(len(squash_with_map(text[: stat.end()])[0]) + 10)
     offsets.extend((180, 320, 90))
     offsets = [offset for offset in offsets if 0 < offset < len(squashed_ours) - 45]
 
@@ -99,7 +100,7 @@ def locate(pages: list[Page], text: str, hint: int | None) -> tuple[int, int, fl
 
     best: tuple[int, int, float] | None = None
     for offset in offsets:
-        needle = squashed_ours[offset:offset + 45]
+        needle = squashed_ours[offset : offset + 45]
         for page_index in order:
             page = pages[page_index]
             for position in _all_positions(page.squashed, needle):
@@ -179,14 +180,12 @@ def compare(record: dict, pages: list[Page]) -> Result:
             continue
         if tag == "replace" and max(i2 - i1, j2 - j1) < 4:
             continue  # single-letter OCR noise
-        diffs.append(
-            f"[{tag}] ours …{ours_s[max(0, i1 - 20):i2 + 20]}… | ref …{ref_s[max(0, j1 - 20):j2 + 20]}…"
-        )
+        diffs.append(f"[{tag}] ours …{ours_s[max(0, i1 - 20) : i2 + 20]}… | ref …{ref_s[max(0, j1 - 20) : j2 + 20]}…")
 
     # If the book keeps going mid-sentence after our last word, we cut it short.
     tail = ref_raw[:0]
     del tail
-    following = ref_s[last_ref:last_ref + 60]
+    following = ref_s[last_ref : last_ref + 60]
     truncated = len(following) > 20 and not re.search(r"[.!?]", following[:20])
     return Result(record["id"], record.get("page"), True, coverage, truncated, diffs)
 

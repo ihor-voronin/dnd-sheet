@@ -75,9 +75,7 @@ def attack_profile(
     # Метальна зброя ближнього бою (кинджал, ручна сокира) кидається тією ж
     # характеристикою, що й б'є: Сила, або краща для finesse (PHB, p. 147).
     if FINESSE in properties:
-        ability = (
-            Ability.STR if strength_modifier >= dexterity_modifier else Ability.DEX
-        )
+        ability = Ability.STR if strength_modifier >= dexterity_modifier else Ability.DEX
     elif RANGED in properties:
         ability = Ability.DEX
     else:

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
 from dndsheet.characters.domain.proficiencies import ProficiencyKind
@@ -14,7 +13,6 @@ from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalcul
 from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepository
 from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.kernel import Ability, AbilityScore, Skill
-
 from helpers import make_character
 
 
@@ -146,7 +144,9 @@ def test_variant_human_takes_feat_at_first_level(rules) -> None:
 
 
 def _warlock(rules, level: int = 5, **extra):
-    return make_character(rules, abilities=_scores(cha=16, dex=14), classes=[CharacterClass("warlock", level, **extra)])
+    return make_character(
+        rules, abilities=_scores(cha=16, dex=14), classes=[CharacterClass("warlock", level, **extra)]
+    )
 
 
 def test_invocations_grant_spells_and_senses(rules) -> None:

@@ -66,11 +66,7 @@ def main() -> None:
         by_name.setdefault(key, record)
     unique = sorted(by_name.values(), key=lambda row: row["name_en"].casefold())
 
-    prose = [
-        row
-        for row in unique
-        if len(row.get("text_en") or "") > PROSE and row["source_id"] in PROSE_SOURCES
-    ]
+    prose = [row for row in unique if len(row.get("text_en") or "") > PROSE and row["source_id"] in PROSE_SOURCES]
     prose_ids = {row["id"] for row in prose}
     names_only = [row for row in unique if row["id"] not in prose_ids]
 
@@ -123,19 +119,12 @@ def _pack_texts(rows: list[dict]) -> list[list[dict]]:
 def _pack_names(rows: list[dict]) -> list[list[dict]]:
     chunks: list[list[dict]] = []
     for start in range(0, len(rows), NAME_BUDGET):
-        chunks.append(
-            [
-                {"id": row["id"], "name_en": row["name_en"]}
-                for row in rows[start : start + NAME_BUDGET]
-            ]
-        )
+        chunks.append([{"id": row["id"], "name_en": row["name_en"]} for row in rows[start : start + NAME_BUDGET]])
     return chunks
 
 
 def _dump(path: Path, payload: dict) -> None:
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8"
-    )
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":

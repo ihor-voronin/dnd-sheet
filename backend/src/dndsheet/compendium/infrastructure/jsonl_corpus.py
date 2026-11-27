@@ -84,17 +84,11 @@ def load_corpus(directory: Path) -> LoadedCorpus:
             try:
                 category = Category.parse(file.stem)
             except ValidationError:
-                warnings.append(
-                    f"{book_dir.name}/{file.name}: невідома категорія, файл пропущено"
-                )
+                warnings.append(f"{book_dir.name}/{file.name}: невідома категорія, файл пропущено")
                 continue
-            entries.extend(
-                _read_file(file, category, book_dir.name, seen, warnings)
-            )
+            entries.extend(_read_file(file, category, book_dir.name, seen, warnings))
 
-    ordered = tuple(
-        sorted(entries, key=lambda entry: (entry.name_en.casefold(), entry.id))
-    )
+    ordered = tuple(sorted(entries, key=lambda entry: (entry.name_en.casefold(), entry.id)))
 
     by_category: dict[Category, list[CompendiumEntry]] = {}
     by_book: dict[str, list[CompendiumEntry]] = {}
@@ -137,13 +131,9 @@ def _read_file(
             except ValidationError as exc:
                 raise CorpusError(f"{where}: {exc}") from exc
             if entry.category is not category:
-                raise CorpusError(
-                    f"{where}: категорія {entry.category.value} у файлі {category.value}.jsonl"
-                )
+                raise CorpusError(f"{where}: категорія {entry.category.value} у файлі {category.value}.jsonl")
             if entry.id in seen:
-                warnings.append(
-                    f"{where}: повторний id {entry.id} (уже в {seen[entry.id]}), лишено перший"
-                )
+                warnings.append(f"{where}: повторний id {entry.id} (уже в {seen[entry.id]}), лишено перший")
                 continue
             seen[entry.id] = where
             result.append(entry)

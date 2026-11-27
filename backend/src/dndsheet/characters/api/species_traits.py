@@ -65,9 +65,7 @@ TITLE_PHRASE = re.compile(
     r"(?<=[.!?]\s)((?:[A-Z][A-Za-z'’\-]+|[a-z]+)(?:\s+(?:[A-Z][A-Za-z'’\-]+|of|the|and|or|in|on|to|with)){0,4})"
 )
 CONNECTORS = frozenset({"of", "the", "and", "or", "in", "on", "to", "with"})
-STOP_WORDS = frozenset(
-    {"descent", "the", "and", "or", "of", "bloodline", "lineage"}
-)
+STOP_WORDS = frozenset({"descent", "the", "and", "or", "of", "bloodline", "lineage"})
 
 
 def species_details(
@@ -134,9 +132,7 @@ def parse_species_text(text: str, *, source_id: str | None = None) -> dict[str, 
             continue
         match = TRAIT.match(block)
         if match:
-            traits.append(
-                {"name_en": match.group(1).strip(), "text": match.group(2).strip()}
-            )
+            traits.append({"name_en": match.group(1).strip(), "text": match.group(2).strip()})
             continue
         if PREAMBLE.match(block) and not traits:
             continue
@@ -178,9 +174,7 @@ def _blocks(text: str) -> list[str]:
 #: коротка назва з великих літер і за нею крапка: «…by 1. Age. Aarakocra…».
 #: Слова назви — з великої літери (1–4 слова), інакше звичайне коротке
 #: речення («Your Dexterity score increases by 2.») теж різалося б.
-INLINE_TRAIT = re.compile(
-    r"(?<=[.!?]\s)([A-Z][A-Za-z'’\-]*(?:\s+[A-Z][A-Za-z'’\-]*){0,3})\.\s"
-)
+INLINE_TRAIT = re.compile(r"(?<=[.!?]\s)([A-Z][A-Za-z'’\-]*(?:\s+[A-Z][A-Za-z'’\-]*){0,3})\.\s")
 
 
 def _split_inline_traits(block: str) -> list[str]:
@@ -295,11 +289,7 @@ def _keywords(child_name: str, parent_name: str) -> list[str]:
     parent = parent_name.casefold().replace("-", " ")
     for word in parent.split():
         child = child.replace(word, " ")
-    words = [
-        word
-        for word in re.split(r"[^a-zа-яёіїєґ']+", child)
-        if len(word) >= 3 and word not in STOP_WORDS
-    ]
+    words = [word for word in re.split(r"[^a-zа-яёіїєґ']+", child) if len(word) >= 3 and word not in STOP_WORDS]
     ordered = sorted({word for word in words if word != "variant"}, key=len, reverse=True)
     if not ordered and "variant" in words:
         return ["variant"]
@@ -370,12 +360,7 @@ def _words(text: str) -> list[str]:
 
 
 def _contains(entries: dict[str, list[Any]], token: str) -> list[Any]:
-    matches = [
-        entry
-        for candidate, items in entries.items()
-        if token in candidate
-        for entry in items
-    ]
+    matches = [entry for candidate, items in entries.items() if token in candidate for entry in items]
     return _ordered(matches) if matches else []
 
 
@@ -460,9 +445,7 @@ def _rule_headings(
     try:
         offset, total = 0, None
         while total is None or offset < total:
-            page = service.entries(
-                EntryQuery(category=Category.RULE, limit=MAX_LIMIT, offset=offset)
-            )
+            page = service.entries(EntryQuery(category=Category.RULE, limit=MAX_LIMIT, offset=offset))
             total = page.total
             if not page.items:
                 break
@@ -503,9 +486,7 @@ def _entries(service: CompendiumService, store: dict[str, Any]) -> dict[str, lis
     try:
         offset, total = 0, None
         while total is None or offset < total:
-            page = service.entries(
-                EntryQuery(category=Category.SPECIES, limit=MAX_LIMIT, offset=offset)
-            )
+            page = service.entries(EntryQuery(category=Category.SPECIES, limit=MAX_LIMIT, offset=offset))
             total = page.total
             if not page.items:
                 break
@@ -519,4 +500,3 @@ def _entries(service: CompendiumService, store: dict[str, Any]) -> dict[str, lis
 
 
 __all__ = ["parse_species_text", "species_details"]
-

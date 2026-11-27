@@ -50,10 +50,7 @@ def main() -> int:
     for path in sorted(INPUT.glob("*.json")):
         field = "name_uk" if "names" in path.name else "text_uk"
         source = {str(row["id"]): row for row in load(path)}
-        translated = {
-            str(row["id"]): str(row.get(field) or "")
-            for row in load(OUTPUT / path.name)
-        }
+        translated = {str(row["id"]): str(row.get(field) or "") for row in load(OUTPUT / path.name)}
         for key, row in source.items():
             text_uk = translated.get(key, "")
             if not text_uk:
@@ -75,28 +72,19 @@ def main() -> int:
             if number_src != number_uk:
                 problems.append(f"{path.name}:{key}: числа {number_src} → {number_uk}")
             if paragraphs(original) != paragraphs(text_uk):
-                problems.append(
-                    f"{path.name}:{key}: абзаців {paragraphs(original)} → "
-                    f"{paragraphs(text_uk)}"
-                )
+                problems.append(f"{path.name}:{key}: абзаців {paragraphs(original)} → {paragraphs(text_uk)}")
             bullets_src = len(BULLET.findall(original))
             bullets_uk = len(BULLET.findall(text_uk))
             if bullets_src != bullets_uk:
-                problems.append(
-                    f"{path.name}:{key}: пунктів {bullets_src} → {bullets_uk}"
-                )
+                problems.append(f"{path.name}:{key}: пунктів {bullets_src} → {bullets_uk}")
             headings_src = len(SUBHEADING.findall(original))
             headings_uk = len(SUBHEADING.findall(text_uk))
             if headings_src != headings_uk:
-                problems.append(
-                    f"{path.name}:{key}: підзаголовків {headings_src} → {headings_uk}"
-                )
+                problems.append(f"{path.name}:{key}: підзаголовків {headings_src} → {headings_uk}")
             # англійський залишок: багато латиниці на кожну кирилицю
             latin, cyrillic = len(LATIN.findall(text_uk)), len(CYRILLIC.findall(text_uk))
             if latin > 3 and cyrillic and latin / cyrillic > 0.25:
-                problems.append(
-                    f"{path.name}:{key}: схоже на неперекладене ({latin} лат. / {cyrillic} кир.)"
-                )
+                problems.append(f"{path.name}:{key}: схоже на неперекладене ({latin} лат. / {cyrillic} кир.)")
 
     for problem in problems[:40]:
         print("  !", problem)

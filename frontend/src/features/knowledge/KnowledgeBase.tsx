@@ -7,10 +7,9 @@
  * одне й те саме. Пошук — українською й англійською, на клієнті: записів
  * сотні, а не мільйони, і фільтр має спрацьовувати на кожну літеру.
  */
-
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
 
 import {
   fetchCategory,
@@ -26,14 +25,7 @@ import { castingTimeLabel, durationLabel, rangeLabel, schoolLabel } from "../../
 import { ItemCatalogBrowser } from "../character/inventory";
 import { RuleText } from "../character/panels";
 import { featureLabel, featureText, itemLabel, speciesLabel, termLabel, withEnglish } from "../character/uk";
-import {
-  FactList,
-  SpeciesSummary,
-  TraitList,
-  backgroundFacts,
-  classFacts,
-  speciesFacts,
-} from "../wizard/steps";
+import { FactList, SpeciesSummary, TraitList, backgroundFacts, classFacts, speciesFacts } from "../wizard/steps";
 import type { BackgroundView, ClassView, SpeciesView } from "../wizard/types";
 
 export type KbSection = "species" | "classes" | "backgrounds" | "feats" | "spells" | "options" | "items";
@@ -82,8 +74,8 @@ export function KnowledgeBase({
       <header className="kb__head">
         <h2>Довідник</h2>
         <p className="lead">
-          Правила Книги гравця 2014 і доповнень українською. Назви — «Українська (English)»;
-          там, де переклад ще не готовий, показано текст книги англійською.
+          Правила Книги гравця 2014 і доповнень українською. Назви — «Українська (English)»; там, де переклад ще не
+          готовий, показано текст книги англійською.
         </p>
       </header>
       <nav className="chip-row kb__nav" aria-label="Розділи довідника">
@@ -240,7 +232,11 @@ function SpeciesSection({ entryKey, go }: { entryKey?: string; go: (section?: Kb
         keyOf={(item) => item.key}
         labelOf={(item) => speciesLabel(item.name_en)}
         metaOf={(item) => (item.subspecies?.length ? `підрас: ${item.subspecies.length}` : "")}
-        searchOf={(item) => [item.name_en, speciesLabel(item.name_en), ...(item.subspecies ?? []).map((sub) => speciesLabel(sub.name_en))]}
+        searchOf={(item) => [
+          item.name_en,
+          speciesLabel(item.name_en),
+          ...(item.subspecies ?? []).map((sub) => speciesLabel(sub.name_en)),
+        ]}
         selected={entryKey}
         onSelect={(key) => go("species", key)}
         placeholder="Пошук: «дворф», «elf», «тифлінг»…"
@@ -488,7 +484,11 @@ function EntriesSection({
       <Status pending={query.isPending} error={query.error} />
       {section === "spells" ? (
         <div className="chip-row kb__levels" role="group" aria-label="Рівень закляття">
-          <button type="button" className={`chip ${level === null ? "chip--active" : ""}`} onClick={() => setLevel(null)}>
+          <button
+            type="button"
+            className={`chip ${level === null ? "chip--active" : ""}`}
+            onClick={() => setLevel(null)}
+          >
             усі
           </button>
           {Array.from({ length: 10 }, (_, value) => (
@@ -534,7 +534,11 @@ function EntryDetail({
   section: KbSection;
   onClose: () => void;
 }) {
-  const full = useQuery({ queryKey: ["kb", "entry", entry.id], queryFn: () => fetchEntry(entry.id), staleTime: Infinity });
+  const full = useQuery({
+    queryKey: ["kb", "entry", entry.id],
+    queryFn: () => fetchEntry(entry.id),
+    staleTime: Infinity,
+  });
   const data = entry.data;
   const facts: [string, string][] = [];
   if (section === "spells") {

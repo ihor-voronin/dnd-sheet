@@ -11,9 +11,8 @@ import shutil
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
+from fastapi.testclient import TestClient
 
 #: Тека даних для тестів — у репозиторії: системний temp у пісочниці недоступний.
 DATA_DIR = Path(__file__).resolve().parent / "_tmp_wizard_api"
@@ -64,7 +63,13 @@ FIGHTER_STEPS: list[tuple[str, dict]] = [
             ],
         },
     ),
-    ("equipment", {"items": [{"name_en": "chain mail", "kind": "armor", "armor_base": 16, "dex_cap": 0, "equipped": True}], "money": {"gp": 10}}),
+    (
+        "equipment",
+        {
+            "items": [{"name_en": "chain mail", "kind": "armor", "armor_base": 16, "dex_cap": 0, "equipped": True}],
+            "money": {"gp": 10},
+        },
+    ),
 ]
 
 
@@ -77,9 +82,7 @@ def _start(client: TestClient) -> dict:
 def _walk(client: TestClient, draft_id: str, steps: list[tuple[str, dict]]) -> dict:
     payload: dict = {}
     for step, body in steps:
-        response = client.put(
-            f"/api/v1/characters/wizard/{draft_id}/steps/{step}", json=body
-        )
+        response = client.put(f"/api/v1/characters/wizard/{draft_id}/steps/{step}", json=body)
         assert response.status_code == 200, f"{step}: {response.text}"
         payload = response.json()
     return payload
@@ -175,9 +178,7 @@ def test_character_survives_restart(client: TestClient, data_dir: Path) -> None:
     draft = _start(client)
     draft_id = draft["draft"]["id"]
     _walk(client, draft_id, FIGHTER_STEPS)
-    character_id = client.post(
-        f"/api/v1/characters/wizard/{draft_id}/finish"
-    ).json()["character_id"]
+    character_id = client.post(f"/api/v1/characters/wizard/{draft_id}/finish").json()["character_id"]
 
     previous = os.environ.get("DNDSHEET_DATA_DIR")
     os.environ["DNDSHEET_DATA_DIR"] = str(data_dir)
@@ -234,9 +235,7 @@ def test_abilities_options_explain_point_buy(client: TestClient) -> None:
         f"/api/v1/characters/wizard/{draft_id}/steps/species",
         json={"name": "Хтось", "species_key": "human"},
     )
-    client.put(
-        f"/api/v1/characters/wizard/{draft_id}/steps/class", json={"class_key": "fighter"}
-    )
+    client.put(f"/api/v1/characters/wizard/{draft_id}/steps/class", json={"class_key": "fighter"})
     step = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/abilities").json()
     options = step["options"]
     assert options["standard_array"] == [15, 14, 13, 12, 10, 8]
@@ -300,9 +299,7 @@ def test_background_options_show_description_and_equipment(client: TestClient) -
         },
     )
     step = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/background").json()
-    soldier = next(
-        item for item in step["options"]["backgrounds"] if item["key"] == "soldier"
-    )
+    soldier = next(item for item in step["options"]["backgrounds"] if item["key"] == "soldier")
 
     assert soldier["description"].startswith("War has been your life")
     assert "military rank" in (soldier["feature_en"] or "").casefold()
@@ -395,14 +392,10 @@ def test_class_options_show_subclass_spells(client: TestClient) -> None:
     step = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/class").json()
     classes = {item["key"]: item for item in step["options"]["classes"]}
 
-    life = next(
-        item for item in classes["cleric"]["subclass"]["options"] if item["id"].endswith("/life-domain")
-    )
+    life = next(item for item in classes["cleric"]["subclass"]["options"] if item["id"].endswith("/life-domain"))
     assert life["grants"] == {"prepared": ["bless", "cure wounds"], "expanded": []}
 
-    fiend = next(
-        item for item in classes["warlock"]["subclass"]["options"] if item["id"].endswith("/the-fiend")
-    )
+    fiend = next(item for item in classes["warlock"]["subclass"]["options"] if item["id"].endswith("/the-fiend"))
     assert fiend["grants"] == {"prepared": [], "expanded": ["burning hands", "command"]}
 
 
@@ -494,11 +487,7 @@ def test_cleric_domain_spells_reach_the_sheet(client: TestClient) -> None:
     ]
     _walk(client, draft_id, steps)
     sheet = client.post(f"/api/v1/characters/wizard/{draft_id}/finish").json()["sheet"]
-    granted = {
-        spell["name_en"].casefold(): spell
-        for spell in sheet["spells"]
-        if spell["source"] == "subclass"
-    }
+    granted = {spell["name_en"].casefold(): spell for spell in sheet["spells"] if spell["source"] == "subclass"}
     assert set(granted) == {"bless", "cure wounds"}
     assert all(item["always_prepared"] for item in granted.values())
     # Клас підкласу — щоб у мультикласі брати складність і атаку від Мудрості жреця.
@@ -620,9 +609,7 @@ def test_equipment_step_keeps_notes_and_weapon_damage(client: TestClient) -> Non
     draft = _start(client)
     draft_id = draft["draft"]["id"]
     for step, payload in FIGHTER_STEPS[:-1]:
-        response = client.put(
-            f"/api/v1/characters/wizard/{draft_id}/steps/{step}", json=payload
-        )
+        response = client.put(f"/api/v1/characters/wizard/{draft_id}/steps/{step}", json=payload)
         assert response.status_code == 200, response.text
     items = [
         {
@@ -644,9 +631,7 @@ def test_equipment_step_keeps_notes_and_weapon_damage(client: TestClient) -> Non
     )
     assert response.status_code == 200, response.text
 
-    answers = client.get(
-        f"/api/v1/characters/wizard/{draft_id}/steps/equipment"
-    ).json()["answers"]
+    answers = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/equipment").json()["answers"]
     saved = {row["name_en"]: row for row in answers["items"]}
     assert saved["common clothes"]["notes"] == "від передісторії"
     assert saved["longsword"]["damage"] == "1d8 slashing"
@@ -701,9 +686,7 @@ def test_custom_background_reaches_sheet(client: TestClient) -> None:
     )
     # Крок «Спорядження» має побачити обрані предмети як звичайне спорядження
     # передісторії — з них він і наповнює інвентар.
-    equipment_step = client.get(
-        f"/api/v1/characters/wizard/{draft_id}/steps/equipment"
-    ).json()
+    equipment_step = client.get(f"/api/v1/characters/wizard/{draft_id}/steps/equipment").json()
     rows = equipment_step["options"]["background"]["equipment"]
     assert [row["text"] for row in rows] == ["dagger", "rope"]
 
@@ -831,9 +814,7 @@ def test_class_features_endpoint_explains_every_feature(client: TestClient) -> N
 
 def test_subclass_endpoint_gives_description_and_path(client: TestClient) -> None:
     """Вибір підкласу: назва, опис-вступ і всі вміння з рівнями й текстами."""
-    response = client.get(
-        "/api/v1/characters/wizard/subclass/phb-2014/subclass/wild-magic"
-    )
+    response = client.get("/api/v1/characters/wizard/subclass/phb-2014/subclass/wild-magic")
     assert response.status_code == 200, response.text
     data = response.json()
 
@@ -842,9 +823,7 @@ def test_subclass_endpoint_gives_description_and_path(client: TestClient) -> Non
     levels = {feature["level"] for feature in data["features"]}
     assert {1, 6, 14, 18} <= levels, "видно, що підклас дає далі"
     assert all(feature.get("name_uk") for feature in data["features"])
-    assert all(
-        feature.get("text_uk") for feature in data["features"] if feature["description"]
-    )
+    assert all(feature.get("text_uk") for feature in data["features"] if feature["description"])
 
 
 def test_warlock_patron_expands_spell_choices(client: TestClient) -> None:

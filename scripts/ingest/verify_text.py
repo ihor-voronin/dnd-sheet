@@ -139,11 +139,7 @@ def main(argv: list[str] | None = None) -> int:
                 if key in stack:
                     continue
                 replacement = texts.get(record_id, "")
-                similarity = (
-                    difflib.SequenceMatcher(None, key, replacement).ratio()
-                    if replacement
-                    else 0.0
-                )
+                similarity = difflib.SequenceMatcher(None, key, replacement).ratio() if replacement else 0.0
                 if similarity >= args.ratio:
                     source_changed.append(f"{record_id}: {key[:80]}")
                 else:

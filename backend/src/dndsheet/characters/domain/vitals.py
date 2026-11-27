@@ -116,7 +116,5 @@ class HitPointState:
         (`RestService` читає максимум із обчисленого листа).
         """
         if self.current is None:
-            raise ValidationError(
-                f"{action} на невідомих поточних хітах: спершу задайте current"
-            )
+            raise ValidationError(f"{action} на невідомих поточних хітах: спершу задайте current")
         return self.current

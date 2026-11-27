@@ -15,8 +15,6 @@ from __future__ import annotations
 
 import argparse
 import collections
-import json
-import sys
 
 from . import canonical
 
@@ -58,14 +56,10 @@ def _stats(spec, sources: list[str]) -> None:
                 continue
             for category in canonical.categories_of(directory):
                 counts[category] += len(canonical.read_jsonl(directory / f"{category}.jsonl"))
-        line = f"{source:20}" + "".join(
-            f"{(counts[name] or ''):>{width}}" for name in spec.categories_ordered()
-        )
+        line = f"{source:20}" + "".join(f"{(counts[name] or ''):>{width}}" for name in spec.categories_ordered())
         print(line + f"{sum(counts.values()):>9}")
         totals.update(counts)
-    line = f"{'РАЗОМ':20}" + "".join(
-        f"{(totals[name] or ''):>{width}}" for name in spec.categories_ordered()
-    )
+    line = f"{'РАЗОМ':20}" + "".join(f"{(totals[name] or ''):>{width}}" for name in spec.categories_ordered())
     print(line + f"{sum(totals.values()):>9}")
 
 

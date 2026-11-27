@@ -30,17 +30,13 @@ def spec() -> dict:
 
 @pytest.fixture(scope="module")
 def classes() -> dict:
-    payload = json.loads(
-        (CONTENT / "index" / "class-mechanics.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads((CONTENT / "index" / "class-mechanics.json").read_text(encoding="utf-8"))
     return payload
 
 
 @pytest.fixture(scope="module")
 def origins() -> dict:
-    payload = json.loads(
-        (CONTENT / "index" / "origin-mechanics.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads((CONTENT / "index" / "origin-mechanics.json").read_text(encoding="utf-8"))
     return payload
 
 
@@ -175,11 +171,7 @@ def test_species_numbers_are_in_range(spec: dict, origins: dict) -> None:
             # 2022-перевидання (MPMM, RHW) мають вільний розподіл, якого немає
             # в дзеркалі: для них `ability_unresolved: true`, і вибір робить
             # гравець, а не таблиця.
-            if (
-                not entry["ability_fixed"]
-                and not entry["ability_choice"]
-                and not entry.get("ability_unresolved")
-            ):
+            if not entry["ability_fixed"] and not entry["ability_choice"] and not entry.get("ability_unresolved"):
                 problems.append(f"{collection}/{key}: без бонусів характеристик")
     assert not problems, "\n".join(problems[:10])
 
@@ -187,9 +179,7 @@ def test_species_numbers_are_in_range(spec: dict, origins: dict) -> None:
 def test_subspecies_point_to_existing_species(origins: dict) -> None:
     known = set(origins["species"])
     orphans = sorted(
-        key
-        for key, entry in origins["subspecies"].items()
-        if entry["subrace_of"] and entry["subrace_of"] not in known
+        key for key, entry in origins["subspecies"].items() if entry["subrace_of"] and entry["subrace_of"] not in known
     )
     assert not orphans, f"підраси без базового виду: {orphans[:10]}"
 

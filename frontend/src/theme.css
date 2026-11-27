@@ -907,7 +907,9 @@ textarea:focus {
 
 /* Залита малинова кнопка: світле кільце всередині малинового. */
 .character-view .sheet-btn--primary:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--act-ink), inset 0 0 0 4px var(--act) !important;
+  box-shadow:
+    inset 0 0 0 2px var(--act-ink),
+    inset 0 0 0 4px var(--act) !important;
 }
 
 .character-view h1,
@@ -1091,7 +1093,9 @@ textarea:focus {
 
 .button--primary:focus-visible,
 .button--seal:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--act-ink), inset 0 0 0 4px var(--act);
+  box-shadow:
+    inset 0 0 0 2px var(--act-ink),
+    inset 0 0 0 4px var(--act);
 }
 
 /* Номер кроку — шестикутник. */
@@ -1169,8 +1173,7 @@ textarea:focus {
   place-items: center;
   width: 56px;
   height: 46px;
-  background:
-    no-repeat center / 100% 100%
+  background: no-repeat center / 100% 100%
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 46'%3E%3Cpath d='M14 1.5h28L54.5 23 42 44.5H14L1.5 23z' fill='%23212634' stroke='%23d1a654' stroke-width='1.5'/%3E%3C/svg%3E");
   color: var(--ink);
   font-family: var(--sans);
@@ -1505,8 +1508,15 @@ textarea:focus {
   font-weight: 700;
 }
 
-.sheet-skill__dis { color: var(--wax); font-weight: 700; font-size: 0.8em; }
-.chip__tag { opacity: .65; font-size: .75em; }
+.sheet-skill__dis {
+  color: var(--wax);
+  font-weight: 700;
+  font-size: 0.8em;
+}
+.chip__tag {
+  opacity: 0.65;
+  font-size: 0.75em;
+}
 
 /* Телефон: шість кроків не влазять — номери для всіх, назва лише в поточного
    (решта назв лишається для читачів екрана). */

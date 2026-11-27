@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.attacks import WeaponProfile, attack_profile
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
@@ -14,7 +13,6 @@ from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepository
 from dndsheet.shared.kernel import Ability, AbilityScore, Skill
-
 from helpers import make_character
 
 
@@ -70,9 +68,7 @@ def test_second_class_grants_only_multiclass_proficiencies(rules) -> None:
 
 
 def test_paladin_prepares_charisma_plus_half_level(rules) -> None:
-    character = make_character(
-        rules, abilities=_scores(cha=16), classes=[CharacterClass("paladin", 5)]
-    )
+    character = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("paladin", 5)])
     casting = _sheet(character).spellcasting.for_class("paladin")
     assert casting.prepared_limit == 3 + 2  # CHA +3, половина від 5 — 2
 
@@ -128,9 +124,7 @@ def test_hill_dwarf_gets_hit_point_per_level(rules) -> None:
 
 def test_tough_feat_adds_two_per_level(rules) -> None:
     plain = make_character(rules, classes=[CharacterClass("fighter", 4)])
-    tough = make_character(
-        rules, classes=[CharacterClass("fighter", 4)], feats=("phb-2014/feat/tough",)
-    )
+    tough = make_character(rules, classes=[CharacterClass("fighter", 4)], feats=("phb-2014/feat/tough",))
     assert _sheet(tough).hit_points.maximum == _sheet(plain).hit_points.maximum + 8
 
 
@@ -140,9 +134,7 @@ def test_tough_feat_adds_two_per_level(rules) -> None:
 def test_no_proficiency_bonus_without_weapon_proficiency() -> None:
     profile = WeaponProfile(name_en="Longsword", damage="1d8 slashing", group="Martial Melee Weapons")
     trained = attack_profile(profile, strength_modifier=2, dexterity_modifier=0, proficiency=2)
-    untrained = attack_profile(
-        profile, strength_modifier=2, dexterity_modifier=0, proficiency=2, proficient=False
-    )
+    untrained = attack_profile(profile, strength_modifier=2, dexterity_modifier=0, proficiency=2, proficient=False)
     assert trained.attack_bonus == 4
     assert untrained.attack_bonus == 2
 
@@ -177,12 +169,9 @@ def test_wizard_preparation_keeps_spellbook(rules) -> None:
     from dndsheet.characters.domain.spells import KnownSpell
 
     book = tuple(
-        KnownSpell(name_en=name, level=1, class_key="wizard")
-        for name in ("Shield", "Sleep", "Magic Missile")
+        KnownSpell(name_en=name, level=1, class_key="wizard") for name in ("Shield", "Sleep", "Magic Missile")
     )
-    wizard = make_character(
-        rules, abilities=_scores(int=10), classes=[CharacterClass("wizard", 1)], spells=book
-    )
+    wizard = make_character(rules, abilities=_scores(int=10), classes=[CharacterClass("wizard", 1)], spells=book)
     wizard.prepare_spells("wizard", (book[0],))
     assert {spell.name_en for spell in wizard.spells} == {"Shield", "Sleep", "Magic Missile"}
     with pytest.raises(Exception):
@@ -252,9 +241,7 @@ def test_multiclass_rogue_gives_one_skill(rules) -> None:
 
 
 def test_heavy_armor_without_strength_slows(rules) -> None:
-    mail = InventoryItem(
-        name_en="Chain mail", kind=ItemKind.ARMOR, equipped=True, armor_base=16, dex_cap=0
-    )
+    mail = InventoryItem(name_en="Chain mail", kind=ItemKind.ARMOR, equipped=True, armor_base=16, dex_cap=0)
     weak = make_character(rules, abilities=_scores(str=12), inventory=Inventory(items=(mail,)))
     strong = make_character(rules, abilities=_scores(str=13), inventory=Inventory(items=(mail,)))
     assert _sheet(weak).speed == _sheet(strong).speed - 10
@@ -314,7 +301,10 @@ def test_invocation_prerequisites(rules) -> None:
 def test_armor_without_proficiency(rules) -> None:
     mail = InventoryItem(name_en="Chain mail", kind=ItemKind.ARMOR, equipped=True, armor_base=16)
     wizard = make_character(
-        rules, abilities=_scores(str=15, dex=14), classes=[CharacterClass("wizard", 1)], inventory=Inventory(items=(mail,))
+        rules,
+        abilities=_scores(str=15, dex=14),
+        classes=[CharacterClass("wizard", 1)],
+        inventory=Inventory(items=(mail,)),
     )
     sheet = _sheet(wizard)
     assert sheet.armor_untrained == ("Chain mail",)
@@ -353,7 +343,9 @@ def test_eldritch_knight_spell_schools(rules) -> None:
 
     compendium = create_app().state.compendium
     knight = make_character(
-        rules, abilities=_scores(str=15, int=13), classes=[CharacterClass("fighter", 3, subclass_key="eldritch-knight")]
+        rules,
+        abilities=_scores(str=15, int=13),
+        classes=[CharacterClass("fighter", 3, subclass_key="eldritch-knight")],
     )
     knight.learn_spell(KnownSpell(name_en="Shield", level=1, class_key="fighter"))
     # Одне закляття будь-якої школи на 3 рівні — дозволено (Sleep — зачарування).

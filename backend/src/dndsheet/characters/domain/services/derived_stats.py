@@ -17,9 +17,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from dndsheet.characters.domain import derived_choices
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.inventory import CARRY_PER_STRENGTH
-from dndsheet.characters.domain.proficiencies import ProficiencyKind, Proficiencies
+from dndsheet.characters.domain.proficiencies import Proficiencies, ProficiencyKind
 from dndsheet.characters.domain.services.hit_points import (
     HitPointPart,
     HitPointsView,
@@ -42,13 +43,12 @@ from dndsheet.shared.kernel import (
     Skill,
     proficiency_bonus,
 )
-from dndsheet.characters.domain import derived_choices
 from dndsheet.shared.rules import (
     ELDRITCH_BLAST_INVOCATIONS,
     ClassMechanics,
-    dragon_damage_type,
     armor_category,
     armor_dex_cap,
+    dragon_damage_type,
 )
 
 SHIELD_AC_BONUS = 2
@@ -191,8 +191,7 @@ class DerivedStatsCalculator:
             )
 
         saving_proficiency = {
-            ability: proficiencies.has(ProficiencyKind.SAVING_THROW, ability.value)
-            for ability in Ability
+            ability: proficiencies.has(ProficiencyKind.SAVING_THROW, ability.value) for ability in Ability
         }
         saving_throws = {
             ability: modifiers_map[ability]
@@ -206,14 +205,10 @@ class DerivedStatsCalculator:
                 saving_throws[ability] = overrides[key]
                 applied.add(key)
 
-        skill_proficiency = {
-            skill: proficiencies.has(ProficiencyKind.SKILL, skill.value) for skill in Skill
-        }
+        skill_proficiency = {skill: proficiencies.has(ProficiencyKind.SKILL, skill.value) for skill in Skill}
         # Blessings of Knowledge — подвоєний бонус без окремого вибору експертизи.
         expert = set(character.expertise) | derived_choices.auto_expertise(character)
-        skill_expertise = {
-            skill: skill_proficiency[skill] and skill.value in expert for skill in Skill
-        }
+        skill_expertise = {skill: skill_proficiency[skill] and skill.value in expert for skill in Skill}
         skills = {
             skill: modifiers_map[SKILL_ABILITY[skill]]
             + (proficiency if skill_proficiency[skill] else 0)
@@ -262,15 +257,9 @@ class DerivedStatsCalculator:
             initiative = overrides["initiative"]
             applied.add("initiative")
 
-        passive = (
-            PASSIVE_BASE
-            + skills[Skill.PERCEPTION]
-            + modifiers.total(ModifierKind.PASSIVE, "perception")
-        )
+        passive = PASSIVE_BASE + skills[Skill.PERCEPTION] + modifiers.total(ModifierKind.PASSIVE, "perception")
         passive_investigation = (
-            PASSIVE_BASE
-            + skills[Skill.INVESTIGATION]
-            + modifiers.total(ModifierKind.PASSIVE, "investigation")
+            PASSIVE_BASE + skills[Skill.INVESTIGATION] + modifiers.total(ModifierKind.PASSIVE, "investigation")
         )
         passive_insight = PASSIVE_BASE + skills[Skill.INSIGHT]
         if "passive_perception" in overrides:
@@ -308,10 +297,19 @@ class DerivedStatsCalculator:
             spell_notes=self._spell_notes(character, modifiers_map),
             resistances=species.resistances if species is not None else (),
             # Аспект звіра: Ведмідь — подвоєна вантажопідйомність (PHB, p. 50).
-            carrying_capacity=strength * CARRY_PER_STRENGTH * (2 if character.has_class_choice("bear") and any(
-                value.casefold() == "bear"
-                for value in character.active_class_choices.get("sub:path-of-the-totem-warrior:Aspect of the Beast", ())
-            ) else 1),
+            carrying_capacity=strength
+            * CARRY_PER_STRENGTH
+            * (
+                2
+                if character.has_class_choice("bear")
+                and any(
+                    value.casefold() == "bear"
+                    for value in character.active_class_choices.get(
+                        "sub:path-of-the-totem-warrior:Aspect of the Beast", ()
+                    )
+                )
+                else 1
+            ),
             carried_weight=character.inventory.total_weight,
             modifiers=modifiers,
             feats=character.feats,
@@ -323,17 +321,13 @@ class DerivedStatsCalculator:
     # --- частини ------------------------------------------------------------
 
     @staticmethod
-    def _abilities(
-        character: Character, modifiers: ModifierSet
-    ) -> dict[Ability, AbilityView]:
+    def _abilities(character: Character, modifiers: ModifierSet) -> dict[Ability, AbilityView]:
         views: dict[Ability, AbilityView] = {}
         for ability in Ability:
             base = character.ability(ability).value
             bonus = modifiers.ability_bonus(ability.value)
             total = min(30, base + bonus)  # межа 5e: 30 — максимум (PHB, p. 173)
-            views[ability] = AbilityView(
-                base=base, bonus=bonus, total=total, modifier=(total - 10) // 2
-            )
+            views[ability] = AbilityView(base=base, bonus=bonus, total=total, modifier=(total - 10) // 2)
         return views
 
     @staticmethod
@@ -376,14 +370,10 @@ class DerivedStatsCalculator:
                         [
                             ArmorClassPart(label="unarmored", value=UNARMORED_BASE),
                             ArmorClassPart(label="dexterity", value=dexterity),
-                            ArmorClassPart(
-                                label=f"unarmored-defense:{second.value}", value=modifiers[second]
-                            ),
+                            ArmorClassPart(label=f"unarmored-defense:{second.value}", value=modifiers[second]),
                         ]
                     )
-                if entry.class_key == "sorcerer" and (entry.subclass_key or "").endswith(
-                    "draconic-bloodline"
-                ):
+                if entry.class_key == "sorcerer" and (entry.subclass_key or "").endswith("draconic-bloodline"):
                     options.append(
                         [
                             ArmorClassPart(label="draconic-resilience", value=13),
@@ -450,10 +440,15 @@ class DerivedStatsCalculator:
         if level("rogue") >= 14:
             notes.append("Сліпе чуття (Blindsense): чуєте схованих і невидимих істот у межах 10 фт")
         if level("ranger") >= 18:
-            notes.append("Дикі чуття (Feral Senses): атаки по невидимих без завади; знаєте про невидимих у межах 30 фт")
+            notes.append(
+                "Дикі чуття (Feral Senses): атаки по невидимих без завади; знаєте про невидимих у межах 30 фт"
+            )
         if level("monk") >= 7:
             notes.append("Спокій розуму (Stillness of Mind): дією знімаєте з себе зачарування чи переляк")
-        if any(name.casefold() == "war caster" for name in (feat.rsplit("/", 1)[-1].replace("-", " ") for feat in character.feats)):
+        if any(
+            name.casefold() == "war caster"
+            for name in (feat.rsplit("/", 1)[-1].replace("-", " ") for feat in character.feats)
+        ):
             notes.append("Бойовий заклинатель (War Caster): перевага на рятівні кидки Статури для концентрації")
         return tuple(notes)
 
@@ -463,7 +458,9 @@ class DerivedStatsCalculator:
         notes: list[str] = []
         choices = character.active_class_choices
         if character.class_level("barbarian"):
-            bear = "bear" in {value.casefold() for value in choices.get("sub:path-of-the-totem-warrior:Totem Spirit", ())}
+            bear = "bear" in {
+                value.casefold() for value in choices.get("sub:path-of-the-totem-warrior:Totem Spirit", ())
+            }
             notes.append(
                 "У люті (Rage): опір усім видам урону, крім психічного — Тотемний дух Ведмедя"
                 if bear
@@ -507,9 +504,7 @@ class DerivedStatsCalculator:
         warnings: list[str],
         collected: ModifierSet | None = None,
     ) -> HitPointsView:
-        maximum, parts = hit_point_maximum(
-            character.class_entries(), modifiers[Ability.CON], character.hp
-        )
+        maximum, parts = hit_point_maximum(character.class_entries(), modifiers[Ability.CON], character.hp)
         # Правила, що додають хіти за рівні: пагорбовий дворф, драконячий
         # родовід, риса Tough. Ручне значення максимуму (override) їх не чіпає.
         if collected is not None and character.hp.override_max is None:
@@ -517,17 +512,14 @@ class DerivedStatsCalculator:
             for item in extra:
                 maximum += item.value
             parts = parts + tuple(
-                HitPointPart(label=item.note_en or "bonus", value=item.value, source=item.source)
-                for item in extra
+                HitPointPart(label=item.note_en or "bonus", value=item.value, source=item.source) for item in extra
             )
         state = character.hp
         # Незадані хіти показуємо як максимум; нуль лишається нулем, бо це
         # непритомний персонаж, а не «повний».
         current = maximum if state.current is None else state.current
         if current > maximum:
-            warnings.append(
-                f"поточні хіти ({current}) більші за максимум ({maximum})"
-            )
+            warnings.append(f"поточні хіти ({current}) більші за максимум ({maximum})")
         return HitPointsView(
             maximum=maximum,
             current=current,
@@ -569,7 +561,8 @@ class DerivedStatsCalculator:
                 continue
             terrain = character.class_choices.get(f"{entry.class_key}:Circle Terrain", ())
             table = (
-                spells.by_terrain.get(terrain[0], {}) if spells.by_terrain and terrain
+                spells.by_terrain.get(terrain[0], {})
+                if spells.by_terrain and terrain
                 else spells.by_level or ({1: spells.prepared} if spells.prepared else {})
             )
             for class_level, names in sorted(table.items()):
@@ -591,9 +584,7 @@ class DerivedStatsCalculator:
         return tuple(views)
 
     @staticmethod
-    def _check_prepared(
-        character: Character, spellcasting: Spellcasting, warnings: list[str]
-    ) -> None:
+    def _check_prepared(character: Character, spellcasting: Spellcasting, warnings: list[str]) -> None:
         for casting in spellcasting.classes:
             if casting.prepared_limit is None:
                 continue
@@ -603,10 +594,7 @@ class DerivedStatsCalculator:
                 if not spell.is_cantrip and (spell.prepared or spell.always_prepared)
             )
             if prepared > casting.prepared_limit:
-                warnings.append(
-                    f"{casting.name_en}: підготовлено {prepared} заклять, "
-                    f"ліміт {casting.prepared_limit}"
-                )
+                warnings.append(f"{casting.name_en}: підготовлено {prepared} заклять, ліміт {casting.prepared_limit}")
 
     # --- для сумісності з рендерами ---------------------------------------
 

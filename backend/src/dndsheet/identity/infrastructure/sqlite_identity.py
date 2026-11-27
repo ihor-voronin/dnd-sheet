@@ -65,9 +65,7 @@ class SqliteIdentityStore:
 
     def upsert_telegram(self, profile: TelegramProfile) -> tuple[User, bool]:
         with closing(_connect(self.path)) as connection, connection:
-            row = connection.execute(
-                "SELECT id FROM users WHERE telegram_id = ?", (profile.telegram_id,)
-            ).fetchone()
+            row = connection.execute("SELECT id FROM users WHERE telegram_id = ?", (profile.telegram_id,)).fetchone()
             created = row is None
             user_id = uuid.uuid4().hex if created else row[0]
             if created:
@@ -81,9 +79,7 @@ class SqliteIdentityStore:
                 " last_login_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
                 (profile.first_name, profile.last_name, profile.username, profile.photo_url, user_id),
             )
-            stored = connection.execute(
-                f"SELECT {_COLUMNS} FROM users WHERE id = ?", (user_id,)
-            ).fetchone()
+            stored = connection.execute(f"SELECT {_COLUMNS} FROM users WHERE id = ?", (user_id,)).fetchone()
         return _user(stored), created
 
     def get(self, user_id: str) -> User | None:

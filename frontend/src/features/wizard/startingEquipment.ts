@@ -11,10 +11,7 @@
  * «Будь-яка проста зброя» не додається сама: гравець обирає її в каталозі.
  */
 
-export type StartingItem =
-  | { name: string; qty?: number }
-  | { pack: PackKey }
-  | { any: string };
+export type StartingItem = { name: string; qty?: number } | { pack: PackKey } | { any: string };
 
 export interface StartingOption {
   label: string;
@@ -24,14 +21,7 @@ export interface StartingOption {
 /** Рядок спорядження: один варіант — без вибору; кілька — (a)/(b)/(c). */
 export type StartingRow = StartingOption[];
 
-export type PackKey =
-  | "burglar"
-  | "diplomat"
-  | "dungeoneer"
-  | "entertainer"
-  | "explorer"
-  | "priest"
-  | "scholar";
+export type PackKey = "burglar" | "diplomat" | "dungeoneer" | "entertainer" | "explorer" | "priest" | "scholar";
 
 export const PACKS: Record<PackKey, { name_en: string; label: string; weight: number; contents: string }> = {
   burglar: {
@@ -65,8 +55,7 @@ export const PACKS: Record<PackKey, { name_en: string; label: string; weight: nu
     name_en: "Explorer's Pack",
     label: "Набір дослідника",
     weight: 59,
-    contents:
-      "рюкзак, спальник, казанок, трутниця, 10 смолоскипів, 10 днів раціону, бурдюк, 50 фт пенькової мотузки",
+    contents: "рюкзак, спальник, казанок, трутниця, 10 смолоскипів, 10 днів раціону, бурдюк, 50 фт пенькової мотузки",
   },
   priest: {
     name_en: "Priest's Pack",
@@ -79,8 +68,7 @@ export const PACKS: Record<PackKey, { name_en: string; label: string; weight: nu
     name_en: "Scholar's Pack",
     label: "Набір учня",
     weight: 10,
-    contents:
-      "рюкзак, книга знань, пляшечка чорнил, перо, 10 аркушів пергаменту, мішечок піску, маленький ніж",
+    contents: "рюкзак, книга знань, пляшечка чорнил, перо, 10 аркушів пергаменту, мішечок піску, маленький ніж",
   },
 };
 
@@ -88,11 +76,7 @@ const pack = (key: PackKey): StartingOption => ({ label: PACKS[key].label, items
 const one = (label: string, ...items: StartingItem[]): StartingOption => ({ label, items });
 const fixed = (label: string, ...items: StartingItem[]): StartingRow => [one(label, ...items)];
 
-const LIGHT_CROSSBOW = one(
-  "легкий арбалет і 20 болтів",
-  { name: "Crossbow, light" },
-  { name: "Crossbow bolts (20)" },
-);
+const LIGHT_CROSSBOW = one("легкий арбалет і 20 болтів", { name: "Crossbow, light" }, { name: "Crossbow bolts (20)" });
 const FOCUS: StartingRow = [
   one("мішечок компонентів", { name: "Component pouch" }),
   one("магічний фокус (кристал)", { name: "Crystal" }),
@@ -109,12 +93,19 @@ export const STARTING_EQUIPMENT: Record<string, StartingRow[]> = {
     fixed("злодійські інструменти й набір підземельника", { name: "Thieves' tools" }, { pack: "dungeoneer" }),
   ],
   barbarian: [
-    [one("велика сокира", { name: "Greataxe" }), one("будь-яка військова зброя ближнього бою", { any: "військова зброя ближнього бою" })],
+    [
+      one("велика сокира", { name: "Greataxe" }),
+      one("будь-яка військова зброя ближнього бою", { any: "військова зброя ближнього бою" }),
+    ],
     [one("дві ручні сокири", { name: "Handaxe", qty: 2 }), one("будь-яка проста зброя", { any: "проста зброя" })],
     fixed("набір дослідника і 4 сулиці", { pack: "explorer" }, { name: "Javelin", qty: 4 }),
   ],
   bard: [
-    [one("рапіра", { name: "Rapier" }), one("довгий меч", { name: "Longsword" }), one("будь-яка проста зброя", { any: "проста зброя" })],
+    [
+      one("рапіра", { name: "Rapier" }),
+      one("довгий меч", { name: "Longsword" }),
+      one("будь-яка проста зброя", { any: "проста зброя" }),
+    ],
     [pack("diplomat"), pack("entertainer")],
     [one("лютня", { name: "Lute" }), one("інший музичний інструмент", { any: "музичний інструмент" })],
     fixed("шкіряна броня і кинджал", { name: "Leather" }, { name: "Dagger" }),
@@ -132,7 +123,10 @@ export const STARTING_EQUIPMENT: Record<string, StartingRow[]> = {
   ],
   druid: [
     [one("деревʼяний щит", { name: "Shield" }), one("будь-яка проста зброя", { any: "проста зброя" })],
-    [one("скимітар", { name: "Scimitar" }), one("будь-яка проста зброя ближнього бою", { any: "проста зброя ближнього бою" })],
+    [
+      one("скимітар", { name: "Scimitar" }),
+      one("будь-яка проста зброя ближнього бою", { any: "проста зброя ближнього бою" }),
+    ],
     fixed(
       "шкіряна броня, набір дослідника, друїдський фокус",
       { name: "Leather" },
@@ -162,13 +156,19 @@ export const STARTING_EQUIPMENT: Record<string, StartingRow[]> = {
       one("військова зброя і щит", { any: "військова зброя" }, { name: "Shield" }),
       one("дві військові зброї", { any: "дві військові зброї" }),
     ],
-    [one("5 сулиць", { name: "Javelin", qty: 5 }), one("будь-яка проста зброя ближнього бою", { any: "проста зброя ближнього бою" })],
+    [
+      one("5 сулиць", { name: "Javelin", qty: 5 }),
+      one("будь-яка проста зброя ближнього бою", { any: "проста зброя ближнього бою" }),
+    ],
     [pack("priest"), pack("explorer")],
     fixed("кольчуга і священний символ", { name: "Chain mail" }, { name: "Amulet" }),
   ],
   ranger: [
     [one("лускатий обладунок", { name: "Scale mail" }), one("шкіряна броня", { name: "Leather" })],
-    [one("два короткі мечі", { name: "Shortsword", qty: 2 }), one("дві прості зброї ближнього бою", { any: "дві прості зброї ближнього бою" })],
+    [
+      one("два короткі мечі", { name: "Shortsword", qty: 2 }),
+      one("дві прості зброї ближнього бою", { any: "дві прості зброї ближнього бою" }),
+    ],
     [pack("dungeoneer"), pack("explorer")],
     fixed("довгий лук і сагайдак із 20 стрілами", { name: "Longbow" }, { name: "Quiver" }, { name: "Arrows (20)" }),
   ],

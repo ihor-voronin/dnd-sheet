@@ -61,13 +61,16 @@ def collect() -> dict[str, list[dict]]:
         higher = str((entry.get("data") or {}).get("at_higher_levels") or "").strip()
         if higher:
             layers["spells"].setdefault(
-                ident(higher), {"id": ident(higher), "name_en": f"{entry['name_en']} — At Higher Levels", "text_en": higher}
+                ident(higher),
+                {"id": ident(higher), "name_en": f"{entry['name_en']} — At Higher Levels", "text_en": higher},
             )
     for category, layer in (("feat", "feats"), ("optionalfeature", "optional-features")):
         for entry in records(category):
             text = str(entry.get("text_en") or "").strip()
             if text:
-                layers[layer].setdefault(ident(text), {"id": ident(text), "name_en": entry["name_en"], "text_en": text})
+                layers[layer].setdefault(
+                    ident(text), {"id": ident(text), "name_en": entry["name_en"], "text_en": text}
+                )
     return {layer: sorted(items.values(), key=lambda item: item["name_en"]) for layer, items in layers.items()}
 
 
@@ -101,7 +104,11 @@ def write_names() -> None:
         path = ROOT / "content" / "translations" / layer / "names.json"
         rows = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
         lines += [f"## {title}", "", "| English | Українською |", "|---|---|"]
-        lines += [f"| {row.get('en', '')} | {row.get('name_uk', '')} |" for row in rows if row.get("en") and row.get("name_uk")]
+        lines += [
+            f"| {row.get('en', '')} | {row.get('name_uk', '')} |"
+            for row in rows
+            if row.get("en") and row.get("name_uk")
+        ]
         lines.append("")
     (ROOT / "var" / "uk" / "NAMES.md").write_text("\n".join(lines), encoding="utf-8")
 

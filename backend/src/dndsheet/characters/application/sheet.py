@@ -63,9 +63,7 @@ class SheetService:
     ) -> Character:
         character = self.load(character_id)
         if expected_version is not None and expected_version != character.version:
-            raise ConflictError(
-                f"лист змінено (версія {character.version}, надіслано {expected_version})"
-            )
+            raise ConflictError(f"лист змінено (версія {character.version}, надіслано {expected_version})")
         sheet = self.calculator.compute(character)
         state = character.state
         current = patch.get("hp")
@@ -97,12 +95,8 @@ class SheetService:
                 raise ValidationError("death_saves має бути обʼєктом")
             state = state.with_death_saves(
                 DeathSaves(
-                    successes=_int(
-                        saves.get("successes", state.death_saves.successes), "успіхи"
-                    ),
-                    failures=_int(
-                        saves.get("failures", state.death_saves.failures), "провали"
-                    ),
+                    successes=_int(saves.get("successes", state.death_saves.successes), "успіхи"),
+                    failures=_int(saves.get("failures", state.death_saves.failures), "провали"),
                 )
             )
         if "inspiration" in patch:
@@ -110,18 +104,14 @@ class SheetService:
         if "exhaustion" in patch:
             state = state.with_exhaustion(_int(patch["exhaustion"], "виснаження"))
         if "slots" in patch:
-            state = state.with_slots_used(
-                self._slots(patch["slots"], sheet.spellcasting.slots.by_level)
-            )
+            state = state.with_slots_used(self._slots(patch["slots"], sheet.spellcasting.slots.by_level))
         if "pact_used" in patch:
             pact = sheet.spellcasting.slots.pact
             used = _int(patch["pact_used"], "витрачені комірки Pact Magic")
             if pact is None and used:
                 raise ValidationError("персонаж не має Pact Magic")
             if pact is not None and used > pact.slots:
-                raise ValidationError(
-                    f"комірок Pact Magic усього {pact.slots}, витрачено {used}"
-                )
+                raise ValidationError(f"комірок Pact Magic усього {pact.slots}, витрачено {used}")
             state = state.with_pact_used(used)
         if "hit_dice" in patch:
             state = state.with_hit_dice_used(self._hit_dice(patch["hit_dice"]))
@@ -129,10 +119,7 @@ class SheetService:
             values = patch["feature_used"] or {}
             if not isinstance(values, Mapping):
                 raise ValidationError("feature_used має бути обʼєктом «ключ: витрачено»")
-            limits = {
-                resource.key: resource.total
-                for resource in resources_for(character, sheet.ability_modifiers)
-            }
+            limits = {resource.key: resource.total for resource in resources_for(character, sheet.ability_modifiers)}
             used: dict[str, int] = {}
             for key, value in values.items():
                 name = str(key).strip()
@@ -140,9 +127,7 @@ class SheetService:
                     raise ValidationError(f"невідомий класовий ресурс {name!r}")
                 count = _int(value, f"витрачено ресурсу {name}")
                 if count > limits[name]:
-                    raise ValidationError(
-                        f"ресурсу {name!r} усього {limits[name]}, витрачено {count}"
-                    )
+                    raise ValidationError(f"ресурсу {name!r} усього {limits[name]}, витрачено {count}")
                 if count:
                     used[name] = count
             state = state.with_feature_used(used)
@@ -344,9 +329,7 @@ class SheetService:
     def _load_versioned(self, character_id: str, expected_version: int | None) -> Character:
         character = self.load(character_id)
         if expected_version is not None and expected_version != character.version:
-            raise ConflictError(
-                f"лист змінено (версія {character.version}, надіслано {expected_version})"
-            )
+            raise ConflictError(f"лист змінено (версія {character.version}, надіслано {expected_version})")
         return character
 
     @staticmethod
@@ -455,9 +438,7 @@ class SheetService:
                 raise ValidationError(f"рівень комірок {key!r} має бути числом") from exc
             count = _int(value, f"витрачені комірки {level} рівня")
             if count > limits.get(level, 0):
-                raise ValidationError(
-                    f"комірок {level} рівня всього {limits.get(level, 0)}, витрачено {count}"
-                )
+                raise ValidationError(f"комірок {level} рівня всього {limits.get(level, 0)}, витрачено {count}")
             if count:
                 used[level] = count
         return used
@@ -519,6 +500,7 @@ def _kind(value: Any) -> ItemKind:
         kinds = ", ".join(kind.value for kind in ItemKind)
         raise ValidationError(f"невідомий тип предмета {value!r} ({kinds})") from exc
 
+
 # ---------------------------------------------------------------------------
 # закляття
 # ---------------------------------------------------------------------------
@@ -563,16 +545,11 @@ def _prepared_spell(item: Any, class_key: str, character: Character) -> KnownSpe
         raise ValidationError("закляття у підготовці має бути назвою або обʼєктом")
     name = _text(payload, "name_en")
     own_class = payload.get("class_key")
-    if (
-        own_class is not None
-        and str(own_class).strip().casefold() != class_key.strip().casefold()
-    ):
+    if own_class is not None and str(own_class).strip().casefold() != class_key.strip().casefold():
         raise ValidationError(f"{name}: закляття належить іншому класу")
     known = _find_spell(character, name, class_key)
     if known is not None and known.custom:
-        raise ValidationError(
-            f"{name}: власне закляття не входить у денну підготовку — воно завжди доступне"
-        )
+        raise ValidationError(f"{name}: власне закляття не входить у денну підготовку — воно завжди доступне")
     level = payload.get("level")
     if level is None:
         if known is None:

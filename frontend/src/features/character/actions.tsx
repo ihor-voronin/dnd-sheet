@@ -8,11 +8,11 @@
  * вкладки — згортваний довідник «Дії в бою»: загальні дії ходу, які не
  * залежать від арсеналу персонажа.
  */
-
 import { useState } from "react";
 
 import { damageTypeLabel, modifierLabel, rangeLabel, schoolLabel } from "../../labels";
 import type { SheetFeatureResource, SheetSpell, SheetViewPayload } from "../wizard/types";
+
 import { Counter, isPoolResource } from "./editing";
 import { RuleText } from "./panels";
 import {
@@ -244,9 +244,7 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
       typeLabel: spell.level === 0 ? "Заговір" : `Закляття ${spell.level} рівня`,
       range: rangeLabel(spell.range) || "—",
       hit,
-      damage: spell.damage
-        ? `${spell.damage.dice} ${damageTypeLabel(spell.damage.type)}`
-        : "—",
+      damage: spell.damage ? `${spell.damage.dice} ${damageTypeLabel(spell.damage.type)}` : "—",
       notes,
       actionType: spellTime(spell),
       attack: Boolean(spell.attack_roll),
@@ -262,18 +260,12 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
       range: "—",
       hit: "—",
       damage: "—",
-      notes: `відновлення: ${
-        resource.recharge === "short" ? "короткий або тривалий" : "тривалий"
-      } відпочинок`,
+      notes: `відновлення: ${resource.recharge === "short" ? "короткий або тривалий" : "тривалий"} відпочинок`,
       actionType: resource.action,
       attack: false,
       limited: true,
       resource,
-      description: featureText(
-        resource.name_en,
-        feature?.description,
-        feature?.text_uk,
-      ),
+      description: featureText(resource.name_en, feature?.description, feature?.text_uk),
     });
   }
 
@@ -319,8 +311,8 @@ export function ActionPanel({
         ].filter(Boolean);
         return missing.length ? (
           <p className="hint">
-            Позначте {missing.join(" і ")} в «Інвентарі»: розгорніть предмет або додайте новий через
-            «Свій предмет». Без позначки атака рахується як звичайна.
+            Позначте {missing.join(" і ")} в «Інвентарі»: розгорніть предмет або додайте новий через «Свій предмет». Без
+            позначки атака рахується як звичайна.
           </p>
         ) : null;
       })()}
@@ -375,17 +367,13 @@ export function ActionPanel({
       )}
 
       {filter !== "limited" && !visible.length ? (
-        <p className="hint">
-          За цим фільтром у персонажа нічого немає — загальні дії бою є в довіднику нижче.
-        </p>
+        <p className="hint">За цим фільтром у персонажа нічого немає — загальні дії бою є в довіднику нижче.</p>
       ) : null}
 
       <details className="combat-ref">
         <summary className="combat-ref__head">
           <span className="combat-ref__title">Дії в бою</span>
-          <span className="combat-ref__hint">
-            загальний довідник: що взагалі можна робити в бою
-          </span>
+          <span className="combat-ref__hint">загальний довідник: що взагалі можна робити в бою</span>
         </summary>
         <div className="combat-ref__body">
           {(Object.keys(GROUP_LABELS) as ActionType[]).map((type) => (
@@ -407,13 +395,7 @@ export function ActionPanel({
   );
 }
 
-function ActionRowView({
-  row,
-  onUseFeature,
-}: {
-  row: ActionRow;
-  onUseFeature: (key: string, used: number) => void;
-}) {
+function ActionRowView({ row, onUseFeature }: { row: ActionRow; onUseFeature: (key: string, used: number) => void }) {
   return (
     <li className={`action-row ${row.limited ? "is-limited" : ""}`}>
       <div className="action-row__head">
@@ -447,9 +429,7 @@ function ActionRowView({
           </span>
         </div>
       )}
-      {row.resource ? null : row.notes ? (
-        <p className="action-row__notes">{row.notes}</p>
-      ) : null}
+      {row.resource ? null : row.notes ? <p className="action-row__notes">{row.notes}</p> : null}
       {row.description ? (
         <details className="action-row__more">
           <summary>як працює</summary>

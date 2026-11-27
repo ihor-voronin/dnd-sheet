@@ -12,9 +12,8 @@ import shutil
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
+from fastapi.testclient import TestClient
 
 DATA_DIR = Path(__file__).resolve().parent / "_tmp_sheet_api"
 
@@ -138,9 +137,7 @@ def test_override_is_marked_and_can_be_cleared(client: TestClient) -> None:
 
 def test_slots_cannot_exceed_the_maximum(client: TestClient) -> None:
     character_id = _create_fighter(client)
-    response = client.patch(
-        f"/api/v1/characters/{character_id}", json={"slots": {"1": 1}}
-    )
+    response = client.patch(f"/api/v1/characters/{character_id}", json={"slots": {"1": 1}})
     assert response.status_code == 422
     assert "комірок 1 рівня" in response.json()["detail"]
 
@@ -166,18 +163,14 @@ def test_death_saves_inspiration_and_notes(client: TestClient) -> None:
 def test_hit_die_spend_heals(client: TestClient) -> None:
     character_id = _create_fighter(client)
     _patch(client, character_id, {"hp": {"current": 2}})
-    response = client.post(
-        f"/api/v1/characters/{character_id}/hit-dice", json={"die": 10, "roll": 6}
-    )
+    response = client.post(f"/api/v1/characters/{character_id}/hit-dice", json={"die": 10, "roll": 6})
     assert response.status_code == 200, response.text
     sheet = response.json()["sheet"]
     # 2 + 6 + CON 2 = 10, максимум 12.
     assert sheet["hit_points"]["current"] == 10
     assert sheet["resources"]["hit_dice"]["d10"]["used"] == 1
 
-    again = client.post(
-        f"/api/v1/characters/{character_id}/hit-dice", json={"die": 10, "roll": 6}
-    )
+    again = client.post(f"/api/v1/characters/{character_id}/hit-dice", json={"die": 10, "roll": 6})
     assert again.status_code == 422
 
 
@@ -210,23 +203,17 @@ def test_long_rest_restores_hp_and_dice(client: TestClient) -> None:
 
 def test_rest_kind_is_validated(client: TestClient) -> None:
     character_id = _create_fighter(client)
-    response = client.post(
-        f"/api/v1/characters/{character_id}/rest", json={"kind": "nap"}
-    )
+    response = client.post(f"/api/v1/characters/{character_id}/rest", json={"kind": "nap"})
     assert response.status_code == 422
 
 
 def test_feature_resource_is_spent_and_reset_by_short_rest(client: TestClient) -> None:
     character_id = _create_fighter(client)
-    sheet = _patch(client, character_id, {"feature_used": {"fighter:second-wind": 1}})[
-        "sheet"
-    ]
+    sheet = _patch(client, character_id, {"feature_used": {"fighter:second-wind": 1}})["sheet"]
     resources = {item["key"]: item for item in sheet["feature_resources"]}
     assert resources["fighter:second-wind"]["used"] == 1
 
-    response = client.post(
-        f"/api/v1/characters/{character_id}/rest", json={"kind": "short"}
-    )
+    response = client.post(f"/api/v1/characters/{character_id}/rest", json={"kind": "short"})
     assert response.status_code == 200, response.text
     resources = {item["key"]: item for item in response.json()["sheet"]["feature_resources"]}
     assert resources["fighter:second-wind"]["used"] == 0, "Друге дихання — на короткому"
@@ -318,15 +305,11 @@ def test_resource_recharge_depends_on_rest_kind(client: TestClient) -> None:
     assert resources["cleric:war-priest"]["total"] == 3, "WIS 16 → +3 використання"
     assert resources["cleric:war-priest"]["recharge"] == "long"
 
-    short = client.post(
-        f"/api/v1/characters/{character_id}/rest", json={"kind": "short"}
-    ).json()["sheet"]
+    short = client.post(f"/api/v1/characters/{character_id}/rest", json={"kind": "short"}).json()["sheet"]
     resources = {item["key"]: item for item in short["feature_resources"]}
     assert resources["cleric:war-priest"]["used"] == 3, "довгий ресурс короткий не повертає"
 
-    long = client.post(
-        f"/api/v1/characters/{character_id}/rest", json={"kind": "long"}
-    ).json()["sheet"]
+    long = client.post(f"/api/v1/characters/{character_id}/rest", json={"kind": "long"}).json()["sheet"]
     resources = {item["key"]: item for item in long["feature_resources"]}
     assert resources["cleric:war-priest"]["used"] == 0
 
@@ -501,9 +484,7 @@ def test_armor_can_be_equipped_through_item_edit(client: TestClient) -> None:
     )
     assert added.status_code == 200, added.text
     sheet = added.json()["sheet"]
-    index = next(
-        i for i, item in enumerate(sheet["inventory"]["items"]) if item["name_en"] == "leather"
-    )
+    index = next(i for i, item in enumerate(sheet["inventory"]["items"]) if item["name_en"] == "leather")
     equipped = client.patch(
         f"/api/v1/characters/{character_id}/items/{index}",
         json={"fields": {"equipped": True}},
@@ -511,9 +492,7 @@ def test_armor_can_be_equipped_through_item_edit(client: TestClient) -> None:
     assert equipped.status_code == 200, equipped.text
     sheet = equipped.json()["sheet"]
     assert sheet["armor_class"]["value"] == 13, "легка броня: 11 + DEX 2"
-    names = [
-        item["name_en"] for item in sheet["inventory"]["items"] if item["equipped"]
-    ]
+    names = [item["name_en"] for item in sheet["inventory"]["items"] if item["equipped"]]
     assert "chain mail" not in names, "нова броня знімає стару"
 
 
@@ -525,7 +504,7 @@ def test_only_three_items_can_be_attuned(client: TestClient) -> None:
             json={"item": {"name_en": name, "kind": "magic"}},
         )
         assert added.status_code == 200, added.text
-    items = added.json()["sheet"]["inventory"]["items"]
+    added.json()["sheet"]["inventory"]["items"]
     for index in range(3):
         response = client.patch(
             f"/api/v1/characters/{character_id}/items/{index}",
@@ -557,7 +536,12 @@ def test_only_three_items_can_be_attuned(client: TestClient) -> None:
 
 def _create_variant_human(client: TestClient) -> str:
     draft_id = client.post("/api/v1/characters/wizard").json()["draft"]["id"]
-    species = {"name": "Ліна", "species_key": "human", "subspecies_key": "variant human", "ability_choices": ["str", "con"]}
+    species = {
+        "name": "Ліна",
+        "species_key": "human",
+        "subspecies_key": "variant human",
+        "ability_choices": ["str", "con"],
+    }
     # Без риси крок виду не проходить: варіантна людина бере її на 1 рівні.
     missing = client.put(f"/api/v1/characters/wizard/{draft_id}/steps/species", json=species)
     assert missing.status_code == 422 and "рису" in missing.json()["detail"]
@@ -568,7 +552,10 @@ def _create_variant_human(client: TestClient) -> str:
     steps = [
         ("species", {**species, "species_feat": "phb-2014/feat/skilled"}),
         ("class", {"class_key": "fighter"}),
-        ("abilities", {"method": "standard_array", "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8}}),
+        (
+            "abilities",
+            {"method": "standard_array", "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8}},
+        ),
         (
             "background",
             {
@@ -628,7 +615,10 @@ def _create_simple(client: TestClient, species: str, klass: str, skills: list[st
     steps = [
         ("species", {"name": "Кіт", "species_key": species}),
         ("class", {"class_key": klass}),
-        ("abilities", {"method": "standard_array", "scores": {"str": 13, "dex": 15, "con": 12, "int": 8, "wis": 14, "cha": 10}}),
+        (
+            "abilities",
+            {"method": "standard_array", "scores": {"str": 13, "dex": 15, "con": 12, "int": 8, "wis": 14, "cha": 10}},
+        ),
         (
             "background",
             {
@@ -681,11 +671,15 @@ def test_wizard_feat_choices_are_saved_and_checked(client: TestClient) -> None:
     base = {"species_key": "human", "subspecies_key": "variant human"}
     groups = client.post(
         "/api/v1/characters/wizard/feat-choices",
-        json={**base, "feat": "phb-2014/feat/magic-initiate", "choices": {"feat:magic-initiate:Spell Class": ["wizard"]}},
+        json={
+            **base,
+            "feat": "phb-2014/feat/magic-initiate",
+            "choices": {"feat:magic-initiate:Spell Class": ["wizard"]},
+        },
     )
     assert groups.status_code == 200, groups.text
     by_key = {group["key"]: group for group in groups.json()["groups"]}
-    assert [group["key"] for group in groups.json()["groups"]][0] == "feat:magic-initiate:Spell Class"
+    assert next(group["key"] for group in groups.json()["groups"]) == "feat:magic-initiate:Spell Class"
     assert any(option["name_en"] == "Fire Bolt" for option in by_key["feat:magic-initiate:Cantrips"]["options"])
 
     draft_id = client.post("/api/v1/characters/wizard").json()["draft"]["id"]
@@ -696,9 +690,15 @@ def test_wizard_feat_choices_are_saved_and_checked(client: TestClient) -> None:
     )
     assert wrong.status_code == 422, "варіант не з довідника"
     steps = [
-        ("species", {**species, "species_feat_choices": {"feat:skilled:Skills or Tools": ["Athletics", "Arcana", "lute"]}}),
+        (
+            "species",
+            {**species, "species_feat_choices": {"feat:skilled:Skills or Tools": ["Athletics", "Arcana", "lute"]}},
+        ),
         ("class", {"class_key": "fighter"}),
-        ("abilities", {"method": "standard_array", "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8}}),
+        (
+            "abilities",
+            {"method": "standard_array", "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8}},
+        ),
         (
             "background",
             {
@@ -732,7 +732,10 @@ def test_species_source_and_spellbook_on_sheet(client: TestClient) -> None:
     tabaxi = _create_simple(client, "tabaxi", "monk", ["acrobatics", "stealth"])
     sheet = client.get(f"/api/v1/characters/{tabaxi}").json()["sheet"]
     assert sheet["species_source"]["default"] == "VGM"
-    assert {option["source"]: option["die"] for option in sheet["species_source"]["options"]} == {"MPMM": "1d6", "VGM": "1d4"}
+    assert {option["source"]: option["die"] for option in sheet["species_source"]["options"]} == {
+        "MPMM": "1d6",
+        "VGM": "1d4",
+    }
     changed = client.post(f"/api/v1/characters/{tabaxi}/species-source", json={"source": "MPMM"})
     assert changed.status_code == 200, changed.text
     claws = next(row for row in changed.json()["sheet"]["attacks"] if row["name_en"] == "Cat's Claws")

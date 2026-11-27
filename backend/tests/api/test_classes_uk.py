@@ -14,10 +14,9 @@ import os
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
 from dndsheet.characters.api import classes_uk, uk_text
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(scope="module")
@@ -79,9 +78,7 @@ def test_broken_file_does_not_break_the_rest(content: Path) -> None:
 def test_wizard_class_step_gives_ukrainian_barbarian(client) -> None:  # noqa: ANN001
     """Крок «Клас» віддає український опис і текст «Rage»."""
     draft = client.post("/api/v1/characters/wizard").json()
-    step = client.get(
-        f"/api/v1/characters/wizard/{draft['draft']['id']}/steps/class"
-    ).json()
+    step = client.get(f"/api/v1/characters/wizard/{draft['draft']['id']}/steps/class").json()
     barbarian = next(item for item in step["options"]["classes"] if item["key"] == "barbarian")
 
     assert barbarian["description_uk"]

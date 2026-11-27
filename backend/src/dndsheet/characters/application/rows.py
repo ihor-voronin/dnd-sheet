@@ -16,11 +16,13 @@ from typing import Literal
 
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.inventory import InventoryItem
-from dndsheet.characters.domain.proficiencies import ProficiencyKind, Proficiencies
+from dndsheet.characters.domain.proficiencies import Proficiencies, ProficiencyKind
 from dndsheet.characters.domain.services.derived_stats import ComputedSheet
 
 #: Звідки взялося закляття: від класу (вибір гравця), виду або підкласу.
-SpellSource = Literal["class", "species", "subclass", "feat", "fighting-style", "invocation", "pact-boon", "secrets", "feature"]
+SpellSource = Literal[
+    "class", "species", "subclass", "feat", "fighting-style", "invocation", "pact-boon", "secrets", "feature"
+]
 
 #: Як чарується закляття поза класом — українською для листа й PDF.
 USAGE_UK = {

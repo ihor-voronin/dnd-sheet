@@ -88,9 +88,7 @@ def enrich_features(
     payload["feat_details"] = _feat_details(store, service, character)
 
 
-def _feat_details(
-    store: dict[str, Any], service: CompendiumService, character: Character
-) -> list[dict[str, Any]]:
+def _feat_details(store: dict[str, Any], service: CompendiumService, character: Character) -> list[dict[str, Any]]:
     """Вибрані риси з текстом: на екрані вони живуть разом з уміннями."""
     details: list[dict[str, Any]] = []
     for key in character.feats:
@@ -139,17 +137,13 @@ def class_texts_all(
         return store[key]
     texts: dict[str, str] = {}
     for entry in _class_entries_all(store, service, class_key):
-        for name, text in _sections(
-            entry.text_en or "", CLASS_HEADING, CLASS_BOUNDARY
-        ).items():
+        for name, text in _sections(entry.text_en or "", CLASS_HEADING, CLASS_BOUNDARY).items():
             texts.setdefault(name, text)
     store[key] = texts
     return texts
 
 
-def _class_entries_all(
-    store: dict[str, Any], service: CompendiumService, class_key: str
-) -> list[Any]:
+def _class_entries_all(store: dict[str, Any], service: CompendiumService, class_key: str) -> list[Any]:
     cache_key = "class-entries"
     entries = store.get(cache_key)
     if entries is None:
@@ -158,9 +152,7 @@ def _class_entries_all(
         except NotFoundError:  # pragma: no cover — порожній корпус
             entries = []
         store[cache_key] = entries
-    candidates = [
-        entry for entry in entries if entry.id.casefold().endswith(f"/class/{class_key}")
-    ]
+    candidates = [entry for entry in entries if entry.id.casefold().endswith(f"/class/{class_key}")]
     # «Базові правила» повторюють PHB, але з біднішим текстом — беремо книгу.
     return sorted(candidates, key=lambda entry: (entry.source_id == "basic-rules-2014", entry.id))
 
@@ -179,9 +171,7 @@ def _class_texts(
     return texts
 
 
-def _class_entry(
-    store: dict[str, Any], service: CompendiumService, class_key: str
-) -> Any:
+def _class_entry(store: dict[str, Any], service: CompendiumService, class_key: str) -> Any:
     cache_key = "class-entries"
     entries = store.get(cache_key)
     if entries is None:
@@ -190,9 +180,7 @@ def _class_entry(
         except NotFoundError:  # pragma: no cover — порожній корпус
             entries = []
         store[cache_key] = entries
-    candidates = [
-        entry for entry in entries if entry.id.casefold().endswith(f"/class/{class_key}")
-    ]
+    candidates = [entry for entry in entries if entry.id.casefold().endswith(f"/class/{class_key}")]
     if not candidates:
         return None
     # «Базові правила» повторюють PHB, але з біднішим текстом — беремо книгу.
@@ -200,9 +188,7 @@ def _class_entry(
     return candidates[0]
 
 
-def _subclass_features(
-    store: dict[str, Any], service: CompendiumService, subclass_key: str
-) -> list[dict[str, Any]]:
+def _subclass_features(store: dict[str, Any], service: CompendiumService, subclass_key: str) -> list[dict[str, Any]]:
     key = f"subclass:{subclass_key}"
     if key in store:
         return store[key]
@@ -253,9 +239,7 @@ def subclass_features(
     return _subclass_features(cache if cache is not None else {}, service, subclass_key)
 
 
-def _sections(
-    text: str, heading: re.Pattern[str], boundary: re.Pattern[str]
-) -> dict[str, str]:
+def _sections(text: str, heading: re.Pattern[str], boundary: re.Pattern[str]) -> dict[str, str]:
     """Розрізати Markdown на розділи за заголовками одного рівня."""
     sections: dict[str, str] = {}
     name: str | None = None
@@ -298,9 +282,7 @@ def class_details(
     texts = _class_texts(store, service, class_key)
     payload: dict[str, Any] = {
         "description": _intro(entry.text_en or ""),
-        "features": [
-            {"name_en": name, "text": text} for name, text in texts.items()
-        ],
+        "features": [{"name_en": name, "text": text} for name, text in texts.items()],
     }
     return classes_uk.enrich_details(payload)
 
@@ -421,5 +403,3 @@ __all__ = [
     "subclass_features",
     "subclass_intro",
 ]
-
-

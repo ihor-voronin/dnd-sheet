@@ -13,10 +13,9 @@ import os
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
 from dndsheet.characters.api import trait_uk
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(scope="module")
@@ -99,12 +98,8 @@ def test_broken_file_does_not_break_the_rest(content: Path) -> None:
 def test_species_api_gives_ukrainian_traits(client) -> None:  # noqa: ANN001
     """Крок «Вид» віддає українські назви й тексти Harengon."""
     draft = client.post("/api/v1/characters/wizard").json()
-    step = client.get(
-        f"/api/v1/characters/wizard/{draft['draft']['id']}/steps/species"
-    ).json()
-    harengon = next(
-        item for item in step["options"]["species"] if item["key"] == "harengon"
-    )
+    step = client.get(f"/api/v1/characters/wizard/{draft['draft']['id']}/steps/species").json()
+    harengon = next(item for item in step["options"]["species"] if item["key"] == "harengon")
 
     assert harengon["description_uk"].startswith("Харегони")
     traits = {trait["name_en"]: trait for trait in harengon["traits"]}
@@ -112,6 +107,7 @@ def test_species_api_gives_ukrainian_traits(client) -> None:  # noqa: ANN001
     assert traits["Speed"]["text_uk"]
     assert traits["Hare-Trigger"]["name_uk"] == "Заяча реакція"
     assert traits["Hare-Trigger"]["text_uk"]
+
 
 def test_every_species_trait_has_ukrainian_name_and_text() -> None:
     """Повнота перекладу: жодне уміння й опис не лишились англійськими."""
@@ -142,15 +138,9 @@ def test_every_species_trait_has_ukrainian_name_and_text() -> None:
         # Підрасу без батька не розібрати: половина з них описана в тексті виду.
         for child in service.subspecies_of(species.name_en):
             check(
-                species_details(
-                    service, child.name_en, parent_name_en=species.name_en
-                )
-                or {},
+                species_details(service, child.name_en, parent_name_en=species.name_en) or {},
                 child.name_en,
             )
 
     assert checked > 300, "видів має бути багато — інакше перевірка нічого не варта"
     assert not missing, f"без перекладу: {missing[:10]}"
-
-
-

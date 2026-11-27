@@ -15,15 +15,12 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.application.level_up import LevelUpService
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.services.level_up import LevelUpPlanner
-from dndsheet.characters.domain.spells import KnownSpell
 from dndsheet.characters.domain.vitals import HitPointState
 from dndsheet.shared.errors import ConflictError, ValidationError
 from dndsheet.shared.kernel import Ability, AbilityScore
-
 from helpers import make_character
 
 
@@ -152,9 +149,7 @@ def test_new_class_slots_appear_in_plan(rules) -> None:  # noqa: ANN001
 
 
 def test_plan_marks_asi_levels(rules) -> None:  # noqa: ANN001
-    character = make_character(
-        rules, classes=[CharacterClass(class_key="fighter", level=3)]
-    )
+    character = make_character(rules, classes=[CharacterClass(class_key="fighter", level=3)])
     plan = planner(rules).plan(character, "fighter")
 
     assert plan.new_level == 4
@@ -165,9 +160,7 @@ def test_plan_marks_asi_levels(rules) -> None:  # noqa: ANN001
 
 
 def test_twenty_levels_have_no_plan(rules) -> None:  # noqa: ANN001
-    character = make_character(
-        rules, classes=[CharacterClass(class_key="fighter", level=20)]
-    )
+    character = make_character(rules, classes=[CharacterClass(class_key="fighter", level=20)])
     assert planner(rules).plans(character) == ()
     with pytest.raises(ValidationError):
         planner(rules).plan(character, "fighter")
@@ -191,9 +184,7 @@ def test_apply_fighter_second_level(service: LevelUpService) -> None:
 
 
 def test_apply_roll_uses_new_level(service: LevelUpService) -> None:
-    character, report = service.apply(
-        "c-1", {"class_key": "fighter", "hp": {"mode": "roll", "roll": 8}}
-    )
+    character, report = service.apply("c-1", {"class_key": "fighter", "hp": {"mode": "roll", "roll": 8}})
 
     assert character.hp.rolls == (8,)
     assert report.hp_max_after == 18  # 10 + 8
@@ -233,9 +224,7 @@ def test_apply_multiclass(rules) -> None:  # noqa: ANN001
     character = mage_ready(rules)
     service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
 
-    character, report = service.apply(
-        "c-1", {"class_key": "wizard", "hp": {"mode": "average"}}
-    )
+    character, report = service.apply("c-1", {"class_key": "wizard", "hp": {"mode": "average"}})
 
     assert report.is_new_class is True
     assert [entry.class_key for entry in character.classes] == ["fighter", "wizard"]
@@ -253,9 +242,7 @@ def test_multiclass_blocked_without_requirement(service: LevelUpService) -> None
 
 
 def test_subclass_required_at_third_level(rules) -> None:  # noqa: ANN001
-    character = make_character(
-        rules, classes=[CharacterClass(class_key="fighter", level=2)]
-    )
+    character = make_character(rules, classes=[CharacterClass(class_key="fighter", level=2)])
     service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
 
     with pytest.raises(ValidationError) as error:
@@ -271,9 +258,7 @@ def test_subclass_required_at_third_level(rules) -> None:  # noqa: ANN001
 
 
 def test_unknown_subclass_rejected(rules) -> None:  # noqa: ANN001
-    character = make_character(
-        rules, classes=[CharacterClass(class_key="fighter", level=2)]
-    )
+    character = make_character(rules, classes=[CharacterClass(class_key="fighter", level=2)])
     service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
 
     with pytest.raises(ValidationError):
@@ -281,9 +266,7 @@ def test_unknown_subclass_rejected(rules) -> None:  # noqa: ANN001
 
 
 def test_asi_increases_two_abilities(rules) -> None:  # noqa: ANN001
-    character = make_character(
-        rules, classes=[CharacterClass(class_key="fighter", level=3)]
-    )
+    character = make_character(rules, classes=[CharacterClass(class_key="fighter", level=3)])
     service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
 
     character, report = service.apply(
@@ -302,9 +285,7 @@ def test_asi_increases_two_abilities(rules) -> None:  # noqa: ANN001
 
 
 def test_asi_needs_a_choice(rules) -> None:  # noqa: ANN001
-    character = make_character(
-        rules, classes=[CharacterClass(class_key="fighter", level=3)]
-    )
+    character = make_character(rules, classes=[CharacterClass(class_key="fighter", level=3)])
     service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
 
     with pytest.raises(ValidationError) as error:
@@ -370,12 +351,8 @@ def test_species_bonus_counts_toward_twenty(rules) -> None:  # noqa: ANN001
 
 
 def test_feat_instead_of_asi(rules) -> None:  # noqa: ANN001
-    character = make_character(
-        rules, classes=[CharacterClass(class_key="fighter", level=3)]
-    )
-    service = LevelUpService(
-        characters=Repository(character), subclasses=Subclasses(), feats=Feats()
-    )
+    character = make_character(rules, classes=[CharacterClass(class_key="fighter", level=3)])
+    service = LevelUpService(characters=Repository(character), subclasses=Subclasses(), feats=Feats())
 
     character, report = service.apply(
         "c-1",
@@ -392,12 +369,8 @@ def test_feat_instead_of_asi(rules) -> None:  # noqa: ANN001
 
 
 def test_unknown_feat_rejected(rules) -> None:  # noqa: ANN001
-    character = make_character(
-        rules, classes=[CharacterClass(class_key="fighter", level=3)]
-    )
-    service = LevelUpService(
-        characters=Repository(character), subclasses=Subclasses(), feats=Feats()
-    )
+    character = make_character(rules, classes=[CharacterClass(class_key="fighter", level=3)])
+    service = LevelUpService(characters=Repository(character), subclasses=Subclasses(), feats=Feats())
 
     with pytest.raises(ValidationError):
         service.apply(
@@ -528,9 +501,7 @@ def test_ignore_flag_marks_nothing_when_requirements_are_met(rules) -> None:  # 
     character = mage_ready(rules)
     service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
 
-    character, report = service.apply(
-        "c-1", {"class_key": "wizard", "ignore_requirements": True}
-    )
+    character, report = service.apply("c-1", {"class_key": "wizard", "ignore_requirements": True})
 
     assert report.requirements_ignored is False
     assert character.multiclass_waivers == ()
@@ -539,9 +510,7 @@ def test_ignore_flag_marks_nothing_when_requirements_are_met(rules) -> None:  # 
 def test_waiver_is_removed_with_its_class(rules) -> None:  # noqa: ANN001
     character = make_character(rules)
     service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
-    character, _ = service.apply(
-        "c-1", {"class_key": "wizard", "ignore_requirements": True}
-    )
+    character, _ = service.apply("c-1", {"class_key": "wizard", "ignore_requirements": True})
 
     character.remove_class("wizard")
 
@@ -557,14 +526,10 @@ def test_waiver_survives_reload(rules) -> None:  # noqa: ANN001
 
     character = make_character(rules)
     service = LevelUpService(characters=Repository(character), subclasses=Subclasses())
-    character, _ = service.apply(
-        "c-1", {"class_key": "wizard", "ignore_requirements": True}
-    )
+    character, _ = service.apply("c-1", {"class_key": "wizard", "ignore_requirements": True})
 
     record = character_to_record(character)
-    assert record["multiclass_waivers"] == [
-        {"class_key": "wizard", "requirements": ["INT 13"]}
-    ]
+    assert record["multiclass_waivers"] == [{"class_key": "wizard", "requirements": ["INT 13"]}]
     restored = character_from_record(record, rules)
     assert restored.multiclass_waivers[0].class_key == "wizard"
     assert restored.multiclass_waivers[0].requirements == ("INT 13",)

@@ -45,10 +45,16 @@ def test_background_items_get_their_translation() -> None:
         "background_details": {
             "equipment_rows": [
                 {"text": "an insignia of rank", "choices": [], "text_uk": "знаки розрізнення"},
-                {"text": "bone dice", "choices": ["bone dice", "deck of cards"], "choices_uk": ["кістки з кості", "колода карт"]},
+                {
+                    "text": "bone dice",
+                    "choices": ["bone dice", "deck of cards"],
+                    "choices_uk": ["кістки з кості", "колода карт"],
+                },
             ]
         },
-        "inventory": {"items": [{"name_en": "An insignia of rank"}, {"name_en": "deck of cards"}, {"name_en": "Longsword"}]},
+        "inventory": {
+            "items": [{"name_en": "An insignia of rank"}, {"name_en": "deck of cards"}, {"name_en": "Longsword"}]
+        },
     }
     _background_item_names(payload)
     names = [item.get("name_uk") for item in payload["inventory"]["items"]]

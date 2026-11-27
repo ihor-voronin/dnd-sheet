@@ -276,9 +276,7 @@ def name_of(key: str) -> str | None:
     return None
 
 
-def _uses(
-    rule: _Rule, level: int, ability_modifiers: Mapping[Ability, int]
-) -> int:
+def _uses(rule: _Rule, level: int, ability_modifiers: Mapping[Ability, int]) -> int:
     count = 0
     for threshold, value in rule.steps:
         if level >= threshold:
@@ -294,9 +292,7 @@ def _uses(
     return count
 
 
-def resources_for(
-    character: "Character", ability_modifiers: Mapping[Ability, int]
-) -> tuple[FeatureResource, ...]:
+def resources_for(character: "Character", ability_modifiers: Mapping[Ability, int]) -> tuple[FeatureResource, ...]:
     """Ресурси, доступні цьому персонажу зараз (у порядку класів)."""
     resources: list[FeatureResource] = []
     for entry, definition in character.class_entries():
@@ -313,9 +309,7 @@ def resources_for(
             if total <= 0:
                 continue
             used = min(character.state.feature_used.get(rule.key, 0), total)
-            recharge = (
-                SHORT if rule.short_from is not None and level >= rule.short_from else rule.recharge
-            )
+            recharge = SHORT if rule.short_from is not None and level >= rule.short_from else rule.recharge
             resources.append(
                 FeatureResource(
                     key=rule.key,

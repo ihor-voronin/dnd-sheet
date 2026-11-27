@@ -42,10 +42,7 @@ def main(strict: bool) -> int:
 
     for kind, name, field in pairs:
         expected = {str(row.get("id")) for row in load(INPUT / name)}
-        got = {
-            str(row.get("id")): str(row.get(field) or "")
-            for row in load(OUTPUT / name)
-        }
+        got = {str(row.get("id")): str(row.get(field) or "") for row in load(OUTPUT / name)}
         total_expected += len(expected)
         total_done += sum(1 for key in expected if got.get(key, "").strip())
         missing = sorted(expected - set(got))

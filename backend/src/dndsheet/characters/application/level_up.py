@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Mapping
 
 from dndsheet.characters.domain.character import Character
@@ -24,6 +24,12 @@ from dndsheet.characters.domain.ports import (
     CharacterRepository,
     FeatCatalog,
     SubclassCatalog,
+)
+from dndsheet.characters.domain.proficiencies import (
+    GrantSource,
+    Proficiency,
+    ProficiencyKind,
+    SourceKind,
 )
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.domain.services.feature_resources import name_of
@@ -34,12 +40,6 @@ from dndsheet.characters.domain.services.level_up import (
 )
 from dndsheet.characters.domain.spells import KnownSpell
 from dndsheet.shared.errors import ConflictError, NotFoundError, ValidationError
-from dndsheet.characters.domain.proficiencies import (
-    GrantSource,
-    Proficiency,
-    ProficiencyKind,
-    SourceKind,
-)
 from dndsheet.shared.kernel import Ability
 from dndsheet.shared.rules import MULTICLASS_SKILLS
 
@@ -120,9 +120,7 @@ class LevelUpService:
     ) -> tuple[Character, LevelUpReport]:
         character = self.load(character_id)
         if expected_version is not None and expected_version != character.version:
-            raise ConflictError(
-                f"лист змінено (версія {character.version}, надіслано {expected_version})"
-            )
+            raise ConflictError(f"лист змінено (версія {character.version}, надіслано {expected_version})")
         payload = dict(body or {})
         class_key = _text(payload.get("class_key"), "клас").casefold()
         plan = self.planner.plan(character, class_key)
@@ -197,14 +195,10 @@ class LevelUpService:
         # а не ламають увесь запит: підготовку можна змінити на листі.
         prepared_room = None
         # З урахуванням підкласу: містичний лицар має ліміт відомих заклять.
-        definition = dict(
-            (entry.class_key, item) for entry, item in character.class_entries()
-        )[plan.class_key]
+        definition = {entry.class_key: item for entry, item in character.class_entries()}[plan.class_key]
         if definition.prepares_spells:
             prepared_room = character.prepared_limit(plan.class_key) - sum(
-                1
-                for spell in character.spells_of(plan.class_key)
-                if spell.prepared and not spell.is_cantrip
+                1 for spell in character.spells_of(plan.class_key) if spell.prepared and not spell.is_cantrip
             )
         # Заміна одного відомого закляття на новому рівні (бард, чаклун,
         # чародій, слідопит, третинки — PHB, p. 53, 101, 107, 91).
@@ -216,11 +210,10 @@ class LevelUpService:
         for spell in spells:
             character.learn_spell(spell.prepare(False))
             added.append(spell.name_en)
-            if spell.prepared and not spell.always_prepared:
-                if prepared_room is None or prepared_room > 0:
-                    character.prepare_spell(spell.name_en, spell.class_key, True)
-                    if prepared_room is not None:
-                        prepared_room -= 1
+            if spell.prepared and not spell.always_prepared and (prepared_room is None or prepared_room > 0):
+                character.prepare_spell(spell.name_en, spell.class_key, True)
+                if prepared_room is not None:
+                    prepared_room -= 1
 
         after = self.calculator.compute(character)
         # 6. поточні хіти ростуть разом із максимумом, якщо їх задано
@@ -241,24 +234,18 @@ class LevelUpService:
             hp_max_after=after.hit_points.maximum,
             hp_current_before=before.hit_points.current,
             hp_current_after=(
-                after.hit_points.current
-                if character.hp.current is not None
-                else after.hit_points.maximum
+                after.hit_points.current if character.hp.current is not None else after.hit_points.maximum
             ),
             proficiency_bonus_before=before.proficiency_bonus,
             proficiency_bonus_after=after.proficiency_bonus,
             features=tuple(feature.name_en for feature in plan.features),
             subclass_key=subclass_key,
-            ability_increases=tuple(
-                (ability.value, amount) for ability, amount in sorted(increases.items())
-            ),
+            ability_increases=tuple((ability.value, amount) for ability, amount in sorted(increases.items())),
             feat_key=feat_key,
             slots=plan.slots,
             spells_added=tuple(added),
             resources_added=tuple(
-                name_of(key) or key
-                for key in plan.resources_after
-                if key not in plan.resources_before
+                name_of(key) or key for key in plan.resources_after if key not in plan.resources_before
             ),
             requirements_ignored=waived,
             ignored_requirements=plan.requirements if waived else (),
@@ -274,25 +261,20 @@ class LevelUpService:
         if key is None:
             if plan.subclass_required:
                 raise ValidationError(
-                    f"{plan.class_name} на {plan.new_level} рівні обирає "
-                    f"{plan.subclass_title or 'підклас'}"
+                    f"{plan.class_name} на {plan.new_level} рівні обирає {plan.subclass_title or 'підклас'}"
                 )
             return None
         if plan.subclass_level is None:
             raise ValidationError(f"{plan.class_name} не має підкласів")
         if plan.new_level < plan.subclass_level:
-            raise ValidationError(
-                f"підклас {plan.subclass_title!r} обирається з {plan.subclass_level} рівня"
-            )
+            raise ValidationError(f"підклас {plan.subclass_title!r} обирається з {plan.subclass_level} рівня")
         if self.subclasses is not None:
             known = self.subclasses.subclass_keys(plan.class_key)
             if known is not None and key.casefold() not in {item.casefold() for item in known}:
                 raise ValidationError(f"невідомий підклас {key!r}")
         return key
 
-    def _asi_choice(
-        self, plan: LevelPlan, payload: Mapping[str, Any]
-    ) -> tuple[dict[Ability, int], str | None]:
+    def _asi_choice(self, plan: LevelPlan, payload: Mapping[str, Any]) -> tuple[dict[Ability, int], str | None]:
         raw = payload.get("ability_increases") or {}
         if not isinstance(raw, Mapping):
             raise ValidationError("ability_increases має бути обʼєктом «характеристика: +»")
@@ -309,15 +291,10 @@ class LevelUpService:
         feat_key = _optional_text(payload.get("feat_key"))
         if not plan.asi_pending:
             if increases or feat_key:
-                raise ValidationError(
-                    f"{plan.class_name} на {plan.new_level} рівні не дає "
-                    f"покращення характеристик"
-                )
+                raise ValidationError(f"{plan.class_name} на {plan.new_level} рівні не дає покращення характеристик")
             return {}, None
         if not increases and not feat_key:
-            raise ValidationError(
-                "це рівень покращення характеристик: оберіть +2 (або +1 і +1) чи рису"
-            )
+            raise ValidationError("це рівень покращення характеристик: оберіть +2 (або +1 і +1) чи рису")
         if increases and feat_key:
             raise ValidationError("покращення характеристик і риса — це окремий вибір")
         if feat_key is not None:
@@ -385,10 +362,7 @@ def _spells(raw: Any, class_key: str) -> tuple[KnownSpell, ...]:
             raise ValidationError(f"{name}: рівень закляття має бути цілим числом")
         own_class = _optional_text(item.get("class_key")) or class_key
         if own_class.casefold() != class_key.casefold():
-            raise ValidationError(
-                f"{name}: закляття належить класу {own_class!r}, "
-                f"а рівень узято в {class_key!r}"
-            )
+            raise ValidationError(f"{name}: закляття належить класу {own_class!r}, а рівень узято в {class_key!r}")
         spells.append(
             KnownSpell(
                 name_en=name,

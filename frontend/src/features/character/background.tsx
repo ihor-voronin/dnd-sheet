@@ -5,9 +5,9 @@
  * інструменти, мови й спорядження, які вона дала. Зовнішність переїхала сюди
  * з нотаток: це частина «хто я», а не замітки під час гри.
  */
-
 import { ALIGNMENT_LABELS, sourceLabel } from "../../labels";
 import type { BackgroundDetails } from "../wizard/types";
+
 import { NoteArea, notesStatusText } from "./notes";
 import type { NoteStatus } from "./notes";
 import { RuleText } from "./panels";
@@ -42,9 +42,7 @@ export function BackgroundPanel({
         <h3 className="sheet-work__title">
           <span>Передісторія</span>
         </h3>
-        <p className="hint">
-          Передісторію не вибрано — її обирають у візарді на кроці «Передісторія».
-        </p>
+        <p className="hint">Передісторію не вибрано — її обирають у візарді на кроці «Передісторія».</p>
       </>
     );
   }
@@ -60,17 +58,15 @@ export function BackgroundPanel({
     <div className="background-panel">
       <h3 className="sheet-work__title">
         <span>Передісторія</span>
-        <span className="short">{details.source_id === "custom" ? "власна" : sourceLabel(details.source_id) || "2014"}</span>
+        <span className="short">
+          {details.source_id === "custom" ? "власна" : sourceLabel(details.source_id) || "2014"}
+        </span>
       </h3>
 
       <section className="bg-card">
         <div className="bg-card__head">
           <span className="bg-card__name">{withEnglish(details.name_en, nameUk)}</span>
-          {alignment ? (
-            <span className="bg-card__align">
-              {ALIGNMENT_LABELS[alignment] ?? alignment}
-            </span>
-          ) : null}
+          {alignment ? <span className="bg-card__align">{ALIGNMENT_LABELS[alignment] ?? alignment}</span> : null}
         </div>
         <ul className="bg-grants">
           <li>

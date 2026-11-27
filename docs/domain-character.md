@@ -220,4 +220,3 @@ Paladin 5 має 4 слоти 1 рівня й 2 другого, а таблиц�
 | `tests/characters/test_twenty_levels.py` | 13 класів × 20 рівнів і всі пари заклинателів (6840 розподілів) |
 | `tests/characters/test_granted_spells.py` | заговори виду, вибір високого ельфа, домен жреця |
 | `tests/compendium/test_real_mechanics.py` | вибір на 1 рівні на справжніх індексах |
-

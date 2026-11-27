@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.application.golden import build_golden_cases
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.shared.kernel import Ability, Skill

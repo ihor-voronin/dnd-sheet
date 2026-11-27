@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.infrastructure.factory import build_service
 from dndsheet.shared.rules import CasterProgression
@@ -87,11 +86,7 @@ def test_subclass_levels(service: CompendiumService) -> None:
 
 
 def test_only_warlock_has_pact_magic(service: CompendiumService) -> None:
-    pact = [
-        item.key
-        for item in service.class_definitions()
-        if item.caster_progression is CasterProgression.PACT
-    ]
+    pact = [item.key for item in service.class_definitions() if item.caster_progression is CasterProgression.PACT]
     assert pact == ["warlock"]
     warlock = service.class_mechanics("warlock")
     assert warlock.pact_at(1) == (1, 1)
@@ -177,9 +172,7 @@ def test_indexes_are_clean(service: CompendiumService) -> None:
 
 
 def test_only_three_classes_choose_subclass_at_level_one(service: CompendiumService) -> None:
-    at_one = sorted(
-        item.key for item in service.class_definitions() if item.subclass_level == 1
-    )
+    at_one = sorted(item.key for item in service.class_definitions() if item.subclass_level == 1)
     assert at_one == ["cleric", "sorcerer", "warlock"]
 
 

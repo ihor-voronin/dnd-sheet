@@ -24,27 +24,23 @@ from dndsheet.characters.domain.class_level import CharacterClass, MulticlassWai
 from dndsheet.characters.domain.inventory import MAX_ATTUNED, Inventory, InventoryItem
 from dndsheet.characters.domain.pick_rules import is_choice_label, validate_pick
 from dndsheet.characters.domain.ports import RulesSource
-from dndsheet.characters.domain.state import SheetState
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
 from dndsheet.characters.domain.spells import KnownSpell
+from dndsheet.characters.domain.state import SheetState
 from dndsheet.characters.domain.vitals import HitPointState
 from dndsheet.shared.errors import NotFoundError, ValidationError
 from dndsheet.shared.events import (
     AbilityScoresChanged,
-    CharacterCreated,
     DomainEvent,
     LevelGained,
 )
 from dndsheet.shared.kernel import MAX_LEVEL, Ability, AbilityScore, Money, Skill
-
-#: Ключ експертизи для злодійських інструментів (плут, PHB p. 96).
-THIEVES_TOOLS = "thieves' tools"
 from dndsheet.shared.rules import (
     ARTIFICER_ATTUNEMENT,
     SPECIES_WITH_FEAT,
@@ -58,6 +54,9 @@ from dndsheet.shared.rules import (
     prepared_spell_limit,
     with_subclass_casting,
 )
+
+#: Ключ експертизи для злодійських інструментів (плут, PHB p. 96).
+THIEVES_TOOLS = "thieves' tools"
 
 
 @dataclass(slots=True)
@@ -181,11 +180,7 @@ class Character:
         )
 
     def spellcasting_classes(self) -> tuple[tuple[CharacterClass, ClassMechanics], ...]:
-        return tuple(
-            (entry, definition)
-            for entry, definition in self.class_entries()
-            if definition.casts_spells
-        )
+        return tuple((entry, definition) for entry, definition in self.class_entries() if definition.casts_spells)
 
     @property
     def hit_dice_pool(self) -> dict[int, int]:
@@ -232,11 +227,7 @@ class Character:
     def expertise_options(self) -> tuple[str, ...]:
         """Що можна взяти в експертизу: навички з володінням + злодійські інструменти плута."""
         proficiencies = self.all_proficiencies()
-        options = [
-            skill.value
-            for skill in Skill
-            if proficiencies.has(ProficiencyKind.SKILL, skill.value)
-        ]
+        options = [skill.value for skill in Skill if proficiencies.has(ProficiencyKind.SKILL, skill.value)]
         is_rogue = any(entry.class_key == "rogue" for entry, _ in self.class_entries())
         if is_rogue and (
             proficiencies.has(ProficiencyKind.TOOL, "thieves' tools")
@@ -277,16 +268,12 @@ class Character:
     def has_class_choice(self, name: str) -> bool:
         """Чи обрано варіант (без регістру): `has_class_choice("archery")`."""
         wanted = name.casefold()
-        return any(
-            value.casefold() == wanted for values in self.active_class_choices.values() for value in values
-        )
+        return any(value.casefold() == wanted for values in self.active_class_choices.values() for value in values)
 
     @property
     def grants_species_feat(self) -> bool:
         """Варіантна людина й власна лінія беруть рису на 1 рівні (PHB, p. 31; TCoE, p. 8)."""
-        return any(
-            (key or "").casefold() in SPECIES_WITH_FEAT for key in (self.species_key, self.subspecies_key)
-        )
+        return any((key or "").casefold() in SPECIES_WITH_FEAT for key in (self.species_key, self.subspecies_key))
 
     @property
     def species_sources(self) -> tuple[str, ...]:
@@ -375,9 +362,7 @@ class Character:
                 chosen.append(value)
         slots = self.expertise_slots
         if len(chosen) > slots:
-            raise ValidationError(
-                f"експертиз можна обрати {slots}, надіслано {len(chosen)}"
-            )
+            raise ValidationError(f"експертиз можна обрати {slots}, надіслано {len(chosen)}")
         allowed = set(self.expertise_options())
         wrong = [value for value in chosen if value not in allowed]
         if wrong:
@@ -451,9 +436,7 @@ class Character:
         self.events.append(LevelGained(character_id=self.id, level=self.total_level))
         self.bump_version()
 
-    def waive_multiclass_requirements(
-        self, class_key: str, requirements: Iterable[str] = ()
-    ) -> None:
+    def waive_multiclass_requirements(self, class_key: str, requirements: Iterable[str] = ()) -> None:
         """Позначити клас як узятий без вимог мультикласу (правило дому).
 
         Вимоги не стають «виконаними»: вони саме **проігноровані**, і лист
@@ -517,9 +500,7 @@ class Character:
         self.classes = remaining
         self.spells = tuple(spell for spell in self.spells if spell.class_key != wanted)
         self.chosen = self.chosen.without_source(SourceKind.CLASS, wanted)
-        self.multiclass_waivers = tuple(
-            waiver for waiver in self.multiclass_waivers if waiver.class_key != wanted
-        )
+        self.multiclass_waivers = tuple(waiver for waiver in self.multiclass_waivers if waiver.class_key != wanted)
         self.bump_version()
 
     def set_subclass(self, class_key: str, subclass_key: str | None) -> None:
@@ -537,8 +518,7 @@ class Character:
                 raise ValidationError(f"клас {definition.name_en!r} не має підкласів")
             if entry.level < definition.subclass_level:
                 raise ValidationError(
-                    f"підклас {definition.subclass_title!r} обирається з "
-                    f"{definition.subclass_level} рівня"
+                    f"підклас {definition.subclass_title!r} обирається з {definition.subclass_level} рівня"
                 )
             self.classes[index] = entry.with_subclass(subclass_key)
             self.bump_version()
@@ -554,9 +534,7 @@ class Character:
         if species_key and species is None:
             raise NotFoundError(f"немає правил виду {species_key!r}")
         if species is not None and species.is_subspecies:
-            raise ValidationError(
-                f"{species.name_en!r} — підраса; вкажіть базовий вид, а її — підвидом"
-            )
+            raise ValidationError(f"{species.name_en!r} — підраса; вкажіть базовий вид, а її — підвидом")
         if subspecies_key:
             subspecies = self.rules.species_mechanics(subspecies_key)
             if subspecies is None:
@@ -564,9 +542,7 @@ class Character:
             if not subspecies.is_subspecies:
                 raise ValidationError(f"{subspecies.name_en!r} не є підрасою")
             if species is not None and subspecies.subrace_of not in (None, species.key):
-                raise ValidationError(
-                    f"{subspecies.name_en!r} не належить виду {species.name_en!r}"
-                )
+                raise ValidationError(f"{subspecies.name_en!r} не належить виду {species.name_en!r}")
         self.species_key = species.key if species else None
         self.subspecies_key = subspecies_key.strip().casefold() if subspecies_key else None
         # Вільний розподіл належить виду: змінили вид — розподіл скидається.
@@ -575,8 +551,7 @@ class Character:
         self.ability_bonus_choices = tuple(
             choice
             for choice in self.ability_bonus_choices
-            if self.species and self.species.ability_choice
-            and choice in self.species.ability_choice.options
+            if self.species and self.species.ability_choice and choice in self.species.ability_choice.options
         )
         self.bump_version()
 
@@ -620,9 +595,7 @@ class Character:
         if len(set(chosen)) != len(chosen):
             raise ValidationError("здібності на вибір не можуть повторюватися")
         if len(chosen) != species.ability_choice.count:
-            raise ValidationError(
-                f"треба обрати {species.ability_choice.count} здібності, обрано {len(chosen)}"
-            )
+            raise ValidationError(f"треба обрати {species.ability_choice.count} здібності, обрано {len(chosen)}")
         for ability in chosen:
             if ability not in species.ability_choice.options:
                 raise ValidationError(f"{ability.value} не входить у вибір виду")
@@ -643,11 +616,7 @@ class Character:
         remaining = [
             item
             for item in self.chosen.items
-            if not (
-                item.kind is kind
-                and item.value.casefold() == value.casefold()
-                and item.source == source
-            )
+            if not (item.kind is kind and item.value.casefold() == value.casefold() and item.source == source)
         ]
         if len(remaining) == len(self.chosen.items):
             raise ValidationError(f"володіння {value!r} не було обране з цього джерела")
@@ -672,9 +641,7 @@ class Character:
             source = GrantSource.of(SourceKind.CLASS, entry.class_key)
             if index == 0:
                 items.extend(
-                    Proficiency(
-                        kind=ProficiencyKind.SAVING_THROW, value=ability.value, source=source
-                    )
+                    Proficiency(kind=ProficiencyKind.SAVING_THROW, value=ability.value, source=source)
                     for ability in sorted(definition.saving_throws, key=lambda a: a.value)
                 )
                 items.extend(
@@ -717,8 +684,7 @@ class Character:
                 for name in species.tool_proficiencies
             )
             items.extend(
-                Proficiency(kind=ProficiencyKind.LANGUAGE, value=name, source=source)
-                for name in species.languages
+                Proficiency(kind=ProficiencyKind.LANGUAGE, value=name, source=source) for name in species.languages
             )
         background = self.background
         if background is not None:
@@ -810,9 +776,7 @@ class Character:
 
     def set_hit_points(self, hp: HitPointState) -> None:
         if len(hp.rolls) > max(0, self.total_level - 1):
-            raise ValidationError(
-                f"кидків кісток хітів не може бути більше за {max(0, self.total_level - 1)}"
-            )
+            raise ValidationError(f"кидків кісток хітів не може бути більше за {max(0, self.total_level - 1)}")
         self.hp = hp
         self.bump_version()
 
@@ -842,9 +806,7 @@ class Character:
         pool = self.hit_dice_pool
         for die, used in state.hit_dice_used.items():
             if used > pool.get(die, 0):
-                raise ValidationError(
-                    f"витрачених d{die} ({used}) більше, ніж є ({pool.get(die, 0)})"
-                )
+                raise ValidationError(f"витрачених d{die} ({used}) більше, ніж є ({pool.get(die, 0)})")
         if state == self.state:
             return
         self.state = state
@@ -873,9 +835,7 @@ class Character:
         remaining = tuple(
             spell
             for spell in self.spells
-            if not (
-                spell.name_en.casefold() == wanted_name and spell.class_key == wanted_class
-            )
+            if not (spell.name_en.casefold() == wanted_name and spell.class_key == wanted_class)
         )
         if len(remaining) == len(self.spells):
             raise ValidationError(f"закляття {name_en!r} немає у списку персонажа")
@@ -913,9 +873,8 @@ class Character:
 
     def ability_bonus_from_origin(self, ability: Ability) -> int:
         """Бонус характеристики від виду: фіксовані, вибір і вільний розподіл."""
-        return (
-            ability_bonus_totals(self.species, self.ability_bonus_choices)[ability]
-            + self.ability_spread.get(ability, 0)
+        return ability_bonus_totals(self.species, self.ability_bonus_choices)[ability] + self.ability_spread.get(
+            ability, 0
         )
 
     def increase_ability(self, ability: Ability, amount: int) -> None:
@@ -945,8 +904,7 @@ class Character:
         """Використати одне покращення характеристик: +2/+1+1 **або** риса."""
         if self.asi_taken >= self.asi_slots:
             raise ValidationError(
-                f"покращень характеристик більше немає "
-                f"(зароблено {self.asi_slots}, використано {self.asi_taken})"
+                f"покращень характеристик більше немає (зароблено {self.asi_slots}, використано {self.asi_taken})"
             )
         given = {ability: amount for ability, amount in (increases or {}).items() if amount}
         if given and feat_key:
@@ -957,9 +915,7 @@ class Character:
             if len(given) > 2:
                 raise ValidationError("покращити можна не більше двох характеристик")
             if sum(given.values()) != 2:
-                raise ValidationError(
-                    f"покращення дає рівно +2 (або +1 і +1), надіслано {sum(given.values())}"
-                )
+                raise ValidationError(f"покращення дає рівно +2 (або +1 і +1), надіслано {sum(given.values())}")
             if any(amount != 1 for amount in given.values()) and len(given) > 1:
                 raise ValidationError("дві характеристики покращуються лише по +1")
             for ability, amount in given.items():
@@ -987,13 +943,9 @@ class Character:
         definition = self.class_definition(wanted)
         ability = definition.spellcasting_ability
         if not definition.prepares_spells or ability is None:
-            raise ValidationError(
-                f"{definition.name_en}: клас не готує закляття на день"
-            )
+            raise ValidationError(f"{definition.name_en}: клас не готує закляття на день")
         modifier = (self.ability_total(ability) - 10) // 2
-        return prepared_spell_limit(
-            modifier, self.class_level(wanted), definition.caster_progression
-        )
+        return prepared_spell_limit(modifier, self.class_level(wanted), definition.caster_progression)
 
     def ability_total(self, ability: Ability) -> int:
         """Підсумок характеристики на листі: база + бонуси виду."""
@@ -1032,17 +984,13 @@ class Character:
         for spell in spells:
             if spell.class_key != wanted:
                 raise ValidationError(
-                    f"{spell.name_en}: закляття належить класу {spell.class_key!r}, "
-                    f"а підготовка — для {wanted!r}"
+                    f"{spell.name_en}: закляття належить класу {spell.class_key!r}, а підготовка — для {wanted!r}"
                 )
             if spell.is_cantrip:
-                raise ValidationError(
-                    f"{spell.name_en}: заговори не змінюються під час підготовки"
-                )
+                raise ValidationError(f"{spell.name_en}: заговори не змінюються під час підготовки")
             if spell.custom:
                 raise ValidationError(
-                    f"{spell.name_en}: власне закляття не входить у підготовку — "
-                    f"воно завжди доступне"
+                    f"{spell.name_en}: власне закляття не входить у підготовку — воно завжди доступне"
                 )
             key = spell.name_en.casefold()
             if key in seen:
@@ -1056,15 +1004,9 @@ class Character:
             chosen.append(spell.prepare(True))
 
         if len(chosen) > limit:
-            raise ValidationError(
-                f"{definition.name_en}: підготувати можна {limit}, обрано {len(chosen)}"
-            )
+            raise ValidationError(f"{definition.name_en}: підготувати можна {limit}, обрано {len(chosen)}")
 
-        kept = tuple(
-            spell
-            for spell in self.spells
-            if spell.class_key != wanted or spell.is_cantrip or spell.custom
-        )
+        kept = tuple(spell for spell in self.spells if spell.class_key != wanted or spell.is_cantrip or spell.custom)
         if wanted == "wizard":
             # Маг готує лише з книги заклять, а непідготовлені лишаються в ній
             # (PHB, p. 114) — інакше підготовка стирала б книгу.
@@ -1075,27 +1017,21 @@ class Character:
             }
             missing = [spell.name_en for spell in chosen if spell.name_en.casefold() not in book]
             if missing:
-                raise ValidationError(
-                    f"маг готує лише закляття зі своєї книги; немає: {', '.join(missing)}"
-                )
+                raise ValidationError(f"маг готує лише закляття зі своєї книги; немає: {', '.join(missing)}")
             picked = {spell.name_en.casefold() for spell in chosen}
             kept += tuple(spell.prepare(False) for key, spell in book.items() if key not in picked)
         updated = kept + tuple(chosen)
         # Власні закляття теж рахуються: вони вже підготовлені й займають місце.
         prepared_total = sum(
-            1
-            for spell in updated
-            if spell.class_key == wanted and spell.prepared and not spell.is_cantrip
+            1 for spell in updated if spell.class_key == wanted and spell.prepared and not spell.is_cantrip
         )
         if prepared_total > limit:
             raise ValidationError(
-                f"{definition.name_en}: з власними закляттями підготовлено "
-                f"{prepared_total}, а можна {limit}"
+                f"{definition.name_en}: з власними закляттями підготовлено {prepared_total}, а можна {limit}"
             )
         self._validate_spell_limits(updated)
         self.spells = updated
         self.bump_version()
-
 
     # ------------------------------------------------------------------
     # службове
@@ -1116,12 +1052,8 @@ class Character:
 
     def _normalize_keys(self) -> None:
         self.species_key = self.species_key.strip().casefold() if self.species_key else None
-        self.subspecies_key = (
-            self.subspecies_key.strip().casefold() if self.subspecies_key else None
-        )
-        self.background_key = (
-            self.background_key.strip().casefold() if self.background_key else None
-        )
+        self.subspecies_key = self.subspecies_key.strip().casefold() if self.subspecies_key else None
+        self.background_key = self.background_key.strip().casefold() if self.background_key else None
         self.classes = list(self.classes)
         self.multiclass_waivers = tuple(self.multiclass_waivers)
 
@@ -1139,9 +1071,7 @@ class Character:
             if subspecies is None:
                 raise NotFoundError(f"немає правил підраси {self.subspecies_key!r}")
             if subspecies.subrace_of and subspecies.subrace_of != self.species_key:
-                raise ValidationError(
-                    f"підраса {subspecies.name_en!r} не належить виду {self.species_key!r}"
-                )
+                raise ValidationError(f"підраса {subspecies.name_en!r} не належить виду {self.species_key!r}")
         if self.background_key and self.rules.background_mechanics(self.background_key) is None:
             raise NotFoundError(f"немає правил передісторії {self.background_key!r}")
 
@@ -1169,9 +1099,7 @@ class Character:
                 continue
             seen.add(waiver.class_key)
             if not self.has_class(waiver.class_key):
-                raise ValidationError(
-                    f"вимоги проігноровано для класу {waiver.class_key!r}, якого немає"
-                )
+                raise ValidationError(f"вимоги проігноровано для класу {waiver.class_key!r}, якого немає")
             unique.append(waiver)
         self.multiclass_waivers = tuple(unique)
 
@@ -1182,8 +1110,7 @@ class Character:
             raise ValidationError(f"клас {definition.name_en!r} не має підкласів")
         if entry.level < definition.subclass_level:
             raise ValidationError(
-                f"підклас {definition.subclass_title!r} обирається з "
-                f"{definition.subclass_level} рівня"
+                f"підклас {definition.subclass_title!r} обирається з {definition.subclass_level} рівня"
             )
 
     @staticmethod
@@ -1197,10 +1124,7 @@ class Character:
         spread = ability_spread(self.ability_spread)
         species = self.species
         if spread and (species is None or not species.ability_unresolved):
-            raise ValidationError(
-                "вид не дає вільного розподілу бонусів характеристик "
-                "(правила 2022)"
-            )
+            raise ValidationError("вид не дає вільного розподілу бонусів характеристик (правила 2022)")
         self.ability_spread = spread
 
     def _validate_ability_choices(self) -> None:
@@ -1213,9 +1137,7 @@ class Character:
         if len(set(choices)) != len(choices):
             raise ValidationError("здібності на вибір не можуть повторюватися")
         if len(choices) != species.ability_choice.count:
-            raise ValidationError(
-                f"треба обрати {species.ability_choice.count} здібності, обрано {len(choices)}"
-            )
+            raise ValidationError(f"треба обрати {species.ability_choice.count} здібності, обрано {len(choices)}")
         for ability in choices:
             if ability not in species.ability_choice.options:
                 raise ValidationError(f"{ability.value} не входить у вибір виду")
@@ -1223,9 +1145,7 @@ class Character:
     def _validate_chosen(self) -> None:
         accepted = Proficiencies()
         for item in self.chosen.items:
-            validate_pick(
-                self.rules, item, existing=accepted, multiclass=self._is_multiclass_source(item)
-            )
+            validate_pick(self.rules, item, existing=accepted, multiclass=self._is_multiclass_source(item))
             accepted = accepted.add(item)
 
     def _is_multiclass_source(self, pick: Proficiency) -> bool:
@@ -1238,17 +1158,11 @@ class Character:
 
     def _validate_pick(self, pick: Proficiency, *, existing: Proficiencies) -> None:
         """Ті самі правила, що й у візарді — див. `pick_rules.validate_pick`."""
-        validate_pick(
-            self.rules, pick, existing=existing, multiclass=self._is_multiclass_source(pick)
-        )
+        validate_pick(self.rules, pick, existing=existing, multiclass=self._is_multiclass_source(pick))
 
     def _validate_spell_choices(self) -> None:
         species = self.species
-        allowed = (
-            species.cantrip_choice_count
-            if species is not None and species.cantrip_choice_class
-            else 0
-        )
+        allowed = species.cantrip_choice_count if species is not None and species.cantrip_choice_class else 0
         if len(set(self.spell_choices)) != len(self.spell_choices):
             raise ValidationError("заговори виду не можуть повторюватися")
         if allowed == 0:
@@ -1256,9 +1170,7 @@ class Character:
                 raise ValidationError("вид не дає вибору заговорів")
             return
         if len(self.spell_choices) != allowed:
-            raise ValidationError(
-                f"вид дає {allowed} заговорів на вибір, обрано {len(self.spell_choices)}"
-            )
+            raise ValidationError(f"вид дає {allowed} заговорів на вибір, обрано {len(self.spell_choices)}")
 
     def _validate_spells(self) -> None:
         self._validate_spell_limits(self.spells)
@@ -1266,9 +1178,7 @@ class Character:
     def _validate_spell_limits(self, spells: tuple[KnownSpell, ...]) -> None:
         for spell in spells:
             if not self.has_class(spell.class_key):
-                raise ValidationError(
-                    f"немає класу {spell.class_key!r} для закляття {spell.name_en!r}"
-                )
+                raise ValidationError(f"немає класу {spell.class_key!r} для закляття {spell.name_en!r}")
         for entry, definition in self.class_entries():
             own = tuple(spell for spell in spells if spell.class_key == entry.class_key)
             if not own:
@@ -1283,8 +1193,7 @@ class Character:
             limit = definition.spells_known_at(entry.level)
             if limit is not None and len(known) > limit:
                 raise ValidationError(
-                    f"{definition.name_en}: відомих заклять більше за ліміт "
-                    f"({len(known)} > {limit})"
+                    f"{definition.name_en}: відомих заклять більше за ліміт ({len(known)} > {limit})"
                 )
             if known:
                 max_level = self._max_spell_level(entry, definition)
@@ -1295,9 +1204,7 @@ class Character:
                             f"заклять {spell.level} рівня (максимум {max_level})"
                         )
 
-    def _check_prepared_limit(
-        self, spells: tuple[KnownSpell, ...], class_key: str
-    ) -> None:
+    def _check_prepared_limit(self, spells: tuple[KnownSpell, ...], class_key: str) -> None:
         """Підготовлених не більше за ліміт класу; клас без підготовки — без ліміту."""
         wanted = class_key.strip().casefold()
         if not self.has_class(wanted):
@@ -1306,15 +1213,9 @@ class Character:
         if not definition.prepares_spells:
             return
         limit = self.prepared_limit(wanted)
-        prepared = sum(
-            1
-            for spell in spells
-            if spell.class_key == wanted and spell.prepared and not spell.is_cantrip
-        )
+        prepared = sum(1 for spell in spells if spell.class_key == wanted and spell.prepared and not spell.is_cantrip)
         if prepared > limit:
-            raise ValidationError(
-                f"{definition.name_en}: підготовлених заклять {prepared}, а можна {limit}"
-            )
+            raise ValidationError(f"{definition.name_en}: підготовлених заклять {prepared}, а можна {limit}")
 
     @staticmethod
     def _max_spell_level(entry: CharacterClass, definition: ClassMechanics) -> int:
@@ -1322,9 +1223,7 @@ class Character:
 
     def _validate_hit_points(self) -> None:
         if len(self.hp.rolls) > max(0, self.total_level - 1):
-            raise ValidationError(
-                f"кидків кісток хітів не може бути більше за {max(0, self.total_level - 1)}"
-            )
+            raise ValidationError(f"кидків кісток хітів не може бути більше за {max(0, self.total_level - 1)}")
 
     def _validate_asi(self) -> None:
         if isinstance(self.asi_taken, bool) or not isinstance(self.asi_taken, int):
@@ -1332,6 +1231,4 @@ class Character:
         if self.asi_taken < 0:
             raise ValidationError("лічильник покращень характеристик не може бути відʼємним")
         if self.asi_taken > self.asi_slots:
-            raise ValidationError(
-                f"покращень характеристик {self.asi_taken}, а рівні дають лише {self.asi_slots}"
-            )
+            raise ValidationError(f"покращень характеристик {self.asi_taken}, а рівні дають лише {self.asi_slots}")

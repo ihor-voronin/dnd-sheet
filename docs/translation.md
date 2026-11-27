@@ -405,4 +405,3 @@ python scripts/translations_normalize.py --write # звести відомі в�
 (darkvision), «істинний зір» (truesight), «сліпе чуття» (blindsight); навичка
 Investigation — «Розслідування», скорочення Мудрості — «МУД». Закляття Darkvision
 перейменовано з «Темнозір» на «Темний зір».
-

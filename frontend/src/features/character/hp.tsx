@@ -9,11 +9,11 @@
  * витрачених. Кидок можна зробити одразу (випадкове число, як у DDB) або
  * вписати те, що випало на реальному кубику.
  */
-
 import { useState } from "react";
 import type { ReactNode } from "react";
 
 import type { SheetViewPayload } from "../wizard/types";
+
 import { EditableNumber, NumberField } from "./editing";
 
 export function HitPointsBlock({
@@ -55,11 +55,7 @@ export function HitPointsBlock({
           <span className="sheet-hp__cap">Максимум</span>
           <span className="sheet-hp__max">{maxField}</span>
         </div>
-        <div
-          className={`sheet-hp__cell sheet-hp__cell--temp ${
-            hitPoints.temporary > 0 ? "is-on" : ""
-          }`}
-        >
+        <div className={`sheet-hp__cell sheet-hp__cell--temp ${hitPoints.temporary > 0 ? "is-on" : ""}`}>
           <span className="sheet-hp__cap">Тимч.</span>
           <EditableNumber
             value={hitPoints.temporary}

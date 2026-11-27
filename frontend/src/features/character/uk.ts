@@ -9,11 +9,11 @@
  * Ключі — англійські назви в нижньому регістрі (або ключі домену). Це єдине
  * місце, де живе переклад вмісту; компоненти лише викликають хелпери.
  */
-
 import { DAMAGE_TYPE_LABELS, proficiencyValue } from "../../labels";
+
+import { FEAT_NAMES } from "./uk-feats";
 import { ITEM_NAMES } from "./uk-items";
 import { SPELL_NAMES } from "./uk-spells";
-import { FEAT_NAMES } from "./uk-feats";
 
 export interface UkText {
   /** Українська назва без англійського оригіналу. */
@@ -366,7 +366,8 @@ const TERMS: Record<string, string> = {
   "the archfey": "Архіфея",
   "the great old one": "Великий Стародавній",
   // Назви підкласів-розділів класу (клас обирає їх на своєму рівні).
-  "martial archetype": "Військовий архетип",  "arcane tradition": "Арканна традиція",
+  "martial archetype": "Військовий архетип",
+  "arcane tradition": "Арканна традиція",
   "divine domain": "Божественний домен",
   "druid circle": "Коло друїдів",
   "bard college": "Коледж бардів",
@@ -765,8 +766,7 @@ const ITEM_SRD: Record<string, string> = {
   net: "Сітка",
 };
 
-const norm = (value: string): string =>
-  value.trim().toLowerCase().replace(/\s+/g, " ").replace(/[’ʼ]/g, "'");
+const norm = (value: string): string => value.trim().toLowerCase().replace(/\s+/g, " ").replace(/[’ʼ]/g, "'");
 
 export function ukFeature(nameEn: string): UkText | undefined {
   return FEATURES[norm(nameEn)];
@@ -791,7 +791,7 @@ export function ukTerm(nameEn: string): string | undefined {
 /** Ключі в листі й чернетці — малими літерами («mountain dwarf»); в дужках — як у книзі. */
 export function titleCaseKey(key: string): string {
   if (key !== key.toLowerCase()) return key;
-  return key.replace(/(^|[\s(\/-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toUpperCase());
+  return key.replace(/(^|[\s(/-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toUpperCase());
 }
 
 /** Володіння українською: «simple», «light armor» — зі словника, конкретна зброя («battleaxe») — як предмет. */
@@ -861,11 +861,7 @@ export function termLabel(nameEn: string): string {
 }
 
 /** Опис уміння: переклад із бекенду, далі словник, далі англійський текст. */
-export function featureText(
-  nameEn: string,
-  fallback: string | null | undefined,
-  uk?: string | null,
-): string {
+export function featureText(nameEn: string, fallback: string | null | undefined, uk?: string | null): string {
   return uk || ukFeature(nameEn)?.text || fallback || "";
 }
 
@@ -914,7 +910,10 @@ export function weaponNotes(raw: string | null | undefined): string {
 /** Компоненти: матеріальні складові лишаємо позначкою «M», без англійського тексту. */
 export function componentsLabel(raw: string | null | undefined): string {
   if (!raw) return "";
-  return raw.replace(/\s*\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
+  return raw
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** Урон зброї: «1d8+3 slashing» → «1d8+3 рубаний».
@@ -940,9 +939,6 @@ export function weaponDamage(raw: string): string {
   const match = raw.match(/^(.*?)\s+([a-z]+)$/i);
   if (!match) return raw;
   const tail = match[2].toLowerCase();
-  const type =
-    WEAPON_DAMAGE[tail] ?? DAMAGE_TYPE_LABELS[tail] ?? DAMAGE_LETTER[tail] ?? match[2];
+  const type = WEAPON_DAMAGE[tail] ?? DAMAGE_TYPE_LABELS[tail] ?? DAMAGE_LETTER[tail] ?? match[2];
   return `${match[1].trim()} ${type}`;
 }
-
-

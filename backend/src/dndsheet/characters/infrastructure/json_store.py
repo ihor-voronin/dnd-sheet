@@ -42,9 +42,7 @@ def _check_id(value: str) -> str:
 def _write_atomic(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(temporary, path)
 
 
@@ -75,9 +73,7 @@ class JsonCharacterRepository:
     def ids(self) -> tuple[str, ...]:
         if not self.directory.is_dir():
             return ()
-        return tuple(
-            sorted(path.stem for path in self.directory.glob("*.json") if _ID_RE.match(path.stem))
-        )
+        return tuple(sorted(path.stem for path in self.directory.glob("*.json") if _ID_RE.match(path.stem)))
 
     def delete(self, character_id: str) -> None:
         path = self.directory / f"{_check_id(character_id)}.json"

@@ -7,6 +7,7 @@ Applied after the page assembly, because these repairs need the whole line:
     vocabulary, but only when a single candidate is one edit away;
   * tidy punctuation spacing.
 """
+
 from __future__ import annotations
 
 import re
@@ -17,9 +18,18 @@ sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent))
 import despace  # noqa: E402
 
 CREDITS = {
-    "kaicarpenter", "olivierbernard", "isabelcisney", "isabelgiehe", "isabelcibney",
-    "daarken", "johngrello", "aprilprime", "shawnwood", "aozeopannam",
-    "furyofthefrostgiant", "orcrunecarver",
+    "kaicarpenter",
+    "olivierbernard",
+    "isabelcisney",
+    "isabelgiehe",
+    "isabelcibney",
+    "daarken",
+    "johngrello",
+    "aprilprime",
+    "shawnwood",
+    "aozeopannam",
+    "furyofthefrostgiant",
+    "orcrunecarver",
 }
 HEADING_JUNK = re.compile(r"#+\s*")
 SPACED_PUNCT = re.compile(r"\s+([,.;:!?])(?!\d)")
@@ -42,11 +52,7 @@ def join_split_words(text: str, vocab: dict[str, float]) -> str:
         current = tokens[i]
         nxt = tokens[i + 1] if i + 1 < len(tokens) else ""
         core = re.sub(r"[^A-Za-z]", "", nxt)
-        if (
-            re.fullmatch(r"[A-Za-z]{2,}", current)
-            and len(core) >= 2
-            and core[:1].islower()
-        ):
+        if re.fullmatch(r"[A-Za-z]{2,}", current) and len(core) >= 2 and core[:1].islower():
             joined = (current + core).lower()
             if (
                 joined in vocab
@@ -63,6 +69,7 @@ def join_split_words(text: str, vocab: dict[str, float]) -> str:
 
 def correct_near_misses(text: str, vocab: dict[str, float]) -> str:
     """Fix one-edit OCR damage when exactly one corpus word is that close."""
+
     def handle(match: re.Match[str]) -> str:
         token = match.group(0)
         low = token.lower()

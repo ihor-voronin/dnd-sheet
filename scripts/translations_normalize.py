@@ -65,7 +65,10 @@ def main(write: bool) -> None:
             print(f"{path.relative_to(ROOT)}: {changed}")
             if write:
                 indent = 1 if raw.startswith("[\n {") else 2
-                path.write_text(json.dumps(data, ensure_ascii=False, indent=indent) + ("\n" if raw.endswith("\n") else ""), encoding="utf-8")
+                path.write_text(
+                    json.dumps(data, ensure_ascii=False, indent=indent) + ("\n" if raw.endswith("\n") else ""),
+                    encoding="utf-8",
+                )
     print(f"Разом замін: {grand}" + ("" if write else " (без --write нічого не записано)"))
 
 

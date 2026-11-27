@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import jsonschema
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(scope="module")

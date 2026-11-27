@@ -15,34 +15,25 @@
 
 from __future__ import annotations
 
+import secrets
 from dataclasses import asdict
 from typing import Any
-
-import secrets
 from urllib.parse import quote
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 
-from dndsheet.characters.api.serializers import (
-    character_brief,
-    computed_sheet,
-    draft_payload,
-    step_answers,
-)
+from dndsheet.characters.api import classes_uk, subclasses_uk, uk_text
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.background_info import enrich_background
 from dndsheet.characters.api.class_choices import (
-    option_levels,
     allowed_names,
     apply_choices,
     class_choices_payload,
     duplicate_picks,
     feat_probe_groups,
+    option_levels,
 )
-from dndsheet.characters.api.school_limits import check_schools
-from dndsheet.characters.api import classes_uk, subclasses_uk, uk_text
-from dndsheet.characters.api.uk_text import with_english
 from dndsheet.characters.api.features import (
     class_texts_all,
     enrich_features,
@@ -53,7 +44,15 @@ from dndsheet.characters.api.features import (
 )
 from dndsheet.characters.api.level_up import level_up_payload, report_payload
 from dndsheet.characters.api.print_view import build_print_view
+from dndsheet.characters.api.school_limits import check_schools
+from dndsheet.characters.api.serializers import (
+    character_brief,
+    computed_sheet,
+    draft_payload,
+    step_answers,
+)
 from dndsheet.characters.api.spell_meta import enrich_spells
+from dndsheet.characters.api.uk_text import with_english
 from dndsheet.characters.api.wizard_options import build_options
 from dndsheet.characters.application.golden import GoldenCase, build_golden_cases
 from dndsheet.characters.application.level_up import LevelUpService
@@ -64,9 +63,8 @@ from dndsheet.characters.domain.wizard import Draft, WizardStep
 from dndsheet.characters.infrastructure.compendium_rules import CompendiumRulesSource
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.export.application.registry import RendererRegistry
+from dndsheet.export.domain.renderer import RendererError, RendererUnavailable, RenderOptions
 from dndsheet.identity.api.router import require_user
-from dndsheet.export.domain.renderer import RenderOptions, RendererError, RendererUnavailable
-from dndsheet.sheets.application.build_document import build_sheet_document
 from dndsheet.shared.errors import ConflictError, DomainError, NotFoundError
 from dndsheet.shared.kernel import Ability
 from dndsheet.shared.rules import (
@@ -75,6 +73,7 @@ from dndsheet.shared.rules import (
     natural_weapon_die,
     natural_weapon_for,
 )
+from dndsheet.sheets.application.build_document import build_sheet_document
 
 #: Без входу відкриті лише еталонні листи й довідкові тексти класів і підкласів.
 _PUBLIC_PREFIXES = (
@@ -189,9 +188,7 @@ def _subclass_names(payload: dict, compendium: CompendiumService) -> None:
 def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Character
     """Повний лист: числа, лічильники, атаки й описи вмінь."""
     computed = DerivedStatsCalculator().compute(character)
-    payload = computed_sheet(
-        character, computed, _attacks(request, character, computed)
-    )
+    payload = computed_sheet(character, computed, _attacks(request, character, computed))
     compendium = _compendium(request)
     _subclass_names(payload, compendium)
     enrich_spells(payload["spells"], compendium, getattr(request.app.state, "spell_cache", {}))
@@ -217,8 +214,7 @@ def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Cha
             "chosen": character.species_source,
             "default": character.species.source_id if character.species else None,
             "options": [
-                {"source": source, "die": natural_weapon_die(natural, source)}
-                for source in character.species_sources
+                {"source": source, "die": natural_weapon_die(natural, source)} for source in character.species_sources
             ],
             "weapon": natural.name_en,
         }
@@ -646,9 +642,7 @@ def update_character(
     if version is not None and (isinstance(version, bool) or not isinstance(version, int)):
         raise HTTPException(status_code=422, detail="version має бути цілим числом")
     try:
-        character = _sheet_service(request).update(
-            character_id, body, expected_version=version
-        )
+        character = _sheet_service(request).update(character_id, body, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
@@ -667,9 +661,7 @@ def add_inventory_item(
     if not isinstance(item, dict):
         raise HTTPException(status_code=422, detail="item має бути обʼєктом")
     try:
-        character = _sheet_service(request).add_item(
-            character_id, item, expected_version=version
-        )
+        character = _sheet_service(request).add_item(character_id, item, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
@@ -689,9 +681,7 @@ def update_inventory_item(
     if not isinstance(fields, dict):
         raise HTTPException(status_code=422, detail="fields має бути обʼєктом")
     try:
-        character = _sheet_service(request).update_item(
-            character_id, index, fields, expected_version=version
-        )
+        character = _sheet_service(request).update_item(character_id, index, fields, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
@@ -708,9 +698,7 @@ def remove_inventory_item(
     body = dict(payload or {})
     version = _pop_version(body)
     try:
-        character = _sheet_service(request).remove_item(
-            character_id, index, expected_version=version
-        )
+        character = _sheet_service(request).remove_item(character_id, index, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
@@ -730,9 +718,7 @@ def add_spell(
             check_schools(
                 _sheet_service(request).load(character_id), _compendium(request), str(body["class_key"]), [body]
             )
-        character = _sheet_service(request).add_spell(
-            character_id, body, expected_version=version
-        )
+        character = _sheet_service(request).add_spell(character_id, body, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
@@ -748,9 +734,7 @@ def remove_spell(
     body = dict(payload or {})
     version = _pop_version(body)
     try:
-        character = _sheet_service(request).remove_spell(
-            character_id, body, expected_version=version
-        )
+        character = _sheet_service(request).remove_spell(character_id, body, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
@@ -766,9 +750,7 @@ def prepare_spells(
     body = dict(payload or {})
     version = _pop_version(body)
     try:
-        character = _sheet_service(request).prepare_spells(
-            character_id, body, expected_version=version
-        )
+        character = _sheet_service(request).prepare_spells(character_id, body, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
@@ -784,9 +766,7 @@ def set_expertise(
     body = dict(payload or {})
     version = _pop_version(body)
     try:
-        character = _sheet_service(request).set_expertise(
-            character_id, body, expected_version=version
-        )
+        character = _sheet_service(request).set_expertise(character_id, body, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
@@ -863,9 +843,7 @@ def set_species_feat(
         if ability not in options:
             raise HTTPException(status_code=422, detail=f"{entry.name_en}: {ability.value} не підвищується цією рисою")
     try:
-        character = _sheet_service(request).set_species_feat(
-            character_id, feat_key, ability, expected_version=version
-        )
+        character = _sheet_service(request).set_species_feat(character_id, feat_key, ability, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}
@@ -955,9 +933,7 @@ def level_up(
             level=current.class_level(class_key) + 1,
             subclass_key=body.get("subclass_key"),
         )
-        character, report = _level_up_service(request).apply(
-            character_id, body, expected_version=version
-        )
+        character, report = _level_up_service(request).apply(character_id, body, expected_version=version)
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {

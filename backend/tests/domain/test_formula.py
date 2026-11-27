@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.sheets.domain.formula import FormulaError, evaluate, sheet_functions
 
 

@@ -6,15 +6,12 @@
 from __future__ import annotations
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
+from fastapi.testclient import TestClient
 
 app = create_app()
 
-pytestmark = pytest.mark.skipif(
-    not app.state.golden_cases, reason="немає корпусу механік для еталонних персонажів"
-)
+pytestmark = pytest.mark.skipif(not app.state.golden_cases, reason="немає корпусу механік для еталонних персонажів")
 
 
 @pytest.fixture(scope="module")
@@ -41,11 +38,7 @@ def test_golden_fighter_sheet(client: TestClient) -> None:
     assert sheet["abilities"]["str"]["total"] == 16
     assert sheet["spellcasting"]["caster_level"] == 0
     # Джерела володінь видно: без них неможливо пояснити число.
-    athletes = [
-        item
-        for item in sheet["proficiencies"]
-        if item["kind"] == "skill" and item["value"] == "athletics"
-    ]
+    athletes = [item for item in sheet["proficiencies"] if item["kind"] == "skill" and item["value"] == "athletics"]
     assert athletes and athletes[0]["source"]["kind"] == "background"
 
 

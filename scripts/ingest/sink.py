@@ -191,9 +191,7 @@ class Handler(BaseHTTPRequestHandler):
                         "htmlLen": len(html),
                         "hasClass": discover.TOC_CLASS in html,
                         "divsWithClass": sum(
-                            1
-                            for tag in discover._DIV_OPEN_RE.finditer(html)
-                            if discover.TOC_CLASS in tag.group(0)
+                            1 for tag in discover._DIV_OPEN_RE.finditer(html) if discover.TOC_CLASS in tag.group(0)
                         ),
                         "tocRels": len(discover.toc_rels(html)),
                         "marker": "p-article" if "p-article" in html else None,
@@ -204,6 +202,7 @@ class Handler(BaseHTTPRequestHandler):
         target = discover.save_index(source, pages)
         print(f"  discover {source}: {len(pages)} → {target.name}", flush=True)
         self._ok({"ok": True, "via": "toc", "pages": pages, "count": len(pages)})
+
     def _save_index(self, source: str, body: bytes) -> None:
         try:
             payload = json.loads(body.decode("utf-8"))

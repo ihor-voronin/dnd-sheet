@@ -72,8 +72,16 @@ FIGHTER = _class(
     "Fighter",
     10,
     (A.STR, A.CON),
-    skills=(Skill.ACROBATICS, Skill.ANIMAL_HANDLING, Skill.ATHLETICS, Skill.HISTORY,
-            Skill.INSIGHT, Skill.INTIMIDATION, Skill.PERCEPTION, Skill.SURVIVAL),
+    skills=(
+        Skill.ACROBATICS,
+        Skill.ANIMAL_HANDLING,
+        Skill.ATHLETICS,
+        Skill.HISTORY,
+        Skill.INSIGHT,
+        Skill.INTIMIDATION,
+        Skill.PERCEPTION,
+        Skill.SURVIVAL,
+    ),
     armor=("light", "medium", "heavy", "shield"),
     weapons=("simple", "martial"),
     subclass_level=3,
@@ -91,8 +99,15 @@ WARLOCK = _class(
     "Warlock",
     8,
     (A.WIS, A.CHA),
-    skills=(Skill.ARCANA, Skill.DECEPTION, Skill.HISTORY, Skill.INTIMIDATION,
-            Skill.INVESTIGATION, Skill.NATURE, Skill.RELIGION),
+    skills=(
+        Skill.ARCANA,
+        Skill.DECEPTION,
+        Skill.HISTORY,
+        Skill.INTIMIDATION,
+        Skill.INVESTIGATION,
+        Skill.NATURE,
+        Skill.RELIGION,
+    ),
     spellcasting_ability=A.CHA,
     caster_progression=CasterProgression.PACT,
     subclass_level=1,
@@ -109,8 +124,7 @@ WIZARD = _class(
     "Wizard",
     6,
     (A.INT, A.WIS),
-    skills=(Skill.ARCANA, Skill.HISTORY, Skill.INSIGHT, Skill.INVESTIGATION,
-            Skill.MEDICINE, Skill.RELIGION),
+    skills=(Skill.ARCANA, Skill.HISTORY, Skill.INSIGHT, Skill.INVESTIGATION, Skill.MEDICINE, Skill.RELIGION),
     spellcasting_ability=A.INT,
     caster_progression=CasterProgression.FULL,
     prepares_spells=True,
@@ -135,9 +149,7 @@ CLERIC = _class(
     subclass_title="Divine Domain",
     cantrips_known=(3,) * 20,
     spell_slots=CASTER_SLOT_TABLE,
-    subclass_spells=MappingProxyType(
-        {"life-domain": SubclassSpells(prepared=("bless", "cure wounds"))}
-    ),
+    subclass_spells=MappingProxyType({"life-domain": SubclassSpells(prepared=("bless", "cure wounds"))}),
     features=_asi(CLERIC_ASI),
     multiclass_requirements=({A.WIS: 13},),
 )
@@ -147,9 +159,19 @@ ROGUE = _class(
     "Rogue",
     8,
     (A.DEX, A.INT),
-    skills=(Skill.ACROBATICS, Skill.ATHLETICS, Skill.DECEPTION, Skill.INSIGHT,
-            Skill.INTIMIDATION, Skill.INVESTIGATION, Skill.PERCEPTION,
-            Skill.PERFORMANCE, Skill.PERSUASION, Skill.SLEIGHT_OF_HAND, Skill.STEALTH),
+    skills=(
+        Skill.ACROBATICS,
+        Skill.ATHLETICS,
+        Skill.DECEPTION,
+        Skill.INSIGHT,
+        Skill.INTIMIDATION,
+        Skill.INVESTIGATION,
+        Skill.PERCEPTION,
+        Skill.PERFORMANCE,
+        Skill.PERSUASION,
+        Skill.SLEIGHT_OF_HAND,
+        Skill.STEALTH,
+    ),
     subclass_level=3,
     subclass_title="Roguish Archetype",
     features=_asi(ROGUE_ASI),
@@ -163,8 +185,12 @@ HUMAN = SpeciesMechanics(
     size=Size.MEDIUM,
     speed=30,
     ability_bonuses=(
-        AbilityBonus(A.STR, 1), AbilityBonus(A.DEX, 1), AbilityBonus(A.CON, 1),
-        AbilityBonus(A.INT, 1), AbilityBonus(A.WIS, 1), AbilityBonus(A.CHA, 1),
+        AbilityBonus(A.STR, 1),
+        AbilityBonus(A.DEX, 1),
+        AbilityBonus(A.CON, 1),
+        AbilityBonus(A.INT, 1),
+        AbilityBonus(A.WIS, 1),
+        AbilityBonus(A.CHA, 1),
     ),
     languages=("common",),
     standard_variant=True,
@@ -279,16 +305,11 @@ class FixtureRules:
     """`RulesSource` над константами вище."""
 
     def __init__(self) -> None:
-        self._classes = {
-            item.key: item for item in (FIGHTER, WARLOCK, WIZARD, ROGUE, CLERIC)
-        }
+        self._classes = {item.key: item for item in (FIGHTER, WARLOCK, WIZARD, ROGUE, CLERIC)}
         self._species = {
-            item.key: item
-            for item in (HUMAN, TIEFLING, ELF, WOOD_ELF, HIGH_ELF, HALF_ELF, CUSTOM_LINEAGE)
+            item.key: item for item in (HUMAN, TIEFLING, ELF, WOOD_ELF, HIGH_ELF, HALF_ELF, CUSTOM_LINEAGE)
         }
-        self._backgrounds = {
-            item.key: item for item in (SOLDIER, ACOLYTE, CRIMINAL)
-        }
+        self._backgrounds = {item.key: item for item in (SOLDIER, ACOLYTE, CRIMINAL)}
 
     def class_mechanics(self, key: str) -> ClassMechanics | None:
         return self._classes.get((key or "").strip().casefold())

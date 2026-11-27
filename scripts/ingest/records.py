@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-import pathlib
 import re
 import sys
 
 import yaml
 
-from . import config, discover, entities, html2md
 from ..normalize import canonical as compendium_format
+from . import config, discover, entities, html2md
 
 CATEGORY_BY_PREFIX = {
     "spells": "spell",
@@ -29,8 +28,18 @@ CATEGORY_BY_PREFIX = {
 }
 
 CLASS_SLUGS = {
-    "barbarian", "bard", "cleric", "druid", "fighter", "monk",
-    "paladin", "ranger", "rogue", "sorcerer", "warlock", "wizard",
+    "barbarian",
+    "bard",
+    "cleric",
+    "druid",
+    "fighter",
+    "monk",
+    "paladin",
+    "ranger",
+    "rogue",
+    "sorcerer",
+    "warlock",
+    "wizard",
 }
 
 HEADER_FIELD_RE = re.compile(r"^\s{0,3}(?P<key>[A-Za-z][A-Za-z \-/]{1,30}):\s*(?P<value>.+)$")
@@ -148,11 +157,7 @@ def extract_data(markdown: str, category: str) -> dict:
         data["school"] = school.group(1).lower() if school else None
         data["ritual"] = "ritual" in header.lower()
         data["concentration"] = "concentration" in (data.get("duration", "") or "").lower()
-        data["classes"] = [
-            part.strip()
-            for part in re.split(r"[,/]", str(data.get("classes", "")))
-            if part.strip()
-        ]
+        data["classes"] = [part.strip() for part in re.split(r"[,/]", str(data.get("classes", ""))) if part.strip()]
     return data
 
 
@@ -213,17 +218,10 @@ def _deduplicate(records: list[dict]) -> list[dict]:
             best[record_id] = record
             continue
         previous = best[record_id]
-        keep, drop = (
-            (record, previous)
-            if len(record["text_en"]) > len(previous["text_en"])
-            else (previous, record)
-        )
+        keep, drop = (record, previous) if len(record["text_en"]) > len(previous["text_en"]) else (previous, record)
         keep = dict(keep)
         notes = list(keep.get("notes") or [])
-        notes.append(
-            "той самий id мав коротший запис: "
-            + drop["text_en"].strip().splitlines()[0][:160]
-        )
+        notes.append("той самий id мав коротший запис: " + drop["text_en"].strip().splitlines()[0][:160])
         keep["notes"] = notes
         best[record_id] = keep
     return list(best.values())
@@ -265,9 +263,7 @@ def parse_source(source: str) -> dict[str, int]:
         # Сторінка-розділ містить десятки сутностей (напр. 41 закляття на
         # «Spell Descriptions (A-B)») — ріжемо на окремі записи, інакше білдер
         # персонажа не зможе вибрати одне закляття.
-        items = entities.split_page(
-            page_path, markdown, scope=source_meta.get("scope")
-        )
+        items = entities.split_page(page_path, markdown, scope=source_meta.get("scope"))
         if items:
             for item in items:
                 records.append(

@@ -47,13 +47,9 @@ def summary(service: Service) -> dict:
     report = service.summary()
     return {
         "entries": report.entries,
-        "categories": [
-            {"category": category.value, "entries": count}
-            for category, count in report.categories
-        ],
+        "categories": [{"category": category.value, "entries": count} for category, count in report.categories],
         "books": [
-            {"source_id": book.source_id, "title": book.title, "entries": book.entries}
-            for book in report.books
+            {"source_id": book.source_id, "title": book.title, "entries": book.entries} for book in report.books
         ],
         "spell_lists": report.spell_lists,
         "mechanics": report.mechanics,
@@ -77,9 +73,7 @@ def mechanics_summary(service: Service) -> dict:
         "available": service.mechanics_available(),
         "classes": len(classes),
         "species": len(species),
-        "subspecies": len(
-            [item for name in species for item in service.subspecies_of(name.key)]
-        ),
+        "subspecies": len([item for name in species for item in service.subspecies_of(name.key)]),
         "backgrounds": len(backgrounds),
         "warnings": list(service.mechanics_warnings()),
     }

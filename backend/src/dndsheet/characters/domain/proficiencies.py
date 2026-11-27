@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Iterable
 
@@ -115,11 +115,7 @@ class Proficiencies:
 
     def sources(self, kind: ProficiencyKind, value: str) -> tuple[GrantSource, ...]:
         wanted = value.casefold()
-        return tuple(
-            item.source
-            for item in self.items
-            if item.kind is kind and item.value.casefold() == wanted
-        )
+        return tuple(item.source for item in self.items if item.kind is kind and item.value.casefold() == wanted)
 
     def values(self, kind: ProficiencyKind) -> tuple[str, ...]:
         seen: list[str] = []
@@ -135,11 +131,7 @@ class Proficiencies:
         """Прибрати все, що дало конкретне джерело (зміна класу, виду…)."""
         wanted = key.strip().casefold()
         return Proficiencies(
-            items=tuple(
-                item
-                for item in self.items
-                if not (item.source.kind is kind and item.source.key == wanted)
-            )
+            items=tuple(item for item in self.items if not (item.source.kind is kind and item.source.key == wanted))
         )
 
     def extend(self, items: Iterable[Proficiency]) -> "Proficiencies":

@@ -10,13 +10,35 @@ import re
 from html.parser import HTMLParser
 
 VOID_TAGS = {
-    "area", "base", "br", "col", "embed", "hr", "img", "input",
-    "link", "meta", "param", "source", "track", "wbr",
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
 }
 
 SKIP_TAGS = {
-    "script", "style", "noscript", "svg", "nav", "header", "footer",
-    "form", "button", "select", "iframe", "template",
+    "script",
+    "style",
+    "noscript",
+    "svg",
+    "nav",
+    "header",
+    "footer",
+    "form",
+    "button",
+    "select",
+    "iframe",
+    "template",
 }
 
 # Класи-контейнери, у яких D&D Beyond тримає тіло статті (від найточнішого).
@@ -24,7 +46,7 @@ ARTICLE_HINTS = ("article-content", "p-article", "content-body", "source-content
 
 
 class Node:
-    __slots__ = ("tag", "attrs", "children", "text", "parent")
+    __slots__ = ("attrs", "children", "parent", "tag", "text")
 
     def __init__(self, tag: str, attrs: dict[str, str] | None = None, text: str = "") -> None:
         self.tag = tag

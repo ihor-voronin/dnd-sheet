@@ -7,6 +7,7 @@ own OCR came out interleaved.
 
     python scripts/pdf/ref_items.py [--out logs/gotg_ref_items.json]
 """
+
 from __future__ import annotations
 
 import json
@@ -46,7 +47,7 @@ def main() -> None:
     entries = []
     for index, start in enumerate(starts):
         end = starts[index + 1] if index + 1 < len(starts) else len(flat)
-        head = flat[max(0, start - NAME_BACK):start].strip()
+        head = flat[max(0, start - NAME_BACK) : start].strip()
         name = re.split(r"(?<=[a-z])\.\s", head)[-1].strip()
         entries.append({"head": head[-70:], "name_guess": name, "text": flat[start:end].strip()})
 

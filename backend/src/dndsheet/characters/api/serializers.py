@@ -24,7 +24,6 @@ from dndsheet.characters.domain.wizard import STEP_ORDER, Draft, WizardStep
 from dndsheet.shared.kernel import SKILL_ABILITY, Ability, Skill
 from dndsheet.shared.rules import stealth_disadvantage
 
-
 #: Лічильники рис, яких немає в перекладі класів.
 _RESOURCE_UK = {"Superiority Dice": "Кістки переваги", "Luck Points": "Очки удачі"}
 
@@ -93,9 +92,7 @@ def computed_sheet(
             "current": computed.hit_points.current,
             "temporary": computed.hit_points.temporary,
             "bloodied": computed.hit_points.is_bloodied,
-            "parts": [
-                {"label": part.label, "value": part.value} for part in computed.hit_points.parts
-            ],
+            "parts": [{"label": part.label, "value": part.value} for part in computed.hit_points.parts],
         },
         "hit_dice": {f"d{die}": count for die, count in sorted(computed.hit_dice.items())},
         "resources": resources(character, computed),
@@ -111,8 +108,7 @@ def computed_sheet(
         },
         "overridden": sorted(computed.overridden),
         "features": features(character),
-        "attacks_per_action": 1
-        + sum(1 for row in feature_rows(character) if row.name_en.startswith("Extra Attack")),
+        "attacks_per_action": 1 + sum(1 for row in feature_rows(character) if row.name_en.startswith("Extra Attack")),
         "feature_resources": [
             {
                 "key": resource.key,
@@ -222,11 +218,7 @@ def character_brief(character: Character) -> dict[str, Any]:
             if species is not None
             else None
         ),
-        "background": (
-            {"key": background.key, "name_en": background.name_en}
-            if background is not None
-            else None
-        ),
+        "background": ({"key": background.key, "name_en": background.name_en} if background is not None else None),
         "classes": [
             {
                 "key": entry.class_key,
@@ -256,9 +248,7 @@ def resources(character: Character, computed: ComputedSheet) -> dict[str, Any]:
     pact = computed.spellcasting.slots.pact
     return {
         "slots": slots,
-        "pact": (
-            {"total": pact.slots, "used": character.state.pact_used} if pact is not None else None
-        ),
+        "pact": ({"total": pact.slots, "used": character.state.pact_used} if pact is not None else None),
         "hit_dice": {
             f"d{die}": {"total": total, "used": character.state.hit_die_used(die)}
             for die, total in sorted(computed.hit_dice.items())
@@ -316,9 +306,7 @@ def spellcasting(casting: Spellcasting) -> dict[str, Any]:
     slots = {
         "by_level": {str(level): count for level, count in casting.slots.by_level},
         "pact": (
-            {"slots": casting.slots.pact.slots, "level": casting.slots.pact.slot_level}
-            if casting.slots.pact
-            else None
+            {"slots": casting.slots.pact.slots, "level": casting.slots.pact.slot_level} if casting.slots.pact else None
         ),
         "highest_level": casting.slots.highest_level,
     }
@@ -401,9 +389,7 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
             "species_key": draft.species_key,
             "subspecies_key": draft.subspecies_key,
             "ability_choices": [ability.value for ability in draft.ability_choices],
-            "ability_spread": {
-                ability.value: amount for ability, amount in draft.ability_spread.items()
-            },
+            "ability_spread": {ability.value: amount for ability, amount in draft.ability_spread.items()},
             "spell_choices": list(draft.spell_choices),
             "species_feat": draft.species_feat,
             "species_source": draft.species_source,
@@ -472,4 +458,3 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
             for spell in draft.spells
         ]
     }
-

@@ -8,10 +8,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
-
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
@@ -20,9 +17,7 @@ from dndsheet.compendium.infrastructure.jsonl_corpus import default_content_dir
 
 CONTENT = default_content_dir()
 
-pytestmark = pytest.mark.skipif(
-    not (CONTENT / "compendium").is_dir(), reason="корпусу content/compendium немає"
-)
+pytestmark = pytest.mark.skipif(not (CONTENT / "compendium").is_dir(), reason="корпусу content/compendium немає")
 
 
 @pytest.fixture(scope="module")
@@ -58,9 +53,7 @@ def test_books_have_titles_from_registry(service: CompendiumService) -> None:
 
 def test_player_handbook_contents(service: CompendiumService) -> None:
     def count(category: Category) -> int:
-        return service.entries(
-            EntryQuery(category=category, source_id="phb-2014", limit=200)
-        ).total
+        return service.entries(EntryQuery(category=category, source_id="phb-2014", limit=200)).total
 
     assert count(Category.CLASS) == 12
     assert count(Category.SUBCLASS) == 40

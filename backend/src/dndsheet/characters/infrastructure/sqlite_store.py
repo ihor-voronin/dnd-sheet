@@ -96,9 +96,7 @@ class SqliteStore:
         """
         moved = 0
         with closing(self.connection()) as connection, connection:
-            done = connection.execute(
-                "SELECT value FROM storage_meta WHERE key = 'json_imported'"
-            ).fetchone()
+            done = connection.execute("SELECT value FROM storage_meta WHERE key = 'json_imported'").fetchone()
             if done:
                 return 0
             for table, folder in (("characters", characters_dir), ("drafts", drafts_dir)):
@@ -121,17 +119,13 @@ class SqliteStore:
                             (identifier, _dump(record)),
                         )
                     moved += 1
-            connection.execute(
-                "INSERT INTO storage_meta (key, value) VALUES ('json_imported', ?)", (str(moved),)
-            )
+            connection.execute("INSERT INTO storage_meta (key, value) VALUES ('json_imported', ?)", (str(moved),))
         return moved
 
     def claim_unowned(self, owner_id: str) -> int:
         """Віддати персонажів без власника (перенесених із файлів) цьому користувачу."""
         with closing(self.connection()) as connection, connection:
-            cursor = connection.execute(
-                "UPDATE characters SET owner_id = ? WHERE owner_id IS NULL", (owner_id,)
-            )
+            cursor = connection.execute("UPDATE characters SET owner_id = ? WHERE owner_id IS NULL", (owner_id,))
             return cursor.rowcount
 
 
@@ -162,9 +156,7 @@ class SqliteCharacterRepository:
                 if int(exists[0]) == character.version and exists[1] == record:
                     return
                 # Хтось уже записав цю (або новішу) версію з іншого пристрою.
-                raise ConflictError(
-                    f"лист змінено на іншому пристрої (версія {exists[0]}) — оновіть сторінку"
-                )
+                raise ConflictError(f"лист змінено на іншому пристрої (версія {exists[0]}) — оновіть сторінку")
             connection.execute(
                 "INSERT INTO characters (id, owner_id, version, record) VALUES (?, NULL, ?, ?)",
                 (character.id, character.version, record),
@@ -172,9 +164,7 @@ class SqliteCharacterRepository:
 
     def get(self, character_id: str) -> Character | None:
         with closing(self.store.connection()) as connection:
-            row = connection.execute(
-                "SELECT record FROM characters WHERE id = ?", (character_id,)
-            ).fetchone()
+            row = connection.execute("SELECT record FROM characters WHERE id = ?", (character_id,)).fetchone()
         return None if row is None else character_from_record(json.loads(row[0]), self.rules)
 
     def ids(self) -> tuple[str, ...]:
@@ -193,24 +183,18 @@ class SqliteCharacterRepository:
 
     def owner(self, character_id: str) -> str | None:
         with closing(self.store.connection()) as connection:
-            row = connection.execute(
-                "SELECT owner_id FROM characters WHERE id = ?", (character_id,)
-            ).fetchone()
+            row = connection.execute("SELECT owner_id FROM characters WHERE id = ?", (character_id,)).fetchone()
         return None if row is None else row[0]
 
     def version(self, character_id: str) -> int | None:
         """Лише номер версії — для дешевого опитування «чи змінився лист»."""
         with closing(self.store.connection()) as connection:
-            row = connection.execute(
-                "SELECT version FROM characters WHERE id = ?", (character_id,)
-            ).fetchone()
+            row = connection.execute("SELECT version FROM characters WHERE id = ?", (character_id,)).fetchone()
         return None if row is None else int(row[0])
 
     def set_owner(self, character_id: str, owner_id: str) -> None:
         with closing(self.store.connection()) as connection, connection:
-            connection.execute(
-                "UPDATE characters SET owner_id = ? WHERE id = ?", (owner_id, character_id)
-            )
+            connection.execute("UPDATE characters SET owner_id = ? WHERE id = ?", (owner_id, character_id))
 
     def delete(self, character_id: str) -> None:
         with closing(self.store.connection()) as connection, connection:
@@ -280,9 +264,7 @@ class SqliteShareRepository:
 
     def token_of(self, character_id: str) -> str | None:
         with closing(self.store.connection()) as connection:
-            row = connection.execute(
-                "SELECT token FROM shares WHERE character_id = ?", (character_id,)
-            ).fetchone()
+            row = connection.execute("SELECT token FROM shares WHERE character_id = ?", (character_id,)).fetchone()
         return None if row is None else row[0]
 
     def character_of(self, token: str) -> str | None:
@@ -293,9 +275,7 @@ class SqliteShareRepository:
     def replace(self, character_id: str, token: str) -> None:
         with closing(self.store.connection()) as connection, connection:
             connection.execute("DELETE FROM shares WHERE character_id = ?", (character_id,))
-            connection.execute(
-                "INSERT INTO shares (token, character_id) VALUES (?, ?)", (token, character_id)
-            )
+            connection.execute("INSERT INTO shares (token, character_id) VALUES (?, ?)", (token, character_id))
 
     def revoke(self, character_id: str) -> None:
         with closing(self.store.connection()) as connection, connection:

@@ -80,9 +80,7 @@ def enrich_spells(
                 spell["name_en"] = book_name
 
 
-def _meta_for(
-    service: CompendiumService, spell: dict[str, Any]
-) -> dict[str, Any] | None:
+def _meta_for(service: CompendiumService, spell: dict[str, Any]) -> dict[str, Any] | None:
     entry = _entry(service, spell)
     if entry is None:
         return None

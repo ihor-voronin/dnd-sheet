@@ -9,9 +9,8 @@
  * відкриває той самий лист одразу в Mini App. У самому Telegram — кнопка
  * «Надіслати в Telegram» з вибором чату.
  */
-
-import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 import { createShare, fetchAuthConfig, fetchShare, revokeShare } from "../../api";
 import { inTelegram, shareToTelegram, telegramShareLink } from "../../telegram";
@@ -68,12 +67,17 @@ export function SharePanel({ characterId, onClose }: { characterId: string; onCl
         </button>
       </header>
       <p className="share-panel__lead">
-        За посиланням лист видно без входу: його можна переглянути, надрукувати й завантажити PDF, але не
-        змінити. Видно все, що на листі, разом із нотатками.
+        За посиланням лист видно без входу: його можна переглянути, надрукувати й завантажити PDF, але не змінити. Видно
+        все, що на листі, разом із нотатками.
       </p>
       {token === undefined && !error ? <p className="meta">Перевіряємо…</p> : null}
       {token === null ? (
-        <button type="button" className="button button--primary" disabled={busy} onClick={() => void act(() => createShare(characterId))}>
+        <button
+          type="button"
+          className="button button--primary"
+          disabled={busy}
+          onClick={() => void act(() => createShare(characterId))}
+        >
           Створити посилання
         </button>
       ) : null}
@@ -126,7 +130,12 @@ export function SharePanel({ characterId, onClose }: { characterId: string; onCl
             >
               Нове посилання
             </button>
-            <button type="button" className="link-button" disabled={busy} onClick={() => void act(() => revokeShare(characterId))}>
+            <button
+              type="button"
+              className="link-button"
+              disabled={busy}
+              onClick={() => void act(() => revokeShare(characterId))}
+            >
               Вимкнути посилання
             </button>
           </div>

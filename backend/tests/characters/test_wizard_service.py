@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.application.wizard import WizardService
 from dndsheet.characters.domain.wizard import WizardStep
 from dndsheet.characters.infrastructure.json_store import (
@@ -29,9 +28,7 @@ def service(rules, tmp_data) -> WizardService:
         drafts=JsonDraftRepository(tmp_data / "drafts", rules),
         characters=JsonCharacterRepository(tmp_data / "characters", rules),
         rules=rules,
-        subclasses=FakeSubclasses(
-            {"warlock": ("phb-2014/subclass/the-fiend",), "fighter": ("x",)}
-        ),
+        subclasses=FakeSubclasses({"warlock": ("phb-2014/subclass/the-fiend",), "fighter": ("x",)}),
     )
 
 

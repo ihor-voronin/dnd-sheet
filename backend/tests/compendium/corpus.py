@@ -201,12 +201,7 @@ def build_content(root: Path, *, spell_lists: bool = True) -> Path:
     write_jsonl(content / "compendium" / "other" / "spell.jsonl", OTHER_SPELLS)
 
     (content / "sources.yml").write_text(
-        "sources:\n"
-        '  - id: demo\n'
-        '    title: "Demo Book"\n'
-        "    type: core\n"
-        '  - id: other\n'
-        '    title: "Other Book"\n',
+        'sources:\n  - id: demo\n    title: "Demo Book"\n    type: core\n  - id: other\n    title: "Other Book"\n',
         encoding="utf-8",
     )
 
@@ -233,4 +228,3 @@ def build_content(root: Path, *, spell_lists: bool = True) -> Path:
         target.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
     return content
-

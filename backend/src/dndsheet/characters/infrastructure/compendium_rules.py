@@ -11,16 +11,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from dndsheet.characters.domain.ports import RulesSource, SubclassCatalog
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
+from dndsheet.shared.kernel import Ability
 from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,
     SpeciesMechanics,
     feat_ability_options,
 )
-from dndsheet.shared.kernel import Ability
 
 #: Ключ власної передісторії: її текст гравець пише сам, правила вибору —
 #: стандартні (2 навички, 1 інструмент, 1 мова).

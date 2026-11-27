@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.services.spell_slots import SpellSlotService
 from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepository
@@ -54,9 +53,7 @@ def classes() -> dict:
 
 
 def _casting(definition, level: int):
-    return SpellSlotService().compute(
-        [(CharacterClass(definition.key, level), definition)], {}, proficiency_bonus=2
-    )
+    return SpellSlotService().compute([(CharacterClass(definition.key, level), definition)], {}, proficiency_bonus=2)
 
 
 def _nonzero(table: tuple[int, ...]) -> dict[int, int]:
@@ -155,9 +152,9 @@ def test_every_pair_of_casters_uses_multiclass_table(classes) -> None:
         definition_a, definition_b = classes[first], classes[second]
         for level_a in LEVELS:
             for level_b in range(1, MAX_LEVEL - level_a + 1):
-                combined = _contribution(
-                    definition_a.caster_progression, level_a
-                ) + _contribution(definition_b.caster_progression, level_b)
+                combined = _contribution(definition_a.caster_progression, level_a) + _contribution(
+                    definition_b.caster_progression, level_b
+                )
                 # Таблиця мультикласу — лише коли «Spellcasting» мають обидва
                 # класи (PHB, p. 164). Pact Magic чаклуна — окрема риса, а
                 # паладин і слідопит на 1 рівні ще не заклинателі: тоді комірки

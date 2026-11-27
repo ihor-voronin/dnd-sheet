@@ -16,10 +16,7 @@ from dndsheet.export.domain.renderer import (
 from dndsheet.sheets.domain.document import Field, SheetDocument
 
 _OVERRIDE_MARK = " _(вручну)_"
-_LEGEND = (
-    "_Значення без позначки пораховані сервером за правилами; "
-    "«вручну» — вписані гравцем._"
-)
+_LEGEND = "_Значення без позначки пораховані сервером за правилами; «вручну» — вписані гравцем._"
 
 
 class MarkdownRenderer:

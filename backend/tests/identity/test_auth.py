@@ -15,11 +15,10 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
 from dndsheet.identity.domain.user import verify_telegram_login, verify_telegram_webapp
 from dndsheet.shared.errors import ValidationError
+from fastapi.testclient import TestClient
 
 BOT_TOKEN = "123456:TEST-TOKEN"
 ROOT = Path(__file__).resolve().parent / "_tmp_auth"
@@ -90,7 +89,10 @@ def _cleanup() -> None:
 FIGHTER = [
     ("species", {"name": "Дарія", "species_key": "human"}),
     ("class", {"class_key": "fighter"}),
-    ("abilities", {"method": "standard_array", "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8}}),
+    (
+        "abilities",
+        {"method": "standard_array", "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8}},
+    ),
     (
         "background",
         {
@@ -122,7 +124,12 @@ def test_guest_sees_compendium_but_not_characters(monkeypatch: pytest.MonkeyPatc
     assert client.get("/api/v1/characters").status_code == 401
     assert client.post("/api/v1/characters/wizard").status_code == 401
     config = client.get("/api/v1/auth/config").json()
-    assert config == {"auth_enabled": True, "telegram_bot": "dndsheet_test_bot", "telegram_ready": True, "dev_login": True}
+    assert config == {
+        "auth_enabled": True,
+        "telegram_bot": "dndsheet_test_bot",
+        "telegram_ready": True,
+        "dev_login": True,
+    }
 
 
 def test_telegram_login_sets_session_cookie(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -205,9 +212,9 @@ def test_json_characters_move_to_first_user(monkeypatch: pytest.MonkeyPatch) -> 
     source = TestClient(_app(monkeypatch, "legacy-source", DNDSHEET_AUTH="off").app)
     character_id = _create(source)
     record = json.loads(
-        source.app.state.characters.store.connection().execute(
-            "SELECT record FROM characters WHERE id = ?", (character_id,)
-        ).fetchone()[0]
+        source.app.state.characters.store.connection()
+        .execute("SELECT record FROM characters WHERE id = ?", (character_id,))
+        .fetchone()[0]
     )
     legacy = ROOT / "legacy"
     shutil.rmtree(legacy, ignore_errors=True)
@@ -278,7 +285,9 @@ def _init_data(telegram_id: int = 42, token: str = BOT_TOKEN, auth_date: int | N
     fields = {
         "auth_date": str(int(time.time()) if auth_date is None else auth_date),
         "query_id": "AAHdF6IQAAAAAN0XohDhrOrc",
-        "user": json.dumps({"id": telegram_id, "first_name": "Ігор", **user}, ensure_ascii=False, separators=(",", ":")),
+        "user": json.dumps(
+            {"id": telegram_id, "first_name": "Ігор", **user}, ensure_ascii=False, separators=(",", ":")
+        ),
         "signature": "ed25519-signature-is-part-of-the-check-string",
     }
     check = "\n".join(f"{key}={fields[key]}" for key in sorted(fields))
@@ -330,7 +339,9 @@ def test_mini_app_login_uses_bearer_token_and_same_account(monkeypatch: pytest.M
     listed = mini.get("/api/v1/characters", headers=bearer).json()["items"]
     assert [item["id"] for item in listed] == [character_id]
 
-    assert mini.post("/api/v1/auth/telegram-webapp", json={"init_data": _init_data(token="999:OTHER")}).status_code == 401
+    assert (
+        mini.post("/api/v1/auth/telegram-webapp", json={"init_data": _init_data(token="999:OTHER")}).status_code == 401
+    )
     mini.post("/api/v1/auth/logout", headers=bearer)
     assert mini.get("/api/v1/auth/me", headers=bearer).json()["user"] is None
 
@@ -353,4 +364,3 @@ def test_link_token_opens_files_only_for_get(monkeypatch: pytest.MonkeyPatch) ->
     )
     assert patch.status_code == 401
     assert outsider.post("/api/v1/auth/link-token").status_code == 401
-

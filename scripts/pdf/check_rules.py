@@ -6,11 +6,11 @@ read straight out of the reference page and compared pair by pair.
 
     python scripts/pdf/check_rules.py
 """
+
 from __future__ import annotations
 
 import json
 import re
-import sys
 from pathlib import Path
 
 import pymupdf

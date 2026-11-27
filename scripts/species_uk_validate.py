@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,9 +49,7 @@ def main() -> int:
     ]
     for name, field in files:
         source = {str(row["id"]): row for row in load(INPUT / name)}
-        translated = {
-            str(row["id"]): str(row.get(field) or "") for row in load(OUTPUT / name)
-        }
+        translated = {str(row["id"]): str(row.get(field) or "") for row in load(OUTPUT / name)}
         for key, row in source.items():
             text_uk = translated.get(key, "")
             if not text_uk:
@@ -70,16 +67,11 @@ def main() -> int:
                 if number_src != number_uk:
                     problems.append(f"{name}:{key}: числа {number_src} → {number_uk}")
                 if paragraphs(original) != paragraphs(text_uk):
-                    problems.append(
-                        f"{name}:{key}: абзаців {paragraphs(original)} → "
-                        f"{paragraphs(text_uk)}"
-                    )
+                    problems.append(f"{name}:{key}: абзаців {paragraphs(original)} → {paragraphs(text_uk)}")
             # англійський залишок: багато латиниці на кожну кирилицю
             latin, cyrillic = len(LATIN.findall(text_uk)), len(CYRILLIC.findall(text_uk))
             if latin > 3 and cyrillic and latin / cyrillic > 1.2:
-                problems.append(
-                    f"{name}:{key}: схоже на неперекладене ({latin} лат. / {cyrillic} кир.)"
-                )
+                problems.append(f"{name}:{key}: схоже на неперекладене ({latin} лат. / {cyrillic} кир.)")
 
     for problem in problems[:40]:
         print("  !", problem)
@@ -89,4 +81,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

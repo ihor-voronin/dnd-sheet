@@ -73,9 +73,7 @@ def hit_point_maximum(
     """Порахувати максимум хітів і пояснити його складниками."""
     state = state or HitPointState()
     if state.override_max is not None:
-        return state.override_max, (
-            HitPointPart(label="manual-override", value=state.override_max),
-        )
+        return state.override_max, (HitPointPart(label="manual-override", value=state.override_max),)
 
     parts: list[HitPointPart] = []
     total = 0

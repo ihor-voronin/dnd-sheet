@@ -21,12 +21,10 @@ import argparse
 import json
 import re
 import sys
-from pathlib import Path
 
 import yaml
 
-from . import config
-from . import mirror5e
+from . import config, mirror5e
 
 # Книги, які WotC роздає безкоштовно. Решта — proprietary.
 FREE = {
@@ -58,8 +56,18 @@ TYPE_BY_GROUP = {
     "organized-play": "accessory",
 }
 
-CATEGORY_ORDER = ("class", "subclass", "species", "background", "feat",
-                  "optionalfeature", "spell", "item", "monster", "rule")
+CATEGORY_ORDER = (
+    "class",
+    "subclass",
+    "species",
+    "background",
+    "feat",
+    "optionalfeature",
+    "spell",
+    "item",
+    "monster",
+    "rule",
+)
 
 PLURALS = {
     "monster": ("статблок", "статблоки", "статблоків"),
@@ -103,8 +111,7 @@ def _counts(folder: str, mapping, catalogue, feature_index) -> dict[str, int]:
     return counts
 
 
-def _catalogue_entry(folder: str, catalogue: dict[str, dict],
-                     inverse: dict[str, str]) -> dict | None:
+def _catalogue_entry(folder: str, catalogue: dict[str, dict], inverse: dict[str, str]) -> dict | None:
     """Запис каталогу для теки: спершу за кодом книги, потім за назвою теки.
 
     Коди дзеркала й теки не збігаються (PS-A → ps-amonkhet, MaBJoV → mabjov),
@@ -120,9 +127,10 @@ def _catalogue_entry(folder: str, catalogue: dict[str, dict],
 
 
 def _scope(counts: dict[str, int]) -> str:
-    if any(category in counts for category in
-           ("class", "subclass", "species", "background", "feat",
-            "optionalfeature", "spell")):
+    if any(
+        category in counts
+        for category in ("class", "subclass", "species", "background", "feat", "optionalfeature", "spell")
+    ):
         return "sheet"
     if "item" in counts:
         return "items"
@@ -221,9 +229,7 @@ def plan(force: bool = False) -> tuple[list[str], list[str], dict[str, dict[str,
             continue
         got = _counts(folder, mapping, catalogue, feature_index)
         counts[folder] = got
-        new_entries.extend(
-            _entry_lines(folder, _catalogue_entry(folder, catalogue, inverse), got)
-        )
+        new_entries.extend(_entry_lines(folder, _catalogue_entry(folder, catalogue, inverse), got))
         if folder in free:
             moved.append(folder)
     return new_entries, moved, counts
@@ -249,11 +255,9 @@ def write(new_entries: list[str], moved: list[str], *, force: bool = False) -> N
     text = config.SOURCES_FILE.read_text(encoding="utf-8")
     lines = text.splitlines()
     if force:
-        drop = {
-            match.group(1)
-            for line in lines
-            if (match := re.match(r"  - id:\s*(\S+)", line))
-        } & set(mirror5e.mirror_folders())
+        drop = {match.group(1) for line in lines if (match := re.match(r"  - id:\s*(\S+)", line))} & set(
+            mirror5e.mirror_folders()
+        )
         lines = _drop_entries(lines, drop)
         lines = [
             line
@@ -306,8 +310,7 @@ def main(argv: list[str] | None = None) -> int:
                 pass
     parser = argparse.ArgumentParser(prog="scripts.ingest.sync_sources")
     parser.add_argument("--write", action="store_true")
-    parser.add_argument("--force", action="store_true",
-                        help="перегенерувати записи тек дзеркала (видалити й додати)")
+    parser.add_argument("--force", action="store_true", help="перегенерувати записи тек дзеркала (видалити й додати)")
     args = parser.parse_args(argv)
 
     new_entries, moved, counts = plan(force=args.force)

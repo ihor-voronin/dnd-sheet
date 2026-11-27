@@ -108,9 +108,7 @@ def write_chunks(folder: Path, prefix: str, items: list[dict]) -> int:
         chunks.append(current)
     for number, chunk in enumerate(chunks, start=1):
         path = folder / f"{prefix}-{number:02d}.json"
-        path.write_text(
-            json.dumps(chunk, ensure_ascii=False, indent=1), encoding="utf-8"
-        )
+        path.write_text(json.dumps(chunk, ensure_ascii=False, indent=1), encoding="utf-8")
     return len(chunks)
 
 
@@ -139,13 +137,9 @@ def main() -> int:
     if "--missing" in sys.argv:
         done_names, done_texts = existing_ids("name_uk"), existing_ids("text_uk")
         names = {key: row for key, row in names.items() if row["id"] not in done_names}
-        descriptions = {
-            key: row for key, row in descriptions.items() if key not in done_texts
-        }
+        descriptions = {key: row for key, row in descriptions.items() if key not in done_texts}
         features = {key: row for key, row in features.items() if key not in done_texts}
-        equipment = {
-            key: value for key, value in equipment.items() if key not in done_texts
-        }
+        equipment = {key: value for key, value in equipment.items() if key not in done_texts}
         for old in input_dir.glob("*.json") if input_dir.is_dir() else []:
             old.unlink()
 
@@ -156,10 +150,7 @@ def main() -> int:
     )
     write_json(
         input_dir / "equipment.json",
-        [
-            {"id": key, "phrase_en": value}
-            for key, value in sorted(equipment.items(), key=lambda row: row[1])
-        ],
+        [{"id": key, "phrase_en": value} for key, value in sorted(equipment.items(), key=lambda row: row[1])],
     )
     desc_chunks = write_chunks(input_dir, "descriptions", list(descriptions.values()))
     feat_chunks = write_chunks(input_dir, "features", list(features.values()))

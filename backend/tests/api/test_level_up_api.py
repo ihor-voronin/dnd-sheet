@@ -12,9 +12,8 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from dndsheet.api.app import create_app
+from fastapi.testclient import TestClient
 
 DATA_DIR = Path(__file__).resolve().parent / "_tmp_level_up_api"
 
@@ -54,9 +53,7 @@ def test_plan_explains_what_the_level_gives(client: TestClient) -> None:
     payload = client.get("/api/v1/characters/level-up-fighter/level-up").json()
     fighter = next(plan for plan in payload["plans"] if plan["class_key"] == "fighter")
 
-    action_surge = next(
-        item for item in fighter["features"] if item["name_en"] == "Action Surge"
-    )
+    action_surge = next(item for item in fighter["features"] if item["name_en"] == "Action Surge")
     # Оригінал книги — для звірки, переклад — для читання.
     assert action_surge["text"]
     assert action_surge["name_uk"] == "Приплив сил"
@@ -64,9 +61,7 @@ def test_plan_explains_what_the_level_gives(client: TestClient) -> None:
 
     # Воїн 2 → 3 обирає підклас: показуємо не лише сьогоднішнє вміння, а весь
     # шлях спеціалізації — щоб вибір був свідомий.
-    case = next(
-        case for case in client.app.state.golden_cases if case.key == "fighter-1"
-    )
+    case = next(case for case in client.app.state.golden_cases if case.key == "fighter-1")
     second = replace(
         case.character,
         id="level-up-fighter-2",
@@ -76,14 +71,10 @@ def test_plan_explains_what_the_level_gives(client: TestClient) -> None:
     plan_payload = client.get("/api/v1/characters/level-up-fighter-2/level-up").json()
     plan = next(item for item in plan_payload["plans"] if item["class_key"] == "fighter")
     assert plan["new_level"] == 3
-    champion = next(
-        option for option in plan["subclass"]["options"] if option["name_en"] == "Champion"
-    )
+    champion = next(option for option in plan["subclass"]["options"] if option["name_en"] == "Champion")
     levels = {item["level"] for item in champion["features"]}
     assert 3 in levels and max(levels) > 3, "видно, що спеціалізація дасть далі"
-    improved = next(
-        item for item in champion["features"] if item["name_en"] == "Improved Critical"
-    )
+    improved = next(item for item in champion["features"] if item["name_en"] == "Improved Critical")
     assert improved["level"] == 3
     assert improved["new"] is True
     assert improved["text"], "текст саме того вміння, яке обирають зараз"
@@ -230,9 +221,7 @@ def test_subclass_choice_comes_from_books(client: TestClient) -> None:
 
 
 def test_twenty_level_character_cannot_grow(client: TestClient) -> None:
-    fighter = next(
-        case for case in client.app.state.golden_cases if case.key == "fighter-1"
-    )
+    fighter = next(case for case in client.app.state.golden_cases if case.key == "fighter-1")
     twenty = replace(
         fighter.character,
         id="level-up-twenty",
@@ -250,9 +239,7 @@ def test_ignored_requirements_are_marked_on_the_sheet(client: TestClient) -> Non
     """Галочка «ігнорувати вимоги» додає клас і лишає слід на листі."""
     from dndsheet.shared.kernel import Ability, AbilityScore
 
-    fighter = next(
-        case for case in client.app.state.golden_cases if case.key == "fighter-1"
-    )
+    fighter = next(case for case in client.app.state.golden_cases if case.key == "fighter-1")
     # Усі 10: не виконано ні вимоги мага (INT 13), ні навіть Воїна (STR 13).
     weak = replace(
         fighter.character,
@@ -263,9 +250,7 @@ def test_ignored_requirements_are_marked_on_the_sheet(client: TestClient) -> Non
 
     plan = next(
         item
-        for item in client.get("/api/v1/characters/level-up-no-requirements/level-up").json()[
-            "plans"
-        ]
+        for item in client.get("/api/v1/characters/level-up-no-requirements/level-up").json()["plans"]
         if item["class_key"] == "wizard"
     )
     assert plan["allowed"] is False
@@ -317,7 +302,9 @@ def test_multiclass_learns_spells_of_its_own_level(client: TestClient) -> None:
         ],
     )
     app.state.characters.save(character)
-    plans = {plan["class_key"]: plan for plan in client.get("/api/v1/characters/level-up-multi/level-up").json()["plans"]}
+    plans = {
+        plan["class_key"]: plan for plan in client.get("/api/v1/characters/level-up-multi/level-up").json()["plans"]
+    }
     assert plans["warlock"]["max_spell_level"] == 3
     assert plans["wizard"]["max_spell_level"] == 3
     assert plans["cleric"]["max_spell_level"] == 3

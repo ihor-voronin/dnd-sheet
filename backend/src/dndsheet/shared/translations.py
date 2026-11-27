@@ -77,8 +77,10 @@ def read(layer: str) -> dict[str, Any]:
 def name_uk(layer: str, name_en: str) -> str | None:
     names = read(layer)["names"]
     # Корпус пише апостроф по-різному («Dark One's» і «Dark One’s») — пробуємо обидва.
-    return names.get(ident(name_en)) or names.get(ident(name_en.replace("'", "’"))) or names.get(
-        ident(name_en.replace("’", "'"))
+    return (
+        names.get(ident(name_en))
+        or names.get(ident(name_en.replace("'", "’")))
+        or names.get(ident(name_en.replace("’", "'")))
     )
 
 

@@ -101,15 +101,11 @@ class SpellSlotService:
         ]
         if not casters:
             return Spellcasting(caster_level=0, slots=SpellSlots(), classes=())
-        combined = caster_level(
-            (definition.caster_progression, entry.level) for entry, definition in casters
-        )
+        combined = caster_level((definition.caster_progression, entry.level) for entry, definition in casters)
         # Таблиця мультикласу — лише коли «Spellcasting» мають два класи й
         # більше; Pact Magic чаклуна сюди не рахується (PHB, p. 164–165):
         # паладин 5 + чаклун 1 бере комірки з таблиці паладина.
-        standard_casters = [
-            (entry, definition) for entry, definition in casters if not definition.is_pact_magic
-        ]
+        standard_casters = [(entry, definition) for entry, definition in casters if not definition.is_pact_magic]
         if len(standard_casters) > 1:
             standard = spell_slots(combined) if combined else ()
             slots_from = "multiclass"
@@ -126,9 +122,7 @@ class SpellSlotService:
                 continue
             from_data = definition.pact_at(entry.level)
             pact = (
-                PactMagic(slots=from_data[0], slot_level=from_data[1])
-                if from_data[0]
-                else pact_magic_for(entry.level)
+                PactMagic(slots=from_data[0], slot_level=from_data[1]) if from_data[0] else pact_magic_for(entry.level)
             )
 
         details: list[ClassCasting] = []

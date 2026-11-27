@@ -71,4 +71,3 @@ def main(strict: bool) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main("--strict" in sys.argv))
-

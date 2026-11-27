@@ -5,9 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 import corpus
+import pytest
 from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
 from dndsheet.compendium.infrastructure.jsonl_corpus import (
@@ -114,7 +113,7 @@ def _book_dir(content_dir: Path) -> Path:
 def test_broken_json_reports_file_and_line(content_dir: Path) -> None:
     book = _book_dir(content_dir)
     (book / "spell.jsonl").write_text('{"id": "broken/spell/x"}\n', encoding="utf-8")
-    with pytest.raises(CorpusError, match="broken/spell.jsonl:1"):
+    with pytest.raises(CorpusError, match=r"broken/spell\.jsonl:1"):
         JsonlCompendiumRepository(directory=book.parent)._ensure_loaded()
 
 
@@ -122,9 +121,7 @@ def test_incomplete_record_reports_where(content_dir: Path) -> None:
     book = _book_dir(content_dir)
     record = corpus.record("broken", "spell", "x", "X")
     del record["text_en"]
-    (book / "spell.jsonl").write_text(
-        json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    (book / "spell.jsonl").write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
     with pytest.raises(CorpusError, match="немає обовʼязкового поля text_en"):
         JsonlCompendiumRepository(directory=book.parent)._ensure_loaded()
 
@@ -132,10 +129,8 @@ def test_incomplete_record_reports_where(content_dir: Path) -> None:
 def test_record_in_wrong_file_is_an_error(content_dir: Path) -> None:
     book = _book_dir(content_dir)
     record = corpus.record("broken", "item", "x", "X")
-    (book / "spell.jsonl").write_text(
-        json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
-    with pytest.raises(CorpusError, match="категорія item у файлі spell.jsonl"):
+    (book / "spell.jsonl").write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
+    with pytest.raises(CorpusError, match=r"категорія item у файлі spell\.jsonl"):
         JsonlCompendiumRepository(directory=book.parent)._ensure_loaded()
 
 

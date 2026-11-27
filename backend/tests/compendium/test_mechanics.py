@@ -7,7 +7,6 @@ import shutil
 from pathlib import Path
 
 import pytest
-
 from dndsheet.compendium.infrastructure.mechanics_index import (
     CLASS_SCHEMA,
     ORIGIN_SCHEMA,
@@ -133,9 +132,7 @@ def test_species_and_background_fields(repo: JsonMechanicsRepository) -> None:
 
 
 def test_missing_files_are_reported_not_raised(tmp_dir: Path) -> None:
-    repo = JsonMechanicsRepository(
-        classes_path=tmp_dir / "nope.json", origins_path=tmp_dir / "nope2.json"
-    )
+    repo = JsonMechanicsRepository(classes_path=tmp_dir / "nope.json", origins_path=tmp_dir / "nope2.json")
     assert repo.available() is False
     warnings = repo.warnings()
     assert len(warnings) == 2
@@ -145,9 +142,7 @@ def test_missing_files_are_reported_not_raised(tmp_dir: Path) -> None:
 def test_broken_json_is_reported(tmp_dir: Path) -> None:
     path = tmp_dir / "class-mechanics.json"
     path.write_text("{не json", encoding="utf-8")
-    repo = JsonMechanicsRepository(
-        classes_path=path, origins_path=tmp_dir / "none.json"
-    )
+    repo = JsonMechanicsRepository(classes_path=path, origins_path=tmp_dir / "none.json")
     assert repo.available() is False
     assert any("невірний JSON" in warning for warning in repo.warnings())
 

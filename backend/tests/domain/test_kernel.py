@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.kernel import (
     SKILL_ABILITY,

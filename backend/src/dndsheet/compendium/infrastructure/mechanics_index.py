@@ -14,18 +14,18 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field, replace
-from types import MappingProxyType
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Mapping
 
 from dndsheet.compendium.domain.entry import search_key
 from dndsheet.compendium.infrastructure.jsonl_corpus import default_content_dir
 from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.rules import (
+    TERRAINS,
     BackgroundMechanics,
     ClassMechanics,
     SpeciesMechanics,
-    TERRAINS,
     SubclassSpells,
 )
 
@@ -51,9 +51,7 @@ class JsonMechanicsRepository:
     _classes: dict[str, ClassMechanics] = field(default_factory=dict, init=False, repr=False)
     _species: dict[str, SpeciesMechanics] = field(default_factory=dict, init=False, repr=False)
     _subspecies: dict[str, SpeciesMechanics] = field(default_factory=dict, init=False, repr=False)
-    _backgrounds: dict[str, BackgroundMechanics] = field(
-        default_factory=dict, init=False, repr=False
-    )
+    _backgrounds: dict[str, BackgroundMechanics] = field(default_factory=dict, init=False, repr=False)
     _warnings: list[str] = field(default_factory=list, init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -186,9 +184,7 @@ class JsonMechanicsRepository:
                     ),
                     prepared=old.prepared or table.get(1, ()),
                 )
-                self._classes[klass] = replace(
-                    definition, subclass_spells=MappingProxyType(merged)
-                )
+                self._classes[klass] = replace(definition, subclass_spells=MappingProxyType(merged))
 
     def _load_origins(self) -> None:
         payload = self._read(self.origins_path, ORIGIN_SCHEMA, "видів")
@@ -208,9 +204,7 @@ class JsonMechanicsRepository:
             except ValidationError as exc:
                 self._warnings.append(f"механіки передісторії {key!r}: {exc}")
 
-    def _load_species(
-        self, key: Any, record: Mapping[str, Any], bucket: dict[str, SpeciesMechanics]
-    ) -> None:
+    def _load_species(self, key: Any, record: Mapping[str, Any], bucket: dict[str, SpeciesMechanics]) -> None:
         try:
             bucket[str(key)] = SpeciesMechanics.from_index(str(key), record)
         except ValidationError as exc:
@@ -220,8 +214,7 @@ class JsonMechanicsRepository:
         assert path is not None
         if not path.is_file():
             self._warnings.append(
-                f"немає індексу механік {what}: {path.name} "
-                f"(складає scripts/ingest/mechanics.py --write)"
+                f"немає індексу механік {what}: {path.name} (складає scripts/ingest/mechanics.py --write)"
             )
             return None
         try:
@@ -233,14 +226,14 @@ class JsonMechanicsRepository:
             self._warnings.append(f"{path.name}: {exc}")
             return None
         if payload.get("schema") != schema:
-            self._warnings.append(
-                f"{path.name}: схема {payload.get('schema')!r}, очікується {schema!r}"
-            )
+            self._warnings.append(f"{path.name}: схема {payload.get('schema')!r}, очікується {schema!r}")
             return None
         return payload
 
 
-_SPELL_TABLE = re.compile(r"^\|\s*(\w+) Level\s*\|\s*(?:Circle\s+)?Spells?\s*\|[^\n]*\n\|[- |]+\|\n((?:\|[^\n]*\|\n?)+)", re.M)
+_SPELL_TABLE = re.compile(
+    r"^\|\s*(\w+) Level\s*\|\s*(?:Circle\s+)?Spells?\s*\|[^\n]*\n\|[- |]+\|\n((?:\|[^\n]*\|\n?)+)", re.M
+)
 
 
 def subclass_spell_tables(text: str, class_key: str) -> list[dict[int, tuple[str, ...]]]:
@@ -254,8 +247,6 @@ def subclass_spell_tables(text: str, class_key: str) -> list[dict[int, tuple[str
             cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
             level = re.match(r"\d+", cells[0]) if cells else None
             if level and len(cells) > 1:
-                result[int(level.group())] = tuple(
-                    name.strip() for name in cells[1].split(",") if name.strip()
-                )
+                result[int(level.group())] = tuple(name.strip() for name in cells[1].split(",") if name.strip())
         tables.append(result)
     return tables

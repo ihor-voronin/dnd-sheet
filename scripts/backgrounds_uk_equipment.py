@@ -207,9 +207,7 @@ def main() -> int:
         print("БЕЗ ПЕРЕКЛАДУ:", *missing, sep="\n  ")
         return 1
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(
-        json.dumps(translated, ensure_ascii=False, indent=1), encoding="utf-8"
-    )
+    OUTPUT.write_text(json.dumps(translated, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"фраз: {len(translated)}")
     return 0
 

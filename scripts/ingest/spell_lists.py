@@ -34,9 +34,7 @@ TARGET = CONTENT / "index" / "spell-lists.json"
 _HEADING_RE = re.compile(r"<h(?P<level>[24])\b[^>]*>(?P<inner>.*?)</h(?P=level)>", re.S)
 _ANCHOR_RE = re.compile(r"<p\b[^>]*>\s*<a\b[^>]*>(?P<text>.*?)</a>\s*</p>", re.S)
 _TAG_RE = re.compile(r"<[^>]+>")
-_LEVEL_RE = re.compile(
-    r"(?P<ordinal>cantrip|\d+)(?:st|nd|rd|th)?\s*(?:-\s*)?level", re.IGNORECASE
-)
+_LEVEL_RE = re.compile(r"(?P<ordinal>cantrip|\d+)(?:st|nd|rd|th)?\s*(?:-\s*)?level", re.IGNORECASE)
 _ORDINALS = {"0": 0, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9}
 
 
@@ -89,9 +87,7 @@ def parse_page(book: str, path: Path) -> ExtractResult:
             name = clean(payload)
             if not name:
                 continue
-            bucket = result.lists.setdefault(current_class, {}).setdefault(
-                current_level, []
-            )
+            bucket = result.lists.setdefault(current_class, {}).setdefault(current_level, [])
             if name in bucket:
                 continue
             bucket.append(name)
@@ -141,9 +137,7 @@ def discover_pages() -> list[tuple[str, Path]]:
 def build_index() -> dict:
     pages = discover_pages()
     if not pages:
-        raise SystemExit(
-            "немає сторінок «Spell Lists» у content/raw/*/ — спершу запустіть ingest"
-        )
+        raise SystemExit("немає сторінок «Spell Lists» у content/raw/*/ — спершу запустіть ingest")
 
     lists: dict[str, dict[str, dict[int, list[str]]]] = {}
     sources: dict[str, str] = {}

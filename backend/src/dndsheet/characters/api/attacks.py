@@ -378,15 +378,21 @@ def _class_notes(view, rules: _AttackRules, *, ranged: bool, finesse: bool):  # 
     if rules.rage and not ranged and view.ability is Ability.STR:
         view = _note(view, f"у люті (Rage): +{rules.rage} урону")
     if rules.sneak_dice and (ranged or finesse):
-        view = _note(view, f"Підступна атака (Sneak Attack): +{rules.sneak_dice}d6 раз на хід, з перевагою чи союзником поруч")
+        view = _note(
+            view, f"Підступна атака (Sneak Attack): +{rules.sneak_dice}d6 раз на хід, з перевагою чи союзником поруч"
+        )
     if rules.smite and not ranged:
-        view = _note(view, "Божественна кара (Divine Smite): +2d8 променистого за комірку 1 рівня, +1d8 за кожен вищий")
+        view = _note(
+            view, "Божественна кара (Divine Smite): +2d8 променистого за комірку 1 рівня, +1d8 за кожен вищий"
+        )
     if rules.improved_smite and not ranged:
         view = _note(view, "Покращена божественна кара (Improved Divine Smite): +1d8 променистого урону щоразу")
     if rules.crit_range < 20:
         view = _note(view, f"критичне влучання на {rules.crit_range}–20")
     if rules.brutal_dice and not ranged:
-        view = _note(view, f"Брутальний критичний удар (Brutal Critical): +{rules.brutal_dice} кістки зброї при критичному")
+        view = _note(
+            view, f"Брутальний критичний удар (Brutal Critical): +{rules.brutal_dice} кістки зброї при критичному"
+        )
     if "colossus slayer" in rules.hunter:
         view = _note(view, "Убивця колосів (Colossus Slayer): +1d8 раз на хід, якщо ціль уже поранена")
     if "horde breaker" in rules.hunter:
@@ -419,8 +425,10 @@ def _fighting_style(view, properties: str, character: Character):  # noqa: ANN00
     if melee and "two-handed" not in properties and character.has_class_choice("dueling"):
         view = replace(view, damage=_add_damage(view.damage, 2))
         view = _note(view, "Дуель (Dueling): +2, якщо в другій руці немає зброї")
-    if melee and ("two-handed" in properties or "versatile" in properties) and character.has_class_choice(
-        "great weapon fighting"
+    if (
+        melee
+        and ("two-handed" in properties or "versatile" in properties)
+        and character.has_class_choice("great weapon fighting")
     ):
         view = _note(view, "Бій великою зброєю (Great Weapon Fighting): перекидайте 1 і 2 на кубиках урону")
     if melee and "light" in properties and character.has_class_choice("two-weapon fighting"):
@@ -445,11 +453,7 @@ def _weapon_proficient(profile: WeaponProfile, computed: ComputedSheet) -> bool:
     Власна зброя без групи в довіднику вважається знайомою — інакше вписаний
     гравцем магічний меч раптом втратив би бонус майстерності.
     """
-    owned = {
-        _singular(item.value)
-        for item in computed.proficiencies.items
-        if item.kind is ProficiencyKind.WEAPON
-    }
+    owned = {_singular(item.value) for item in computed.proficiencies.items if item.kind is ProficiencyKind.WEAPON}
     group = profile.group.casefold()
     if not group:
         return True

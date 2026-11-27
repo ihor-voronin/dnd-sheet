@@ -19,11 +19,11 @@ from typing import Any, Mapping
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from dndsheet.export.domain.renderer import (
+    RendererError,
+    RendererUnavailable,
     RenderFormat,
     RenderOptions,
     RenderResult,
-    RendererError,
-    RendererUnavailable,
     check_contract,
 )
 from dndsheet.sheets.domain.document import SheetDocument
@@ -74,9 +74,7 @@ class PdfRenderer:
         try:
             from weasyprint import HTML
         except ImportError as exc:
-            raise RendererUnavailable(
-                "WeasyPrint не встановлено (потрібен extra `pdf` і GTK на Windows)"
-            ) from exc
+            raise RendererUnavailable("WeasyPrint не встановлено (потрібен extra `pdf` і GTK на Windows)") from exc
         try:
             pdf_bytes = HTML(string=html, base_url=str(self._templates_dir)).write_pdf()
         except Exception as exc:  # noqa: BLE001 - помилки WeasyPrint різнорідні
@@ -116,9 +114,7 @@ class PdfRenderer:
         try:
             from weasyprint import HTML
         except ImportError as exc:
-            raise RendererUnavailable(
-                "WeasyPrint не встановлено (потрібен extra `pdf` і GTK на Windows)"
-            ) from exc
+            raise RendererUnavailable("WeasyPrint не встановлено (потрібен extra `pdf` і GTK на Windows)") from exc
         try:
             pdf_bytes = HTML(string=html, base_url=str(self._templates_dir)).write_pdf()
         except Exception as exc:  # noqa: BLE001 - помилки WeasyPrint різнорідні

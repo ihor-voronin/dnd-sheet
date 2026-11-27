@@ -56,9 +56,7 @@ class Category(StrEnum):
             return cls(value)
         except ValueError as exc:
             known = ", ".join(category.value for category in cls)
-            raise ValidationError(
-                f"невідома категорія {value!r}; відомі: {known}"
-            ) from exc
+            raise ValidationError(f"невідома категорія {value!r}; відомі: {known}") from exc
 
 
 #: Порядок показу категорій: від «з чого збирається персонаж» до «довідкового».
@@ -117,13 +115,9 @@ class CompendiumEntry:
         entry_id = str(record["id"])
         category = Category.parse(str(record["category"]))
         if entry_id.split("/")[1:2] != [category.value]:
-            raise ValidationError(
-                f"запис {entry_id}: id не збігається з категорією {category.value}"
-            )
+            raise ValidationError(f"запис {entry_id}: id не збігається з категорією {category.value}")
         if record["schema"] != SCHEMA:
-            raise ValidationError(
-                f"запис {entry_id}: схема {record['schema']!r}, очікується {SCHEMA!r}"
-            )
+            raise ValidationError(f"запис {entry_id}: схема {record['schema']!r}, очікується {SCHEMA!r}")
 
         data = record.get("data") or {}
         if not isinstance(data, Mapping):

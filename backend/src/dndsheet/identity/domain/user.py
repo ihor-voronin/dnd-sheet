@@ -78,11 +78,7 @@ def verify_telegram_login(
     received = str(payload.get("hash") or "")
     if not received:
         raise ValidationError("немає підпису Telegram")
-    fields = {
-        str(key): str(value)
-        for key, value in payload.items()
-        if key != "hash" and value is not None
-    }
+    fields = {str(key): str(value) for key, value in payload.items() if key != "hash" and value is not None}
     check_string = "\n".join(f"{key}={fields[key]}" for key in sorted(fields))
     secret = hashlib.sha256(bot_token.encode("utf-8")).digest()
     expected = hmac.new(secret, check_string.encode("utf-8"), hashlib.sha256).hexdigest()

@@ -2,11 +2,10 @@
  * Кодогенерація TS-типів з контракту.
  * Запуск: pnpm run contract (потрібен один раз після npm install).
  */
+import { compileFromFile } from "json-schema-to-typescript";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-
-import { compileFromFile } from "json-schema-to-typescript";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const schemaPath = resolve(here, "../../contract/sheet-document.schema.json");

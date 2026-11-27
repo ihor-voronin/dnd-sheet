@@ -72,6 +72,4 @@ def check_contract(document: SheetDocument) -> None:
     except (AttributeError, ValueError) as exc:
         raise RendererError(f"Некоректна версія контракту: {document.schema_version!r}") from exc
     if major != CONTRACT_MAJOR:
-        raise RendererError(
-            f"Рендер підтримує контракт {CONTRACT_MAJOR}.x, отримано {document.schema_version}"
-        )
+        raise RendererError(f"Рендер підтримує контракт {CONTRACT_MAJOR}.x, отримано {document.schema_version}")

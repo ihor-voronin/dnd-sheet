@@ -1,23 +1,7 @@
+import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { CharacterCard } from "./features/home/CharacterCard";
-import {
-  inTelegram,
-  initialHash,
-  onTelegramThemeChange,
-  paintTelegramChrome,
-  startTelegramShell,
-  telegram,
-  telegramBackButton,
-  telegramTheme,
-} from "./telegram";
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 import {
   fetchAuthConfig,
@@ -29,12 +13,23 @@ import {
   logout,
 } from "./api";
 import { LoginPanel } from "./features/auth/Login";
+import { CharacterView } from "./features/character/CharacterView";
+import { LevelUpWizard } from "./features/character/LevelUp";
+import { CharacterCard } from "./features/home/CharacterCard";
 import { Home } from "./features/home/Home";
 import { KnowledgeBase, isKbSection } from "./features/knowledge/KnowledgeBase";
 import type { KbSection } from "./features/knowledge/KnowledgeBase";
-import { CharacterView } from "./features/character/CharacterView";
-import { LevelUpWizard } from "./features/character/LevelUp";
 import { CreateWizard } from "./features/wizard/CreateWizard";
+import {
+  inTelegram,
+  initialHash,
+  onTelegramThemeChange,
+  paintTelegramChrome,
+  startTelegramShell,
+  telegram,
+  telegramBackButton,
+  telegramTheme,
+} from "./telegram";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5_000, retry: 1 } },
@@ -96,11 +91,11 @@ function useRoute(): [Route, (next: Route) => void] {
           ? "#/create"
           : next.name === "kb"
             ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
-          : next.name === "levelup"
-            ? `#/character/${encodeURIComponent(next.id)}/level-up`
-            : next.name === "shared"
-              ? `#/s/${encodeURIComponent(next.token)}`
-              : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
+            : next.name === "levelup"
+              ? `#/character/${encodeURIComponent(next.id)}/level-up`
+              : next.name === "shared"
+                ? `#/s/${encodeURIComponent(next.token)}`
+                : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
     if (window.location.hash === target) setRoute(next);
     else window.location.hash = target;
   }, []);
@@ -174,15 +169,7 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
   );
 }
 
-function CharacterPage({
-  id,
-  tab,
-  navigate,
-}: {
-  id: string;
-  tab?: string;
-  navigate: (next: Route) => void;
-}) {
+function CharacterPage({ id, tab, navigate }: { id: string; tab?: string; navigate: (next: Route) => void }) {
   const { data, isPending, error } = useQuery({
     queryKey: ["character", id],
     queryFn: () => fetchCharacter(id),
@@ -219,9 +206,7 @@ function SharedPage({ token }: { token: string }) {
   if (isPending) return <p className="status">Відкриваємо лист…</p>;
   if (error || !data) {
     return (
-      <p className="status status--error">
-        Посилання недійсне або власник його вимкнув. Попросіть нове посилання.
-      </p>
+      <p className="status status--error">Посилання недійсне або власник його вимкнув. Попросіть нове посилання.</p>
     );
   }
   return <CharacterView key={token} initial={data.sheet} shareToken={token} />;
@@ -233,11 +218,7 @@ function LevelUpPage({ id, navigate }: { id: string; navigate: (next: Route) => 
   return (
     <>
       <p className="crumbs">
-        <button
-          type="button"
-          className="link-button"
-          onClick={() => navigate({ name: "character", id })}
-        >
+        <button type="button" className="link-button" onClick={() => navigate({ name: "character", id })}>
           ← до листа
         </button>
       </p>
@@ -245,16 +226,12 @@ function LevelUpPage({ id, navigate }: { id: string; navigate: (next: Route) => 
         characterId={id}
         onCancel={() => navigate({ name: "character", id })}
         onOpenSpells={() => navigate({ name: "character", id, tab: "spells" })}
-        onDone={(report) => {
+        onDone={() => {
           // Лист уже змінився на сервері: стара відповідь у кеші недійсна.
           void queryClient.invalidateQueries({ queryKey: ["character", id] });
           void queryClient.invalidateQueries({ queryKey: ["level-up", id] });
           void queryClient.invalidateQueries({ queryKey: ["characters"] });
           window.location.hash = `#/character/${encodeURIComponent(id)}`;
-          console.info(
-            `рівень ${report.total_level_before} → ${report.total_level_after}: ` +
-              `${report.class_name} ${report.from_level} → ${report.to_level}`,
-          );
         }}
       />
     </>
@@ -378,9 +355,9 @@ function Shell() {
                 ? "довідник"
                 : route.name === "shared"
                   ? "лист персонажа · перегляд"
-                : route.name === "home"
-                  ? "головна"
-                  : "лист персонажа"}
+                  : route.name === "home"
+                    ? "головна"
+                    : "лист персонажа"}
         </a>
         <nav className="topnav" aria-label="Розділи">
           <button
@@ -451,7 +428,9 @@ function Shell() {
                 <button
                   type="button"
                   className="button button--primary"
-                  onClick={() => document.getElementById("login")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  onClick={() =>
+                    document.getElementById("login")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
                 >
                   Увійти й створити персонажа
                 </button>
@@ -466,9 +445,7 @@ function Shell() {
       {user && route.name === "create" ? (
         <CreateWizard onFinished={(characterId) => navigate({ name: "character", id: characterId })} />
       ) : null}
-      {user && route.name === "character" ? (
-        <CharacterPage id={route.id} tab={route.tab} navigate={navigate} />
-      ) : null}
+      {user && route.name === "character" ? <CharacterPage id={route.id} tab={route.tab} navigate={navigate} /> : null}
       {user && route.name === "levelup" ? <LevelUpPage id={route.id} navigate={navigate} /> : null}
       {route.name === "shared" ? <SharedPage token={route.token} /> : null}
     </main>

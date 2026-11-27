@@ -116,9 +116,7 @@ def main() -> int:
 
     input_dir.mkdir(parents=True, exist_ok=True)
     (input_dir / "names.json").write_text(
-        json.dumps(
-            [row for _, row in sorted(names.items())], ensure_ascii=False, indent=1
-        ),
+        json.dumps([row for _, row in sorted(names.items())], ensure_ascii=False, indent=1),
         encoding="utf-8",
     )
     chunks = write_chunks(input_dir, "texts", list(texts.values()))

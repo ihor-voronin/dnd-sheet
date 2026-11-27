@@ -7,9 +7,8 @@
  * Ціни й обкладинки — з `content/books_market.json` (звірено з маркетплейсом
  * D&D Beyond; дата перевірки показується поруч).
  */
-
-import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
 import { fetchBooksOverview } from "../../api";
 import type { BookOverview } from "../../api";
@@ -43,7 +42,8 @@ const CONTENTS: { key: string; title: string; section: string; note?: (totals: R
     key: "species",
     title: "Види",
     section: "species",
-    note: (totals) => (totals.subspecies ? `і ${totals.subspecies} ${plural(totals.subspecies, ["підраса", "підраси", "підрас"])}` : ""),
+    note: (totals) =>
+      totals.subspecies ? `і ${totals.subspecies} ${plural(totals.subspecies, ["підраса", "підраси", "підрас"])}` : "",
   },
   { key: "background", title: "Передісторії", section: "backgrounds" },
   { key: "feat", title: "Риси", section: "feats" },
@@ -100,21 +100,33 @@ export function Home({
         <div className="home-hero__text">
           <h1 className="home-hero__title">Лист персонажа D&amp;D українською</h1>
           <p className="home-hero__lead">
-            Створіть героя за правилами Книги гравця 2014 — від виду й класу до заклять і спорядження.
-            Лист сам рахує бонуси, комірки й хіти, а надрукований виглядає як папір за столом:
-            чорним по білому, з місцем для олівця.
+            Створіть героя за правилами Книги гравця 2014 — від виду й класу до заклять і спорядження. Лист сам рахує
+            бонуси, комірки й хіти, а надрукований виглядає як папір за столом: чорним по білому, з місцем для олівця.
           </p>
           <div className="home-hero__actions">{actions}</div>
         </div>
-        <figure className="home-sheets" aria-label="Надрукований лист персонажа: головна сторінка, закляття й пояснення вмінь">
+        <figure
+          className="home-sheets"
+          aria-label="Надрукований лист персонажа: головна сторінка, закляття й пояснення вмінь"
+        >
           <div className="home-sheets__stack">
-          <img className="home-sheets__page home-sheets__page--back" src="/previews/sheet-features.png" alt="" loading="lazy" />
-          <img className="home-sheets__page home-sheets__page--mid" src="/previews/sheet-spells.png" alt="" loading="lazy" />
-          <img
-            className="home-sheets__page home-sheets__page--front"
-            src="/previews/sheet-front.png"
-            alt="Головна сторінка надрукованого листа: характеристики, навички, хіти, атаки"
-          />
+            <img
+              className="home-sheets__page home-sheets__page--back"
+              src="/previews/sheet-features.png"
+              alt=""
+              loading="lazy"
+            />
+            <img
+              className="home-sheets__page home-sheets__page--mid"
+              src="/previews/sheet-spells.png"
+              alt=""
+              loading="lazy"
+            />
+            <img
+              className="home-sheets__page home-sheets__page--front"
+              src="/previews/sheet-front.png"
+              alt="Головна сторінка надрукованого листа: характеристики, навички, хіти, атаки"
+            />
           </div>
           <figcaption className="home-sheets__caption">
             Так виглядає PDF: головна сторінка, закляття, спорядження, журнал пригод і пояснення вмінь.
@@ -125,7 +137,9 @@ export function Home({
       <section className="home-account">{account}</section>
 
       <section className="home-contents" aria-labelledby="home-contents-title">
-        <h2 id="home-contents-title" className="home-h2">Що всередині довідника</h2>
+        <h2 id="home-contents-title" className="home-h2">
+          Що всередині довідника
+        </h2>
         <p className="home-note">
           Усе доступне без входу: розділи довідника відкриваються з цього змісту.
           {data ? ` Зібрано з ${data.sources} джерел.` : ""}
@@ -147,10 +161,12 @@ export function Home({
       </section>
 
       <section className="home-books" aria-labelledby="home-books-title">
-        <h2 id="home-books-title" className="home-h2">Книги, з яких зібрано довідник</h2>
+        <h2 id="home-books-title" className="home-h2">
+          Книги, з яких зібрано довідник
+        </h2>
         <p className="home-note">
-          Тексти правил належать Wizards of the Coast. Якщо граєте з довідником — купіть книги:
-          так ви підтримуєте тих, хто їх пише. Ціни — цифрові версії на D&amp;D Beyond у доларах США,
+          Тексти правил належать Wizards of the Coast. Якщо граєте з довідником — купіть книги: так ви підтримуєте тих,
+          хто їх пише. Ціни — цифрові версії на D&amp;D Beyond у доларах США,
           {data?.checked ? ` перевірено ${checkedLabel(data.checked)}` : " перевіряються вручну"}; вони змінюються.
         </p>
         {overview.isPending ? <p className="status">Читаємо перелік книг…</p> : null}
@@ -204,10 +220,12 @@ export function Home({
       </section>
 
       <section className="home-disclaimer" aria-labelledby="home-disclaimer-title">
-        <h2 id="home-disclaimer-title" className="home-h2">Застереження</h2>
+        <h2 id="home-disclaimer-title" className="home-h2">
+          Застереження
+        </h2>
         <p>
-          Це неофіційний некомерційний фанатський проєкт для власної ігрової групи. Він безкоштовний, не має реклами
-          й платних функцій і не повʼязаний з Wizards of the Coast чи D&amp;D Beyond.
+          Це неофіційний некомерційний фанатський проєкт для власної ігрової групи. Він безкоштовний, не має реклами й
+          платних функцій і не повʼязаний з Wizards of the Coast чи D&amp;D Beyond.
         </p>
         <p>
           Dungeons &amp; Dragons, D&amp;D, назви книг, світів, персонажів і тексти правил — власність Wizards of the

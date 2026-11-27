@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.attacks import WeaponProfile, attack_profile
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
@@ -12,12 +11,12 @@ from dndsheet.characters.domain.state import DeathSaves, SheetState
 from dndsheet.characters.domain.vitals import HitPointState
 from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.kernel import Ability
-
 from helpers import make_character
 
 
 def _warlock(rules):
-    from dndsheet.shared.kernel import Ability as A, AbilityScore
+    from dndsheet.shared.kernel import Ability as A
+    from dndsheet.shared.kernel import AbilityScore
 
     return make_character(
         rules,
@@ -186,14 +185,14 @@ def test_spend_hit_die_heals(rules) -> None:
     assert healed == 7
     assert character.hp.current == 9
     assert character.state.hit_die_used(10) == 1
-    assert 9 <= sheet.hit_points.maximum
+    assert sheet.hit_points.maximum >= 9
     with pytest.raises(ValidationError, match="усі"):
         RestService().spend_hit_die(character, 10, 7)
 
 
 def test_spend_hit_die_checks_roll(rules) -> None:
     character = make_character(rules)
-    with pytest.raises(ValidationError, match="1..10"):
+    with pytest.raises(ValidationError, match=r"1..10"):
         RestService().spend_hit_die(character, 10, 11)
     with pytest.raises(ValidationError, match="немає"):
         RestService().spend_hit_die(character, 12, 3)

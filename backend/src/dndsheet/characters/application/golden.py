@@ -24,9 +24,9 @@ from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemK
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
 from dndsheet.characters.domain.spells import KnownSpell
@@ -99,10 +99,7 @@ def _fighter(rules: RulesSource) -> GoldenCase:
     return GoldenCase(
         key="fighter-1",
         title_uk="Воїн 1",
-        summary_uk=(
-            "Людина, Солдат. Важка броня й щит, максимум d10, рятівні кидки STR/CON, "
-            "бонус майстерності +2."
-        ),
+        summary_uk=("Людина, Солдат. Важка броня й щит, максимум d10, рятівні кидки STR/CON, бонус майстерності +2."),
         character=character,
     )
 
@@ -130,9 +127,7 @@ def _warlock(rules: RulesSource) -> GoldenCase:
                 class_key="warlock",
                 entry_id="phb-2014/spell/prestidigitation",
             ),
-            KnownSpell(
-                name_en="Hex", level=1, class_key="warlock", entry_id="phb-2014/spell/hex"
-            ),
+            KnownSpell(name_en="Hex", level=1, class_key="warlock", entry_id="phb-2014/spell/hex"),
             KnownSpell(
                 name_en="Charm Person",
                 level=1,
@@ -159,10 +154,7 @@ def _warlock(rules: RulesSource) -> GoldenCase:
     return GoldenCase(
         key="warlock-1",
         title_uk="Варлок 1",
-        summary_uk=(
-            "Тифлінг, Служитель. Pact Magic: 1 комірка 1 рівня, DC 13 від CHA, "
-            "опір вогню, темний зір 60."
-        ),
+        summary_uk=("Тифлінг, Служитель. Pact Magic: 1 комірка 1 рівня, DC 13 від CHA, опір вогню, темний зір 60."),
         character=character,
     )
 
@@ -185,12 +177,8 @@ def _multiclass(rules: RulesSource) -> GoldenCase:
             # Маг другим класом навичок не дає (PHB, p. 164).
         ),
         spells=(
-            KnownSpell(
-                name_en="Fire Bolt", level=0, class_key="wizard", entry_id="phb-2014/spell/fire-bolt"
-            ),
-            KnownSpell(
-                name_en="Mage Hand", level=0, class_key="wizard", entry_id="phb-2014/spell/mage-hand"
-            ),
+            KnownSpell(name_en="Fire Bolt", level=0, class_key="wizard", entry_id="phb-2014/spell/fire-bolt"),
+            KnownSpell(name_en="Mage Hand", level=0, class_key="wizard", entry_id="phb-2014/spell/mage-hand"),
             KnownSpell(
                 name_en="Prestidigitation",
                 level=0,
@@ -204,9 +192,7 @@ def _multiclass(rules: RulesSource) -> GoldenCase:
                 entry_id="phb-2014/spell/magic-missile",
                 prepared=True,
             ),
-            KnownSpell(
-                name_en="Shield", level=1, class_key="wizard", entry_id="phb-2014/spell/shield"
-            ),
+            KnownSpell(name_en="Shield", level=1, class_key="wizard", entry_id="phb-2014/spell/shield"),
             KnownSpell(
                 name_en="Misty Step",
                 level=2,

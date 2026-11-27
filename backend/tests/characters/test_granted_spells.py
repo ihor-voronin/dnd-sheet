@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.kernel import Ability, AbilityScore
-
 from helpers import make_character
 
 A = Ability
@@ -29,12 +27,12 @@ def test_tiefling_grants_thaumaturgy(rules) -> None:
 
 
 def test_high_elf_choice_is_required_and_kept(rules) -> None:
-    base = dict(
-        abilities=_scores(str=8, dex=14, con=13, int=15, wis=10, cha=12),
-        species_key="elf",
-        subspecies_key="high elf",
-        classes=[CharacterClass(class_key="wizard", level=1)],
-    )
+    base = {
+        "abilities": _scores(str=8, dex=14, con=13, int=15, wis=10, cha=12),
+        "species_key": "elf",
+        "subspecies_key": "high elf",
+        "classes": [CharacterClass(class_key="wizard", level=1)],
+    }
     with pytest.raises(ValidationError, match="обрано 0"):
         Character(id="c-1", name="Ельф", rules=rules, spell_choices=(), **base)
 
@@ -65,15 +63,11 @@ def test_cleric_domain_spells_are_always_prepared(rules) -> None:
         name="Жрець",
         abilities=_scores(str=12, dex=10, con=14, int=10, wis=15, cha=8),
         rules=rules,
-        classes=[
-            CharacterClass(class_key="cleric", level=1, subclass_key="phb-2014/subclass/life-domain")
-        ],
+        classes=[CharacterClass(class_key="cleric", level=1, subclass_key="phb-2014/subclass/life-domain")],
         species_key="human",
     )
     sheet = DerivedStatsCalculator().compute(character)
-    prepared = {
-        item.name_en for item in sheet.granted_spells if item.source == "subclass" and item.prepared
-    }
+    prepared = {item.name_en for item in sheet.granted_spells if item.source == "subclass" and item.prepared}
     assert prepared == {"bless", "cure wounds"}
     assert character.classes[0].subclass_key == "phb-2014/subclass/life-domain"
 

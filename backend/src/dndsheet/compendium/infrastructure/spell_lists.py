@@ -35,9 +35,7 @@ class JsonSpellListRepository:
     """Класові списки заклять з одного JSON-файлу."""
 
     path: Path | None = None
-    _cache: dict[str, dict[int, tuple[str, ...]]] | None = field(
-        default=None, init=False, repr=False
-    )
+    _cache: dict[str, dict[int, tuple[str, ...]]] | None = field(default=None, init=False, repr=False)
     _books: tuple[str, ...] = field(default=(), init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -71,14 +69,10 @@ class JsonSpellListRepository:
         try:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            raise SpellListsError(
-                f"{self.path.name}: невірний JSON ({exc.msg})"
-            ) from exc
+            raise SpellListsError(f"{self.path.name}: невірний JSON ({exc.msg})") from exc
 
         if payload.get("schema") != SCHEMA:
-            raise SpellListsError(
-                f"{self.path.name}: схема {payload.get('schema')!r}, очікується {SCHEMA!r}"
-            )
+            raise SpellListsError(f"{self.path.name}: схема {payload.get('schema')!r}, очікується {SCHEMA!r}")
 
         merged: dict[str, dict[int, set[str]]] = {}
         books: list[str] = []
@@ -92,10 +86,7 @@ class JsonSpellListRepository:
                     bucket.setdefault(int(level), set()).update(names)
 
         self._cache = {
-            class_name: {
-                level: tuple(sorted(names, key=str.casefold))
-                for level, names in sorted(per_level.items())
-            }
+            class_name: {level: tuple(sorted(names, key=str.casefold)) for level, names in sorted(per_level.items())}
             for class_name, per_level in merged.items()
         }
         self._books = tuple(sorted(books))

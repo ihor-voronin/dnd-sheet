@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
@@ -20,7 +19,6 @@ from dndsheet.characters.infrastructure.character_json import (
 from dndsheet.compendium.infrastructure.mechanics_index import JsonMechanicsRepository
 from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.kernel import Skill
-
 from helpers import make_character
 
 
@@ -45,10 +43,7 @@ def _rogue(rules, level: int = 1):
         rules,
         classes=[CharacterClass(class_key="rogue", level=level)],
         chosen=Proficiencies(
-            items=tuple(
-                _pick(skill)
-                for skill in (Skill.STEALTH, Skill.ACROBATICS, Skill.PERCEPTION, Skill.DECEPTION)
-            )
+            items=tuple(_pick(skill) for skill in (Skill.STEALTH, Skill.ACROBATICS, Skill.PERCEPTION, Skill.DECEPTION))
         ),
     )
 

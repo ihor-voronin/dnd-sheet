@@ -41,19 +41,13 @@ class KnownSpell:
         if isinstance(self.level, bool) or not isinstance(self.level, int):
             raise ValidationError(f"{self.name_en}: рівень закляття має бути числом")
         if not 0 <= self.level <= MAX_SPELL_LEVEL:
-            raise ValidationError(
-                f"{self.name_en}: рівень закляття має бути 0..{MAX_SPELL_LEVEL}"
-            )
+            raise ValidationError(f"{self.name_en}: рівень закляття має бути 0..{MAX_SPELL_LEVEL}")
         if self.custom and self.entry_id:
-            raise ValidationError(
-                f"{self.name_en}: власне закляття не має запису в довіднику"
-            )
+            raise ValidationError(f"{self.name_en}: власне закляття не має запису в довіднику")
         text = (self.description or "").strip()
         object.__setattr__(self, "description", text or None)
         if text and not self.custom:
-            raise ValidationError(
-                f"{self.name_en}: власний текст буває лише у власного закляття"
-            )
+            raise ValidationError(f"{self.name_en}: власний текст буває лише у власного закляття")
 
     @property
     def is_cantrip(self) -> bool:
@@ -87,13 +81,9 @@ class SpellSlots:
     pact: PactMagic | None = None
 
     @classmethod
-    def from_table(
-        cls, table: tuple[int, ...], pact: PactMagic | None = None
-    ) -> "SpellSlots":
+    def from_table(cls, table: tuple[int, ...], pact: PactMagic | None = None) -> "SpellSlots":
         return cls(
-            by_level=tuple(
-                (level, count) for level, count in enumerate(table, start=1) if count
-            ),
+            by_level=tuple((level, count) for level, count in enumerate(table, start=1) if count),
             pact=pact,
         )
 

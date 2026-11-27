@@ -30,7 +30,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import json
 import re
 import sys
 from dataclasses import dataclass, field
@@ -63,10 +62,11 @@ BRACKET = re.compile(r"^(?P<ru>.+?)\s*\[(?P<en>[^\]]+)\]\s*$")
 
 # --- шрифтовий шар --------------------------------------------------------
 
+
 class Line:
     """Рядок текстового шару: текст, кегль, шрифт, чи починається з жирного."""
 
-    __slots__ = ("text", "size", "font", "bold_lead", "page")
+    __slots__ = ("bold_lead", "font", "page", "size", "text")
 
     def __init__(self, text: str, size: float, font: str, bold_lead: bool, page: int) -> None:
         self.text = text
@@ -93,19 +93,23 @@ def read_lines(doc: pymupdf.Document) -> list[Line]:
                 text = ""
                 for index, span in enumerate(spans):
                     piece = span["text"]
-                    if index and text and not text.endswith(" ") and not piece.startswith(" "):
-                        # Стиль змінюється без пробілу: «ремесла» + «Реоркс».
-                        if text[-1].isalnum() and piece[0].isalnum():
-                            text += " "
+                    # Стиль змінюється без пробілу: «ремесла» + «Реоркс».
+                    if (
+                        index
+                        and text
+                        and not text.endswith(" ")
+                        and not piece.startswith(" ")
+                        and text[-1].isalnum()
+                        and piece[0].isalnum()
+                    ):
+                        text += " "
                     text += piece
                 text = re.sub(r"\s+", " ", text).strip()
                 if not text:
                     continue
                 main = max(spans, key=lambda span: len(span["text"]))
                 bold_lead = "Bold" in spans[0]["font"] and len(spans[0]["text"].strip()) > 0
-                lines.append(
-                    Line(text, round(main["size"], 1), main["font"], bold_lead, page_index + 1)
-                )
+                lines.append(Line(text, round(main["size"], 1), main["font"], bold_lead, page_index + 1))
     return lines
 
 
@@ -128,12 +132,7 @@ def heading_level(line: Line) -> int:
         return 3
     if "Bold" in line.font:
         return 4  # назва статблока
-    return 5      # підрозділ сторінки (риса, предмет, локація)
-
-
-def is_stat_section(line: Line) -> bool:
-    """«Особенности», «Действия», «Реакции» — підзаголовок статблока."""
-    return is_display(line) and "Bold" in line.font and line.size < HEADING_MIN
+    return 5  # підрозділ сторінки (риса, предмет, локація)
 
 
 def is_italic_detail(line: Line) -> bool:
@@ -166,9 +165,10 @@ def clean(text: str) -> str:
 
 # --- вузли документа ------------------------------------------------------
 
+
 @dataclass
 class Node:
-    kind: str                       # heading | statsection | italic | para | sidebar
+    kind: str  # heading | statsection | italic | para | sidebar
     text: str
     level: int = 0
     page: int = 0
@@ -189,9 +189,7 @@ def build_nodes(lines: list[Line]) -> list[Node]:
     for line in lines:
         if is_heading(line):
             flush()
-            nodes.append(
-                Node("heading", clean(line.text), heading_level(line), line.page, [line])
-            )
+            nodes.append(Node("heading", clean(line.text), heading_level(line), line.page, [line]))
         elif is_stat_section(line):
             flush()
             nodes.append(Node("statsection", clean(line.text), 4, line.page, [line]))
@@ -218,11 +216,7 @@ def merge_headings(nodes: list[Node]) -> list[Node]:
         if merged and node.kind == "heading" and merged[-1].kind == "heading":
             previous = merged[-1]
             same_style = previous.level == node.level and previous.page == node.page
-            continues = (
-                previous.text.endswith("-")
-                or node.text.startswith(("[", "("))
-                or node.text[:1].islower()
-            )
+            continues = previous.text.endswith("-") or node.text.startswith(("[", "(")) or node.text[:1].islower()
             if same_style and continues:
                 previous.text = join_pair(previous.text, node.text)
                 previous.lines.extend(node.lines)
@@ -240,6 +234,7 @@ def split_name(text: str) -> tuple[str, str | None]:
 
 
 # --- сторінки в markdown --------------------------------------------------
+
 
 def render_md(nodes: list[Node]) -> str:
     parts: list[str] = []
@@ -260,9 +255,7 @@ def dump_pages(doc: pymupdf.Document, lines: list[Line]) -> None:
         by_page.setdefault(line.page, []).append(line)
     for page_index in range(doc.page_count):
         nodes = build_nodes(by_page.get(page_index + 1, []))
-        (PAGES_DIR / f"{page_index + 1:03d}.md").write_text(
-            render_md(nodes) + "\n", encoding="utf-8"
-        )
+        (PAGES_DIR / f"{page_index + 1:03d}.md").write_text(render_md(nodes) + "\n", encoding="utf-8")
 
 
 # --- словники значень -----------------------------------------------------
@@ -392,7 +385,7 @@ def split_creature_line(text: str) -> tuple[str | None, str | None, str | None, 
             size = value
             size_word = text.split(" ", 1)[0]
             break
-    rest = text[len(size_word):].strip() if size_word else text
+    rest = text[len(size_word) :].strip() if size_word else text
     subtype = None
     if "(" in rest and ")" in rest:
         rest, _, extra = rest.partition("(")
@@ -400,7 +393,6 @@ def split_creature_line(text: str) -> tuple[str | None, str | None, str | None, 
         rest = rest.strip()
     creature = pick(CREATURES, rest.lower())
     return size, creature, subtype, alignment
-
 
 
 # --- статблоки ------------------------------------------------------------
@@ -444,9 +436,7 @@ STAT_SECTION_TEXTS = {
     "снаряжение",
 }
 
-CREATURE_LINE_RE = re.compile(
-    r"^(?:крошечн|мал|средн|больш|огромн|громадн|исполинск)\w*\s+[а-яё]", re.IGNORECASE
-)
+CREATURE_LINE_RE = re.compile(r"^(?:крошечн|мал|средн|больш|огромн|громадн|исполинск)\w*\s+[а-яё]", re.IGNORECASE)
 BRACKET_ONLY = re.compile(r"^\[(?P<en>[^\]]+)\]$")
 
 # Назви, яких книга не дублює англійською в дужках (їх довелося взяти з
@@ -460,9 +450,7 @@ MONSTER_EN = {
     "Рыцарь-скелет": "Skeleton Knight",
     "Вестерн Керн": "Wersten Kern",
 }
-CR_RE = re.compile(
-    r"^(?:ПО|Показатель опасности|Уровень опасности)\s*(?P<cr>[0-9/]+)\s*\((?P<rest>[^)]*)\)"
-)
+CR_RE = re.compile(r"^(?:ПО|Показатель опасности|Уровень опасности)\s*(?P<cr>[0-9/]+)\s*\((?P<rest>[^)]*)\)")
 XP_RE = re.compile(r"(?:Опыт|XP)\s*([0-9 ,]+)")
 ABILITY_RE = re.compile(
     r"(?P<label>Сил|Лов|Тел|Инт|Мдр|Хар)\s*(?P<score>-?\d{1,2})"
@@ -476,27 +464,16 @@ def ability_modifier(score: int) -> int:
 
 
 def is_stat_section(line: "Line") -> bool:
-    return (
-        is_display(line)
-        and "Bold" in line.font
-        and line.text.strip().lower().rstrip(":") in STAT_SECTION_TEXTS
-    )
+    return is_display(line) and "Bold" in line.font and line.text.strip().lower().rstrip(":") in STAT_SECTION_TEXTS
 
 
 def is_stat_name(line: "Line") -> bool:
-    return (
-        is_display(line)
-        and "Bold" in line.font
-        and line.size >= HEADING_MIN
-        and not is_stat_section(line)
-    )
+    return is_display(line) and "Bold" in line.font and line.size >= HEADING_MIN and not is_stat_section(line)
 
 
 def parse_abilities(lines: list["Line"]) -> tuple[dict[str, int | None], str | None]:
     """Шість характеристик із розсипу таблиці («Мод Спас», «Сил 22+6 +6»)."""
-    scores: dict[str, int | None] = {
-        "str": None, "dex": None, "con": None, "int": None, "wis": None, "cha": None
-    }
+    scores: dict[str, int | None] = {"str": None, "dex": None, "con": None, "int": None, "wis": None, "cha": None}
     saves: list[str] = []
     joined = " ".join(line.text for line in lines)
     for match in ABILITY_RE.finditer(joined):
@@ -522,17 +499,11 @@ def stat_blocks(lines: list["Line"]) -> list[tuple[str, str | None, int, list["L
     назад, і вперед.
     """
     creature_positions = [
-        index
-        for index, line in enumerate(lines)
-        if is_italic_detail(line) and CREATURE_LINE_RE.match(line.text)
+        index for index, line in enumerate(lines) if is_italic_detail(line) and CREATURE_LINE_RE.match(line.text)
     ]
     blocks: list[tuple[str, str | None, int, list["Line"]]] = []
     for order, position in enumerate(creature_positions):
-        hard_end = (
-            creature_positions[order + 1]
-            if order + 1 < len(creature_positions)
-            else len(lines)
-        )
+        hard_end = creature_positions[order + 1] if order + 1 < len(creature_positions) else len(lines)
         end = hard_end
         for cursor in range(position + 1, hard_end):
             candidate = lines[cursor]
@@ -924,6 +895,7 @@ def take_prerequisite(nodes: list["Node"]) -> tuple[str | None, list["Node"]]:
 
 # --- предмети -------------------------------------------------------------
 
+
 def item_type_from(text: str) -> tuple[str | None, str | None, bool]:
     """«Hукопашное оружие (длинное копьё, пика), легендарное» → тип, база, магія."""
     lowered = text.lower()
@@ -1008,6 +980,7 @@ def parse_item(nodes: list["Node"], ru: str, en: str) -> dict:
 
 
 # --- записи ---------------------------------------------------------------
+
 
 def make_record(
     *,

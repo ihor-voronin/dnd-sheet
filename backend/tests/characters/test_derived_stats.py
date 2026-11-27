@@ -3,20 +3,16 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.inventory import InventoryItem, ItemKind
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
-from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.domain.services.modifier_resolver import ModifierKind
 from dndsheet.shared.kernel import Ability, AbilityScore, Skill
-
 from helpers import make_character
 
 
@@ -79,9 +75,7 @@ def test_armor_class(rules, calculator, armor, shield, expected: int) -> None:
     if armor is not None:
         base, cap = armor
         character.add_item(
-            InventoryItem(
-                name_en="armor", kind=ItemKind.ARMOR, equipped=True, armor_base=base, dex_cap=cap
-            )
+            InventoryItem(name_en="armor", kind=ItemKind.ARMOR, equipped=True, armor_base=base, dex_cap=cap)
         )
     if shield:
         character.add_item(InventoryItem(name_en="shield", kind=ItemKind.SHIELD, equipped=True))
@@ -91,9 +85,7 @@ def test_armor_class(rules, calculator, armor, shield, expected: int) -> None:
 def test_dex_bonus_capped_by_heavy_armor(rules, calculator) -> None:
     character = _with_abilities(rules, dex=16)
     character.add_item(
-        InventoryItem(
-            name_en="chain mail", kind=ItemKind.ARMOR, equipped=True, armor_base=16, dex_cap=0
-        )
+        InventoryItem(name_en="chain mail", kind=ItemKind.ARMOR, equipped=True, armor_base=16, dex_cap=0)
     )
     sheet = calculator.compute(character)
     assert sheet.armor_class == 16
@@ -162,8 +154,7 @@ def test_prepared_limit_warning(rules, calculator) -> None:
     from dndsheet.characters.domain.spells import KnownSpell
 
     spells = tuple(
-        KnownSpell(name_en=f"Spell {index}", level=1, class_key="wizard", prepared=True)
-        for index in range(7)
+        KnownSpell(name_en=f"Spell {index}", level=1, class_key="wizard", prepared=True) for index in range(7)
     )
     character = make_character(
         rules,

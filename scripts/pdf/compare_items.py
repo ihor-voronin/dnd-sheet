@@ -7,6 +7,7 @@ the two OCRs do not agree on the display headings.
 
     python scripts/pdf/compare_items.py [--report logs/gotg_items_diff.txt]
 """
+
 from __future__ import annotations
 
 import difflib
@@ -77,8 +78,8 @@ def main() -> None:
         for tag, i1, i2, j1, j2 in matcher.get_opcodes():
             if tag == "equal":
                 continue
-            ours_frag = " ".join(ours_words[max(0, i1 - 4):i2 + 4])
-            ref_frag = " ".join(ref_words[max(0, j1 - 4):j2 + 4])
+            ours_frag = " ".join(ours_words[max(0, i1 - 4) : i2 + 4])
+            ref_frag = " ".join(ref_words[max(0, j1 - 4) : j2 + 4])
             lines.append(f"   [{tag}] OURS: …{ours_frag}…")
             lines.append(f"          REF : …{ref_frag}…")
 

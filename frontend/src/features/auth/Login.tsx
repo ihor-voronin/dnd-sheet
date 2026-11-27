@@ -8,9 +8,8 @@
  * через BotFather (`/setdomain`), тому на localhost є вхід для розробки —
  * якщо сервер його дозволив.
  */
-
-import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 
 import { fetchAuthConfig, loginDev, loginTelegram } from "../../api";
 
@@ -83,8 +82,8 @@ export function LoginPanel({ reason }: { reason?: string }) {
         <TelegramButton bot={data.telegram_bot} onDone={done} />
       ) : data && !data.dev_login ? (
         <p className="hint">
-          Вхід через Telegram ще не налаштовано: адміністратор має вказати бота
-          (<code>DNDSHEET_TELEGRAM_BOT</code> і <code>DNDSHEET_TELEGRAM_BOT_TOKEN</code>).
+          Вхід через Telegram ще не налаштовано: адміністратор має вказати бота (<code>DNDSHEET_TELEGRAM_BOT</code> і{" "}
+          <code>DNDSHEET_TELEGRAM_BOT_TOKEN</code>).
         </p>
       ) : null}
       {data?.dev_login ? (

@@ -53,9 +53,7 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     for old in OUT.glob("*.json"):
         old.unlink()
-    (OUT / "texts-01.json").write_text(
-        json.dumps(list(rows.values()), ensure_ascii=False, indent=1), encoding="utf-8"
-    )
+    (OUT / "texts-01.json").write_text(json.dumps(list(rows.values()), ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"текстів: {len(rows)}")
     print("слів:", sum(len(row["text_en"].split()) for row in rows.values()))
     print(f"вхід: {OUT}")

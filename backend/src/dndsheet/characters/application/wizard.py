@@ -90,9 +90,7 @@ class WizardService:
         """Застосувати відповідь кроку й зберегти чернетку."""
         draft = self.load(draft_id)
         if expected_revision is not None and expected_revision != draft.revision:
-            raise ConflictError(
-                f"чернетку змінено (ревізія {draft.revision}, надіслано {expected_revision})"
-            )
+            raise ConflictError(f"чернетку змінено (ревізія {draft.revision}, надіслано {expected_revision})")
         body = payload or {}
         try:
             parsed_step = WizardStep(step)
@@ -172,9 +170,7 @@ class WizardService:
         if known is None:
             return
         if subclass_key.strip().casefold() not in {item.casefold() for item in known}:
-            raise ValidationError(
-                f"невідомий підклас {subclass_key!r} для класу {class_key!r}"
-            )
+            raise ValidationError(f"невідомий підклас {subclass_key!r} для класу {class_key!r}")
 
     # ------------------------------------------------------------------
     # створення персонажа
@@ -374,4 +370,3 @@ def _spells(values: Any) -> tuple[KnownSpell, ...]:
         except (KeyError, ValueError, TypeError) as exc:
             raise ValidationError(f"невірне закляття: {record!r}") from exc
     return tuple(spells)
-

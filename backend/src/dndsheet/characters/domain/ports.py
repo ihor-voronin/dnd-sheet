@@ -12,7 +12,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from dndsheet.shared.kernel import Ability
-
 from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,

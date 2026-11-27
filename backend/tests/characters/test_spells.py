@@ -15,12 +15,10 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.spells import KnownSpell
 from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.kernel import Ability, AbilityScore
-
 from helpers import make_character
 
 
@@ -157,9 +155,7 @@ def test_custom_spell_is_marked_and_kept(rules) -> None:  # noqa: ANN001
 
 def test_custom_spell_counts_toward_the_limit(rules) -> None:  # noqa: ANN001
     character = cleric(rules, wis=10)  # ліміт 1
-    character.learn_spell(
-        spell("Наш власний вогонь", custom=True, description="1d6 вогню.", prepared=True)
-    )
+    character.learn_spell(spell("Наш власний вогонь", custom=True, description="1d6 вогню.", prepared=True))
     # Одне місце вже зайняте власним закляттям — книжкове не влазить.
     with pytest.raises(ValidationError) as error:
         character.learn_spell(spell("bless", prepared=True))

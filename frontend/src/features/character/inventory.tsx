@@ -12,22 +12,16 @@
  * Броня в корпусі не має числа КЗ (там лише група), тому базовий КЗ для
  * відомих назв береться з таблиці PHB — гравець усе одно може його змінити.
  */
-
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  fetchBookTitles,
-  fetchEntry,
-  fetchItemCatalog,
-  fetchItemsUk,
-  searchItems,
-} from "../../api";
+import { fetchBookTitles, fetchEntry, fetchItemCatalog, fetchItemsUk, searchItems } from "../../api";
 import type { CompendiumEntry, ItemBody, ItemSearchResult } from "../../api";
 import { ITEM_KIND_LABELS, SOURCE_SHORT } from "../../labels";
-import { itemKey, itemLabel, weaponDamage, weaponNotes } from "./uk";
-import { RuleText } from "./panels";
 import type { SheetItem } from "../wizard/types";
+
 import { NumberField } from "./editing";
+import { RuleText } from "./panels";
+import { itemKey, itemLabel, weaponDamage, weaponNotes } from "./uk";
 
 /** Таблиця броні PHB: назва → базовий КЗ. */
 const ARMOR_BASE: Record<string, number> = {
@@ -154,18 +148,12 @@ function draftFromItem(item: SheetItem): Draft {
 /** Наскільки повні дані запису: чим більше заповнених полів, тим краще. */
 function entryScore(entry: ItemSearchResult): number {
   const values = Object.values(entry.data ?? {});
-  const filled = values.filter(
-    (value) => value !== null && value !== undefined && value !== "",
-  ).length;
+  const filled = values.filter((value) => value !== null && value !== undefined && value !== "").length;
   return filled + (entry.id.startsWith("basic-rules-2014/") ? 0 : 1);
 }
 
 function kindOf(entry: ItemSearchResult, group: string, itemType: string): string {
-  if (
-    itemType === "shield" ||
-    group === "Shield" ||
-    (itemType === "armor" && /(^|\s)shield\b/i.test(entry.name_en))
-  ) {
+  if (itemType === "shield" || group === "Shield" || (itemType === "armor" && /(^|\s)shield\b/i.test(entry.name_en))) {
     return "shield";
   }
   if (itemType === "weapon") return "weapon";
@@ -320,11 +308,7 @@ function statsOf(data: Record<string, unknown>): [string, string][] {
 function isStatLine(text: string): boolean {
   if (text.length >= 260) return false;
   if ((text.match(/ · /g)?.length ?? 0) >= 2) return true;
-  if (
-    /^(Weapon|Armor|Shield|Wondrous item|Potion|Ring|Rod|Staff|Wand|Scroll|Ammunition)\b/i.test(
-      text,
-    )
-  ) {
+  if (/^(Weapon|Armor|Shield|Wondrous item|Potion|Ring|Rod|Staff|Wand|Scroll|Ammunition)\b/i.test(text)) {
     return true;
   }
   return /^(?:[^.]{0,80},?\s*){1,4}(?:\d+\s*(?:lb\.|gp|ft\.)|unknown \(magic\))\s*$/i.test(text);
@@ -409,9 +393,7 @@ export function ItemCatalogBrowser({
       const previous = seen.get(key);
       if (!previous || entryScore(entry) > entryScore(previous)) seen.set(key, entry);
     }
-    return Array.from(seen.values()).sort((left, right) =>
-      left.name_en.localeCompare(right.name_en),
-    );
+    return Array.from(seen.values()).sort((left, right) => left.name_en.localeCompare(right.name_en));
   }, [catalog]);
 
   /** Джерела, яких у каталозі найбільше — саме їх і даємо чипами. */
@@ -461,10 +443,7 @@ export function ItemCatalogBrowser({
     setAdding(null);
     if (ok) {
       setJustAdded(entry.id);
-      window.setTimeout(
-        () => setJustAdded((current) => (current === entry.id ? null : current)),
-        1600,
-      );
+      window.setTimeout(() => setJustAdded((current) => (current === entry.id ? null : current)), 1600);
     }
   }
 
@@ -523,9 +502,7 @@ export function ItemCatalogBrowser({
               className={`chip ${types.includes(OTHER) ? "chip--active" : ""}`}
               onClick={() =>
                 setTypes((current) =>
-                  current.includes(OTHER)
-                    ? current.filter((value) => value !== OTHER)
-                    : [...current, OTHER],
+                  current.includes(OTHER) ? current.filter((value) => value !== OTHER) : [...current, OTHER],
                 )
               }
             >
@@ -577,16 +554,12 @@ export function ItemCatalogBrowser({
             ))}
           </div>
 
-          {catalogError ? (
-            <p className="hint hint--warn">Каталог не завантажився: {catalogError}</p>
-          ) : null}
+          {catalogError ? <p className="hint hint--warn">Каталог не завантажився: {catalogError}</p> : null}
           {!catalog && !catalogError ? <p className="hint">Завантажуємо каталог…</p> : null}
           {catalog ? (
             <p className="hint">
               {filtered.length} з {entries.length} предметів
-              {types.length || source || magical !== "any" || query.trim()
-                ? " за фільтром"
-                : ""}
+              {types.length || source || magical !== "any" || query.trim() ? " за фільтром" : ""}
             </p>
           ) : null}
 
@@ -599,9 +572,7 @@ export function ItemCatalogBrowser({
                   <li key={entry.id} className="inv-catalog__row">
                     <span className="inv-catalog__main">
                       <span className="inv-catalog__name">{itemLabel(entry.name_en)}</span>
-                      <span className="inv-catalog__meta">
-                        {catalogMeta(entry, titles) || "—"}
-                      </span>
+                      <span className="inv-catalog__meta">{catalogMeta(entry, titles) || "—"}</span>
                     </span>
                     {onAdd ? (
                       <button
@@ -724,12 +695,8 @@ export function InventoryPanel({
 
   async function addFromCatalog(entry: ItemSearchResult): Promise<boolean> {
     //: DDB-звичка: повторне «Додати» збільшує кількість, а не плодить рядки.
-    const same = items.findIndex(
-      (item) => itemKey(item.name_en) === itemKey(entry.name_en),
-    );
-    return same >= 0
-      ? onUpdate(same, { quantity: items[same].quantity + 1 })
-      : onAdd(bodyFromEntry(entry));
+    const same = items.findIndex((item) => itemKey(item.name_en) === itemKey(entry.name_en));
+    return same >= 0 ? onUpdate(same, { quantity: items[same].quantity + 1 }) : onAdd(bodyFromEntry(entry));
   }
 
   async function remove(index: number) {
@@ -820,8 +787,7 @@ export function InventoryPanel({
       <h3 className="sheet-work__title">
         <span>Інвентар</span>
         <span className="short">
-          настроювання {attunedCount} з {attunementLimit} · вага {carrying.weight} з{" "}
-          {carrying.capacity} фнт
+          настроювання {attunedCount} з {attunementLimit} · вага {carrying.weight} з {carrying.capacity} фнт
         </span>
       </h3>
 
@@ -833,33 +799,23 @@ export function InventoryPanel({
         ))}
       </div>
 
-      <ItemCatalogBrowser
-        onAdd={addFromCatalog}
-        onCustom={() => openAdd()}
-        disabled={disabled}
-      />
+      <ItemCatalogBrowser onAdd={addFromCatalog} onCustom={() => openAdd()} disabled={disabled} />
       {form ? (
         <div className="inv-form">
-          <p className="inv-form__title">
-            {form.index === null ? "Новий предмет" : "Змінити предмет"}
-          </p>
+          <p className="inv-form__title">{form.index === null ? "Новий предмет" : "Змінити предмет"}</p>
           <div className="inv-form__grid">
             <label className="field inv-form__wide">
               <span>Назва</span>
               <input
                 value={form.draft.name_en}
-                onChange={(event) =>
-                  setForm({ ...form, draft: { ...form.draft, name_en: event.target.value } })
-                }
+                onChange={(event) => setForm({ ...form, draft: { ...form.draft, name_en: event.target.value } })}
               />
             </label>
             <label className="field">
               <span>Тип</span>
               <select
                 value={form.draft.kind}
-                onChange={(event) =>
-                  setForm({ ...form, draft: { ...form.draft, kind: event.target.value } })
-                }
+                onChange={(event) => setForm({ ...form, draft: { ...form.draft, kind: event.target.value } })}
               >
                 {Object.entries(ITEM_KIND_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -896,9 +852,7 @@ export function InventoryPanel({
                 <input
                   value={form.draft.damage}
                   placeholder={form.draft.damageHint || "напр. 1d8+3 slashing"}
-                  onChange={(event) =>
-                    setForm({ ...form, draft: { ...form.draft, damage: event.target.value } })
-                  }
+                  onChange={(event) => setForm({ ...form, draft: { ...form.draft, damage: event.target.value } })}
                 />
               </label>
             ) : null}
@@ -912,9 +866,7 @@ export function InventoryPanel({
                     max={20}
                     size="sm"
                     title="Базовий КЗ броні"
-                    onChange={(value) =>
-                      setForm({ ...form, draft: { ...form.draft, armorBase: value } })
-                    }
+                    onChange={(value) => setForm({ ...form, draft: { ...form.draft, armorBase: value } })}
                   />
                 </label>
                 <label className="field inv-form__num">
@@ -926,9 +878,7 @@ export function InventoryPanel({
                     size="sm"
                     disabled={form.draft.dexCap === null}
                     title="Межа бонусу Спритності"
-                    onChange={(value) =>
-                      setForm({ ...form, draft: { ...form.draft, dexCap: value } })
-                    }
+                    onChange={(value) => setForm({ ...form, draft: { ...form.draft, dexCap: value } })}
                   />
                 </label>
                 <label className="field inv-form__check">
@@ -951,18 +901,14 @@ export function InventoryPanel({
               <input
                 value={form.draft.notes}
                 placeholder="напр. Versatile (1d10), Light"
-                onChange={(event) =>
-                  setForm({ ...form, draft: { ...form.draft, notes: event.target.value } })
-                }
+                onChange={(event) => setForm({ ...form, draft: { ...form.draft, notes: event.target.value } })}
               />
             </label>
             <label className="field inv-form__check">
               <input
                 type="checkbox"
                 checked={form.draft.equipped}
-                onChange={(event) =>
-                  setForm({ ...form, draft: { ...form.draft, equipped: event.target.checked } })
-                }
+                onChange={(event) => setForm({ ...form, draft: { ...form.draft, equipped: event.target.checked } })}
               />
               <span>споряджено</span>
             </label>
@@ -985,9 +931,7 @@ export function InventoryPanel({
                 <input
                   type="checkbox"
                   checked={form.draft.hex_weapon}
-                  onChange={(event) =>
-                    setForm({ ...form, draft: { ...form.draft, hex_weapon: event.target.checked } })
-                  }
+                  onChange={(event) => setForm({ ...form, draft: { ...form.draft, hex_weapon: event.target.checked } })}
                 />
                 <span title="Хекс-воїн (Hex Warrior): атаки цією зброєю — Харизмою; обирається після тривалого відпочинку">
                   зброя Хекс-воїна (Hex Warrior)
@@ -1047,11 +991,7 @@ export function InventoryPanel({
               item.notes,
             ].filter(Boolean);
             const isOpen = detail?.index === index;
-            const stats = detail?.index === index && detail.stats.length
-              ? detail.stats
-              : entry
-                ? statsOf(data)
-                : [];
+            const stats = detail?.index === index && detail.stats.length ? detail.stats : entry ? statsOf(data) : [];
             //: Настроювання показуємо, коли предмет його потребує (це знає
             //: довідник) або коли гравець уже настроївся. Порожній чип на
             //: кожній мотузці був би шумом.
@@ -1060,17 +1000,12 @@ export function InventoryPanel({
             const attuneBlocked = !item.attuned && attunedCount >= attunementLimit;
             const statsRows = stats.filter(([label]) => label !== "Настроювання");
             if (showAttune) {
-              statsRows.push([
-                "Настроювання",
-                item.attuned ? "настроєно" : "потрібне, ще не настроєно",
-              ]);
+              statsRows.push(["Настроювання", item.attuned ? "настроєно" : "потрібне, ще не настроєно"]);
             }
             return (
               <li
                 key={`${item.name_en}-${index}`}
-                className={`item-row ${form?.index === index ? "is-editing" : ""} ${
-                  isOpen ? "is-open" : ""
-                }`}
+                className={`item-row ${form?.index === index ? "is-editing" : ""} ${isOpen ? "is-open" : ""}`}
               >
                 <span className="item-row__line">
                   <span className="item-main">
@@ -1159,7 +1094,12 @@ export function InventoryPanel({
                 {isOpen ? (
                   <div className="item-detail">
                     {item.kind === "weapon" &&
-                    (bonds.pact || bonds.hex || bonds.kensei || item.pact_weapon || item.hex_weapon || item.kensei_weapon) ? (
+                    (bonds.pact ||
+                      bonds.hex ||
+                      bonds.kensei ||
+                      item.pact_weapon ||
+                      item.hex_weapon ||
+                      item.kensei_weapon) ? (
                       <div className="chip-row item-detail__bonds">
                         {bonds.pact || item.pact_weapon ? (
                           <button
@@ -1224,9 +1164,7 @@ export function InventoryPanel({
                       <button
                         type="button"
                         className="link-button item-detail__toggle"
-                        onClick={() =>
-                          setDetail({ ...detail, showEnglish: !detail.showEnglish })
-                        }
+                        onClick={() => setDetail({ ...detail, showEnglish: !detail.showEnglish })}
                       >
                         {detail.showEnglish ? "показати українською" : "показати оригінал"}
                       </button>
@@ -1330,10 +1268,7 @@ export function ItemFacts({
               const theirs = new Set(itemKey(row.name_en).split(" "));
               return words.every((word) => theirs.has(word));
             }) ??
-            payload.items.find(
-              (row) =>
-                itemKey(row.name_en).includes(key) || key.includes(itemKey(row.name_en)),
-            );
+            payload.items.find((row) => itemKey(row.name_en).includes(key) || key.includes(itemKey(row.name_en)));
           if (hit) found = await fetchEntry(hit.id);
         } catch {
           found = null;
@@ -1384,9 +1319,7 @@ export function ItemFacts({
           ))}
         </dl>
       ) : null}
-      {translated || english ? (
-        <RuleText text={showEnglish && english ? english : translated || english} />
-      ) : null}
+      {translated || english ? <RuleText text={showEnglish && english ? english : translated || english} /> : null}
       {english && translated ? (
         <button
           type="button"

@@ -24,6 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 FORMAT_FILE = ROOT / "contract" / "compendium-format.json"
 
+
 # Порядкові числівники для рядка рівня закляття.
 def _ordinal(number: int) -> str:
     if 10 <= number % 100 <= 20:
@@ -61,6 +62,7 @@ PREREQ_RE = re.compile(r"^Prerequisite[:.]\s*(.*)$", re.IGNORECASE)
 
 # --- специфікація ---------------------------------------------------------
 
+
 class FormatSpec:
     """Завантажена й перевірена специфікація формату."""
 
@@ -69,9 +71,7 @@ class FormatSpec:
         self.entry_keys: list[str] = list(payload["entry_keys"])
         self.categories: dict[str, dict] = dict(payload["categories"])
         self.corpora: dict[str, dict] = {
-            name: rules
-            for name, rules in (payload.get("corpora") or {}).items()
-            if not name.startswith("$")
+            name: rules for name, rules in (payload.get("corpora") or {}).items() if not name.startswith("$")
         }
         self.refine: dict = dict(payload.get("refine") or {})
 
@@ -161,9 +161,7 @@ def _validate_spec(payload: dict, source: Path) -> None:
                 continue
             for category in listed:
                 if category in owner:
-                    problems.append(
-                        f"категорія {category!r} у двох корпусах: {owner[category]}, {name}"
-                    )
+                    problems.append(f"категорія {category!r} у двох корпусах: {owner[category]}, {name}")
                 owner[category] = name
                 if isinstance(categories, dict) and category not in categories:
                     problems.append(f"corpus {name}: невідома категорія {category!r}")
@@ -176,6 +174,7 @@ def _validate_spec(payload: dict, source: Path) -> None:
 
 
 # --- допоміжне для тексту -------------------------------------------------
+
 
 def _first_line(text: str) -> str:
     return text.split("\n", 1)[0] if text else ""
@@ -237,9 +236,7 @@ def _strip_prerequisite(text: str, data: dict) -> str:
     return rest.lstrip("\n")
 
 
-def _canonical_text(
-    category: str, name: str, text: str, data: dict, spec: FormatSpec
-) -> tuple[str, list[str]]:
+def _canonical_text(category: str, name: str, text: str, data: dict, spec: FormatSpec) -> tuple[str, list[str]]:
     reasons: list[str] = []
     style = spec.text_style(category)
     before = text
@@ -289,6 +286,7 @@ def _canonical_text(
 
 # --- допоміжне для data ---------------------------------------------------
 
+
 def _as_str(value) -> str | None:
     if value is None:
         return None
@@ -334,7 +332,7 @@ def _as_lower_list(value) -> list[str] | None:
 
 
 def _as_ability_scores(value, keys: tuple[str, ...]) -> dict[str, int | None]:
-    scores: dict[str, int | None] = {key: None for key in keys}
+    scores: dict[str, int | None] = dict.fromkeys(keys)
     if isinstance(value, dict):
         for key in keys:
             scores[key] = _as_int(value.get(key))
@@ -382,17 +380,15 @@ def _canonical_data(category: str, data: dict, spec: FormatSpec) -> tuple[dict, 
         shown = ", ".join(sorted(dropped)[:6])
         more = " …" if len(dropped) > 6 else ""
         reasons.append(f"data: прибрано ключі {shown}{more}")
-    if not added and not dropped and list(data) != list(kinds):
-        if set(data) == set(kinds):
-            reasons.append("data: інший порядок ключів")
+    if not added and not dropped and list(data) != list(kinds) and set(data) == set(kinds):
+        reasons.append("data: інший порядок ключів")
     return output, reasons
 
 
 # --- категорія ------------------------------------------------------------
 
-def refine_category(
-    category: str, name: str, text: str, data: dict, spec: FormatSpec
-) -> tuple[str, str]:
+
+def refine_category(category: str, name: str, text: str, data: dict, spec: FormatSpec) -> tuple[str, str]:
     """Механічне виправлення категорії (розділ → правило, закляття → закляття)."""
     entity_categories = set(spec.refine.get("entity_categories") or [])
     prefixes = tuple(spec.refine.get("chapter_prefixes") or [])
@@ -424,6 +420,7 @@ def refine_category(
 
 
 # --- запис ----------------------------------------------------------------
+
 
 def canonicalize(record: dict, spec: FormatSpec) -> tuple[dict, list[str]]:
     """Повертає (канонічний запис, перелік змін). Ідемпотентна."""
@@ -471,6 +468,7 @@ def canonicalize(record: dict, spec: FormatSpec) -> tuple[dict, list[str]]:
 
 
 # --- файли ----------------------------------------------------------------
+
 
 def read_jsonl(path: Path) -> list[dict]:
     rows: list[dict] = []
@@ -547,9 +545,7 @@ def _fill_score(record: dict) -> tuple[int, int]:
     закляття разом зі статблоком data майже порожня, у справжнього закляття —
     заповнена рівнем, школою, часом читання.
     """
-    filled = sum(
-        1 for value in (record.get("data") or {}).values() if value not in (None, "", [], {})
-    )
+    filled = sum(1 for value in (record.get("data") or {}).values() if value not in (None, "", [], {}))
     return filled, len(record.get("text_en") or "")
 
 
@@ -565,11 +561,7 @@ def _merge_duplicates(records: list[dict]) -> tuple[list[dict], list[tuple[str, 
             order.append(record_id)
             continue
         previous = best[record_id]
-        keep, drop = (
-            (record, previous)
-            if _fill_score(record) > _fill_score(previous)
-            else (previous, record)
-        )
+        keep, drop = (record, previous) if _fill_score(record) > _fill_score(previous) else (previous, record)
         keep = dict(keep)
         notes = list(keep.get("notes") or [])
         notes.append(

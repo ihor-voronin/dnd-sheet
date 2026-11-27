@@ -5,7 +5,6 @@
  * кнопки «зберегти»), а поруч видно, скільки слів і чи вже збережено.
  * «Очистити» — у два кліки, щоб не втратити розділ випадково.
  */
-
 import { useEffect, useRef, useState } from "react";
 
 import { inTelegram } from "../../telegram";
@@ -89,10 +88,7 @@ function plural(count: number, one: string, few: string, many: string): string {
   return many;
 }
 
-export function notesStatusText(
-  status: NoteStatus,
-  savedAt: string | null,
-): string {
+export function notesStatusText(status: NoteStatus, savedAt: string | null): string {
   if (status === "saving") return "Зберігаємо…";
   if (status === "error") return "Не вдалося зберегти — спробуйте ще раз";
   if (status === "saved") return savedAt ? `Збережено о ${savedAt}` : "Збережено";
@@ -125,21 +121,11 @@ export function NotesPanel({
         <span className="notes-toolbar__actions">
           {/* У Telegram webview не зберігає файли з браузера — кнопка там нічого б не зробила. */}
           {inTelegram ? null : (
-            <button
-              type="button"
-              className="note-tool"
-              onClick={onExport}
-              title="Завантажити всі розділи як Markdown"
-            >
+            <button type="button" className="note-tool" onClick={onExport} title="Завантажити всі розділи як Markdown">
               Експорт .md
             </button>
           )}
-          <button
-            type="button"
-            className="note-tool"
-            onClick={onSaveNow}
-            disabled={status === "saving"}
-          >
+          <button type="button" className="note-tool" onClick={onSaveNow} disabled={status === "saving"}>
             Зберегти зараз
           </button>
         </span>
@@ -177,11 +163,7 @@ export function NotesPanel({
                     >
                       точно очистити?
                     </button>
-                    <button
-                      type="button"
-                      className="note-clear"
-                      onClick={() => setConfirmKey(null)}
-                    >
+                    <button type="button" className="note-clear" onClick={() => setConfirmKey(null)}>
                       скасувати
                     </button>
                   </>

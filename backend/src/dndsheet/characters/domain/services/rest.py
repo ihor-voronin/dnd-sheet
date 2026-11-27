@@ -76,12 +76,7 @@ class RestService:
 
         # Тимчасові хіти не чіпаємо: за правилами вони живуть до зняття.
         character.set_hp(current=sheet.hit_points.maximum)
-        character.set_state(
-            state.cleared_slots()
-            .restored_hit_dice(restored)
-            .healed_state()
-            .reset_features()
-        )
+        character.set_state(state.cleared_slots().restored_hit_dice(restored).healed_state().reset_features())
         after = character.state
         return RestReport(
             kind="long",
@@ -107,12 +102,8 @@ class RestService:
         exhaustion = state.exhaustion
         resources = resources_for(character, sheet.ability_modifiers)
         ready = [resource.key for resource in resources if resource.recharge == SHORT]
-        reset_names = tuple(
-            resource.name_en for resource in resources if resource.recharge == SHORT and resource.used
-        )
-        character.set_state(
-            character.state.with_pact_used(0).reset_features(ready)
-        )
+        reset_names = tuple(resource.name_en for resource in resources if resource.recharge == SHORT and resource.used)
+        character.set_state(character.state.with_pact_used(0).reset_features(ready))
         after = character.state
         return RestReport(
             kind="short",

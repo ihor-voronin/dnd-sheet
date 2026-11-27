@@ -28,7 +28,9 @@ def _scores(**values: int) -> dict[Ability, AbilityScore]:
 def _skills(class_key: str, *skills: Skill) -> Proficiencies:
     return Proficiencies(
         items=tuple(
-            Proficiency(kind=ProficiencyKind.SKILL, value=skill.value, source=GrantSource.of(SourceKind.CLASS, class_key))
+            Proficiency(
+                kind=ProficiencyKind.SKILL, value=skill.value, source=GrantSource.of(SourceKind.CLASS, class_key)
+            )
             for skill in skills
         )
     )
@@ -48,14 +50,31 @@ def _spells(class_key: str, rows: list[tuple[str, int, str]], **flags: bool) -> 
 
 
 def wizard_4(rules) -> Character:  # noqa: ANN001
-    cantrips = _spells("wizard", [("Fire Bolt", 0, "fire-bolt"), ("Mage Hand", 0, "mage-hand"), ("Light", 0, "light"), ("Prestidigitation", 0, "prestidigitation")])
+    cantrips = _spells(
+        "wizard",
+        [
+            ("Fire Bolt", 0, "fire-bolt"),
+            ("Mage Hand", 0, "mage-hand"),
+            ("Light", 0, "light"),
+            ("Prestidigitation", 0, "prestidigitation"),
+        ],
+    )
     prepared = _spells(
         "wizard",
-        [("Magic Missile", 1, "magic-missile"), ("Shield", 1, "shield"), ("Mage Armor", 1, "mage-armor"), ("Sleep", 1, "sleep"),
-         ("Misty Step", 2, "misty-step"), ("Scorching Ray", 2, "scorching-ray"), ("Hold Person", 2, "hold-person")],
+        [
+            ("Magic Missile", 1, "magic-missile"),
+            ("Shield", 1, "shield"),
+            ("Mage Armor", 1, "mage-armor"),
+            ("Sleep", 1, "sleep"),
+            ("Misty Step", 2, "misty-step"),
+            ("Scorching Ray", 2, "scorching-ray"),
+            ("Hold Person", 2, "hold-person"),
+        ],
         prepared=True,
     )
-    book = _spells("wizard", [("Detect Magic", 1, "detect-magic"), ("Find Familiar", 1, "find-familiar"), ("Web", 2, "web")])
+    book = _spells(
+        "wizard", [("Detect Magic", 1, "detect-magic"), ("Find Familiar", 1, "find-familiar"), ("Web", 2, "web")]
+    )
     return Character(
         id="sample-wizard-4",
         name="Ілара Сріблоока",
@@ -66,16 +85,31 @@ def wizard_4(rules) -> Character:  # noqa: ANN001
         classes=[CharacterClass(class_key="wizard", level=4, subclass_key="phb-2014/subclass/school-of-evocation")],
         chosen=_skills("wizard", Skill.ARCANA, Skill.INVESTIGATION),
         spells=cantrips + prepared + book,
-        inventory=Inventory(items=(InventoryItem(name_en="quarterstaff", kind=ItemKind.WEAPON, weight_lb=4),), money=Money(gp=40)),
+        inventory=Inventory(
+            items=(InventoryItem(name_en="quarterstaff", kind=ItemKind.WEAPON, weight_lb=4),), money=Money(gp=40)
+        ),
     )
 
 
 def warlock_5(rules) -> Character:  # noqa: ANN001
-    cantrips = _spells("warlock", [("Eldritch Blast", 0, "eldritch-blast"), ("Mage Hand", 0, "mage-hand"), ("Minor Illusion", 0, "minor-illusion")])
+    cantrips = _spells(
+        "warlock",
+        [
+            ("Eldritch Blast", 0, "eldritch-blast"),
+            ("Mage Hand", 0, "mage-hand"),
+            ("Minor Illusion", 0, "minor-illusion"),
+        ],
+    )
     known = _spells(
         "warlock",
-        [("Hex", 1, "hex"), ("Armor of Agathys", 1, "armor-of-agathys"), ("Misty Step", 2, "misty-step"),
-         ("Hold Person", 2, "hold-person"), ("Hunger of Hadar", 3, "hunger-of-hadar"), ("Counterspell", 3, "counterspell")],
+        [
+            ("Hex", 1, "hex"),
+            ("Armor of Agathys", 1, "armor-of-agathys"),
+            ("Misty Step", 2, "misty-step"),
+            ("Hold Person", 2, "hold-person"),
+            ("Hunger of Hadar", 3, "hunger-of-hadar"),
+            ("Counterspell", 3, "counterspell"),
+        ],
     )
     return Character(
         id="sample-warlock-5",
@@ -87,17 +121,34 @@ def warlock_5(rules) -> Character:  # noqa: ANN001
         classes=[CharacterClass(class_key="warlock", level=5, subclass_key="phb-2014/subclass/the-fiend")],
         chosen=_skills("warlock", Skill.ARCANA, Skill.INTIMIDATION),
         spells=cantrips + known,
-        inventory=Inventory(items=(InventoryItem(name_en="light crossbow", kind=ItemKind.WEAPON, weight_lb=5),), money=Money(gp=60)),
+        inventory=Inventory(
+            items=(InventoryItem(name_en="light crossbow", kind=ItemKind.WEAPON, weight_lb=5),), money=Money(gp=60)
+        ),
     )
 
 
 def cleric_5(rules) -> Character:  # noqa: ANN001
-    cantrips = _spells("cleric", [("Sacred Flame", 0, "sacred-flame"), ("Guidance", 0, "guidance"), ("Spare the Dying", 0, "spare-the-dying"), ("Light", 0, "light")])
+    cantrips = _spells(
+        "cleric",
+        [
+            ("Sacred Flame", 0, "sacred-flame"),
+            ("Guidance", 0, "guidance"),
+            ("Spare the Dying", 0, "spare-the-dying"),
+            ("Light", 0, "light"),
+        ],
+    )
     prepared = _spells(
         "cleric",
-        [("Guiding Bolt", 1, "guiding-bolt"), ("Healing Word", 1, "healing-word"), ("Sanctuary", 1, "sanctuary"),
-         ("Aid", 2, "aid"), ("Prayer of Healing", 2, "prayer-of-healing"), ("Spirit Guardians", 3, "spirit-guardians"),
-         ("Mass Healing Word", 3, "mass-healing-word"), ("Dispel Magic", 3, "dispel-magic")],
+        [
+            ("Guiding Bolt", 1, "guiding-bolt"),
+            ("Healing Word", 1, "healing-word"),
+            ("Sanctuary", 1, "sanctuary"),
+            ("Aid", 2, "aid"),
+            ("Prayer of Healing", 2, "prayer-of-healing"),
+            ("Spirit Guardians", 3, "spirit-guardians"),
+            ("Mass Healing Word", 3, "mass-healing-word"),
+            ("Dispel Magic", 3, "dispel-magic"),
+        ],
         prepared=True,
     )
     return Character(
@@ -114,7 +165,9 @@ def cleric_5(rules) -> Character:  # noqa: ANN001
         inventory=Inventory(
             items=(
                 InventoryItem(name_en="mace", kind=ItemKind.WEAPON, weight_lb=4),
-                InventoryItem(name_en="chain mail", kind=ItemKind.ARMOR, weight_lb=55, equipped=True, armor_base=16, dex_cap=0),
+                InventoryItem(
+                    name_en="chain mail", kind=ItemKind.ARMOR, weight_lb=55, equipped=True, armor_base=16, dex_cap=0
+                ),
                 InventoryItem(name_en="shield", kind=ItemKind.SHIELD, weight_lb=6, equipped=True),
             ),
             money=Money(gp=25),
@@ -145,7 +198,9 @@ def multiclass_14(rules) -> Character:  # noqa: ANN001
         ],
         chosen=_skills("wizard", Skill.ARCANA, Skill.INVESTIGATION),
         spells=wizard + warlock + cleric,
-        inventory=Inventory(items=(InventoryItem(name_en="quarterstaff", kind=ItemKind.WEAPON, weight_lb=4),), money=Money(gp=120)),
+        inventory=Inventory(
+            items=(InventoryItem(name_en="quarterstaff", kind=ItemKind.WEAPON, weight_lb=4),), money=Money(gp=120)
+        ),
     )
 
 

@@ -32,9 +32,7 @@ def build_service(
         directory=Path(compendium_dir) if compendium_dir is not None else content / "compendium"
     )
     spell_lists = JsonSpellListRepository(
-        path=Path(spell_lists_file)
-        if spell_lists_file is not None
-        else content / "index" / "spell-lists.json"
+        path=Path(spell_lists_file) if spell_lists_file is not None else content / "index" / "spell-lists.json"
     )
     index_dir = Path(mechanics_dir) if mechanics_dir is not None else content / "index"
     mechanics = JsonMechanicsRepository(

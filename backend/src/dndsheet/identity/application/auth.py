@@ -78,9 +78,7 @@ class AuthService:
             raise ValidationError("вкажіть імʼя")
         # Стабільний відʼємний id з імені: той самий «гравець» — той самий користувач.
         fake_id = -int(hashlib.sha256(cleaned.casefold().encode("utf-8")).hexdigest()[:12], 16)
-        profile = TelegramProfile(
-            telegram_id=fake_id, first_name=cleaned, last_name="", username="", photo_url=""
-        )
+        profile = TelegramProfile(telegram_id=fake_id, first_name=cleaned, last_name="", username="", photo_url="")
         return self._login(profile, now)
 
     def current(self, token: str | None, *, now: float | None = None) -> User | None:

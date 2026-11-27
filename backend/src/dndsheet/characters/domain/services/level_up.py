@@ -102,9 +102,7 @@ class LevelUpPlanner:
         """
         if character.total_level >= MAX_LEVEL:
             return ()
-        keys = [
-            entry.class_key for entry in character.classes if entry.level < MAX_LEVEL
-        ]
+        keys = [entry.class_key for entry in character.classes if entry.level < MAX_LEVEL]
         known = set(keys)
         for key in _known_class_keys(character):
             if key not in known:
@@ -173,12 +171,8 @@ class LevelUpPlanner:
                 (casting.max_spell_level for casting in after.spellcasting.classes if casting.class_key == key),
                 0,
             ),
-            resources_before=tuple(
-                resource.key for resource in resources_for(character, before.ability_modifiers)
-            ),
-            resources_after=tuple(
-                resource.key for resource in resources_for(candidate, after.ability_modifiers)
-            ),
+            resources_before=tuple(resource.key for resource in resources_for(character, before.ability_modifiers)),
+            resources_after=tuple(resource.key for resource in resources_for(candidate, after.ability_modifiers)),
             allowed=allowed,
             blocked_reason=reason,
             requirements=requirements,
@@ -189,9 +183,7 @@ class LevelUpPlanner:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _with_next_level(
-        character: Character, class_key: str, existing: bool
-    ) -> Character:
+    def _with_next_level(character: Character, class_key: str, existing: bool) -> Character:
         """Копія персонажа з наступним рівнем — без спільного стану.
 
         `rules` навмисно спільний: це порт до правил, копіювати його не
@@ -208,20 +200,12 @@ class LevelUpPlanner:
         return candidate
 
     @staticmethod
-    def _new_features(
-        definition: ClassMechanics, current_level: int, new_level: int
-    ) -> tuple[ClassFeature, ...]:
+    def _new_features(definition: ClassMechanics, current_level: int, new_level: int) -> tuple[ClassFeature, ...]:
         before = {feature.name_en for feature in definition.features_at(max(1, current_level))}
-        return tuple(
-            feature
-            for feature in definition.features_at(new_level)
-            if feature.name_en not in before
-        )
+        return tuple(feature for feature in definition.features_at(new_level) if feature.name_en not in before)
 
     @staticmethod
-    def _needs_subclass(
-        candidate: Character, class_key: str, definition: ClassMechanics
-    ) -> bool:
+    def _needs_subclass(candidate: Character, class_key: str, definition: ClassMechanics) -> bool:
         if not definition.subclass_level:
             return False
         entry = next(item for item in candidate.classes if item.class_key == class_key)
@@ -235,17 +219,12 @@ class LevelUpPlanner:
         return casting.prepared_limit if casting is not None else None
 
     @staticmethod
-    def _check_multiclass(
-        character: Character, definition: ClassMechanics
-    ) -> tuple[bool, str | None]:
+    def _check_multiclass(character: Character, definition: ClassMechanics) -> tuple[bool, str | None]:
         """Вимоги мультикласу: і новий клас, і всі наявні (PHB, p. 163)."""
-        scores = {
-            ability: character.ability_total(ability) for ability in character.abilities
-        }
+        scores = {ability: character.ability_total(ability) for ability in character.abilities}
         if not definition.satisfies_multiclass(scores):
             return False, (
-                f"для мультикласу в {definition.name_en} треба "
-                f"{' або '.join(_requirements_text(definition)) or '—'}"
+                f"для мультикласу в {definition.name_en} треба {' або '.join(_requirements_text(definition)) or '—'}"
             )
         for entry, current in character.class_entries():
             if not current.satisfies_multiclass(scores):
@@ -276,9 +255,7 @@ CLASS_KEYS: tuple[str, ...] = (
 
 def _known_class_keys(character: Character) -> tuple[str, ...]:
     """Класи, які справді є в джерелі правил (порт не дає «перелічити все»)."""
-    return tuple(
-        key for key in CLASS_KEYS if character.rules.class_mechanics(key) is not None
-    )
+    return tuple(key for key in CLASS_KEYS if character.rules.class_mechanics(key) is not None)
 
 
 def _slot_rows(before: ComputedSheet, after: ComputedSheet) -> tuple[SlotRow, ...]:
@@ -287,9 +264,7 @@ def _slot_rows(before: ComputedSheet, after: ComputedSheet) -> tuple[SlotRow, ..
         rows[level] = SlotRow(level=level, before=count, after=count)
     for level, count in after.spellcasting.slots.by_level:
         current = rows.get(level)
-        rows[level] = SlotRow(
-            level=level, before=current.before if current else 0, after=count
-        )
+        rows[level] = SlotRow(level=level, before=current.before if current else 0, after=count)
     return tuple(rows[level] for level in sorted(rows))
 
 

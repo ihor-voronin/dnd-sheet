@@ -50,9 +50,15 @@ def geometry(size: float, scale: float) -> dict[str, list[tuple[float, float]]]:
     b = (cx - 0.47 * r, cy + 0.30 * r)
     c = (cx + 0.47 * r, cy + 0.30 * r)
     edges = [
-        (a, top), (a, upper_left), (a, upper_right),
-        (b, upper_left), (b, lower_left), (b, bottom),
-        (c, upper_right), (c, lower_right), (c, bottom),
+        (a, top),
+        (a, upper_left),
+        (a, upper_right),
+        (b, upper_left),
+        (b, lower_left),
+        (b, bottom),
+        (c, upper_right),
+        (c, lower_right),
+        (c, bottom),
     ]
     return {"hexagon": hexagon, "face": [a, b, c], "edges": edges}  # type: ignore[dict-item]
 

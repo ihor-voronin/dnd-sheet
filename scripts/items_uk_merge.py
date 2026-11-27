@@ -59,7 +59,7 @@ def polish(text: str) -> str:
 
 
 def norm(value: str) -> str:
-    """Ключ словника: та сама нормалізація, що в `uk.ts:itemKey`. """
+    """Ключ словника: та сама нормалізація, що в `uk.ts:itemKey`."""
     return SPACES.sub(" ", value.strip().lower()).replace("’", "'").replace("ʼ", "'")
 
 
@@ -102,9 +102,7 @@ def main() -> None:
             if not text:
                 continue
             english = item.get("text_en") or ""
-            if sorted(DICE.findall(english.replace(" ", ""))) != sorted(
-                DICE.findall(text.replace(" ", ""))
-            ):
+            if sorted(DICE.findall(english.replace(" ", ""))) != sorted(DICE.findall(text.replace(" ", ""))):
                 dice_warnings.append(f"{item['name_en']}: кістки не збігаються")
             if key not in texts:
                 texts[key] = text
@@ -140,12 +138,7 @@ def write_ts(names: dict[str, str]) -> None:
 
 
 def write_json(names: dict[str, str], texts: dict[str, str]) -> None:
-    payload = {
-        "items": {
-            key: {"name": names.get(key, ""), "text": texts[key]}
-            for key in sorted(texts)
-        }
-    }
+    payload = {"items": {key: {"name": names.get(key, ""), "text": texts[key]} for key in sorted(texts)}}
     JSON_FILE.parent.mkdir(parents=True, exist_ok=True)
     JSON_FILE.write_text(
         json.dumps(payload, ensure_ascii=False, separators=(",", ":")),

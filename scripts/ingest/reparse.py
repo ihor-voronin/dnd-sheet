@@ -46,9 +46,7 @@ def snapshot(spec: canonical.FormatSpec, source: str) -> dict[str, list[dict]]:
     return rows
 
 
-def restore(
-    spec: canonical.FormatSpec, source: str, rows: dict[str, list[dict]]
-) -> None:
+def restore(spec: canonical.FormatSpec, source: str, rows: dict[str, list[dict]]) -> None:
     """Повертає книгу до знімка: кожна категорія — у свій корпус."""
     for directory in corpus_dirs(spec, source):
         if directory.is_dir():
@@ -103,10 +101,7 @@ def main(argv: list[str] | None = None) -> int:
         if after_total < before_total:
             restore(spec, source, before)
             restored += 1
-            print(
-                f"{source:20} {before_total} → {after_total}, текст {before_text} → {after_text}"
-                " — ВІДКАЧЕНО"
-            )
+            print(f"{source:20} {before_total} → {after_total}, текст {before_text} → {after_text} — ВІДКАЧЕНО")
             continue
         detail = []
         for category in sorted(set(before) | set(after)):

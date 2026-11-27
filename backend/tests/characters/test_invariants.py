@@ -8,21 +8,18 @@
 from __future__ import annotations
 
 import pytest
-
-from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.proficiencies import (
     GrantSource,
+    Proficiencies,
     Proficiency,
     ProficiencyKind,
-    Proficiencies,
     SourceKind,
 )
 from dndsheet.characters.domain.spells import KnownSpell
 from dndsheet.characters.domain.vitals import HitPointState
 from dndsheet.shared.errors import NotFoundError, ValidationError
 from dndsheet.shared.kernel import Ability, AbilityScore, Skill
-
 from helpers import make_character
 
 
@@ -117,11 +114,7 @@ def test_remove_class_clears_its_spells_and_picks(rules) -> None:
         rules,
         classes=[CharacterClass("warlock", 1)],
         chosen=Proficiencies(items=(_class_pick(Skill.ARCANA, "warlock"),)),
-        spells=(
-            KnownSpell(
-                name_en="Eldritch Blast", level=0, class_key="warlock", entry_id=None
-            ),
-        ),
+        spells=(KnownSpell(name_en="Eldritch Blast", level=0, class_key="warlock", entry_id=None),),
     )
     character.add_class("fighter", 1)
     character.remove_class("fighter")
@@ -225,10 +218,7 @@ def test_cantrip_limit_from_class_table(rules) -> None:
         make_character(
             rules,
             classes=[CharacterClass("warlock", 1)],
-            spells=tuple(
-                KnownSpell(name_en=f"Cantrip {index}", level=0, class_key="warlock")
-                for index in range(3)
-            ),
+            spells=tuple(KnownSpell(name_en=f"Cantrip {index}", level=0, class_key="warlock") for index in range(3)),
         )
 
 
@@ -237,9 +227,7 @@ def test_spell_level_above_available_slots_is_refused(rules) -> None:
         make_character(
             rules,
             classes=[CharacterClass("wizard", 1)],
-            spells=(
-                KnownSpell(name_en="Fireball", level=3, class_key="wizard"),
-            ),
+            spells=(KnownSpell(name_en="Fireball", level=3, class_key="wizard"),),
         )
 
 
@@ -248,10 +236,7 @@ def test_warlock_known_spells_limit(rules) -> None:
         make_character(
             rules,
             classes=[CharacterClass("warlock", 1)],
-            spells=tuple(
-                KnownSpell(name_en=f"Spell {index}", level=1, class_key="warlock")
-                for index in range(3)
-            ),
+            spells=tuple(KnownSpell(name_en=f"Spell {index}", level=1, class_key="warlock") for index in range(3)),
         )
 
 

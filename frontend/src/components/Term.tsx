@@ -4,7 +4,6 @@
  * пояснення на полях — у маргіналії праворуч або в шторці на телефоні. Поза
  * ним — звичайна підказка при наведенні й фокусі.
  */
-
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { createContext, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -22,10 +21,7 @@ const GlossContext = createContext<GlossState | null>(null);
 
 export function GlossProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState<string | null>(null);
-  const value = useMemo<GlossState>(
-    () => ({ active, open: setActive, close: () => setActive(null) }),
-    [active],
-  );
+  const value = useMemo<GlossState>(() => ({ active, open: setActive, close: () => setActive(null) }), [active]);
   return <GlossContext.Provider value={value}>{children}</GlossContext.Provider>;
 }
 

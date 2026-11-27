@@ -1,5 +1,5 @@
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 // У розробці API живе на 8000, у проді — той самий origin, тому проксі лише для dev.
 // У dev-контейнері (`docker compose --profile dev up`) API — сусідній сервіс: VITE_API_TARGET.

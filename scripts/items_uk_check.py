@@ -41,9 +41,7 @@ def main() -> None:
                 suspicious.append((item["name_en"], f"коротко {ratio:.2f}"))
             elif ratio > 1.9:
                 suspicious.append((item["name_en"], f"довго {ratio:.2f}"))
-            if sorted(DICE.findall(english.replace(" ", ""))) != sorted(
-                DICE.findall(ukrainian.replace(" ", ""))
-            ):
+            if sorted(DICE.findall(english.replace(" ", ""))) != sorted(DICE.findall(ukrainian.replace(" ", ""))):
                 suspicious.append((item["name_en"], "кістки не збігаються"))
     print(f"описів перевірено: {total}")
     print(f"підозрілих: {len(suspicious)}")

@@ -7,6 +7,7 @@ records can be reviewed before they are written into the compendium.
 
     python scripts/pdf/extract.py content/raw/gotg-pdf 15 29
 """
+
 from __future__ import annotations
 
 import json
@@ -46,10 +47,7 @@ def split_entries(text: str) -> list[dict]:
             current["body"].append(line)
     if current["name"] or " ".join(current["body"]).strip():
         entries.append(current)
-    return [
-        {"name": entry["name"], "text": despace.fix(" ".join(entry["body"]).strip())}
-        for entry in entries
-    ]
+    return [{"name": entry["name"], "text": despace.fix(" ".join(entry["body"]).strip())} for entry in entries]
 
 
 def main() -> None:

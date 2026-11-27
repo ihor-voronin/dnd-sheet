@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.application.golden import GoldenCase, build_golden_cases
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
-
 from rules_fixture import FixtureRules
 
 

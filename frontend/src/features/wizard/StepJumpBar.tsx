@@ -7,7 +7,6 @@
  * позначене `data-jump="Назва"`) і кнопку «Далі», тож кроки не повторюють
  * свій зміст ще й тут. Стежить за змінами: розгорнули список — зʼявився пункт.
  */
-
 import { useEffect, useState } from "react";
 
 type Target = { label: string; element: HTMLElement };

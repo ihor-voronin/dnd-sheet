@@ -9,7 +9,6 @@
  * кількість предметів). Браузерні стрілочки навмисно вимкнені: на темній
  * дошці вони виглядають чужорідно й на дотику майже не працюють.
  */
-
 import { useEffect, useRef, useState } from "react";
 
 export function EditableNumber({

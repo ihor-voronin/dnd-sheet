@@ -5,6 +5,7 @@ widest horizontal then vertical whitespace gap recovers the reading order for
 arbitrary layouts: full-width headers, two-column body text, sidebars, table
 rows and captions all fall out naturally, without a hard-coded gutter.
 """
+
 from __future__ import annotations
 
 import statistics

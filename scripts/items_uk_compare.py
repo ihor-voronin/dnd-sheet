@@ -42,9 +42,7 @@ def items_ours() -> dict[str, str]:
 
 def spells_ours() -> dict[str, str]:
     """Закляття з `uk.ts`: ключ — англійська назва, значення — українська."""
-    source = (ROOT / "frontend" / "src" / "features" / "character" / "uk.ts").read_text(
-        encoding="utf-8"
-    )
+    source = (ROOT / "frontend" / "src" / "features" / "character" / "uk.ts").read_text(encoding="utf-8")
     block = source.split("const SPELLS", 1)[1].split("};", 1)[0]
     pairs = re.findall(r'^\s{2}"?([^":\s][^":]*?)"?: \{\s*\n?\s*name: "([^"]+)"', block, re.M)
     return {norm(english): ukrainian for english, ukrainian in pairs}

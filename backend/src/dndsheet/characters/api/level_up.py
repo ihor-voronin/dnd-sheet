@@ -16,7 +16,6 @@ from typing import Any
 
 from dndsheet.characters.api import classes_uk, subclasses_uk
 from dndsheet.characters.api.features import (
-    class_details,
     class_texts_all,
     feature_text_for,
     strip_level_line,
@@ -24,11 +23,11 @@ from dndsheet.characters.api.features import (
     subclass_intro,
 )
 from dndsheet.characters.application.level_up import LevelUpService
+from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.characters.domain.services.feature_resources import name_of
 from dndsheet.characters.domain.services.level_up import LevelPlan
 from dndsheet.compendium.api.serializers import entry_brief
 from dndsheet.compendium.application.service import CompendiumService
-from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.shared.kernel import Skill
 from dndsheet.shared.rules import MULTICLASS_SKILLS, MUSICAL_INSTRUMENTS, feat_ability_options
 
@@ -106,14 +105,9 @@ def plan_payload(
         "hit_die": plan.hit_die,
         "constitution_modifier": plan.constitution_modifier,
         "hp": {"average": plan.hp_average, "best_roll": plan.hp_best_roll},
-        "features": [
-            _feature_payload(feature, class_texts)
-            for feature in plan.features
-        ],
+        "features": [_feature_payload(feature, class_texts) for feature in plan.features],
         "subclass": _subclass_payload(plan, compendium, cache, current=current_subclass),
-        "subclass_features": _subclass_features_payload(
-            compendium, cache, current_subclass, plan.new_level
-        ),
+        "subclass_features": _subclass_features_payload(compendium, cache, current_subclass, plan.new_level),
         "asi": {
             "slots": plan.asi_slots,
             "taken": plan.asi_taken,
@@ -145,7 +139,10 @@ def plan_payload(
                 **(
                     {"name_uk": uk_name}
                     # Ресурс підкласу (Удача Темного) — у шарі перекладу підкласів.
-                    if (uk_name := classes_uk.name_uk(name_of(key) or key) or subclasses_uk.name_uk(name_of(key) or key))
+                    if (
+                        uk_name := classes_uk.name_uk(name_of(key) or key)
+                        or subclasses_uk.name_uk(name_of(key) or key)
+                    )
                     else {}
                 ),
             }
@@ -198,8 +195,7 @@ def _subclass_payload(
                     "name_en": brief["name_en"],
                     # Назва підкласу — з шару перекладу (за назвою, а не за
                     # хвостом id, як у TERMS на фронтенді).
-                    "name_uk": subclasses_uk.name_uk(brief["name_en"])
-                    or brief["name_uk"],
+                    "name_uk": subclasses_uk.name_uk(brief["name_en"]) or brief["name_uk"],
                     "source_id": brief["source_id"],
                     # Вступ до глави: «що це за спеціалізація».
                     "description": intro.get("description", ""),
@@ -211,23 +207,17 @@ def _subclass_payload(
                             "name_en": item["name_en"],
                             "level": item["level"],
                             "new": item["level"] == plan.new_level,
-                            **(
-                                {"name_uk": item["name_uk"]}
-                                if item.get("name_uk")
-                                else {}
-                            ),
+                            **({"name_uk": item["name_uk"]} if item.get("name_uk") else {}),
                             # Текст даємо лише для рівня, який обирають зараз:
                             # уся історія підкласу — це вже зайві кілобайти.
                             **(
                                 {"text": item["description"]}
-                                if item["level"] == plan.new_level
-                                and item.get("description")
+                                if item["level"] == plan.new_level and item.get("description")
                                 else {}
                             ),
                             **(
                                 {"text_uk": item["text_uk"]}
-                                if item["level"] == plan.new_level
-                                and item.get("text_uk")
+                                if item["level"] == plan.new_level and item.get("text_uk")
                                 else {}
                             ),
                         }
@@ -256,11 +246,7 @@ def _subclass_features_payload(
     """
     if not subclass_key:
         return []
-    return [
-        item
-        for item in subclass_features(compendium, subclass_key, cache)
-        if item["level"] == level
-    ]
+    return [item for item in subclass_features(compendium, subclass_key, cache) if item["level"] == level]
 
 
 def _current_subclass(character, class_key: str) -> str | None:  # noqa: ANN001

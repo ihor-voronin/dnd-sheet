@@ -1,10 +1,9 @@
-import type { ClassChoiceGroup } from "./features/wizard/types";
 import type { SheetDocument } from "./contract/sheetDocument";
+import type { ClassChoiceGroup } from "./features/wizard/types";
 import type {
   BackgroundView,
-  ClassView,
-  SpeciesView,
   ClassSpell,
+  ClassView,
   DraftView,
   FeatEntry,
   FinishedCharacter,
@@ -12,6 +11,7 @@ import type {
   LevelUpView,
   RestReport,
   SheetViewPayload,
+  SpeciesView,
   StepView,
 } from "./features/wizard/types";
 
@@ -139,15 +139,11 @@ export function readStep<T>(draftId: string, step: string): Promise<StepView<T>>
   return getJson<StepView<T>>(`/api/v1/characters/wizard/${draftId}/steps/${step}`);
 }
 
-export function writeStep<T>(
-  draftId: string,
-  step: string,
-  payload: Record<string, unknown>,
-): Promise<StepView<T>> {
-  return request<StepView<T>>(
-    `/api/v1/characters/wizard/${draftId}/steps/${step}`,
-    { method: "PUT", body: JSON.stringify(payload) },
-  );
+export function writeStep<T>(draftId: string, step: string, payload: Record<string, unknown>): Promise<StepView<T>> {
+  return request<StepView<T>>(`/api/v1/characters/wizard/${draftId}/steps/${step}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function finishDraft(draftId: string): Promise<FinishedCharacter> {
@@ -205,10 +201,7 @@ export interface RestMutation extends SheetMutation {
   rest: RestReport;
 }
 
-export function patchCharacter(
-  id: string,
-  body: Record<string, unknown>,
-): Promise<SheetMutation> {
+export function patchCharacter(id: string, body: Record<string, unknown>): Promise<SheetMutation> {
   return request<SheetMutation>(`/api/v1/characters/${id}`, {
     method: "PATCH",
     body: JSON.stringify(body),
@@ -232,10 +225,7 @@ export interface LevelUpMutation extends SheetMutation {
   level_up: LevelUpReport;
 }
 
-export function levelUpCharacter(
-  id: string,
-  body: Record<string, unknown>,
-): Promise<LevelUpMutation> {
+export function levelUpCharacter(id: string, body: Record<string, unknown>): Promise<LevelUpMutation> {
   return request<LevelUpMutation>(`/api/v1/characters/${id}/level-up`, {
     method: "POST",
     body: JSON.stringify(body),
@@ -252,12 +242,8 @@ export interface ClassFeatureRow {
 }
 
 /** Усі вміння класу з текстами — вантажиться, коли список розгорнули. */
-export function fetchClassFeatures(
-  classKey: string,
-): Promise<{ class_key: string; features: ClassFeatureRow[] }> {
-  return getJson(
-    `/api/v1/characters/wizard/class-features/${encodeURIComponent(classKey)}`,
-  );
+export function fetchClassFeatures(classKey: string): Promise<{ class_key: string; features: ClassFeatureRow[] }> {
+  return getJson(`/api/v1/characters/wizard/class-features/${encodeURIComponent(classKey)}`);
 }
 
 /** Підклас цілком: назва, опис-вступ і всі вміння з текстами. */
@@ -281,19 +267,11 @@ export interface SubclassBriefPayload {
 }
 
 export function fetchSubclassDetails(subclassKey: string): Promise<SubclassBriefPayload> {
-  return getJson(
-    `/api/v1/characters/wizard/subclass/${subclassKey
-      .split("/")
-      .map(encodeURIComponent)
-      .join("/")}`,
-  );
+  return getJson(`/api/v1/characters/wizard/subclass/${subclassKey.split("/").map(encodeURIComponent).join("/")}`);
 }
 
 /** Закляття класу до рівня включно — зі «Spell Lists» книг. */
-export function fetchClassSpells(
-  classKey: string,
-  maxLevel: number,
-): Promise<{ items: ClassSpell[]; total: number }> {
+export function fetchClassSpells(classKey: string, maxLevel: number): Promise<{ items: ClassSpell[]; total: number }> {
   const params = new URLSearchParams({ max_level: String(maxLevel) });
   // Воїн і плут чарують лише як містичний лицар / таємний пройдисвіт — зі списку мага.
   const listKey = classKey === "fighter" || classKey === "rogue" ? "wizard" : classKey;
@@ -335,11 +313,7 @@ export interface SpellBody {
   description?: string | null;
 }
 
-export function addCharacterSpell(
-  id: string,
-  spell: SpellBody,
-  version: number,
-): Promise<SheetMutation> {
+export function addCharacterSpell(id: string, spell: SpellBody, version: number): Promise<SheetMutation> {
   return request<SheetMutation>(`/api/v1/characters/${id}/spells`, {
     method: "POST",
     body: JSON.stringify({ ...spell, version }),
@@ -371,11 +345,7 @@ export function prepareCharacterSpells(
 }
 
 /** Експертиза: навички (або злодійські інструменти) з подвоєним бонусом. */
-export function setCharacterExpertise(
-  id: string,
-  expertise: string[],
-  version: number,
-): Promise<SheetMutation> {
+export function setCharacterExpertise(id: string, expertise: string[], version: number): Promise<SheetMutation> {
   return request<SheetMutation>(`/api/v1/characters/${id}/expertise`, {
     method: "POST",
     body: JSON.stringify({ expertise, version }),
@@ -450,11 +420,7 @@ export interface ItemBody {
   kensei_weapon?: boolean;
 }
 
-export function addCharacterItem(
-  id: string,
-  item: ItemBody,
-  version: number,
-): Promise<SheetMutation> {
+export function addCharacterItem(id: string, item: ItemBody, version: number): Promise<SheetMutation> {
   return request<SheetMutation>(`/api/v1/characters/${id}/items`, {
     method: "POST",
     body: JSON.stringify({ item, version }),
@@ -473,11 +439,7 @@ export function updateCharacterItem(
   });
 }
 
-export function removeCharacterItem(
-  id: string,
-  index: number,
-  version: number,
-): Promise<SheetMutation> {
+export function removeCharacterItem(id: string, index: number, version: number): Promise<SheetMutation> {
   return request<SheetMutation>(`/api/v1/characters/${id}/items/${index}`, {
     method: "DELETE",
     body: JSON.stringify({ version }),
@@ -541,10 +503,7 @@ export interface ItemSearchResult {
   data: Record<string, unknown>;
 }
 
-export function searchItems(
-  query: string,
-  limit = 8,
-): Promise<{ items: ItemSearchResult[]; total: number }> {
+export function searchItems(query: string, limit = 8): Promise<{ items: ItemSearchResult[]; total: number }> {
   const params = new URLSearchParams({ q: query, limit: String(limit) });
   return getJson(`/api/v1/compendium/items?${params.toString()}`);
 }

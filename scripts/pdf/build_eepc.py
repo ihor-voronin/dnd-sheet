@@ -7,6 +7,7 @@ plus the deep gnome subrace) and 43 spells, whose class lists live in a separate
 
     python scripts/pdf/build_eepc.py
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -32,14 +33,23 @@ FURNITURE = re.compile(
     r"^\s*(?:Chapter\s*[12]\s*[|:]\s*.{0,30}|\d{1,3}|Chapter\s*2:\s*Spells)\s*$",
     re.IGNORECASE,
 )
-SPELL_HEADER = re.compile(r"^(?:(?P<level>\d+)(?:st|nd|rd|th)-level (?P<school>[a-z]+)(?P<ritual> \(ritual\))?"
-                          r"|(?P<cantrip_school>[a-z]+) cantrip(?P<cantrip_ritual> \(ritual\))?)$", re.I)
+SPELL_HEADER = re.compile(
+    r"^(?:(?P<level>\d+)(?:st|nd|rd|th)-level (?P<school>[a-z]+)(?P<ritual> \(ritual\))?"
+    r"|(?P<cantrip_school>[a-z]+) cantrip(?P<cantrip_ritual> \(ritual\))?)$",
+    re.I,
+)
 RACE_HEADINGS = ("Aarakocra", "Deep Gnome", "Genasi", "Goliath")
 GENASI_SUBRACES = ("Air Genasi", "Earth Genasi", "Fire Genasi", "Water Genasi")
 TRAIT = re.compile(r"^([A-Z][A-Za-z’' \-]{2,34})\.\s+(.+)$")
 SCHOOLS = (
-    "abjuration", "conjuration", "divination", "enchantment", "evocation",
-    "illusion", "necromancy", "transmutation",
+    "abjuration",
+    "conjuration",
+    "divination",
+    "enchantment",
+    "evocation",
+    "illusion",
+    "necromancy",
+    "transmutation",
 )
 # The last spell runs into the back-cover marketing page; nothing after these
 # lines belongs to a spell description.
@@ -54,9 +64,14 @@ def normalise(text: str) -> str:
     # U+00AD is a soft hyphen the PDF inserts inside wrapped words; dropping it
     # keeps names like "Abi-Dalzim's" searchable.
     text = text.replace("\u00ad", "")
-    return (text.replace("\ufffd", "'").replace("\u2019", "'")
-            .replace("\u2018", "'").replace("\u201c", '"').replace("\u201d", '"')
-            .replace("\u2022", "-"))
+    return (
+        text.replace("\ufffd", "'")
+        .replace("\u2019", "'")
+        .replace("\u2018", "'")
+        .replace("\u201c", '"')
+        .replace("\u201d", '"')
+        .replace("\u2022", "-")
+    )
 
 
 def load_pages(pdf: Path) -> list[str]:
@@ -104,6 +119,7 @@ def slugify(name: str) -> str:
 
 
 # --- spells --------------------------------------------------------------
+
 
 def spell_lists(lines: list[str]) -> dict[str, list[str]]:
     """class -> spell names, read from the 'Bard Spells' style lists."""
@@ -185,7 +201,7 @@ def parse_spells(lines: list[str], page_of: list[int], lists: dict[str, list[str
         higher = ""
         marker = text_body.find("At Higher Levels.")
         if marker >= 0:
-            higher = text_body[marker + len("At Higher Levels."):].strip()
+            higher = text_body[marker + len("At Higher Levels.") :].strip()
             text_body = text_body[:marker].strip()
 
         spells.append(
@@ -201,8 +217,11 @@ def parse_spells(lines: list[str], page_of: list[int], lists: dict[str, list[str
                     "range": fields.get("range"),
                     "components": fields.get("components"),
                     "duration": duration or None,
-                    "classes": sorted(name_class for name_class, values in lists.items()
-                                      if any(slugify(name) == slugify(value) for value in values)),
+                    "classes": sorted(
+                        name_class
+                        for name_class, values in lists.items()
+                        if any(slugify(name) == slugify(value) for value in values)
+                    ),
                     "at_higher_levels": higher or None,
                 },
                 "text": text_body,
@@ -213,6 +232,7 @@ def parse_spells(lines: list[str], page_of: list[int], lists: dict[str, list[str
 
 
 # --- species -------------------------------------------------------------
+
 
 def parse_species(lines: list[str], page_of: list[int]) -> list[dict]:
     """Four race entries; genasi carries four subraces worth separate records."""
@@ -232,7 +252,7 @@ def parse_species(lines: list[str], page_of: list[int]) -> list[dict]:
             if lines[cursor].strip() in ("Spell Lists", "Spell Descriptions"):
                 end = cursor
                 break
-        body = lines[index + 1:end]
+        body = lines[index + 1 : end]
         text = join_lines(body)
         data: dict = {"ability_increases": {}, "size": None, "speed": None, "subrace_of": None}
         if title in GENASI_SUBRACES:
@@ -247,13 +267,12 @@ def parse_species(lines: list[str], page_of: list[int]) -> list[dict]:
 def extract_race_data(text: str) -> dict:
     data: dict = {}
     increases: dict[str, int] = {}
-    for match in re.finditer(
-        r"(?:Ability Score Increase\.)\s*(.+?)(?=[A-Z][A-Za-z’' ]{2,34}\.\s|$)", text
-    ):
+    for match in re.finditer(r"(?:Ability Score Increase\.)\s*(.+?)(?=[A-Z][A-Za-z’' ]{2,34}\.\s|$)", text):
         clause = match.group(1)
         for score, amount in re.findall(
             r"(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)\s+score[s]?\s+"
-            r"(?:increases|increase)\s+by\s+(\d+)", clause
+            r"(?:increases|increase)\s+by\s+(\d+)",
+            clause,
         ):
             increases[score.lower()] = int(amount)
     data["ability_increases"] = increases
@@ -267,6 +286,7 @@ def extract_race_data(text: str) -> dict:
 
 
 # --- records -------------------------------------------------------------
+
 
 def record(category: str, name: str, text: str, data: dict, page: int | None) -> dict:
     return {
@@ -307,17 +327,25 @@ def main() -> None:
         records["spell"].append(record("spell", item["name"], item["text"], item["data"], item["page"]))
 
     rules = [
-        ("Chapter 1: Races", "chapter-1-races",
-         "This chapter presents three new races to supplement those in the Player's Handbook: "
-         "aarakocra, genasi, and goliaths. A gnome subrace—the deep gnome—is also included. These "
-         "new options are available when you make a character, provided that your DM allows them in "
-         "your campaign.", 3),
-        ("Chapter 2: Spells", "chapter-2-spells",
-         "This chapter offers new spells for many of the classes in the Player's Handbook. The spells "
-         "provide various ways to harness the power of the four elements. Your DM determines whether "
-         "these spells are available at character creation, whether they are discovered in a treasure "
-         "trove, or whether you stumble upon them in an ancient library or other storehouse of magical "
-         "knowledge.", 12),
+        (
+            "Chapter 1: Races",
+            "chapter-1-races",
+            "This chapter presents three new races to supplement those in the Player's Handbook: "
+            "aarakocra, genasi, and goliaths. A gnome subrace—the deep gnome—is also included. These "
+            "new options are available when you make a character, provided that your DM allows them in "
+            "your campaign.",
+            3,
+        ),
+        (
+            "Chapter 2: Spells",
+            "chapter-2-spells",
+            "This chapter offers new spells for many of the classes in the Player's Handbook. The spells "
+            "provide various ways to harness the power of the four elements. Your DM determines whether "
+            "these spells are available at character creation, whether they are discovered in a treasure "
+            "trove, or whether you stumble upon them in an ancient library or other storehouse of magical "
+            "knowledge.",
+            12,
+        ),
     ]
     for name, slug, text, page in rules:
         entry = record("rule", name, text, {}, page)

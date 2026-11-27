@@ -4,9 +4,11 @@
 the site; a bare urllib request gets 403. TLS here goes through Python's OpenSSL
 (curl/schannel fails with SEC_E_NO_CREDENTIALS in this sandbox).
 """
+
 import sys
 import urllib.request
 from pathlib import Path
+
 
 def _repo_root() -> Path:
     """Walk up from this file until the directory that holds content/ as repo root."""
@@ -17,15 +19,13 @@ def _repo_root() -> Path:
 
 
 ROOT = _repo_root()
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
 
 def fetch(rel_url, dest):
     req = urllib.request.Request(
         "https://5e.tools/data/" + rel_url,
-        headers={"User-Agent": UA, "Referer": "https://5e.tools/adventure.html",
-                 "Accept": "*/*"},
+        headers={"User-Agent": UA, "Referer": "https://5e.tools/adventure.html", "Accept": "*/*"},
     )
     with urllib.request.urlopen(req, timeout=120) as resp:
         body = resp.read()

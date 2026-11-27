@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import pytest
-
 from dndsheet.characters.api.species_traits import parse_species_text, species_details
 from dndsheet.compendium.infrastructure.factory import build_service
 from dndsheet.shared.rules import requires_subspecies
@@ -161,9 +160,7 @@ def test_subspecies_without_text_are_known(service) -> None:  # noqa: ANN001
     missing: list[str] = []
     for base in service.species_list():
         for child in service.subspecies_of(base.name_en):
-            details = species_details(
-                service, child.name_en, parent_name_en=base.name_en, cache=cache
-            )
+            details = species_details(service, child.name_en, parent_name_en=base.name_en, cache=cache)
             if not details or not details["traits"]:
                 missing.append(child.name_en)
     assert sorted(missing) == [
@@ -179,9 +176,7 @@ def test_subspecies_without_text_are_known(service) -> None:  # noqa: ANN001
 
 def test_subspecies_text_is_found_in_other_books(service) -> None:  # noqa: ANN001
     """«Beasthide Shifter» не має власного запису — текст у розділі «Shifter»."""
-    details = species_details(
-        service, "Beasthide Shifter", parent_name_en="Shifter", cache={}
-    )
+    details = species_details(service, "Beasthide Shifter", parent_name_en="Shifter", cache={})
 
     assert details is not None
     names = [trait["name_en"] for trait in details["traits"]]
@@ -191,9 +186,7 @@ def test_subspecies_text_is_found_in_other_books(service) -> None:  # noqa: ANN0
 
 def test_subspecies_text_from_rule_chapter(service) -> None:  # noqa: ANN001
     """«Ghostwise Halfling» описаний у главі SCAG, а не в записі виду."""
-    details = species_details(
-        service, "Ghostwise Halfling", parent_name_en="Halfling", cache={}
-    )
+    details = species_details(service, "Ghostwise Halfling", parent_name_en="Halfling", cache={})
 
     assert details is not None
     names = [trait["name_en"] for trait in details["traits"]]

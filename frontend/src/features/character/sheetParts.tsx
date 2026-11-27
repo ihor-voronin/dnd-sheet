@@ -8,7 +8,6 @@
  * гексагони характеристик, рядки навичок), але жодних їхніх файлів чи
  * зображень не використовує.
  */
-
 import type { ReactNode } from "react";
 
 import {
@@ -20,19 +19,15 @@ import {
   modifierLabel,
   skillLabel,
 } from "../../labels";
-import { proficiencyText } from "./uk";
 import type { SheetViewPayload } from "../wizard/types";
+
+import { proficiencyText } from "./uk";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
 const SKILL_ORDER = Object.keys(SKILL_LABELS);
 
 /** Редагування числа в місці: підставляється з CharacterView. */
-export type RenderValue = (
-  key: string,
-  value: number,
-  title: string,
-  suffix?: string,
-) => ReactNode;
+export type RenderValue = (key: string, value: number, title: string, suffix?: string) => ReactNode;
 
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -40,13 +35,7 @@ export function initials(name: string): string {
   return letters.join("").toUpperCase() || "?";
 }
 
-export function AbilityHex({
-  code,
-  ability,
-}: {
-  code: string;
-  ability: SheetViewPayload["abilities"][string];
-}) {
+export function AbilityHex({ code, ability }: { code: string; ability: SheetViewPayload["abilities"][string] }) {
   const basis = `База ${ability.base}${ability.bonus ? `, бонус ${modifierLabel(ability.bonus)}` : ""}`;
   return (
     <li className="sheet-ability">
@@ -85,13 +74,7 @@ export function HexStat({
   );
 }
 
-export function SavePills({
-  saves,
-  render,
-}: {
-  saves: SheetViewPayload["saving_throws"];
-  render: RenderValue;
-}) {
+export function SavePills({ saves, render }: { saves: SheetViewPayload["saving_throws"]; render: RenderValue }) {
   return (
     <ul className="sheet-saves">
       {ABILITIES.map((code) => {
@@ -99,15 +82,13 @@ export function SavePills({
         if (!save) return null;
         return (
           <li key={code} className={`sheet-save${save.proficient ? " is-prof" : ""}`}>
-            <span
-              className="sheet-save__dot"
-              title={save.proficient ? "володіє рятівним кидком" : "без володіння"}
-            />
+            <span className="sheet-save__dot" title={save.proficient ? "володіє рятівним кидком" : "без володіння"} />
             <span className="sheet-save__name">
               {ABILITY_SHORT[code]}
               {save.disadvantage ? (
                 <span className="sheet-skill__dis" title="Завада (disadvantage): броня без володіння">
-                  {" "}З
+                  {" "}
+                  З
                 </span>
               ) : null}
             </span>
@@ -121,11 +102,7 @@ export function SavePills({
   );
 }
 
-export function PassiveList({
-  items,
-}: {
-  items: { label: string; value: number; note?: string }[];
-}) {
+export function PassiveList({ items }: { items: { label: string; value: number; note?: string }[] }) {
   return (
     <ul className="sheet-passives">
       {items.map((item) => (
@@ -139,13 +116,7 @@ export function PassiveList({
   );
 }
 
-export function SkillTable({
-  skills,
-  render,
-}: {
-  skills: SheetViewPayload["skills"];
-  render: RenderValue;
-}) {
+export function SkillTable({ skills, render }: { skills: SheetViewPayload["skills"]; render: RenderValue }) {
   return (
     <ul className="sheet-skills">
       {SKILL_ORDER.map((skill) => {
@@ -163,7 +134,8 @@ export function SkillTable({
               {skillLabel(skill)}
               {value.disadvantage ? (
                 <span className="sheet-skill__dis" title="Броня дає заваду (disadvantage) на цю навичку">
-                  {" "}З
+                  {" "}
+                  З
                 </span>
               ) : null}
             </span>
@@ -185,11 +157,7 @@ const PROFICIENCY_GROUPS: { kind: string; title: string }[] = [
   { kind: "language", title: "Мови" },
 ];
 
-export function ProficiencyGroups({
-  proficiencies,
-}: {
-  proficiencies: SheetViewPayload["proficiencies"];
-}) {
+export function ProficiencyGroups({ proficiencies }: { proficiencies: SheetViewPayload["proficiencies"] }) {
   const groups = PROFICIENCY_GROUPS.map((group) => {
     const values: string[] = [];
     for (const item of proficiencies) {

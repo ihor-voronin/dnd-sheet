@@ -139,14 +139,10 @@ class SheetState:
             cleaned_key = str(key).strip()
             if not cleaned_key:
                 raise ValidationError("порожній ключ класового ресурсу")
-            cleaned_features[cleaned_key] = _check_count(
-                int(count), f"витрачено ресурсу {cleaned_key!r}"
-            )
+            cleaned_features[cleaned_key] = _check_count(int(count), f"витрачено ресурсу {cleaned_key!r}")
         cleaned_overrides: dict[str, int] = {}
         for key, value in self.overrides.items():
-            cleaned_overrides[_valid_override_key(str(key))] = _check_count(
-                int(value), f"виправлення {key!r}"
-            )
+            cleaned_overrides[_valid_override_key(str(key))] = _check_count(int(value), f"виправлення {key!r}")
         cleaned_notes: dict[str, str] = {}
         for key, value in self.notes.items():
             if key not in NOTE_KEYS:
@@ -214,9 +210,7 @@ class SheetState:
         if ready is None:
             return self.with_feature_used({})
         keys = set(ready)
-        return self.with_feature_used(
-            {key: value for key, value in self.feature_used.items() if key not in keys}
-        )
+        return self.with_feature_used({key: value for key, value in self.feature_used.items() if key not in keys})
 
     # --- інше --------------------------------------------------------------
 
