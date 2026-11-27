@@ -36,6 +36,16 @@ const GROUP_LABELS: Record<string, string> = {
   "1st-level Spell": "Закляття 1 рівня",
   Rituals: "Ритуали",
   "Damage Type": "Тип урону",
+  Skills: "Навички",
+  "Skill or Language": "Навичка або мова",
+};
+
+/** Хто дав вибір — для підказки «… дає ще N на вибір». */
+const ORIGIN_GIVES: Record<string, string> = {
+  feat: "Риса дає",
+  style: "Бойовий стиль дає",
+  sub: "Підклас дає",
+  boon: "Дар угоди дає",
 };
 
 /** Класи, з яких риси беруть закляття. */
@@ -111,7 +121,7 @@ function ChoiceGroup({
       </p>
       {pending > 0 ? (
         <p className="hint hint--warn">
-          {group.origin ? (group.origin.kind === "feat" ? "Риса дає" : "Бойовий стиль дає") : "Рівні класу дають"}{" "}
+          {group.origin ? ORIGIN_GIVES[group.origin.kind] ?? "Дає" : "Рівні класу дають"}{" "}
           ще {pending} на вибір. Наведіть на варіант, щоб прочитати опис; сірі варіанти
           потребують передумови або вже є у персонажа.
         </p>
@@ -196,6 +206,39 @@ export function ClassChoices({
         <ChoiceGroup key={group.key} group={group} busy={busy} onSave={onSave} />
       ))}
     </>
+  );
+}
+
+/** Книга виду: від неї залежить кістка природної зброї (табаксі VGM 1d4, MPMM 1d6). */
+export function SpeciesSource({
+  value,
+  busy,
+  onSave,
+}: {
+  value: NonNullable<SheetViewPayload["species_source"]>;
+  busy: boolean;
+  onSave: (source: string | null) => Promise<unknown>;
+}) {
+  const current = value.chosen ?? value.default;
+  return (
+    <div className="expertise">
+      <p className="expertise__head">Книга виду: {current}</p>
+      <p className="hint">Від книги залежить кістка природної зброї ({value.weapon}).</p>
+      <div className="chip-row">
+        {value.options.map((option) => (
+          <button
+            key={option.source}
+            type="button"
+            className={`chip ${current === option.source ? "chip--active" : ""}`}
+            aria-pressed={current === option.source}
+            disabled={busy || current === option.source}
+            onClick={() => void onSave(option.source === value.default ? null : option.source)}
+          >
+            {option.source} — {option.die}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

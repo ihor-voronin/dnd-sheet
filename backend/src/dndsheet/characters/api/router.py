@@ -28,7 +28,13 @@ from dndsheet.characters.api.serializers import (
 )
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.background_info import enrich_background
-from dndsheet.characters.api.class_choices import allowed_names, class_choices_payload
+from dndsheet.characters.api.class_choices import (
+    allowed_names,
+    apply_choices,
+    class_choices_payload,
+    duplicate_picks,
+    feat_probe_groups,
+)
 from dndsheet.characters.api.school_limits import check_schools
 from dndsheet.characters.api import classes_uk, uk_text
 from dndsheet.characters.api.uk_text import with_english
@@ -56,7 +62,7 @@ from dndsheet.export.domain.renderer import RenderOptions, RendererError, Render
 from dndsheet.sheets.application.build_document import build_sheet_document
 from dndsheet.shared.errors import ConflictError, DomainError, NotFoundError
 from dndsheet.shared.kernel import Ability
-from dndsheet.shared.rules import feat_ability_options
+from dndsheet.shared.rules import feat_ability_options, natural_weapon_die, natural_weapon_for
 
 router = APIRouter(prefix="/api/v1/characters", tags=["characters"])
 
@@ -121,6 +127,21 @@ def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Cha
         getattr(request.app.state, "background_cache", {}),
     )
     payload["class_choices"] = class_choices_payload(character, compendium)
+    # Книга виду — лише там, де від неї залежать числа (кігті табаксі: VGM 1d4, MPMM 1d6).
+    natural = natural_weapon_for(character.species_key, character.subspecies_key)
+    payload["species_source"] = (
+        {
+            "chosen": character.species_source,
+            "default": character.species.source_id if character.species else None,
+            "options": [
+                {"source": source, "die": natural_weapon_die(natural, source)}
+                for source in character.species_sources
+            ],
+            "weapon": natural.name_en,
+        }
+        if natural is not None and natural.die_mpmm and len(character.species_sources) > 1
+        else None
+    )
     # Варіантна людина й власна лінія: риса на 1 рівні (PHB, p. 31; TCoE, p. 8).
     payload["species_feat"] = (
         {
@@ -364,6 +385,40 @@ def read_step(draft_id: str, step: str, request: Request) -> dict:
     return _step_payload(request, draft, parsed)
 
 
+def _feat_probe(request: Request, body: dict[str, Any]):  # noqa: ANN202 — Character
+    """Пробний персонаж для виборів риси виду: той самий вид, риса й характеристики 10."""
+    from dndsheet.characters.domain.character import Character
+    from dndsheet.shared.kernel import AbilityScore
+
+    feat = str(body.get("species_feat") or body.get("feat") or "").strip().casefold()
+    return Character(
+        id="probe",
+        name="probe",
+        abilities={ability: AbilityScore(10) for ability in Ability},
+        rules=request.app.state.rules,
+        classes=[],
+        species_key=body.get("species_key") or None,
+        subspecies_key=body.get("subspecies_key") or None,
+        feats=(feat,) if feat else (),
+    )
+
+
+@router.post("/wizard/feat-choices")
+def wizard_feat_choices(request: Request, payload: dict[str, Any] = Body(default_factory=dict)) -> dict:
+    """Групи виборів риси виду для візарда: `{feat, species_key, subspecies_key, choices}`."""
+    body = dict(payload or {})
+    compendium = _compendium(request)
+    try:
+        probe = _feat_probe(request, body)
+        choices = body.get("choices") or {}
+        if not isinstance(choices, dict):
+            raise HTTPException(status_code=422, detail="choices має бути обʼєктом «група: [назви]»")
+        apply_choices(probe, compendium, {key: list(values) for key, values in choices.items() if values})
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"groups": feat_probe_groups(probe, compendium)}
+
+
 @router.put("/wizard/{draft_id}/steps/{step}")
 def write_step(
     draft_id: str,
@@ -386,6 +441,14 @@ def write_step(
                 status_code=422,
                 detail="спершу завершіть попередній крок",
             )
+        choices = body.get("species_feat_choices")
+        if parsed is WizardStep.SPECIES and isinstance(choices, dict) and choices:
+            # Варіанти рис знає довідник — перевіряємо тут, на пробному персонажі.
+            apply_choices(
+                _feat_probe(request, body),
+                _compendium(request),
+                {key: list(values) for key, values in choices.items() if values},
+            )
         draft = wizard.apply(draft_id, parsed, body, expected_revision=revision)
     except DomainError as exc:
         raise _http_error(exc) from exc
@@ -396,6 +459,13 @@ def write_step(
 def finish_draft(draft_id: str, request: Request) -> dict:
     """Зібрати персонажа, зберегти й показати його лист."""
     try:
+        # Навичка з риси виду не має дублювати навичку передісторії чи класу.
+        duplicates = duplicate_picks(_wizard(request).load(draft_id).to_character("probe"))
+        if duplicates:
+            raise HTTPException(
+                status_code=422,
+                detail="уже є з іншого джерела — змініть вибір риси на кроці виду: " + "; ".join(duplicates),
+            )
         character = _wizard(request).finish(draft_id)
     except DomainError as exc:
         raise _http_error(exc) from exc
@@ -609,6 +679,24 @@ def set_class_choice(
         )
     except KeyError as exc:
         raise HTTPException(status_code=422, detail=f"невідома група {group!r}") from exc
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.post("/{character_id}/species-source")
+def set_species_source(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Книга виду: `{"source": "MPMM", "version": N}`; `null` — книга запису."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    try:
+        character = _sheet_service(request).set_species_source(
+            character_id, body.get("source") or None, expected_version=version
+        )
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}

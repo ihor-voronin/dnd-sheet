@@ -342,6 +342,7 @@ const TERMS: Record<string, string> = {
   goliath: "Ґоліат",
   tabaxi: "Табаксі",
   fighter: "Воїн",
+  feat: "Риса",
   warlock: "Чаклун",
   cleric: "Жрець",
   wizard: "Маг",

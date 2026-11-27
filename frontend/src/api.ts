@@ -1,3 +1,4 @@
+import type { ClassChoiceGroup } from "./features/wizard/types";
 import type { SheetDocument } from "./contract/sheetDocument";
 import type {
   ClassSpell,
@@ -275,6 +276,27 @@ export function setCharacterClassChoice(
   });
 }
 
+/** Групи виборів риси виду для візарда (навички Умілого, закляття Учня магії…). */
+export function fetchWizardFeatChoices(body: {
+  feat: string;
+  species_key: string;
+  subspecies_key: string | null;
+  choices: Record<string, string[]>;
+}): Promise<{ groups: ClassChoiceGroup[] }> {
+  return request<{ groups: ClassChoiceGroup[] }>(`/api/v1/characters/wizard/feat-choices`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/** Книга виду (VGM чи MPMM): від неї залежить кістка природної зброї. */
+export function setCharacterSpeciesSource(id: string, source: string | null, version: number): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/species-source`, {
+    method: "POST",
+    body: JSON.stringify({ source, version }),
+  });
+}
+
 /** Риса виду на 1 рівні (варіантна людина, власна лінія). */
 export function setCharacterSpeciesFeat(
   id: string,
@@ -306,6 +328,8 @@ export interface ItemBody {
   pact_weapon?: boolean;
   /** Зброя Хекс-воїна (Hex Warrior) — лише одна. */
   hex_weapon?: boolean;
+  /** Зброя кенсея (Path of the Kensei) — кілька, ліміт за рівнем. */
+  kensei_weapon?: boolean;
 }
 
 export function addCharacterItem(

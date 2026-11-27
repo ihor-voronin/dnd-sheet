@@ -217,7 +217,7 @@ export function CastingBlock({
   onPactUsed: (used: number) => void;
 }) {
   if (!casting.classes.length) {
-    return <p className="hint">Персонаж не чарує.</p>;
+    return <p className="hint">Класового чарування немає; закляття від виду чи риси мають КС у своїй картці.</p>;
   }
   return (
     <>
@@ -229,6 +229,17 @@ export function CastingBlock({
             {item.prepares
               ? `, готує до ${item.prepared_limit}`
               : `, знає до ${item.spells_known_limit ?? 0}`}
+            {item.key === "wizard" && casting.spellbook ? (
+              <span className="hint">
+                {" "}
+                · у книзі {casting.spellbook.count}, рівні дають {casting.spellbook.from_levels}
+                {casting.spellbook.count > casting.spellbook.from_levels
+                  ? ` — ще ${casting.spellbook.count - casting.spellbook.from_levels} переписано (50 зм і 2 год за рівень закляття)`
+                  : casting.spellbook.count < casting.spellbook.from_levels
+                    ? ` — можна дописати ще ${casting.spellbook.from_levels - casting.spellbook.count}`
+                    : ""}
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -270,6 +281,7 @@ const SPELL_SOURCE_TAGS: Record<string, string> = {
   feat: "від риси",
   "fighting-style": "від бойового стилю",
   invocation: "від виклику",
+  "pact-boon": "від дару угоди",
 };
 
 export function SpellsKnownList({

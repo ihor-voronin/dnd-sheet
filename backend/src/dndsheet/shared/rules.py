@@ -1082,6 +1082,39 @@ STYLE_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
     ),
 }
 
+#: Підклас (останній сегмент ключа) → (рівень класу, вибори). Ефект — той самий
+#: механізм, що й у рис: володіння, експертиза, заговори, бойовий стиль.
+SUBCLASS_CHOICES: Mapping[str, tuple[int, tuple[DerivedChoice, ...]]] = {
+    # Blessings of Knowledge: 2 мови й 2 навички з подвоєним бонусом (PHB, p. 59).
+    "knowledge-domain": (1, (
+        DerivedChoice("Languages", 2, "language"),
+        DerivedChoice("Skills", 2, "skill", options=("Arcana", "History", "Nature", "Religion")),
+    )),
+    # Acolyte of Nature: заговір друїда й навичка (PHB, p. 62).
+    "nature-domain": (1, (
+        DerivedChoice("Cantrip", 1, "spell", spell_level=0, spell_class="druid"),
+        DerivedChoice("Skill", 1, "skill", options=("Animal Handling", "Nature", "Survival")),
+    )),
+    # Bonus Proficiencies: три навички (PHB, p. 54).
+    "college-of-lore": (3, (DerivedChoice("Skills", 3, "skill"),)),
+    # Fighting Style: Дуель або Бій двома зброями (XGtE, p. 15).
+    "college-of-swords": (3, (
+        DerivedChoice("Fighting Style", 1, "fixed", options=("Dueling", "Two-Weapon Fighting")),
+    )),
+    # Bonus Proficiency: навичка зі списку або мова (XGtE, p. 31).
+    "samurai": (3, (
+        DerivedChoice("Skill or Language", 1, "skill_or_language", options=("History", "Insight", "Performance", "Persuasion")),
+    )),
+}
+
+#: Підкласи, чиї обрані навички мають подвоєний бонус (Blessings of Knowledge).
+SUBCLASS_EXPERTISE = frozenset({"knowledge-domain"})
+
+#: Дар угоди → вибори: Угода фоліанта — три заговори будь-якого класу (PHB, p. 108).
+BOON_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
+    "pact of the tome": (DerivedChoice("Cantrips", 3, "spell", spell_level=0, spell_class="*"),),
+}
+
 #: Закляття, які риса дає без вибору: (назва, рівень, як чарується).
 FEAT_SPELLS: Mapping[str, tuple[tuple[str, int, str], ...]] = {
     "fey-touched": (("Misty Step", 2, "1/long rest"),),
@@ -1215,6 +1248,20 @@ NATURAL_WEAPONS: Mapping[str, NaturalWeapon] = {
     "dhampir": NaturalWeapon("Vampiric Bite", "1d4", "piercing", ability=Ability.CON),
     "longtooth shifter": NaturalWeapon("Fangs", "1d6", "piercing", note="shifted only"),
 }
+
+def natural_weapon_for(species_key: str | None, subspecies_key: str | None) -> NaturalWeapon | None:
+    """Природна зброя виду чи підвиду (підвид важливіший: ікласті шифтери)."""
+    for key in (subspecies_key, species_key):
+        slug = (key or "").strip().casefold().rsplit("/", 1)[-1]
+        if slug in NATURAL_WEAPONS:
+            return NATURAL_WEAPONS[slug]
+    return None
+
+
+def natural_weapon_die(weapon: NaturalWeapon, source: str | None) -> str:
+    """Кістка природної зброї за книгою виду: у MPMM вона більша (табаксі 1d6)."""
+    return weapon.die_mpmm if weapon.die_mpmm and (source or "").upper() == "MPMM" else weapon.die
+
 
 #: Кістка бойових мистецтв ченця за рівнем (PHB, p. 76).
 MARTIAL_ARTS_DIE = ((17, "1d10"), (11, "1d8"), (5, "1d6"), (1, "1d4"))

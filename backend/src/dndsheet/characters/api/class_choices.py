@@ -15,6 +15,7 @@ from dndsheet.characters.domain import derived_choices
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.compendium.application.service import CompendiumService
+from dndsheet.shared.errors import ValidationError
 from dndsheet.shared.kernel import Skill
 from dndsheet.shared.rules import (
     ALL_TOOLS,
@@ -81,10 +82,19 @@ def _derived_options(
         return "уже є володіння"
 
     rows: list[dict[str, Any]] = []
-    if choice.kind in ("skill", "skill_or_tool"):
+    if choice.kind in ("skill", "skill_or_tool", "skill_or_language"):
+        # Список навичок може бути обмежений правилом (Домен знань: 4 навички).
+        allowed_skills = {name.casefold() for name in choice.options}
         for skill in Skill:
             uk, en = DEMO_SKILLS[skill]
+            if allowed_skills and en.casefold() not in allowed_skills:
+                continue
             rows.append(_plain(en, uk, lock(ProficiencyKind.SKILL, skill.value, en)))
+    if choice.kind == "skill_or_language":
+        rows.extend(
+            _plain(name, LANGUAGE_LABELS.get(name, (None,))[0], lock(ProficiencyKind.LANGUAGE, name, name))
+            for name in LANGUAGES
+        )
     if choice.kind in ("tool", "skill_or_tool"):
         rows.extend(_plain(tool, None, lock(ProficiencyKind.TOOL, tool, tool)) for tool in ALL_TOOLS)
     if choice.kind == "language":
@@ -196,7 +206,7 @@ def class_choices_payload(character: Character, compendium: CompendiumService) -
     )
     for key, slots in ordered:
         kind, owner, group = derived_choices.split_key(key)
-        derived = kind in ("feat", "style")
+        derived = kind in ("feat", "style", "sub", "boon")
         rows.append(
             {
                 "key": key,
@@ -212,8 +222,40 @@ def class_choices_payload(character: Character, compendium: CompendiumService) -
     return rows
 
 
+def duplicate_picks(character: Character) -> list[str]:
+    """Обране в рисі чи підкласі, що вже є з іншого джерела: «Умілий (Skilled): Athletics»."""
+    owned = character.all_proficiencies()
+    problems: list[str] = []
+    for key, choice in character.derived_choice_groups.items():
+        source = derived_choices.source_of(character, key)
+        kind, owner, _ = derived_choices.split_key(key)
+        for value in character.active_class_choices.get(key, ()):
+            proficiency = derived_choices.proficiency_of(choice.kind, value, source)
+            if proficiency is None:
+                continue
+            if any(other != source for other in owned.sources(proficiency.kind, proficiency.value)):
+                problems.append(f"{_owner_uk(kind, owner)}: {value}")
+    return problems
+
+
+def feat_probe_groups(character: Character, compendium: CompendiumService) -> list[dict[str, Any]]:
+    """Групи виборів рис (для візарда): ті самі, що на листі."""
+    return [group for group in class_choices_payload(character, compendium) if group["key"].startswith("feat:")]
+
+
+def apply_choices(character: Character, compendium: CompendiumService, choices: dict[str, Any]) -> None:
+    """Застосувати вибори в порядку правил («Клас заклять» раніше за заговори)."""
+    order = list(character.derived_choice_groups)
+    for key in sorted(choices, key=lambda item: order.index(item) if item in order else len(order)):
+        if key not in character.class_choice_slots:
+            raise ValidationError(f"риса не дає вибору {key!r}")
+        character.set_class_choice(key, choices[key], allowed_names(key, compendium, character))
+
+
 def _owner_uk(kind: str, owner: str) -> str:
     """Підпис джерела вибору: «Умілий (Skilled)», «Благословенний воїн (Blessed Warrior)»."""
     name_en = owner.replace("-", " ").title()
-    layer = "feats" if kind == "feat" else LAYER
+    if kind == "sub":
+        name_en = name_en.replace(" Of The ", " of the ").replace(" Of ", " of ")
+    layer = {"feat": "feats", "sub": "subclasses"}.get(kind, LAYER)
     return uk_text.with_english(name_en, uk_text.name_uk(layer, name_en))

@@ -58,7 +58,8 @@ import {
 import { Term } from "../../components/Term";
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchClassFeatures, fetchEntry, fetchFeats, searchItems } from "../../api";
+import { fetchClassFeatures, fetchEntry, fetchFeats, fetchWizardFeatChoices, searchItems } from "../../api";
+import { ClassChoices } from "../character/classChoices";
 import { FeatPicker } from "../character/LevelUp";
 import type { ClassFeatureRow } from "../../api";
 import { RuleText } from "../character/panels";
@@ -248,6 +249,8 @@ export function SpeciesStep({
   const [spellChoices, setSpellChoices] = useState<string[]>(initial.spell_choices ?? []);
   const [featId, setFeatId] = useState<string | null>(initial.species_feat ?? null);
   const [featAbility, setFeatAbility] = useState<string | null>(initial.species_feat_ability ?? null);
+  const [speciesSource, setSpeciesSource] = useState<string | null>(initial.species_source ?? null);
+  const [featChoices, setFeatChoices] = useState<Record<string, string[]>>(initial.species_feat_choices ?? {});
   // Правила 2022: вид без фіксованих бонусів — гравець розставляє сам.
   const initialSpread = initial.ability_spread ?? {};
   const spreadAbilities = Object.keys(initialSpread);
@@ -288,6 +291,19 @@ export function SpeciesStep({
   const grantsFeat = withFeat.has(speciesKey) || withFeat.has(subspeciesKey);
   const feats = useQuery({ queryKey: ["feats"], queryFn: fetchFeats, enabled: grantsFeat });
   const featAbilities = featId ? options.feat_abilities?.[featId] ?? [] : [];
+  // Вибори всередині риси (навички, закляття, маневри) — з сервера, як на листі.
+  const featGroups = useQuery({
+    queryKey: ["wizard-feat-choices", featId, speciesKey, subspeciesKey, featChoices],
+    queryFn: () =>
+      fetchWizardFeatChoices({
+        feat: featId ?? "",
+        species_key: speciesKey,
+        subspecies_key: subspeciesKey || null,
+        choices: featChoices,
+      }),
+    enabled: grantsFeat && Boolean(featId),
+    placeholderData: (previous) => previous,
+  });
   const grantedCantrips = effective?.shared_cantrips ?? [];
   const grantedSpells = effective?.granted_spells ?? [];
 
@@ -305,6 +321,8 @@ export function SpeciesStep({
     setSpreadPicks(["str", "dex"]);
     setFeatId(null);
     setFeatAbility(null);
+    setSpeciesSource(null);
+    setFeatChoices({});
   }, [speciesKey]);
 
   function toggleChoice(ability: string) {
@@ -592,6 +610,32 @@ export function SpeciesStep({
         </section>
       ) : null}
 
+      {selected?.natural_weapon ? (
+        <section className="wizard-block">
+          <h3>Книга виду</h3>
+          <p className="hint">
+            {speciesLabel(selected.name_en)} є в кількох книгах, і кістка природної зброї
+            ({selected.natural_weapon.name_en}) у них різна. Оберіть ту, за якою граєте.
+          </p>
+          <div className="chip-row">
+            {Object.entries(selected.natural_weapon.dice).map(([source, die]) => {
+              const active = (speciesSource ?? selected.natural_weapon?.default_source) === source;
+              return (
+                <button
+                  key={source}
+                  type="button"
+                  className={`chip ${active ? "chip--active" : ""}`}
+                  aria-pressed={active}
+                  onClick={() => setSpeciesSource(source === selected.natural_weapon?.default_source ? null : source)}
+                >
+                  {source} — {die}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
       {grantsFeat ? (
         <section className="wizard-block">
           <h3>
@@ -599,8 +643,7 @@ export function SpeciesStep({
           </h3>
           <p className="hint">
             {effective ? speciesLabel(effective.name_en) : ""} бере одну рису вже на 1 рівні.
-            Якщо риса дає вибір (навички, закляття, маневри), його буде запропоновано на листі в
-            «Уміння → Вибори класу й рис».
+            Якщо риса дає вибір (навички, закляття, маневри), він з’явиться під рисою.
           </p>
           {feats.isPending ? <p className="meta">Читаємо риси…</p> : null}
           <FeatPicker
@@ -609,8 +652,37 @@ export function SpeciesStep({
             onChange={(id) => {
               setFeatId(id);
               setFeatAbility(options.feat_abilities?.[id]?.[0] ?? null);
+              setFeatChoices({});
             }}
           />
+          {featId && featGroups.data?.groups.length ? (
+            <>
+              <p className="hint">
+                Риса дає вибір — його можна зробити тут або пізніше на листі. Навички, що вже
+                є від передісторії, на «Завершити» доведеться замінити.
+              </p>
+              <ClassChoices
+                groups={featGroups.data.groups}
+                busy={featGroups.isFetching}
+                onSave={async (key, values) => {
+                  setFeatChoices((current) => {
+                    const next = { ...current, [key]: values };
+                    // Інший клас Учня магії — інший список: обрані закляття скидаються, як на листі.
+                    if (key.endsWith(":Spell Class")) {
+                      const prefix = key.slice(0, key.lastIndexOf(":") + 1);
+                      for (const other of Object.keys(next)) {
+                        if (other !== key && other.startsWith(prefix) && !other.endsWith(":Tool")) delete next[other];
+                      }
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </>
+          ) : null}
+          {featGroups.error ? (
+            <p className="status status--error">{(featGroups.error as Error).message}</p>
+          ) : null}
           {featAbilities.length > 1 ? (
             <label className="field">
               <span>Риса дає +1 до характеристики — оберіть яку</span>
@@ -652,6 +724,8 @@ export function SpeciesStep({
             ability_spread: spreadPayload() ?? {},
             spell_choices: spellChoices,
             species_feat: grantsFeat ? featId : null,
+            species_source: selected?.natural_weapon ? speciesSource : null,
+            species_feat_choices: grantsFeat && featId ? featChoices : {},
             species_feat_ability: grantsFeat && featAbilities.length ? featAbility : null,
           })
         }

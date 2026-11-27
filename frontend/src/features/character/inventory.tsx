@@ -118,10 +118,11 @@ interface Draft {
   entry_id: string | null;
   pact_weapon: boolean;
   hex_weapon: boolean;
+  kensei_weapon: boolean;
 }
 
-/** Які позначки зброї має персонаж: угода клинка, хексблейд. */
-export type WeaponBonds = { pact: boolean; hex: boolean };
+/** Які позначки зброї має персонаж: угода клинка, хексблейд, скільки зброї кенсея. */
+export type WeaponBonds = { pact: boolean; hex: boolean; kensei?: number };
 
 const EMPTY: Draft = {
   name_en: "",
@@ -137,6 +138,7 @@ const EMPTY: Draft = {
   entry_id: null,
   pact_weapon: false,
   hex_weapon: false,
+  kensei_weapon: false,
 };
 
 function draftFromItem(item: SheetItem): Draft {
@@ -154,6 +156,7 @@ function draftFromItem(item: SheetItem): Draft {
     entry_id: item.entry_id ?? null,
     pact_weapon: Boolean(item.pact_weapon),
     hex_weapon: Boolean(item.hex_weapon),
+    kensei_weapon: Boolean(item.kensei_weapon),
   };
 }
 
@@ -260,6 +263,7 @@ function bodyFromDraft(draft: Draft, withEntry: boolean): ItemBody {
     dex_cap: draft.kind === "armor" ? draft.dexCap : null,
     pact_weapon: draft.kind === "weapon" && draft.pact_weapon,
     hex_weapon: draft.kind === "weapon" && draft.hex_weapon,
+    kensei_weapon: draft.kind === "weapon" && draft.kensei_weapon,
     ...(withEntry ? { entry_id: draft.entry_id } : {}),
   };
 }
@@ -968,6 +972,20 @@ export function InventoryPanel({
                 </span>
               </label>
             ) : null}
+            {form.draft.kind === "weapon" && bonds.kensei ? (
+              <label className="field inv-form__check">
+                <input
+                  type="checkbox"
+                  checked={form.draft.kensei_weapon}
+                  onChange={(event) =>
+                    setForm({ ...form, draft: { ...form.draft, kensei_weapon: event.target.checked } })
+                  }
+                />
+                <span title={`Шлях кенсея: володієте, зброя ченця; можна обрати ${bonds.kensei}`}>
+                  зброя кенсея (Kensei Weapon)
+                </span>
+              </label>
+            ) : null}
           </div>
           <div className="inv-form__actions">
             <button
@@ -999,6 +1017,7 @@ export function InventoryPanel({
               !data.attunement && item.attuned ? "настроєно" : "",
               item.pact_weapon ? "зброя угоди" : "",
               item.hex_weapon ? "Хекс-воїн" : "",
+              item.kensei_weapon ? "зброя кенсея" : "",
               item.damage,
               item.armor_base ? `КЗ ${item.armor_base}` : "",
               item.dex_cap !== null && item.armor_base ? `СПР ≤ ${item.dex_cap}` : "",
@@ -1117,7 +1136,8 @@ export function InventoryPanel({
 
                 {isOpen ? (
                   <div className="item-detail">
-                    {item.kind === "weapon" && (bonds.pact || bonds.hex || item.pact_weapon || item.hex_weapon) ? (
+                    {item.kind === "weapon" &&
+                    (bonds.pact || bonds.hex || bonds.kensei || item.pact_weapon || item.hex_weapon || item.kensei_weapon) ? (
                       <div className="chip-row item-detail__bonds">
                         {bonds.pact || item.pact_weapon ? (
                           <button
@@ -1141,6 +1161,24 @@ export function InventoryPanel({
                             title="Хекс-воїн (Hex Warrior): атаки цією зброєю — Харизмою; обирається після тривалого відпочинку. Позначка з іншої зброї зніметься."
                           >
                             Хекс-воїн (Hex Warrior)
+                          </button>
+                        ) : null}
+                        {bonds.kensei || item.kensei_weapon ? (
+                          <button
+                            type="button"
+                            className={`chip ${item.kensei_weapon ? "chip--active" : ""}`}
+                            disabled={
+                              disabled ||
+                              (!item.kensei_weapon &&
+                                items.filter((other) => other.kensei_weapon).length >= (bonds.kensei ?? 0))
+                            }
+                            aria-pressed={Boolean(item.kensei_weapon)}
+                            onClick={() => void onUpdate(index, { kensei_weapon: !item.kensei_weapon })}
+                            title={`Шлях кенсея (Path of the Kensei): володієте, зброя ченця. Обрано ${
+                              items.filter((other) => other.kensei_weapon).length
+                            } з ${bonds.kensei ?? 0}.`}
+                          >
+                            Зброя кенсея (Kensei Weapon)
                           </button>
                         ) : null}
                       </div>

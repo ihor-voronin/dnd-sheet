@@ -20,7 +20,7 @@ from dndsheet.characters.domain.proficiencies import ProficiencyKind, Proficienc
 from dndsheet.characters.domain.services.derived_stats import ComputedSheet
 
 #: Звідки взялося закляття: від класу (вибір гравця), виду або підкласу.
-SpellSource = Literal["class", "species", "subclass", "feat", "fighting-style", "invocation"]
+SpellSource = Literal["class", "species", "subclass", "feat", "fighting-style", "invocation", "pact-boon"]
 
 #: Як чарується закляття поза класом — українською для листа й PDF.
 USAGE_UK = {
@@ -117,7 +117,7 @@ def _casting_note(ability, computed: ComputedSheet) -> str:  # noqa: ANN001 — 
     return f"{_ABILITY_UK[ability.value]}: КС {dc}, атака {computed.proficiency_bonus + modifier:+d}"
 
 
-_GRANTED_SOURCES = ("species", "subclass", "feat", "fighting-style", "invocation")
+_GRANTED_SOURCES = ("species", "subclass", "feat", "fighting-style", "invocation", "pact-boon")
 
 
 def spell_rows(character: Character, computed: ComputedSheet) -> tuple[SpellRow, ...]:

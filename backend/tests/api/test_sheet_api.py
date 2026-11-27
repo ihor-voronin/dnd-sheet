@@ -674,3 +674,70 @@ def test_lizardfolk_bite_keeps_larger_die_after_monk_multiclass(client: TestClie
     rows = {row["name_en"]: row for row in sheet["attacks"]}
     assert rows["Bite"]["damage"].startswith("1d6"), "укус d6 більший за d4 бойових мистецтв 1 рівня"
     assert rows["Unarmed Strike"]["damage"].startswith("1d4")
+
+
+def test_wizard_feat_choices_are_saved_and_checked(client: TestClient) -> None:
+    """Вибори риси виду — у візарді; дубль із передісторією зупиняє «Завершити»."""
+    base = {"species_key": "human", "subspecies_key": "variant human"}
+    groups = client.post(
+        "/api/v1/characters/wizard/feat-choices",
+        json={**base, "feat": "phb-2014/feat/magic-initiate", "choices": {"feat:magic-initiate:Spell Class": ["wizard"]}},
+    )
+    assert groups.status_code == 200, groups.text
+    by_key = {group["key"]: group for group in groups.json()["groups"]}
+    assert [group["key"] for group in groups.json()["groups"]][0] == "feat:magic-initiate:Spell Class"
+    assert any(option["name_en"] == "Fire Bolt" for option in by_key["feat:magic-initiate:Cantrips"]["options"])
+
+    draft_id = client.post("/api/v1/characters/wizard").json()["draft"]["id"]
+    species = {"name": "Ліна", **base, "ability_choices": ["str", "con"], "species_feat": "phb-2014/feat/skilled"}
+    wrong = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={**species, "species_feat_choices": {"feat:skilled:Skills or Tools": ["Flying"]}},
+    )
+    assert wrong.status_code == 422, "варіант не з довідника"
+    steps = [
+        ("species", {**species, "species_feat_choices": {"feat:skilled:Skills or Tools": ["Athletics", "Arcana", "lute"]}}),
+        ("class", {"class_key": "fighter"}),
+        ("abilities", {"method": "standard_array", "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8}}),
+        (
+            "background",
+            {
+                "background_key": "soldier",
+                "picks": [
+                    {"kind": "skill", "value": "acrobatics", "source": {"kind": "class", "key": "fighter"}},
+                    {"kind": "skill", "value": "perception", "source": {"kind": "class", "key": "fighter"}},
+                    {"kind": "skill", "value": "stealth", "source": {"kind": "species", "key": "variant human"}},
+                ],
+            },
+        ),
+    ]
+    for step, body in steps:
+        response = client.put(f"/api/v1/characters/wizard/{draft_id}/steps/{step}", json=body)
+        assert response.status_code == 200, f"{step}: {response.text}"
+    # Солдат уже дає Атлетику — Умілий не може взяти її вдруге.
+    blocked = client.post(f"/api/v1/characters/wizard/{draft_id}/finish")
+    assert blocked.status_code == 422 and "Athletics" in blocked.json()["detail"]
+    fixed = client.put(
+        f"/api/v1/characters/wizard/{draft_id}/steps/species",
+        json={**species, "species_feat_choices": {"feat:skilled:Skills or Tools": ["History", "Arcana", "lute"]}},
+    )
+    assert fixed.status_code == 200, fixed.text
+    finished = client.post(f"/api/v1/characters/wizard/{draft_id}/finish")
+    assert finished.status_code == 200, finished.text
+    sheet = finished.json()["sheet"]
+    assert sheet["skills"]["history"]["proficient"] and sheet["skills"]["arcana"]["proficient"]
+
+
+def test_species_source_and_spellbook_on_sheet(client: TestClient) -> None:
+    tabaxi = _create_simple(client, "tabaxi", "monk", ["acrobatics", "stealth"])
+    sheet = client.get(f"/api/v1/characters/{tabaxi}").json()["sheet"]
+    assert sheet["species_source"]["default"] == "VGM"
+    assert {option["source"]: option["die"] for option in sheet["species_source"]["options"]} == {"MPMM": "1d6", "VGM": "1d4"}
+    changed = client.post(f"/api/v1/characters/{tabaxi}/species-source", json={"source": "MPMM"})
+    assert changed.status_code == 200, changed.text
+    claws = next(row for row in changed.json()["sheet"]["attacks"] if row["name_en"] == "Cat's Claws")
+    assert claws["damage"].startswith("1d6")
+
+    wizard = _create_simple(client, "human", "wizard", ["arcana", "history"])
+    sheet = client.get(f"/api/v1/characters/{wizard}").json()["sheet"]
+    assert sheet["spellcasting"]["spellbook"] == {"count": 0, "from_levels": 6}

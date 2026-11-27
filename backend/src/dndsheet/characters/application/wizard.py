@@ -38,6 +38,17 @@ from dndsheet.shared.ids import CharacterId
 from dndsheet.shared.kernel import Ability, Money
 
 
+def _choice_map(raw: Any) -> dict[str, list[str]]:  # noqa: ANN401
+    """`{"feat:skilled:Skills or Tools": ["Arcana", ...]}` — вибори риси виду."""
+    if raw in (None, ""):
+        return {}
+    if not isinstance(raw, Mapping) or not all(
+        isinstance(values, list) and all(isinstance(value, str) for value in values) for values in raw.values()
+    ):
+        raise ValidationError("species_feat_choices має бути обʼєктом «група: [назви]»")
+    return {str(key): list(values) for key, values in raw.items()}
+
+
 def new_draft_id() -> str:
     return f"drf_{uuid4().hex}"
 
@@ -102,6 +113,8 @@ class WizardService:
                 spell_choices=_text_list(body.get("spell_choices")),
                 ability_spread=body.get("ability_spread"),
                 species_feat=feat_key,
+                species_source=_optional_text(body, "species_source"),
+                species_feat_choices=_choice_map(body.get("species_feat_choices")),
                 species_feat_ability=self._feat_ability(feat_key, body.get("species_feat_ability")),
             )
         elif step is WizardStep.CLASS:

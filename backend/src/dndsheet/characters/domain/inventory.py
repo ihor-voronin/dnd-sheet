@@ -54,6 +54,8 @@ class InventoryItem:
     pact_weapon: bool = False
     #: Зброя Хекс-воїна (Hex Warrior, XGtE, p. 55): обрана після тривалого відпочинку.
     hex_weapon: bool = False
+    #: Зброя кенсея (Path of the Kensei, XGtE, p. 34): кілька, ліміт — за рівнем ченця.
+    kensei_weapon: bool = False
 
     def __post_init__(self) -> None:
         if not self.name_en.strip():
@@ -75,7 +77,7 @@ class InventoryItem:
             )
         if self.dex_cap is not None and self.dex_cap < 0:
             raise ValidationError(f"{self.name_en}: межа Спритності не може бути відʼємною")
-        if (self.pact_weapon or self.hex_weapon) and self.kind is not ItemKind.WEAPON:
+        if (self.pact_weapon or self.hex_weapon or self.kensei_weapon) and self.kind is not ItemKind.WEAPON:
             raise ValidationError(f"{self.name_en}: зброєю угоди чи Хекс-воїна буває лише зброя")
         if self.damage is not None:
             if not str(self.damage).strip():

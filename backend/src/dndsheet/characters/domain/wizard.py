@@ -197,6 +197,10 @@ class Draft:
     species_feat: str | None = None
     #: Характеристика, яку риса підвищила на 1 (Resilient, Actor…).
     species_feat_ability: Ability | None = None
+    #: Книга виду («MPMM»), якщо вид є в кількох.
+    species_source: str | None = None
+    #: Вибори риси виду: «feat:skilled:Skills or Tools» → назви (як `class_choices`).
+    species_feat_choices: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     # ------------------------------------------------------------------
     # похідні
@@ -270,6 +274,8 @@ class Draft:
         ability_spread: Mapping[Any, Any] | None = None,
         species_feat: str | None = None,
         species_feat_ability: Ability | None = None,
+        species_source: str | None = None,
+        species_feat_choices: Mapping[str, Iterable[str]] | None = None,
     ) -> None:
         species = self.rules.species_mechanics(species_key)
         if species is None:
@@ -302,6 +308,16 @@ class Draft:
         )
         candidate.species_feat = (species_feat or "").strip().casefold() or None
         candidate.species_feat_ability = species_feat_ability if candidate.species_feat else None
+        candidate.species_source = (species_source or "").strip().upper() or None
+        # Лише вибори обраної риси: інша риса — інші групи.
+        prefix = f"feat:{(candidate.species_feat or '').rsplit('/', 1)[-1]}:"
+        candidate.species_feat_choices = {
+            str(key): tuple(str(value) for value in values)
+            for key, values in (species_feat_choices or {}).items()
+            if candidate.species_feat and str(key).startswith(prefix) and values
+        }
+        if candidate.species_source and candidate.species_source not in {item.upper() for item in species.variants}:
+            raise ValidationError(f"{species.name_en} не має версії з книги {species_source!r}")
         if (self.species_key, self.subspecies_key) != (
             candidate.species_key,
             candidate.subspecies_key,
@@ -511,6 +527,8 @@ class Draft:
                 else {}
             ),
             species_feat=self.species_feat,
+            species_source=self.species_source,
+            class_choices=dict(self.species_feat_choices),
             hp=HitPointState(),
         )
 

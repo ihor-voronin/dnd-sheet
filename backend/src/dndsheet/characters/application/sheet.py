@@ -275,6 +275,15 @@ class SheetService:
         self.characters.save(character)
         return character
 
+    def set_species_source(
+        self, character_id: str, source: str | None, *, expected_version: int | None = None
+    ) -> Character:
+        """Книга виду (VGM чи MPMM): від неї залежить кістка природної зброї."""
+        character = self._load_versioned(character_id, expected_version)
+        character.set_species_source(source)
+        self.characters.save(character)
+        return character
+
     def set_species_feat(
         self,
         character_id: str,
@@ -361,6 +370,7 @@ class SheetService:
             damage=_optional_str(payload.get("damage")),
             pact_weapon=bool(payload.get("pact_weapon", False)),
             hex_weapon=bool(payload.get("hex_weapon", False)),
+            kensei_weapon=bool(payload.get("kensei_weapon", False)),
         )
 
     @staticmethod
@@ -384,7 +394,7 @@ class SheetService:
             fields["equipped"] = bool(payload.get("equipped"))
         if "attuned" in payload:
             fields["attuned"] = bool(payload.get("attuned"))
-        for flag in ("pact_weapon", "hex_weapon"):
+        for flag in ("pact_weapon", "hex_weapon", "kensei_weapon"):
             if flag in payload:
                 fields[flag] = bool(payload.get(flag))
         if "entry_id" in payload:

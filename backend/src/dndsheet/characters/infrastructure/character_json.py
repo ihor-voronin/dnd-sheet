@@ -125,6 +125,7 @@ def inventory_to_record(inventory: Inventory) -> dict[str, Any]:
                 "damage": item.damage,
                 "pact_weapon": item.pact_weapon,
                 "hex_weapon": item.hex_weapon,
+                "kensei_weapon": item.kensei_weapon,
             }
             for item in inventory.items
         ],
@@ -151,6 +152,7 @@ def inventory_from_record(record: Mapping[str, Any] | None) -> Inventory:
                     damage=raw.get("damage") or None,
                     pact_weapon=bool(raw.get("pact_weapon")),
                     hex_weapon=bool(raw.get("hex_weapon")),
+                    kensei_weapon=bool(raw.get("kensei_weapon")),
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:
@@ -318,6 +320,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
         "feat_abilities": {key: ability.value for key, ability in character.feat_abilities.items()},
         "class_choices": {key: list(values) for key, values in character.class_choices.items()},
         "species_feat": character.species_feat,
+        "species_source": character.species_source,
         "asi_taken": character.asi_taken,
         "hp": {
             "current": character.hp.current,
@@ -376,6 +379,7 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
             str(key): Ability(str(value)) for key, value in (record.get("feat_abilities") or {}).items()
         },
         species_feat=record.get("species_feat") or None,
+        species_source=record.get("species_source") or None,
         asi_taken=int(record.get("asi_taken") or 0),
         hp=HitPointState(
             current=_hp_current(hp, legacy=legacy),
@@ -438,6 +442,8 @@ def draft_to_record(draft: Draft) -> dict[str, Any]:
         "spells": spells_to_record(draft.spells),
         "spell_choices": list(draft.spell_choices),
         "species_feat": draft.species_feat,
+        "species_source": draft.species_source,
+        "species_feat_choices": {key: list(values) for key, values in draft.species_feat_choices.items()},
         "species_feat_ability": draft.species_feat_ability.value if draft.species_feat_ability else None,
     }
 
@@ -478,6 +484,11 @@ def draft_from_record(record: Mapping[str, Any], rules: RulesSource) -> Draft:
         spells=spells_from_record(record.get("spells")),
         spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
         species_feat=record.get("species_feat") or None,
+        species_source=record.get("species_source") or None,
+        species_feat_choices={
+            str(key): tuple(str(value) for value in values)
+            for key, values in (record.get("species_feat_choices") or {}).items()
+        },
         species_feat_ability=(
             Ability(str(record["species_feat_ability"])) if record.get("species_feat_ability") else None
         ),

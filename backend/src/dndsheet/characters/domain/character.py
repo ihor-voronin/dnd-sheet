@@ -102,6 +102,8 @@ class Character:
     class_choices: dict[str, tuple[str, ...]] = field(default_factory=dict)
     #: Риса виду на 1 рівні (варіантна людина, власна лінія) — ключ із `feats`.
     species_feat: str | None = None
+    #: Книга, за якою граєте вид («MPMM», «VGM»); порожньо — книга запису виду.
+    species_source: str | None = None
     #: Скільки разів гравець уже взяв покращення характеристик або рису.
     #: Їх дають рівні з рисою «Ability Score Improvement», тож кількість
     #: використаних мусить бути не більшою за кількість таких рівнів.
@@ -241,8 +243,8 @@ class Character:
 
     @property
     def derived_choice_groups(self) -> dict[str, DerivedChoice]:
-        """Вибори, які дали риси й бойові стилі (див. `derived_choices`)."""
-        return derived_choices.derived_groups(self.feats, self.class_choices)
+        """Вибори, які дали підкласи, дар угоди, риси й бойові стилі (див. `derived_choices`)."""
+        return derived_choices.derived_groups(self.feats, self.class_choices, self.classes)
 
     @property
     def class_choice_slots(self) -> dict[str, int]:
@@ -281,6 +283,20 @@ class Character:
         return any(
             (key or "").casefold() in SPECIES_WITH_FEAT for key in (self.species_key, self.subspecies_key)
         )
+
+    @property
+    def species_sources(self) -> tuple[str, ...]:
+        """Книги, у яких є вид: між ними можна обирати (VGM чи MPMM)."""
+        species = self.rules.species_mechanics(self.species_key) if self.species_key else None
+        return tuple(species.variants) if species is not None else ()
+
+    def set_species_source(self, source: str | None) -> None:
+        """Обрати книгу виду; `None` — книга запису за замовчуванням."""
+        value = (source or "").strip().upper() or None
+        if value is not None and value not in {item.upper() for item in self.species_sources}:
+            raise ValidationError(f"вид не має версії з книги {source!r}")
+        self.species_source = value
+        self.bump_version()
 
     def set_species_feat(self, feat_key: str, feat_ability: Ability | None = None) -> None:
         """Обрати чи замінити рису виду; вибори попередньої риси прибираються."""
@@ -720,14 +736,36 @@ class Character:
     # ------------------------------------------------------------------
 
     def add_item(self, item: InventoryItem) -> None:
-        self.inventory = self.inventory.add(item)
+        inventory = self.inventory.add(item)
+        self._check_kensei(inventory)
+        self.inventory = inventory
         self.bump_version()
 
     def update_item(self, index: int, fields: Mapping[str, Any]) -> None:
         """Змінити предмет інвентаря за порядком: назва, тип, урон, вага тощо."""
         item = self.inventory.item_at(index)
-        self.inventory = self.inventory.replace_at(index, replace(item, **fields))
+        inventory = self.inventory.replace_at(index, replace(item, **fields))
+        self._check_kensei(inventory)
+        self.inventory = inventory
         self.bump_version()
+
+    @property
+    def kensei_slots(self) -> int:
+        """Скільки зброї кенсея: 2 на 3 рівні ченця, +1 на 6, 11 і 17 (XGtE, p. 34)."""
+        entry = next((item for item in self.classes if item.class_key == "monk"), None)
+        if entry is None or not (entry.subclass_key or "").endswith("kensei") or entry.level < 3:
+            return 0
+        return 2 + sum(1 for mark in (6, 11, 17) if entry.level >= mark)
+
+    def _check_kensei(self, inventory: Inventory) -> None:
+        marked = sum(1 for item in inventory.items if item.kensei_weapon)
+        slots = self.kensei_slots
+        if marked > slots:
+            raise ValidationError(
+                f"зброї кенсея можна обрати {slots}, позначено {marked}"
+                if slots
+                else "зброю кенсея обирає чернець Шляху кенсея з 3 рівня"
+            )
 
     def remove_item(self, index: int) -> None:
         self.inventory = self.inventory.remove_at(index)

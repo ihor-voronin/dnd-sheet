@@ -23,6 +23,7 @@ import {
   prepareCharacterSpells,
   setCharacterClassChoice,
   setCharacterSpeciesFeat,
+  setCharacterSpeciesSource,
   setCharacterExpertise,
   removeCharacterItem,
   removeCharacterSpell,
@@ -56,7 +57,7 @@ import { InventoryPanel } from "./inventory";
 import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
 import { BackgroundPanel } from "./background";
-import { ClassChoices, SpeciesFeat } from "./classChoices";
+import { ClassChoices, SpeciesFeat, SpeciesSource } from "./classChoices";
 import { ExpertisePicker } from "./expertise";
 import { ActionPanel } from "./actions";
 import { AddSpellForm, SpellsPreparePanel } from "./spells";
@@ -471,11 +472,18 @@ export function CharacterView({
               />
             </>
           ) : null}
-          {sheet.class_choices?.length || sheet.species_feat ? (
+          {sheet.class_choices?.length || sheet.species_feat || sheet.species_source ? (
             <>
               <h3 className="ddb-work__title">
                 <span>Вибори класу й рис</span>
               </h3>
+              {sheet.species_source ? (
+                <SpeciesSource
+                  value={sheet.species_source}
+                  busy={busy}
+                  onSave={(source) => run(setCharacterSpeciesSource(id, source, versionRef.current))}
+                />
+              ) : null}
               {sheet.species_feat ? (
                 <SpeciesFeat
                   value={sheet.species_feat}

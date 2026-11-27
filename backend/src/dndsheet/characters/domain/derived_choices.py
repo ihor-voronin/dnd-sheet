@@ -6,7 +6,9 @@ Initiate) — клас і три закляття, стиль «Благосло
 бойові стилі класу, лише з ключем іншого виду:
 
 * `feat:<риса>:<група>` — вибір риси (`feat:skilled:Skills or Tools`);
-* `style:<стиль>:<група>` — вибір бойового стилю (`style:blessed warrior:Cantrips`).
+* `style:<стиль>:<група>` — вибір бойового стилю (`style:blessed warrior:Cantrips`);
+* `sub:<підклас>:<група>` — вибір підкласу (`sub:knowledge-domain:Skills`);
+* `boon:<дар>:<група>` — вибір дару угоди (`boon:pact of the tome:Cantrips`).
 
 Тоді один механізм на листі показує й зберігає все, а ефекти (володіння,
 закляття, числа) збираються тут — з того, що справді обрано.
@@ -29,13 +31,18 @@ from dndsheet.shared.rules import (
     FEAT_PROFICIENCIES,
     FEAT_SPELLS,
     INVOCATION_SPELLS,
+    BOON_CHOICES,
     STYLE_CHOICES,
+    SUBCLASS_CHOICES,
+    SUBCLASS_EXPERTISE,
     SUBCLASS_PROFICIENCIES,
     DerivedChoice,
 )
 
 FEAT_PREFIX = "feat:"
 STYLE_PREFIX = "style:"
+SUBCLASS_PREFIX = "sub:"
+BOON_PREFIX = "boon:"
 
 #: Риси, що дають одну експертизу (TCoE, p. 79; XGtE, p. 74).
 FEAT_EXPERTISE = {"skill-expert": 1, "prodigy": 1}
@@ -75,9 +82,28 @@ def fighting_styles(class_choices: dict[str, tuple[str, ...]]) -> tuple[str, ...
     )
 
 
-def derived_groups(feats: Iterable[str], class_choices: dict[str, tuple[str, ...]]) -> dict[str, DerivedChoice]:
-    """Групи виборів від рис і стилів: ключ → що й скільки обрати."""
+def subclass_slug(subclass_key: str | None) -> str:
+    return (subclass_key or "").casefold().rsplit("/", 1)[-1]
+
+
+def derived_groups(
+    feats: Iterable[str],
+    class_choices: dict[str, tuple[str, ...]],
+    classes: Iterable[Any] = (),  # noqa: ANN401 — CharacterClass
+) -> dict[str, DerivedChoice]:
+    """Групи виборів від підкласів, дару угоди, рис і стилів: ключ → що й скільки обрати."""
     groups: dict[str, DerivedChoice] = {}
+    for entry in classes:
+        slug = subclass_slug(entry.subclass_key)
+        level, choices = SUBCLASS_CHOICES.get(slug, (0, ()))
+        if choices and entry.level >= level:
+            for choice in choices:
+                groups[f"{SUBCLASS_PREFIX}{slug}:{choice.group}"] = choice
+    for key, values in class_choices.items():
+        if key.endswith(":Pact Boon"):
+            for boon in values:
+                for choice in BOON_CHOICES.get(boon.casefold(), ()):
+                    groups[f"{BOON_PREFIX}{boon.casefold()}:{choice.group}"] = choice
     for feat in feats:
         slug = feat_slug(feat)
         for choice in FEAT_CHOICES.get(slug, ()):
@@ -114,12 +140,13 @@ def feat_proficiencies(character: Any) -> list[Proficiency]:  # noqa: ANN401 —
         source = GrantSource.of(SourceKind.FEAT, slug)
         for kind, value in FEAT_PROFICIENCIES.get(slug, ()):
             items.append(Proficiency(kind=_PROFICIENCY_KIND[kind], value=value, source=source))
-        for choice in FEAT_CHOICES.get(slug, ()):
-            values = active.get(f"{FEAT_PREFIX}{slug}:{choice.group}", ())
-            for value in values:
-                proficiency = _proficiency_of(choice.kind, value, source)
-                if proficiency is not None:
-                    items.append(proficiency)
+    # Обране в групах рис, стилів, підкласів і дарів — навички, інструменти, мови, зброя.
+    for key, choice in character.derived_choice_groups.items():
+        source = source_of(character, key)
+        for value in active.get(key, ()):
+            proficiency = proficiency_of(choice.kind, value, source)
+            if proficiency is not None:
+                items.append(proficiency)
     for entry in character.classes:
         slug = (entry.subclass_key or "").casefold().rsplit("/", 1)[-1]
         source = GrantSource.of(SourceKind.CLASS, entry.class_key)
@@ -140,10 +167,37 @@ def feat_proficiencies(character: Any) -> list[Proficiency]:  # noqa: ANN401 —
     return items
 
 
-def _proficiency_of(kind: str, value: str, source: GrantSource) -> Proficiency | None:
+def source_of(character: Any, key: str) -> GrantSource:  # noqa: ANN401 — Character
+    """Хто дав вибір: риса — FEAT, підклас чи стиль — клас, у якого він є."""
+    kind, owner, _ = split_key(key)
+    if kind == "feat":
+        return GrantSource.of(SourceKind.FEAT, owner)
+    if kind == "boon":
+        return GrantSource.of(SourceKind.CLASS, "warlock")
+    if kind == "sub":
+        entry = next((item for item in character.classes if subclass_slug(item.subclass_key) == owner), None)
+        return GrantSource.of(SourceKind.CLASS, entry.class_key if entry else owner)
+    return GrantSource.of(SourceKind.CLASS, "fighting-style")
+
+
+def auto_expertise(character: Any) -> frozenset[str]:  # noqa: ANN401 — Character
+    """Навички з подвоєним бонусом без окремого вибору: Blessings of Knowledge (PHB, p. 59)."""
+    active = character.active_class_choices
+    chosen: set[str] = set()
+    for slug in SUBCLASS_EXPERTISE:
+        for value in active.get(f"{SUBCLASS_PREFIX}{slug}:Skills", ()):
+            skill = skill_of(value)
+            if skill is not None:
+                chosen.add(skill.value)
+    return frozenset(chosen)
+
+
+def proficiency_of(kind: str, value: str, source: GrantSource) -> Proficiency | None:
     skill = skill_of(value)
-    if kind in ("skill", "skill_or_tool") and skill is not None:
+    if kind in ("skill", "skill_or_tool", "skill_or_language") and skill is not None:
         return Proficiency(kind=ProficiencyKind.SKILL, value=skill.value, source=source)
+    if kind == "skill_or_language":
+        return Proficiency(kind=ProficiencyKind.LANGUAGE, value=value.casefold(), source=source)
     if kind in ("tool", "skill_or_tool") or (kind == "fixed" and value.endswith(("tools", "supplies", "utensils"))):
         return Proficiency(kind=ProficiencyKind.TOOL, value=value.casefold(), source=source)
     if kind == "language":
@@ -201,6 +255,12 @@ def granted_spells(character: Any) -> list[tuple[str, int, str, str, Ability | N
         spell_class = spell_class_for(key, choice, character.class_choices)
         if kind == "feat":
             source, ability = "feat", _feat_casting(character, by_slug.get(owner, owner), spell_class)
+        elif kind == "boon":
+            # Угода фоліанта: заговори будь-якого класу, але для чаклуна — Харизма (PHB, p. 108).
+            source, ability = "pact-boon", Ability.CHA
+        elif kind == "sub":
+            entry = next((item for item in character.classes if subclass_slug(item.subclass_key) == owner), None)
+            source, ability = "subclass", CLASS_CASTING_ABILITY.get(entry.class_key if entry else "")
         else:
             # Благословенний і Друїдський воїн чарують Мудрістю (TCoE, p. 41, 57).
             source, ability = "fighting-style", Ability.WIS

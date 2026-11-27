@@ -33,7 +33,13 @@ from dndsheet.compendium.api.serializers import (
 )
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
-from dndsheet.shared.rules import SPECIES_WITH_FEAT, feat_ability_options, requires_subspecies
+from dndsheet.shared.rules import (
+    SPECIES_WITH_FEAT,
+    feat_ability_options,
+    natural_weapon_die,
+    natural_weapon_for,
+    requires_subspecies,
+)
 
 #: Розділи книги, які є в тексті класу, але не є «вміннями»: без них крок
 #: «Клас» не показав би, що клас дає на 1 рівні з поясненням.
@@ -93,6 +99,15 @@ def _species_options(
             _species_entry(child, service, store, parent=item.name_en)
             for child in service.subspecies_of(item.name_en)
         ]
+        # Природна зброя, кістка якої залежить від книги (VGM чи MPMM).
+        natural = natural_weapon_for(payload.get("key"), None)
+        mechanics = draft.rules.species_mechanics(payload["key"]) if payload.get("key") else None
+        if natural is not None and natural.die_mpmm and mechanics is not None and len(mechanics.variants) > 1:
+            payload["natural_weapon"] = {
+                "name_en": natural.name_en,
+                "default_source": mechanics.source_id,
+                "dice": {source: natural_weapon_die(natural, source) for source in mechanics.variants},
+            }
         for candidate in (payload, *payload["subspecies"]):
             if candidate.get("cantrip_choice"):
                 choice_classes.add(candidate["cantrip_choice"]["from_class"])

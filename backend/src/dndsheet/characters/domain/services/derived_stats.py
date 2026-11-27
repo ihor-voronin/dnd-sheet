@@ -201,7 +201,8 @@ class DerivedStatsCalculator:
         skill_proficiency = {
             skill: proficiencies.has(ProficiencyKind.SKILL, skill.value) for skill in Skill
         }
-        expert = set(character.expertise)
+        # Blessings of Knowledge — подвоєний бонус без окремого вибору експертизи.
+        expert = set(character.expertise) | derived_choices.auto_expertise(character)
         skill_expertise = {
             skill: skill_proficiency[skill] and skill.value in expert for skill in Skill
         }

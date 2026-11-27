@@ -25,6 +25,10 @@ from dndsheet.shared.kernel import SKILL_ABILITY, Ability, Skill
 from dndsheet.shared.rules import stealth_disadvantage
 
 
+#: Лічильники рис, яких немає в перекладі класів.
+_RESOURCE_UK = {"Superiority Dice": "Кістки переваги", "Luck Points": "Очки удачі"}
+
+
 def computed_sheet(
     character: Character,
     computed: ComputedSheet,
@@ -119,14 +123,26 @@ def computed_sheet(
                 "action": resource.action,
                 **(
                     {"name_uk": uk_name}
-                    if (uk_name := classes_uk.name_uk(resource.name_en))
+                    if (uk_name := classes_uk.name_uk(resource.name_en) or _RESOURCE_UK.get(resource.name_en))
                     else {}
                 ),
             }
             for resource in resources_for(character, computed.ability_modifiers)
         ],
         "attacks": attacks or [],
-        "spellcasting": spellcasting(computed.spellcasting),
+        "spellcasting": {
+            **spellcasting(computed.spellcasting),
+            # Книга мага: 6 заклять на 1 рівні й по 2 за кожен наступний (PHB, p. 114);
+            # більше — законно, якщо переписано зі сувоїв і книг (50 зм і 2 год за рівень).
+            "spellbook": (
+                {
+                    "count": sum(1 for spell in character.spells_of("wizard") if not spell.is_cantrip),
+                    "from_levels": 6 + 2 * (character.class_level("wizard") - 1),
+                }
+                if character.has_class("wizard")
+                else None
+            ),
+        },
         "armor_untrained": list(computed.armor_untrained),
         # Які позначки зброї має сенс пропонувати в інвентарі.
         "weapon_bonds": {
@@ -138,6 +154,8 @@ def computed_sheet(
                 entry.class_key == "warlock" and (entry.subclass_key or "").endswith("hexblade")
                 for entry in character.classes
             ),
+            # Скільки зброї кенсея можна позначити (0 — не кенсей або нижче 3 рівня).
+            "kensei": character.kensei_slots,
         },
         "spells": spells(character, computed),
         "proficiencies": proficiencies(computed.proficiencies),
@@ -157,6 +175,7 @@ def computed_sheet(
                     "attuned": item.attuned,
                     "pact_weapon": item.pact_weapon,
                     "hex_weapon": item.hex_weapon,
+                    "kensei_weapon": item.kensei_weapon,
                     "entry_id": item.entry_id,
                     "armor_base": item.armor_base,
                     "dex_cap": item.dex_cap,
@@ -382,6 +401,8 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
             },
             "spell_choices": list(draft.spell_choices),
             "species_feat": draft.species_feat,
+            "species_source": draft.species_source,
+            "species_feat_choices": {key: list(values) for key, values in draft.species_feat_choices.items()},
             "species_feat_ability": draft.species_feat_ability.value if draft.species_feat_ability else None,
         }
     if step is WizardStep.CLASS:
@@ -418,6 +439,7 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
                     "attuned": item.attuned,
                     "pact_weapon": item.pact_weapon,
                     "hex_weapon": item.hex_weapon,
+                    "kensei_weapon": item.kensei_weapon,
                     "entry_id": item.entry_id,
                     "armor_base": item.armor_base,
                     "dex_cap": item.dex_cap,

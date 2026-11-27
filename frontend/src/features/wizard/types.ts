@@ -33,6 +33,8 @@ export interface SpeciesView {
   key: string;
   name_en: string;
   source_id: string;
+  /** Природна зброя, кістка якої залежить від книги виду (VGM чи MPMM). */
+  natural_weapon?: { name_en: string; default_source: string; dice: Record<string, string> };
   subrace_of: string | null;
   size: string;
   speed: number;
@@ -368,6 +370,7 @@ export interface SheetItem {
   damage: string | null;
   pact_weapon?: boolean;
   hex_weapon?: boolean;
+  kensei_weapon?: boolean;
 }
 
 export interface SpeciesAnswers {
@@ -381,6 +384,10 @@ export interface SpeciesAnswers {
   /** Риса виду (варіантна людина, власна лінія). */
   species_feat?: string | null;
   species_feat_ability?: string | null;
+  /** Книга виду («MPMM»); порожньо — книга запису. */
+  species_source?: string | null;
+  /** Вибори риси виду: «feat:skilled:Skills or Tools» → назви. */
+  species_feat_choices?: Record<string, string[]>;
 }
 
 export interface ClassAnswers {
@@ -488,6 +495,8 @@ export interface SheetCharacter {
 
 export interface SheetSpellcasting {
   caster_level: number;
+  /** Книга мага: скільки заклять у ній і скільки дали рівні (6 + 2 за рівень). */
+  spellbook?: { count: number; from_levels: number } | null;
   slots: {
     by_level: Record<string, number>;
     pact: { slots: number; level: number } | null;
@@ -517,7 +526,7 @@ export interface SheetViewPayload {
   /** Броня/щит без володіння: завада на СИЛ/СПР, чарувати не можна. */
   armor_untrained?: string[];
   /** Чи пропонувати позначки зброї: угода клинка, хексблейд. */
-  weapon_bonds?: { pact: boolean; hex: boolean };
+  weapon_bonds?: { pact: boolean; hex: boolean; kensei?: number };
   skills: Record<string, { value: number; proficient: boolean; expertise?: boolean; disadvantage?: boolean }>;
   /** Експертиза: скільки дали рівні, що обрано, з чого можна обрати. */
   expertise?: { slots: number; chosen: string[]; options: string[] };
@@ -525,6 +534,13 @@ export interface SheetViewPayload {
   class_choices?: ClassChoiceGroup[];
   armor_class: { value: number; parts: { label: string; value: number }[]; notes?: string[] };
   /** Риса виду на 1 рівні (варіантна людина, власна лінія); null — вид не дає. */
+  /** Книга виду, якщо від неї залежить кістка природної зброї. */
+  species_source?: {
+    chosen: string | null;
+    default: string | null;
+    options: { source: string; die: string }[];
+    weapon: string;
+  } | null;
   species_feat?: {
     chosen: string | null;
     ability: string | null;
@@ -742,7 +758,7 @@ export type ClassChoiceGroup = {
   class_key: string;
   group: string;
   /** Хто дав вибір, якщо не клас: риса чи бойовий стиль. */
-  origin?: { kind: "feat" | "style"; key: string; name_uk: string } | null;
+  origin?: { kind: "feat" | "style" | "sub" | "boon"; key: string; name_uk: string } | null;
   slots: number;
   chosen: string[];
   options: {

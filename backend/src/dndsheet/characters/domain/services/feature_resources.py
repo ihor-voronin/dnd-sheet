@@ -311,4 +311,58 @@ def resources_for(
                     action=ACTIONS.get(rule.key, "other"),
                 )
             )
-    return tuple(resources)
+    return tuple(_with_feat_resources(character, resources))
+
+
+#: Риси й стилі з лічильником: ключ, назва, скільки, коли відновлюється.
+_FEAT_RESOURCES = {
+    # Lucky: 3 очки удачі на тривалий відпочинок (PHB, p. 167).
+    "lucky": ("feat:luck-points", "Luck Points", 3, LONG),
+}
+
+
+def _with_feat_resources(character: "Character", resources: list[FeatureResource]) -> list[FeatureResource]:
+    """Лічильники рис: очки удачі; кістки переваги Бойового адепта й Вищої техніки.
+
+    Martial Adept (PHB, p. 168) і Superior Technique (TCoE, p. 41) дають по одній
+    кістці переваги d6; якщо персонаж уже майстер битви, кістка додається до його
+    запасу, а не стає окремим лічильником.
+    """
+    feats = {feat.casefold().rsplit("/", 1)[-1] for feat in character.feats}
+    extra_dice = int("martial-adept" in feats) + int(character.has_class_choice("superior technique"))
+    if extra_dice:
+        index = next((i for i, item in enumerate(resources) if item.key == "fighter:superiority-dice"), None)
+        if index is not None:
+            current = resources[index]
+            total = current.total + extra_dice
+            resources[index] = FeatureResource(
+                key=current.key,
+                name_en=current.name_en,
+                class_key=current.class_key,
+                class_name=current.class_name,
+                level=current.level,
+                total=total,
+                used=min(character.state.feature_used.get(current.key, 0), total),
+                recharge=current.recharge,
+                action=current.action,
+            )
+        else:
+            resources.append(_feat_resource(character, "feat:superiority-dice", "Superiority Dice", extra_dice, SHORT))
+    for slug, (key, name, total, recharge) in _FEAT_RESOURCES.items():
+        if slug in feats:
+            resources.append(_feat_resource(character, key, name, total, recharge))
+    return resources
+
+
+def _feat_resource(character: "Character", key: str, name: str, total: int, recharge: str) -> FeatureResource:
+    return FeatureResource(
+        key=key,
+        name_en=name,
+        class_key="feat",
+        class_name="Feat",
+        level=character.total_level,
+        total=total,
+        used=min(character.state.feature_used.get(key, 0), total),
+        recharge=recharge,
+        action="other",
+    )

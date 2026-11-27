@@ -21,7 +21,13 @@ from dndsheet.compendium.domain.entry import Category
 from dndsheet.compendium.domain.query import EntryQuery
 from dndsheet.shared.errors import NotFoundError
 from dndsheet.shared.kernel import Ability
-from dndsheet.shared.rules import NATURAL_WEAPONS, die_size, is_monk_weapon, martial_arts_die
+from dndsheet.shared.rules import (
+    die_size,
+    is_monk_weapon,
+    martial_arts_die,
+    natural_weapon_die,
+    natural_weapon_for,
+)
 
 #: `Range (20/60)` або `range 20/60` у властивостях зброї.
 WEAPON_RANGE = re.compile(r"range\s*\(?\s*(\d+)\s*/\s*(\d+)", re.IGNORECASE)
@@ -89,6 +95,7 @@ class _AttackRules:
     invocations: frozenset[str]
     battle_smith: bool
     feats: frozenset[str]
+    kensei: bool
 
     @classmethod
     def of(cls, character: Character, computed: ComputedSheet) -> "_AttackRules":
@@ -107,6 +114,7 @@ class _AttackRules:
             battle_smith=character.class_level("artificer") >= 3
             and subclasses.get("artificer", "").endswith("battle-smith"),
             feats=frozenset(feat.casefold().rsplit("/", 1)[-1] for feat in character.feats),
+            kensei=character.kensei_slots > 0,
         )
 
 
@@ -136,8 +144,20 @@ def _weapon_row(
     notes: list[str] = []
     min_die: str | None = None
 
-    # Бойові мистецтва: зброя ченця — Спритність і кістка мистецтв (PHB, p. 78).
-    if rules.martial_arts and is_monk_weapon(profile.name_en, properties, profile.group):
+    # Зброя кенсея — без heavy і special; довгий лук дозволено (XGtE, p. 34).
+    kensei = rules.kensei and item.kensei_weapon
+    if kensei and ("heavy" in properties or "special" in properties) and "longbow" not in name:
+        kensei = False
+        notes.append("зброєю кенсея не може бути важка чи особлива зброя")
+    if kensei:
+        proficient = True
+        notes.append(
+            "Постріл кенсея (Kensei's Shot): +1d4 урону бонусною дією"
+            if ranged
+            else "Спритне парирування (Agile Parry): +2 КЗ після удару без зброї"
+        )
+    # Бойові мистецтва: зброя ченця (і кенсея) — Спритність і кістка мистецтв (PHB, p. 78).
+    if rules.martial_arts and (kensei or is_monk_weapon(profile.name_en, properties, profile.group)):
         alternatives[Ability.DEX] = mods[Ability.DEX]
         min_die = rules.martial_arts
         notes.append(f"Бойові мистецтва (Martial Arts): Спритність, кістка {rules.martial_arts}")
@@ -256,13 +276,12 @@ def _unarmed_rows(character: Character, computed: ComputedSheet, rules: _AttackR
         }
 
     rows = [row("Unarmed Strike", "1", "bludgeoning", Ability.STR, [])]
-    natural = NATURAL_WEAPONS.get(_slug(character.subspecies_key)) or NATURAL_WEAPONS.get(
-        _slug(character.species_key)
-    )
+    natural = natural_weapon_for(character.species_key, character.subspecies_key)
     if natural is not None:
         species = character.species
-        mpmm = species is not None and "MPMM" in (species.source_id or "").upper()
-        base = natural.die_mpmm if mpmm and natural.die_mpmm else natural.die
+        # Книга виду: обрана гравцем, інакше — книга запису виду.
+        source = character.species_source or (species.source_id if species is not None else None)
+        base = natural_weapon_die(natural, source)
         extra = ["лише у зміненій формі (Shifting)"] if natural.note == "shifted only" else []
         if natural.ability is Ability.CON:
             extra.append("Статура замість Сили; перевага, якщо у вас менше половини хітів")
