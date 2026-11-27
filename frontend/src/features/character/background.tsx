@@ -50,6 +50,11 @@ export function BackgroundPanel({
   }
 
   const uk = ukBackground(details.key);
+  const nameUk = details.name_uk ?? uk?.name;
+  const featureUk = details.feature_uk ?? uk?.feature;
+  const featureTextUk = details.feature_text_uk ?? uk?.featureText;
+  const equipmentUk = details.equipment_uk ?? uk?.equipment;
+  const descriptionUk = details.description_uk ?? uk?.description;
 
   return (
     <div className="background-panel">
@@ -60,7 +65,7 @@ export function BackgroundPanel({
 
       <section className="bg-card">
         <div className="bg-card__head">
-          <span className="bg-card__name">{withEnglish(details.name_en, uk?.name)}</span>
+          <span className="bg-card__name">{withEnglish(details.name_en, nameUk)}</span>
           {alignment ? (
             <span className="bg-card__align">
               {ALIGNMENT_LABELS[alignment] ?? alignment}
@@ -82,13 +87,13 @@ export function BackgroundPanel({
           </li>
           <li>
             <span>Риса</span>
-            <span>{details.feature_en ? withEnglish(details.feature_en, uk?.feature) : "—"}</span>
+            <span>{details.feature_en ? withEnglish(details.feature_en, featureUk) : "—"}</span>
           </li>
         </ul>
         {details.equipment ? (
           <p className="bg-equipment">
             <span>Спорядження </span>
-            {uk?.equipment ?? details.equipment}
+            {equipmentUk ?? details.equipment}
           </p>
         ) : null}
       </section>
@@ -97,14 +102,14 @@ export function BackgroundPanel({
         <details className="feature">
           <summary className="feature__summary">
             <span className="feature-name">
-              {details.feature_en ? withEnglish(details.feature_en, uk?.feature) : "Риса передісторії"}
+              {details.feature_en ? withEnglish(details.feature_en, featureUk) : "Риса передісторії"}
             </span>
             <span className="feature-meta">риса передісторії</span>
             <span className="feature__chevron" aria-hidden>
               ▾
             </span>
           </summary>
-          <RuleText text={uk?.featureText ?? details.feature_text} />
+          <RuleText text={featureTextUk ?? details.feature_text} />
         </details>
       ) : null}
 
@@ -117,7 +122,7 @@ export function BackgroundPanel({
               ▾
             </span>
           </summary>
-          <RuleText text={uk?.description ?? details.description} />
+          <RuleText text={descriptionUk ?? details.description} />
         </details>
       ) : null}
 

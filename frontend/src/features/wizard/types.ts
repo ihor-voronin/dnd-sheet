@@ -135,8 +135,17 @@ export interface BackgroundView {
   /** Опис і текст риси з книги. */
   description?: string;
   feature_text?: string;
+  /** Український переклад — машинна чернетка, оригінал вище. */
+  description_uk?: string | null;
+  feature_uk?: string | null;
+  feature_text_uk?: string | null;
   /** Спорядження з рядка `Equipment:`; choices — варіанти вибору книги. */
-  equipment?: { text: string; choices: string[] }[];
+  equipment?: {
+    text: string;
+    choices: string[];
+    text_uk?: string;
+    choices_uk?: string[];
+  }[];
   money?: { gp?: number };
 }
 
@@ -286,6 +295,12 @@ export interface BackgroundDetails {
   skill_any: number;
   tools_any: number;
   languages_any: number;
+  /** Український переклад — машинна чернетка, оригінал вище. */
+  name_uk?: string | null;
+  feature_uk?: string | null;
+  feature_text_uk?: string | null;
+  description_uk?: string | null;
+  equipment_uk?: string | null;
 }
 
 export interface SheetFeature {

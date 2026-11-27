@@ -255,6 +255,10 @@ def _background_options(
         payload["feature_text"] = details["feature_text"]
         payload["equipment"] = details["equipment"]
         payload["money"] = details["money"]
+        # Українські поля — якщо переклад є: немає — екран покаже оригінал.
+        payload["description_uk"] = details.get("description_uk")
+        payload["feature_uk"] = details.get("feature_uk")
+        payload["feature_text_uk"] = details.get("feature_text_uk")
         backgrounds.append(payload)
     options: dict[str, Any] = {
         "backgrounds": backgrounds,

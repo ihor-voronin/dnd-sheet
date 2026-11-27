@@ -1088,19 +1088,25 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
 
           {background.description ? (
             <details className="reckoning species-description" open>
-              <summary>Опис передісторії (з книги)</summary>
-              <RuleText text={background.description} />
+              <summary>Опис передісторії</summary>
+              <RuleText text={background.description_uk || background.description} />
             </details>
           ) : null}
 
           {background.feature_en ? (
             <details className="reckoning">
               <summary>
-                Риса: {featureLabel(background.feature_en)}
+                Риса: {featureLabel(background.feature_en, background.feature_uk)}
                 {background.feature_text ? "" : " (тексту в корпусі немає)"}
               </summary>
               {background.feature_text ? (
-                <RuleText text={featureText(background.feature_en, background.feature_text)} />
+                <RuleText
+                  text={featureText(
+                    background.feature_en,
+                    background.feature_text,
+                    background.feature_text_uk,
+                  )}
+                />
               ) : null}
             </details>
           ) : null}
@@ -1111,9 +1117,16 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
               <ul className="plain-list">
                 {background.equipment.map((row) => (
                   <li key={row.text}>
-                    {itemLabel(row.text)}
+                    {row.text_uk || itemLabel(row.text)}
                     {row.choices.length > 1 ? (
-                      <span className="meta"> (вибір: {row.choices.map((c) => itemLabel(c)).join(" / ")})</span>
+                      <span className="meta">
+                        {" "}
+                        (вибір:{" "}
+                        {(row.choices_uk ?? row.choices.map((c) => itemLabel(c))).join(
+                          " / ",
+                        )}
+                        )
+                      </span>
                     ) : null}
                   </li>
                 ))}
@@ -1311,7 +1324,12 @@ export function EquipmentStep({
   background?: {
     key: string;
     name_en: string;
-    equipment: { text: string; choices: string[] }[];
+    equipment: {
+      text: string;
+      choices: string[];
+      text_uk?: string;
+      choices_uk?: string[];
+    }[];
     money: { gp?: number };
   } | null;
 }>) {
@@ -1480,14 +1498,14 @@ export function EquipmentStep({
                     value={chosen[row.text] ?? row.text}
                     onChange={(event) => void pickChoice(index, event.target.value)}
                   >
-                    {row.choices.map((choice) => (
+                    {row.choices.map((choice, position) => (
                       <option key={choice} value={choice}>
-                        {itemLabel(choice)}
+                        {row.choices_uk?.[position] ?? itemLabel(choice)}
                       </option>
                     ))}
                   </select>
                 ) : (
-                  <span>{itemLabel(row.text)}</span>
+                  <span>{row.text_uk || itemLabel(row.text)}</span>
                 )}
                 <span className="meta"> · з книги</span>
               </li>

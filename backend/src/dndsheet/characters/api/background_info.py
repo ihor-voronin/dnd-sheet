@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from dndsheet.characters.api import backgrounds_uk
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.compendium.application.service import CompendiumService
@@ -50,6 +51,7 @@ def _details(service: CompendiumService, character: Character) -> dict[str, Any]
     text = entry.text_en or "" if entry is not None else ""
     description, equipment = _split_description(text)
     feature_text = _feature_text(text, background.feature_en)
+    equipment_rows, equipment_money = parse_equipment(equipment)
 
     items = character.all_proficiencies().items
     mine = [
@@ -71,23 +73,27 @@ def _details(service: CompendiumService, character: Character) -> dict[str, Any]
         picked = sum(1 for item in chosen if item.kind is kind)
         return max(0, total - picked)
 
-    return {
-        "key": background.key,
-        "name_en": background.name_en,
-        "source_id": background.source_id,
-        "feature_en": background.feature_en,
-        "feature_text": feature_text,
-        "description": description,
-        "equipment": equipment,
-        "skills": values(ProficiencyKind.SKILL),
-        "tools": values(ProficiencyKind.TOOL),
-        "languages": values(ProficiencyKind.LANGUAGE),
-        "skill_any": remaining(ProficiencyKind.SKILL, background.skill_any),
-        "tools_any": remaining(ProficiencyKind.TOOL, background.tools_any),
-        "languages_any": remaining(
-            ProficiencyKind.LANGUAGE, background.languages_any_standard
-        ),
-    }
+    return backgrounds_uk.enrich_sheet(
+        {
+            "key": background.key,
+            "name_en": background.name_en,
+            "source_id": background.source_id,
+            "feature_en": background.feature_en,
+            "feature_text": feature_text,
+            "description": description,
+            "equipment": equipment,
+            "equipment_rows": equipment_rows,
+            "money": equipment_money,
+            "skills": values(ProficiencyKind.SKILL),
+            "tools": values(ProficiencyKind.TOOL),
+            "languages": values(ProficiencyKind.LANGUAGE),
+            "skill_any": remaining(ProficiencyKind.SKILL, background.skill_any),
+            "tools_any": remaining(ProficiencyKind.TOOL, background.tools_any),
+            "languages_any": remaining(
+                ProficiencyKind.LANGUAGE, background.languages_any_standard
+            ),
+        }
+    )
 
 
 def _entry(service: CompendiumService, name: str):  # noqa: ANN202
@@ -170,8 +176,10 @@ def background_details(
         "money": money,
         "source_id": entry.source_id if entry is not None else None,
     }
-    store[key] = found
-    return found
+    # Переклад — окремим шаром: назва риси, опис, текст і кожна фраза
+    # спорядження; оригінал лишається в payload для звірки з книгою.
+    store[key] = backgrounds_uk.enrich_details(found)
+    return store[key]
 
 
 #: «a pouch containing 10 gp» — гроші з набору передісторії.
