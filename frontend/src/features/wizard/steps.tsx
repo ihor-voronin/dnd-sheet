@@ -41,8 +41,8 @@ import type {
   SpellPayload,
   TraitView,
 } from "./types";
-import { searchItems } from "../../api";
-import type { ItemSearchResult } from "../../api";
+import { fetchClassFeatures, searchItems } from "../../api";
+import type { ClassFeatureRow, ItemSearchResult } from "../../api";
 import { RuleText } from "../character/panels";
 import { ItemFacts, bodyFromEntry } from "../character/inventory";
 import {
@@ -561,8 +561,16 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
   // Список класів згортається після вибору — картка класу стає згори.
   const [gridOpen, setGridOpen] = useState(!initial.class_key);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  // Тексти всіх умінь класу вантажаться окремо — лише коли гравець розгорнув
+  // список. У 13 класів це кілька сотень кілобайт, у кроці вони зайві.
+  const [allOpen, setAllOpen] = useState(false);
+  const [allRows, setAllRows] = useState<ClassFeatureRow[] | "loading" | null>(null);
 
   const selected = options.classes.find((item) => item.key === classKey);
+  // Поки тексти не завантажені — назви й рівні з кроку (без описів).
+  const featureRows: ClassFeatureRow[] = Array.isArray(allRows)
+    ? allRows
+    : (selected?.features ?? []);
   const needsSubclass = Boolean(
     selected?.subclass && selected.subclass.level === 1 && selected.subclass.options.length,
   );
@@ -580,6 +588,24 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
     previousClass.current = classKey;
     setSubclassKey("");
   }, [classKey]);
+
+  // Розгорнули «Усі вміння класу за рівнями» — читаємо тексти (один раз на
+  // клас; при зміні класу скидаємо, бо це вже інші вміння).
+  useEffect(() => {
+    if (!allOpen || !classKey) return;
+    let alive = true;
+    setAllRows("loading");
+    void fetchClassFeatures(classKey)
+      .then((payload) => {
+        if (alive) setAllRows(payload.features);
+      })
+      .catch(() => {
+        if (alive) setAllRows(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [allOpen, classKey]);
 
   function pickClass(key: string) {
     setClassKey(key);
@@ -681,12 +707,31 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
             ) : null}
 
             {selected.features.length ? (
-              <details className="reckoning">
+              <details
+                className="reckoning"
+                onToggle={(event) => setAllOpen(event.currentTarget.open)}
+              >
                 <summary>Усі вміння класу за рівнями</summary>
+                {allRows === "loading" ? (
+                  <p className="meta">Читаємо тексти вмінь…</p>
+                ) : null}
                 <ul className="plain-list">
-                  {selected.features.map((feature) => (
+                  {(Array.isArray(allRows) ? allRows : featureRows).map((feature) => (
                     <li key={`${feature.level}-${feature.name_en}`}>
-                      {feature.level} рівень · {featureLabel(feature.name_en, feature.name_uk)}
+                      <details className="reckoning">
+                        <summary>
+                          {feature.level} рівень ·{" "}
+                          {featureLabel(feature.name_en, feature.name_uk)}
+                        </summary>
+                        {feature.text_uk || feature.text ? (
+                          <RuleText text={feature.text_uk || feature.text || ""} />
+                        ) : (
+                          <p className="hint">
+                            Тексту цього вміння в корпусі немає — назва й рівень є,
+                            пояснення шукайте в книзі.
+                          </p>
+                        )}
+                      </details>
                     </li>
                   ))}
                 </ul>

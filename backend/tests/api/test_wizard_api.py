@@ -643,6 +643,26 @@ def test_equipment_step_keeps_notes_and_weapon_damage(client: TestClient) -> Non
     assert saved["longsword"]["damage"] == "1d8 slashing"
 
 
+def test_class_features_endpoint_explains_every_feature(client: TestClient) -> None:
+    """«Усі вміння класу за рівнями» — з перекладом і текстом правила.
+
+    Список на кроці показує лише назви; тексти приходять окремим запитом, коли
+    гравець розгорнув блок. Тут — що цей запит справді дає пояснення.
+    """
+    payload = client.get("/api/v1/characters/wizard/class-features/sorcerer").json()
+    rows = {row["name_en"]: row for row in payload["features"]}
+
+    assert rows["Sorcerous Origin"]["name_uk"] == "Чарівниче походження"
+    assert rows["Sorcerous Origin"]["text"]
+    assert rows["Sorcerous Origin"]["text_uk"]
+    # Опційне вміння з TCoE: його немає в главі PHB, але текст мусить бути.
+    assert rows["Magical Guidance"]["name_uk"] == "Магічний провід"
+    assert rows["Magical Guidance"]["text"]
+    # Заглушка рівня («Sorcerous Origin feature») лишається без тексту — і це
+    # видно на екрані окремим підписом, а не порожнечею.
+    assert not rows["Sorcerous Origin feature"].get("text")
+
+
 def test_warlock_patron_expands_spell_choices(client: TestClient) -> None:
     draft = _start(client)
     draft_id = draft["draft"]["id"]

@@ -123,6 +123,24 @@ export function levelUpCharacter(
   });
 }
 
+/** Один рядок «усіх умінь класу за рівнями»: назва, рівень, текст правила. */
+export interface ClassFeatureRow {
+  name_en: string;
+  level: number;
+  name_uk?: string;
+  text?: string;
+  text_uk?: string;
+}
+
+/** Усі вміння класу з текстами — вантажиться, коли список розгорнули. */
+export function fetchClassFeatures(
+  classKey: string,
+): Promise<{ class_key: string; features: ClassFeatureRow[] }> {
+  return getJson(
+    `/api/v1/characters/wizard/class-features/${encodeURIComponent(classKey)}`,
+  );
+}
+
 /** Закляття класу до рівня включно — зі «Spell Lists» книг. */
 export function fetchClassSpells(
   classKey: string,

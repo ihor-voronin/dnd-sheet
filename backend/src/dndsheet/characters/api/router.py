@@ -28,7 +28,8 @@ from dndsheet.characters.api.serializers import (
 )
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.background_info import enrich_background
-from dndsheet.characters.api.features import enrich_features
+from dndsheet.characters.api import classes_uk
+from dndsheet.characters.api.features import class_texts_all, enrich_features, strip_level_line
 from dndsheet.characters.api.level_up import level_up_payload, report_payload
 from dndsheet.characters.api.spell_meta import enrich_spells
 from dndsheet.characters.api.wizard_options import build_options
@@ -249,6 +250,36 @@ def start_wizard(request: Request) -> dict:
         raise _http_error(exc) from exc
     step = draft.next_step() or WizardStep.SPECIES
     return _step_payload(request, draft, step)
+
+
+@router.get("/wizard/class-features/{class_key}")
+def class_features(class_key: str, request: Request) -> dict:
+    """Усі вміння класу за рівнями — з текстом і перекладом.
+
+    Окремий запит, а не частина кроку «Клас»: текстів у 13 класів на кілька
+    сотень кілобайт, і потрібні вони лише тоді, коли гравець розгорнув
+    «Усі вміння класу за рівнями».
+    """
+    service = _compendium(request)
+    cache = getattr(request.app.state, "feature_cache", {})
+    try:
+        definition = service.class_mechanics(class_key)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    texts = class_texts_all(service, definition.key, cache)
+    rows: list[dict[str, Any]] = []
+    for feature in definition.features:
+        row: dict[str, Any] = {"name_en": feature.name_en, "level": feature.level}
+        text = texts.get(feature.name_en)
+        if text:
+            row["text"] = text
+        # Переклад — той самий шар, що й у главі класу: назва + текст.
+        classes_uk.enrich_feature(row)
+        # «3rd-level sorcerer feature» у тілі не потрібен: рівень є в заголовку
+        # рядка. Прибираємо вже після перекладу, щоб не зламати ключ.
+        strip_level_line(row)
+        rows.append(row)
+    return {"class_key": definition.key, "features": rows}
 
 
 @router.get("/wizard/{draft_id}")

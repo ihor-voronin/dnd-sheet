@@ -118,6 +118,51 @@ def _feat_entry(store: dict[str, Any], service: CompendiumService, key: str) -> 
     return entries.get((key or "").strip().casefold())
 
 
+def class_texts_all(
+    service: CompendiumService,
+    class_key: str,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, str]:
+    """Тексти умінь класу з **усіх** його записів у корпусі.
+
+    Глава класу одна, але в різних книгах вона різна: у PHB — базові вміння, у
+    TCoE — опційні («Sorcerous Versatility», «Magical Guidance»). Механіки
+    класу зливають обидві, тож і тексти треба злити, інакше опційні вміння
+    лишаються без опису. Перемагає перший запис (книга, а не «базові
+    правила»), бо він повніший.
+    """
+    store = cache if cache is not None else {}
+    key = f"class-texts-all:{class_key}"
+    if key in store:
+        return store[key]
+    texts: dict[str, str] = {}
+    for entry in _class_entries_all(store, service, class_key):
+        for name, text in _sections(
+            entry.text_en or "", CLASS_HEADING, CLASS_BOUNDARY
+        ).items():
+            texts.setdefault(name, text)
+    store[key] = texts
+    return texts
+
+
+def _class_entries_all(
+    store: dict[str, Any], service: CompendiumService, class_key: str
+) -> list[Any]:
+    cache_key = "class-entries"
+    entries = store.get(cache_key)
+    if entries is None:
+        try:
+            entries = [summary.entry for summary in service.classes()]
+        except NotFoundError:  # pragma: no cover — порожній корпус
+            entries = []
+        store[cache_key] = entries
+    candidates = [
+        entry for entry in entries if entry.id.casefold().endswith(f"/class/{class_key}")
+    ]
+    # «Базові правила» повторюють PHB, але з біднішим текстом — беремо книгу.
+    return sorted(candidates, key=lambda entry: (entry.source_id == "basic-rules-2014", entry.id))
+
+
 def _class_texts(
     store: dict[str, Any],
     service: CompendiumService,
@@ -278,6 +323,27 @@ def _intro(text: str) -> str:
     return "\n".join(collected).strip()
 
 
-__all__ = ["class_details", "enrich_features", "subclass_features"]
+#: Рядок рівня, надрукований звичайним текстом (у TCoE — «3rd-level sorcerer
+#: feature»): у списку рівень уже є окремим полем, тож у тілі він зайвий.
+LEVEL_LINE_EN = re.compile(r"^\d+(?:st|nd|rd|th)-level [^\n]*?feature\s*\n+", re.IGNORECASE)
+LEVEL_LINE_UK = re.compile(r"^Уміння [^\n]*?\d+-го рівня\s*\n+")
+
+
+def strip_level_line(payload: dict[str, Any]) -> dict[str, Any]:
+    """Прибрати перший абзац-підпис рівня з тексту (для показу, не для ключа)."""
+    for field, pattern in (("text", LEVEL_LINE_EN), ("text_uk", LEVEL_LINE_UK)):
+        value = payload.get(field)
+        if isinstance(value, str) and value:
+            payload[field] = pattern.sub("", value, count=1)
+    return payload
+
+
+__all__ = [
+    "class_details",
+    "class_texts_all",
+    "enrich_features",
+    "strip_level_line",
+    "subclass_features",
+]
 
 
