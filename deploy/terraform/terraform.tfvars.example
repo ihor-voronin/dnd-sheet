@@ -1,4 +1,4 @@
-# Скопіюйте в terraform.tfvars (він у .gitignore).
+# Справжній файл — deploy/secrets/terraform/terraform.tfvars (зашифрований git-crypt).
 server_ip       = "203.0.113.10"
 domain          = "dnd.example.com"
 cloudflare_zone = "example.com"

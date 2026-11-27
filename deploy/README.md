@@ -10,6 +10,10 @@ SSH) лежать у [`deploy/secrets/`](secrets/) і **шифруються git
 | Файл | Що в ньому |
 | --- | --- |
 | `secrets/prod.env` | змінні `DNDSHEET_*` для продакшну — на сервері стає `.env` поруч з `docker-compose.yml` |
+| `secrets/cloudflare.env` | `CLOUDFLARE_API_TOKEN` — токен для запису DNS (зона `voronin.app`) |
+| `secrets/ssh/id_ed25519` | ключ деплою: Terraform заходить ним на сервер |
+| `secrets/terraform/terraform.tfvars` | адреса сервера, домен, зона Cloudflare |
+| `secrets/terraform/terraform.tfstate` | стан Terraform (зʼявляється після першого деплою) |
 | `secrets/.gitattributes` | правило «шифрувати все в цій папці» (сам файл відкритий) |
 
 Назви файлів **не** шифруються — лише вміст. Тож не називайте файли так,
@@ -62,28 +66,31 @@ git-crypt add-gpg-user --trusted <відбиток ключа>
 Кожен крок повторюється лише тоді, коли змінилося те, від чого він залежить:
 новий образ, конфіг, `.env` чи скрипт сервера.
 
-Локально, поза git (`deploy/local/`): доступи до панелі й сервера
-(`racknerd.env`), токен Cloudflare (`cloudflare.env`), ключ деплою
-(`ssh/id_ed25519`), стан Terraform і тимчасовий `image.tar`. Адреса сервера — у `terraform/terraform.tfvars` (теж поза git;
-приклад — `terraform.tfvars.example`).
+Усе, що потрібно Terraform (токен, ключ, змінні, стан), — у `secrets/`,
+зашифроване. Лише локально, поза git (`deploy/local/`): пароль панелі й root
+(`racknerd.env`, Terraform він не потрібен) і тимчасовий `image.tar`.
+
+`deploy.ps1` не запуститься, поки `secrets/` не розблоковано (`git-crypt unlock`).
+Стан Terraform комітьте після кожного деплою — інакше на іншому компʼютері
+Terraform не знатиме, що вже створено.
 
 ### Перший запуск
 
 1. Додати ключ деплою на сервер — один раз, з паролем root:
 
    ```powershell
-   Get-Content deploy\local\ssh\id_ed25519.pub | ssh root@<IP> "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+   Get-Content deploy\secrets\ssh\id_ed25519.pub | ssh root@<IP> "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
    ```
 
 2. Перевірити, що ключ пускає без пароля:
 
    ```powershell
-   ssh -i deploy\local\ssh\id_ed25519 root@<IP> "cat /etc/os-release | head -2"
+   ssh -i deploy\secrets\ssh\id_ed25519 root@<IP> "cat /etc/os-release | head -2"
    ```
 
 3. Токен Cloudflare: dash.cloudflare.com → My Profile → API Tokens →
    Create Token → шаблон «Edit zone DNS», зона `voronin.app`; додати право
-   Zone · Zone · Read. Вписати в `deploy/local/cloudflare.env`.
+   Zone · Zone · Read. Вписати в `deploy/secrets/cloudflare.env`.
 
 4. Деплой (Terraform покаже план і спитає `yes`):
 

@@ -2,7 +2,7 @@
 #
 # Запис без проксі Cloudflare («сіра хмарка»): трафік іде прямо на сервер, а
 # сертифікат видає Let's Encrypt через Caddy. Токен API провайдер бере зі
-# змінної середовища CLOUDFLARE_API_TOKEN (deploy.ps1 читає deploy/local/cloudflare.env).
+# змінної середовища CLOUDFLARE_API_TOKEN (deploy.ps1 читає deploy/secrets/cloudflare.env).
 provider "cloudflare" {}
 
 data "cloudflare_zone" "site" {

@@ -10,15 +10,17 @@ param(
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path "$PSScriptRoot\..\.."
 
-# Секрети мають бути розблоковані: інакше prod.env — шифр, і на сервер поїде сміття.
-$envFile = Join-Path $root "deploy\secrets\prod.env"
-$head = [System.IO.File]::ReadAllBytes($envFile) | Select-Object -First 9
-if ([System.Text.Encoding]::ASCII.GetString($head) -eq "`0GITCRYPT") {
-    throw "deploy/secrets/prod.env зашифрований — спершу git-crypt unlock (див. deploy/README.md)."
+# Секрети мають бути розблоковані: інакше там шифр — і стан, і ключ, і .env.
+$secrets = Join-Path $root "deploy\secrets"
+foreach ($file in Get-ChildItem $secrets -Recurse -File | Where-Object Name -ne ".gitattributes") {
+    $bytes = [System.IO.File]::ReadAllBytes($file.FullName) | Select-Object -First 9
+    if ($bytes.Count -eq 9 -and [System.Text.Encoding]::ASCII.GetString($bytes) -eq "`0GITCRYPT") {
+        throw "$($file.Name) зашифрований — спершу git-crypt unlock (див. deploy/README.md)."
+    }
 }
 
-# Токен Cloudflare (запис DNS) — лише локально, у deploy/local/cloudflare.env.
-$cloudflareEnv = Join-Path $root "deploy\local\cloudflare.env"
+# Токен Cloudflare (запис DNS) — зашифрований, у deploy/secrets/cloudflare.env.
+$cloudflareEnv = Join-Path $root "deploy\secrets\cloudflare.env"
 if (Test-Path $cloudflareEnv) {
     foreach ($line in Get-Content $cloudflareEnv) {
         if ($line -match '^\s*([A-Z_]+)\s*=\s*(.*?)\s*$') {
@@ -27,7 +29,7 @@ if (Test-Path $cloudflareEnv) {
     }
 }
 if (-not $env:CLOUDFLARE_API_TOKEN) {
-    throw "Немає CLOUDFLARE_API_TOKEN: впишіть токен у deploy/local/cloudflare.env (див. deploy/README.md)."
+    throw "Немає CLOUDFLARE_API_TOKEN: впишіть токен у deploy/secrets/cloudflare.env (див. deploy/README.md)."
 }
 
 if (-not $NoBuild) {
@@ -50,5 +52,5 @@ Push-Location $PSScriptRoot
 try {
     & $terraform init -input=false | Out-Null
     $action = if ($Plan) { "plan" } else { "apply" }
-    & $terraform $action -var "image_id=$imageId"
+    & $terraform $action -var-file="..\secrets\terraform\terraform.tfvars" -var "image_id=$imageId"
 } finally { Pop-Location }

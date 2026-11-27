@@ -8,8 +8,9 @@ terraform {
     }
   }
 
-  # Стан лежить поруч із доступами, поза git: у ньому хеші й адреса сервера.
+  # Стан у git, але зашифрований git-crypt (deploy/secrets/**): його бачить
+  # кожен, хто розблокував репозиторій, і ніхто в GitHub.
   backend "local" {
-    path = "../local/terraform.tfstate"
+    path = "../secrets/terraform/terraform.tfstate"
   }
 }

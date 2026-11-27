@@ -16,9 +16,9 @@ variable "ssh_port" {
 }
 
 variable "ssh_private_key_path" {
-  description = "Приватний ключ для деплою (лише локально, deploy/local/ssh)."
+  description = "Приватний ключ для деплою (зашифрований git-crypt, deploy/secrets/ssh)."
   type        = string
-  default     = "../local/ssh/id_ed25519"
+  default     = "../secrets/ssh/id_ed25519"
 }
 
 variable "image" {
@@ -49,7 +49,7 @@ variable "domain" {
 }
 
 variable "cloudflare_zone" {
-  description = "Зона в Cloudflare, де живе домен (напр. voronin.app). Токен — у змінній CLOUDFLARE_API_TOKEN (deploy.ps1 бере її з deploy/local/cloudflare.env)."
+  description = "Зона в Cloudflare, де живе домен (напр. voronin.app). Токен — у змінній CLOUDFLARE_API_TOKEN (deploy.ps1 бере її з deploy/secrets/cloudflare.env)."
   type        = string
 }
 

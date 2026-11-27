@@ -65,3 +65,5 @@ backend/tests/**/_tmp_*/
 # --- Дані застосунку: чернетки візарда й збережені персонажі ---
 var/
 
+# Terraform: блокування стану на час запуску (тимчасовий файл).
+deploy/secrets/terraform/.terraform.tfstate.lock.info
