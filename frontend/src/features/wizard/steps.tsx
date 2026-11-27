@@ -42,14 +42,17 @@ import type {
   TraitView,
 } from "./types";
 import { fetchClassFeatures, searchItems } from "../../api";
-import type { ClassFeatureRow, ItemSearchResult } from "../../api";
+import type { ClassFeatureRow } from "../../api";
 import { RuleText } from "../character/panels";
-import { ItemFacts, bodyFromEntry } from "../character/inventory";
+import {
+  ItemCatalogBrowser,
+  ItemFacts,
+  bodyFromEntry,
+} from "../character/inventory";
 import { SubclassBrief } from "./SubclassBrief";
 import {
   featureLabel,
   featureText,
-  itemKey,
   itemLabel,
   speciesLabel,
   spellLabel,
@@ -1386,9 +1389,6 @@ export function EquipmentStep({
   const initial = answers as unknown as EquipmentAnswers;
   const [items, setItems] = useState<ItemPayload[]>(initial.items ?? []);
   const [money, setMoney] = useState<MoneyPayload>({ ...EMPTY_MONEY, ...(initial.money ?? {}) });
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ItemSearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
   const [name, setName] = useState("");
   const [kind, setKind] = useState("gear");
   const [weight, setWeight] = useState(0);
@@ -1509,29 +1509,6 @@ export function EquipmentStep({
     );
   }
 
-  async function search() {
-    if (!query.trim()) return;
-    setSearching(true);
-    try {
-      const payload = await searchItems(query.trim());
-      // Один предмет у кількох книгах — один раз у списку, як у каталозі листа.
-      const seen = new Map<string, ItemSearchResult>();
-      for (const row of payload.items) {
-        const key = itemKey(row.name_en);
-        if (!seen.has(key)) seen.set(key, row);
-      }
-      setResults([...seen.values()]);
-    } catch {
-      setResults([]);
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  function addFromCatalog(entry: ItemSearchResult) {
-    setItems((current) => [...current, { ...bodyFromEntry(entry), quantity: 1 }]);
-  }
-
   function addItem() {
     if (!name.trim()) return;
     const item: ItemPayload = {
@@ -1605,39 +1582,15 @@ export function EquipmentStep({
 
       <section className="wizard-block">
         <h3>Додати предмет із довідника</h3>
-        <div className="inline-row">
-          <input
-            value={query}
-            placeholder="напр. chain mail"
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void search();
-              }
-            }}
-          />
-          <button type="button" className="button" onClick={() => void search()} disabled={searching}>
-            {searching ? "Шукаємо…" : "Знайти"}
-          </button>
-        </div>
-        {results.length ? (
-          <div className="chip-row">
-            {results.map((entry) => (
-              <button
-                key={entry.id}
-                type="button"
-                className="chip"
-                onClick={() => addFromCatalog(entry)}
-                title="Додати в інвентар"
-              >
-                + {itemLabel(entry.name_en)}
-              </button>
-            ))}
-          </div>
-        ) : null}
+        <ItemCatalogBrowser
+          onAdd={async (entry) => {
+            setItems((current) => [...current, { ...bodyFromEntry(entry), quantity: 1 }]);
+            return true;
+          }}
+        />
         <p className="hint">
-          Клік додає предмет у інвентар; вагу, броню й тип взято з довідника.
+          Ті самі фільтри, що й на листі: тип, магічність, книга, пошук. Клік
+          «Додати» бере вагу, броню й тип із довідника.
         </p>
       </section>
 

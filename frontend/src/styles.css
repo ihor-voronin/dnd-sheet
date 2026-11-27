@@ -535,6 +535,32 @@ body {
   line-height: 1.5;
 }
 
+/* Каталог предметів — той самий компонент, що на листі, а там він темний.
+   У світлому візарді перефарбовуємо поверхні, щоб блок не виглядав
+   чужорідним; кнопки й чипи беруть кольори візарда самі. */
+.wizard-step .inv-search__input {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: inherit;
+}
+
+.wizard-step .inv-search__input::placeholder {
+  color: #9a9a94;
+}
+
+.wizard-step .inv-catalog {
+  border: 1px solid var(--line);
+  background: #fbfbfa;
+}
+
+.wizard-step .inv-catalog__name {
+  color: inherit;
+}
+
+.wizard-step .inv-catalog__meta {
+  color: var(--muted);
+}
+
 .choice {
   display: flex;
   flex-direction: column;

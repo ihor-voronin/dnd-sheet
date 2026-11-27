@@ -324,28 +324,29 @@ function isStatLine(text: string): boolean {
   return /^(?:[^.]{0,80},?\s*){1,4}(?:\d+\s*(?:lb\.|gp|ft\.)|unknown \(magic\))\s*$/i.test(text);
 }
 
-export function InventoryPanel({
-  items,
-  money,
-  carrying,
-  disabled = false,
+/** Каталог предметів із фільтрами — той самий на екрані листа й на кроці
+ * «Спорядження» візарда.
+ *
+ * Компонент сам вантажить каталог (він кешується на застосунок) і сам тримає
+ * фільтри; назовні віддає лише обраний запис. Так візард отримує ті самі
+ * фільтри за типом, магічністю, книгою й пошуком, що й інвентар листа, без
+ * копії цієї логіки.
+ */
+export function ItemCatalogBrowser({
   onAdd,
-  onUpdate,
-  onRemove,
+  onCustom,
+  disabled = false,
+  initialOpen = false,
 }: {
-  items: SheetItem[];
-  money: Record<string, number>;
-  carrying: { capacity: number; weight: number };
+  onAdd: (entry: ItemSearchResult) => Promise<boolean>;
+  onCustom?: () => void;
   disabled?: boolean;
-  onAdd: (item: ItemBody) => Promise<boolean>;
-  onUpdate: (index: number, fields: Partial<ItemBody>) => Promise<boolean>;
-  onRemove: (index: number) => Promise<boolean>;
+  initialOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [catalog, setCatalog] = useState<ItemSearchResult[] | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [titles, setTitles] = useState<Record<string, string>>({});
-  const [ukTexts, setUkTexts] = useState<Record<string, { name?: string; text?: string }>>({});
   const [query, setQuery] = useState("");
   const [types, setTypes] = useState<string[]>([]);
   const [magical, setMagical] = useState<"any" | "yes" | "no">("any");
@@ -353,40 +354,16 @@ export function InventoryPanel({
   const [visible, setVisible] = useState(40);
   const [adding, setAdding] = useState<string | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
-  const [form, setForm] = useState<{ index: number | null; draft: Draft } | null>(null);
-  const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
-  const [detail, setDetail] = useState<{
-    index: number;
-    text: string;
-    english: string | null;
-    /** Чи є український переклад: без нього перемикач «оригінал» не потрібен. */
-    translated: boolean;
-    showEnglish: boolean;
-    loading: boolean;
-    stats: [string, string][];
-  } | null>(null);
   const loaded = useRef(false);
-
-  //: Описи (українські) потрібні й без каталогу — коли розгортають предмет.
-  useEffect(() => {
-    let alive = true;
-    void fetchItemsUk().then((texts) => {
-      if (alive) setUkTexts(texts);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!open || loaded.current) return;
     loaded.current = true;
     let alive = true;
-    void Promise.all([fetchItemCatalog(), fetchItemsUk(), fetchBookTitles()])
-      .then(([rows, texts, books]) => {
+    void Promise.all([fetchItemCatalog(), fetchBookTitles()])
+      .then(([rows, books]) => {
         if (!alive) return;
         setCatalog(rows);
-        setUkTexts(texts);
         setTitles(books);
       })
       .catch((error: unknown) => {
@@ -424,12 +401,6 @@ export function InventoryPanel({
       .map(([id]) => id);
   }, [entries]);
 
-  const byName = useMemo(() => {
-    const map = new Map<string, ItemSearchResult>();
-    for (const entry of entries) map.set(itemKey(entry.name_en), entry);
-    return map;
-  }, [entries]);
-
   const filtered = useMemo(() => {
     const wanted = itemKey(query);
     const picked = new Set(types);
@@ -446,6 +417,242 @@ export function InventoryPanel({
 
   const shown = filtered.slice(0, visible);
 
+  async function add(entry: ItemSearchResult) {
+    setAdding(entry.id);
+    const ok = await onAdd(entry);
+    setAdding(null);
+    if (ok) {
+      setJustAdded(entry.id);
+      window.setTimeout(
+        () => setJustAdded((current) => (current === entry.id ? null : current)),
+        1600,
+      );
+    }
+  }
+
+  return (
+    <>
+      <div className="inv-search">
+        <input
+          className="inv-search__input"
+          value={query}
+          placeholder="Пошук у довіднику: longsword, зілля, кольчуга…"
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setVisible(40);
+            if (event.target.value.trim().length >= 2) setOpen(true);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setQuery("");
+          }}
+          aria-label="Пошук предмета в довіднику"
+        />
+        <button
+          type="button"
+          className={`button ${open ? "" : "button--primary"}`}
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? "Згорнути каталог" : "Каталог"}
+        </button>
+        {onCustom ? (
+          <button type="button" className="button" disabled={disabled} onClick={onCustom}>
+            Свій предмет
+          </button>
+        ) : null}
+      </div>
+
+      {open ? (
+        <section className="inv-catalog">
+          <div className="chip-row inv-catalog__filters">
+            {TYPE_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={`chip ${types.includes(filter.value) ? "chip--active" : ""}`}
+                onClick={() =>
+                  setTypes((current) =>
+                    current.includes(filter.value)
+                      ? current.filter((value) => value !== filter.value)
+                      : [...current, filter.value],
+                  )
+                }
+              >
+                {filter.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={`chip ${types.includes(OTHER) ? "chip--active" : ""}`}
+              onClick={() =>
+                setTypes((current) =>
+                  current.includes(OTHER)
+                    ? current.filter((value) => value !== OTHER)
+                    : [...current, OTHER],
+                )
+              }
+            >
+              Інше
+            </button>
+          </div>
+
+          <div className="chip-row inv-catalog__filters">
+            <button
+              type="button"
+              className={`chip ${magical === "any" ? "chip--active" : ""}`}
+              onClick={() => setMagical("any")}
+            >
+              усі
+            </button>
+            <button
+              type="button"
+              className={`chip ${magical === "yes" ? "chip--active" : ""}`}
+              onClick={() => setMagical("yes")}
+            >
+              магічні
+            </button>
+            <button
+              type="button"
+              className={`chip ${magical === "no" ? "chip--active" : ""}`}
+              onClick={() => setMagical("no")}
+            >
+              звичайні
+            </button>
+          </div>
+
+          <div className="chip-row inv-catalog__filters">
+            <button
+              type="button"
+              className={`chip ${source === "" ? "chip--active" : ""}`}
+              onClick={() => setSource("")}
+            >
+              усі джерела
+            </button>
+            {sources.map((id) => (
+              <button
+                key={id}
+                type="button"
+                className={`chip ${source === id ? "chip--active" : ""}`}
+                onClick={() => setSource(source === id ? "" : id)}
+              >
+                {SOURCE_LABELS[id] ?? titles[id] ?? id}
+              </button>
+            ))}
+          </div>
+
+          {catalogError ? (
+            <p className="hint hint--warn">Каталог не завантажився: {catalogError}</p>
+          ) : null}
+          {!catalog && !catalogError ? <p className="hint">Завантажуємо каталог…</p> : null}
+          {catalog ? (
+            <p className="hint">
+              {filtered.length} з {entries.length} предметів
+              {types.length || source || magical !== "any" || query.trim()
+                ? " за фільтром"
+                : ""}
+            </p>
+          ) : null}
+
+          {shown.length ? (
+            <ul className="inv-catalog__list">
+              {shown.map((entry) => {
+                const busy = adding === entry.id;
+                const added = justAdded === entry.id;
+                return (
+                  <li key={entry.id} className="inv-catalog__row">
+                    <span className="inv-catalog__main">
+                      <span className="inv-catalog__name">{itemLabel(entry.name_en)}</span>
+                      <span className="inv-catalog__meta">
+                        {catalogMeta(entry, titles) || "—"}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      className="button button--primary inv-catalog__add"
+                      disabled={disabled || busy}
+                      onClick={() => void add(entry)}
+                    >
+                      {busy ? "…" : added ? "Додано" : "Додати"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+
+          {filtered.length > shown.length ? (
+            <button
+              type="button"
+              className="button inv-catalog__more"
+              onClick={() => setVisible((value) => value + 60)}
+            >
+              Показати ще ({filtered.length - shown.length})
+            </button>
+          ) : null}
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+export function InventoryPanel({
+  items,
+  money,
+  carrying,
+  disabled = false,
+  onAdd,
+  onUpdate,
+  onRemove,
+}: {
+  items: SheetItem[];
+  money: Record<string, number>;
+  carrying: { capacity: number; weight: number };
+  disabled?: boolean;
+  onAdd: (item: ItemBody) => Promise<boolean>;
+  onUpdate: (index: number, fields: Partial<ItemBody>) => Promise<boolean>;
+  onRemove: (index: number) => Promise<boolean>;
+}) {
+  const [catalog, setCatalog] = useState<ItemSearchResult[] | null>(null);
+  const [ukTexts, setUkTexts] = useState<Record<string, { name?: string; text?: string }>>({});
+  const [form, setForm] = useState<{ index: number | null; draft: Draft } | null>(null);
+  const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
+  const [detail, setDetail] = useState<{
+    index: number;
+    text: string;
+    english: string | null;
+    /** Чи є український переклад: без нього перемикач «оригінал» не потрібен. */
+    translated: boolean;
+    showEnglish: boolean;
+    loading: boolean;
+    stats: [string, string][];
+  } | null>(null);
+  const loaded = useRef(false);
+
+  //: Каталог потрібен не лише для списку (він у `ItemCatalogBrowser`), а й для
+  //: розгорнутого опису предмета: за назвою знаходимо запис і його цифри.
+  useEffect(() => {
+    if (loaded.current) return;
+    loaded.current = true;
+    let alive = true;
+    void Promise.all([fetchItemCatalog(), fetchItemsUk()])
+      .then(([rows, texts]) => {
+        if (!alive) return;
+        setCatalog(rows);
+        setUkTexts(texts);
+      })
+      .catch(() => {
+        /* каталог не критичний: опис усе одно можна знайти пошуком */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const byName = useMemo(() => {
+    const map = new Map<string, ItemSearchResult>();
+    for (const entry of catalog ?? []) map.set(itemKey(entry.name_en), entry);
+    return map;
+  }, [catalog]);
+
   function openAdd(entry?: ItemSearchResult) {
     setConfirmIndex(null);
     setForm({ index: null, draft: entry ? draftFromEntry(entry) : { ...EMPTY } });
@@ -456,21 +663,14 @@ export function InventoryPanel({
     setForm({ index, draft: draftFromItem(items[index]) });
   }
 
-  async function addFromCatalog(entry: ItemSearchResult) {
+  async function addFromCatalog(entry: ItemSearchResult): Promise<boolean> {
     //: DDB-звичка: повторне «Додати» збільшує кількість, а не плодить рядки.
     const same = items.findIndex(
       (item) => itemKey(item.name_en) === itemKey(entry.name_en),
     );
-    setAdding(entry.id);
-    const ok =
-      same >= 0
-        ? await onUpdate(same, { quantity: items[same].quantity + 1 })
-        : await onAdd(bodyFromEntry(entry));
-    setAdding(null);
-    if (ok) {
-      setJustAdded(entry.id);
-      window.setTimeout(() => setJustAdded((current) => (current === entry.id ? null : current)), 1600);
-    }
+    return same >= 0
+      ? onUpdate(same, { quantity: items[same].quantity + 1 })
+      : onAdd(bodyFromEntry(entry));
   }
 
   async function remove(index: number) {
@@ -574,157 +774,11 @@ export function InventoryPanel({
         ))}
       </div>
 
-      <div className="inv-search">
-        <input
-          className="inv-search__input"
-          value={query}
-          placeholder="Пошук у довіднику: longsword, зілля, кольчуга…"
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setVisible(40);
-            if (event.target.value.trim().length >= 2) setOpen(true);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") setQuery("");
-          }}
-          aria-label="Пошук предмета в довіднику"
-        />
-        <button
-          type="button"
-          className={`button ${open ? "" : "button--primary"}`}
-          onClick={() => setOpen((value) => !value)}
-        >
-          {open ? "Згорнути каталог" : "Каталог"}
-        </button>
-        <button type="button" className="button" disabled={disabled} onClick={() => openAdd()}>
-          Свій предмет
-        </button>
-      </div>
-
-      {open ? (
-        <section className="inv-catalog">
-          <div className="chip-row inv-catalog__filters">
-            {TYPE_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                className={`chip ${types.includes(filter.value) ? "chip--active" : ""}`}
-                onClick={() =>
-                  setTypes((current) =>
-                    current.includes(filter.value)
-                      ? current.filter((value) => value !== filter.value)
-                      : [...current, filter.value],
-                  )
-                }
-              >
-                {filter.label}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={`chip ${types.includes(OTHER) ? "chip--active" : ""}`}
-              onClick={() =>
-                setTypes((current) =>
-                  current.includes(OTHER)
-                    ? current.filter((value) => value !== OTHER)
-                    : [...current, OTHER],
-                )
-              }
-            >
-              Інше
-            </button>
-          </div>
-
-          <div className="chip-row inv-catalog__filters">
-            <button
-              type="button"
-              className={`chip ${magical === "any" ? "chip--active" : ""}`}
-              onClick={() => setMagical("any")}
-            >
-              усі
-            </button>
-            <button
-              type="button"
-              className={`chip ${magical === "yes" ? "chip--active" : ""}`}
-              onClick={() => setMagical("yes")}
-            >
-              магічні
-            </button>
-            <button
-              type="button"
-              className={`chip ${magical === "no" ? "chip--active" : ""}`}
-              onClick={() => setMagical("no")}
-            >
-              звичайні
-            </button>
-          </div>
-
-          <div className="chip-row inv-catalog__filters">
-            <button
-              type="button"
-              className={`chip ${source === "" ? "chip--active" : ""}`}
-              onClick={() => setSource("")}
-            >
-              усі джерела
-            </button>
-            {sources.map((id) => (
-              <button
-                key={id}
-                type="button"
-                className={`chip ${source === id ? "chip--active" : ""}`}
-                onClick={() => setSource(source === id ? "" : id)}
-              >
-                {SOURCE_LABELS[id] ?? titles[id] ?? id}
-              </button>
-            ))}
-          </div>
-
-          {catalogError ? <p className="hint hint--warn">Каталог не завантажився: {catalogError}</p> : null}
-          {!catalog && !catalogError ? <p className="hint">Завантажуємо каталог…</p> : null}
-          {catalog ? (
-            <p className="hint">
-              {filtered.length} з {entries.length} предметів
-              {types.length || source || magical !== "any" || query.trim() ? " за фільтром" : ""}
-            </p>
-          ) : null}
-
-          {shown.length ? (
-            <ul className="inv-catalog__list">
-              {shown.map((entry) => {
-                const busy = adding === entry.id;
-                const added = justAdded === entry.id;
-                return (
-                  <li key={entry.id} className="inv-catalog__row">
-                    <span className="inv-catalog__main">
-                      <span className="inv-catalog__name">{itemLabel(entry.name_en)}</span>
-                      <span className="inv-catalog__meta">{catalogMeta(entry, titles) || "—"}</span>
-                    </span>
-                    <button
-                      type="button"
-                      className="button button--primary inv-catalog__add"
-                      disabled={disabled || busy}
-                      onClick={() => void addFromCatalog(entry)}
-                    >
-                      {busy ? "…" : added ? "Додано" : "Додати"}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-
-          {filtered.length > shown.length ? (
-            <button
-              type="button"
-              className="button inv-catalog__more"
-              onClick={() => setVisible((value) => value + 60)}
-            >
-              Показати ще ({filtered.length - shown.length})
-            </button>
-          ) : null}
-        </section>
-      ) : null}
-
+      <ItemCatalogBrowser
+        onAdd={addFromCatalog}
+        onCustom={() => openAdd()}
+        disabled={disabled}
+      />
       {form ? (
         <div className="inv-form">
           <p className="inv-form__title">
