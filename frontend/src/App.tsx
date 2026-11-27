@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   QueryClient,
   QueryClientProvider,
@@ -66,6 +66,15 @@ function useRoute(): [Route, (next: Route) => void] {
     window.addEventListener("hashchange", onChange);
     return () => window.removeEventListener("hashchange", onChange);
   }, []);
+  // Нова сторінка відкривається згори, а не на висоті, де гравець був на
+  // попередній (наприклад, після «Створити персонажа» внизу візарда).
+  const page = route.name + ("id" in route ? `:${route.id}` : "") + ("token" in route ? `:${route.token}` : "");
+  const shownPage = useRef(page);
+  useEffect(() => {
+    if (shownPage.current === page) return;
+    shownPage.current = page;
+    window.scrollTo(0, 0);
+  }, [page]);
   const navigate = useCallback((next: Route) => {
     const target =
       next.name === "home"

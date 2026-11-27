@@ -269,6 +269,7 @@ export function SpeciesStep({
   const [gridOpen, setGridOpen] = useState(!initial.species_key);
   const [speciesQuery, setSpeciesQuery] = useState("");
   const summaryRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   const selected = options.species.find((item) => item.key === speciesKey);
   const children = selected?.subspecies ?? [];
@@ -376,9 +377,22 @@ export function SpeciesStep({
 
   const spreadReady = !effective?.ability_unresolved || spreadPayload() !== null;
 
+  // Що ще треба, щоб перейти далі — словами, а не мовчазною сірою кнопкою.
+  const speciesBlockers = [
+    !name.trim() ? "впишіть імʼя персонажа (угорі)" : "",
+    !speciesKey ? "оберіть вид" : "",
+    subspeciesMissing ? "оберіть підрасу" : "",
+    grantsFeat && !featId ? "оберіть рису" : "",
+    !spreadReady ? "розподіліть бонуси характеристик" : "",
+    choice && choices.length !== choice.count ? `оберіть характеристики для бонусу (${choices.length}/${choice.count})` : "",
+    cantripChoice && spellChoices.length !== cantripChoice.count
+      ? `оберіть замовляння (${spellChoices.length}/${cantripChoice.count})`
+      : "",
+  ].filter(Boolean);
+
   return (
     <div className="wizard-step">
-      <div className="field-row">
+      <div className="field-row" data-jump="Імʼя">
         <label className="field">
           <span>Імʼя персонажа</span>
           <input value={name} onChange={(event) => setName(event.target.value)} placeholder="напр. Дарія Залізний Крок" />
@@ -386,14 +400,14 @@ export function SpeciesStep({
       </div>
 
       {selected ? (
-        <div ref={summaryRef}>
+        <div ref={summaryRef} data-jump="Вид">
           <section className="wizard-block species-card">
             <header className="species-card__head">
               <h3>{speciesLabel(selected.name_en)}</h3>
               <button
                 type="button"
                 className="link-button"
-                onClick={() => setGridOpen((open) => !open)}
+                onClick={() => toggleGrid(gridOpen, setGridOpen, listRef)}
               >
                 {gridOpen ? "Згорнути список видів" : "Змінити вид"}
               </button>
@@ -508,6 +522,7 @@ export function SpeciesStep({
         </p>
       )}
 
+      <div ref={listRef} className="wizard-list-anchor" data-jump={gridOpen ? "Список видів" : undefined} />
       {gridOpen ? (
         <SearchField
           value={speciesQuery}
@@ -705,19 +720,15 @@ export function SpeciesStep({
         </section>
       ) : null}
 
+      {speciesBlockers.length ? (
+        <p className="hint hint--warn" role="status">
+          Щоб перейти далі: {speciesBlockers.join("; ")}.
+        </p>
+      ) : null}
       <button
         type="button"
         className="button button--primary"
-        disabled={
-          busy ||
-          !name.trim() ||
-          !speciesKey ||
-          subspeciesMissing ||
-          (grantsFeat && !featId) ||
-          !spreadReady ||
-          Boolean(choice && choices.length !== choice.count) ||
-          Boolean(cantripChoice && spellChoices.length !== cantripChoice.count)
-        }
+        disabled={busy || speciesBlockers.length > 0}
         onClick={() =>
           onSubmit({
             name: name.trim(),
@@ -872,6 +883,7 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
   // Список класів згортається після вибору — картка класу стає згори.
   const [gridOpen, setGridOpen] = useState(!initial.class_key);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
   // Тексти всіх умінь класу вантажаться окремо — лише коли гравець розгорнув
   // список. У 13 класів це кілька сотень кілобайт, у кроці вони зайві.
   const [allOpen, setAllOpen] = useState(false);
@@ -936,14 +948,14 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
   return (
     <div className="wizard-step">
       {selected ? (
-        <div ref={cardRef}>
+        <div ref={cardRef} data-jump="Клас">
           <section className="wizard-block species-card class-card">
             <header className="species-card__head">
               <h3>{termLabel(selected.name_en)}</h3>
               <button
                 type="button"
                 className="link-button"
-                onClick={() => setGridOpen((open) => !open)}
+                onClick={() => toggleGrid(gridOpen, setGridOpen, listRef)}
               >
                 {gridOpen ? "Згорнути список класів" : "Змінити клас"}
               </button>
@@ -1085,6 +1097,7 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
         </p>
       )}
 
+      <div ref={listRef} className="wizard-list-anchor" data-jump={gridOpen ? "Список класів" : undefined} />
       {gridOpen ? (
         <div className="choice-grid species-grid">
           {options.classes.map((item) => (
@@ -1429,7 +1442,7 @@ export function AbilitiesStep({
         </button>
       ) : null}
 
-      <table className="ability-table">
+      <table className="ability-table ability-table--wizard">
         <thead>
           <tr>
             <th>Характеристика</th>
@@ -1465,7 +1478,7 @@ export function AbilitiesStep({
                     {skills.length ? ` · навички: ${skills.join(", ")}` : ""}
                   </span>
                 </th>
-                <td>
+                <td data-label="База">
                   {method === "standard_array" ? (
                     <select
                       aria-label={`${abilityLabel(ability)}: значення`}
@@ -1492,15 +1505,15 @@ export function AbilitiesStep({
                     />
                   )}
                 </td>
-                <td>{bonus ? modifierLabel(bonus) : "—"}</td>
-                <td>
+                <td data-label="Вид">{bonus ? modifierLabel(bonus) : "—"}</td>
+                <td data-label="Разом">
                   <strong>{empty ? "—" : total}</strong>
                 </td>
-                <td className="ability-mod">
+                <td className="ability-mod" data-label="Модифікатор">
                   {empty ? "—" : <span className="hex-badge">{modifierLabel(abilityModifier(total))}</span>}
                 </td>
                 {method === "point_buy" ? (
-                  <td className="meta">
+                  <td className="meta" data-label="Ще +1">
                     {cost === null ? "максимум" : `${cost} ${cost === 1 ? "очко" : "очки"}`}
                   </td>
                 ) : null}
@@ -1585,6 +1598,7 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
 
   const background: BackgroundView | undefined = options.backgrounds.find((item) => item.key === backgroundKey);
   const [bgQuery, setBgQuery] = useState("");
+  const bgCardRef = useRef<HTMLElement | null>(null);
   const [bgGridOpen, setBgGridOpen] = useState(!initial.background_key);
   // Навички, які вже є з інших джерел: їх не варто брати вдруге (PHB, p. 125).
   const ownedFromBackground = new Set(background?.custom ? customSkills : background?.skill_proficiencies ?? []);
@@ -1639,7 +1653,7 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
       </p>
 
       {background ? (
-        <section className="wizard-block species-card">
+        <section className="wizard-block species-card" data-jump="Передісторія" ref={bgCardRef}>
           <header className="species-card__head">
             <h3>{termLabel(background.name_en)}</h3>
             <button
@@ -1711,6 +1725,7 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
 
       {bgGridOpen ? (
         <>
+          <div className="wizard-list-anchor" data-jump="Список передісторій" />
           <SearchField
             value={bgQuery}
             onChange={setBgQuery}
@@ -1735,6 +1750,8 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
                   onClick={() => {
                     setBackgroundKey(item.key);
                     setBgGridOpen(false);
+                    // Список згортається на кілька екранів угору — ведемо до картки обраної.
+                    window.setTimeout(() => bgCardRef.current?.scrollIntoView({ block: "start" }), 0);
                   }}
                 >
                   <strong>{item.custom ? "Власна передісторія" : termLabel(item.name_en)}</strong>
@@ -1754,7 +1771,7 @@ export function BackgroundStep({ answers, options, busy, onSubmit }: StepProps<B
         </>
       ) : null}
 
-      <label className="field">
+      <label className="field" data-jump="Світогляд">
         <span>
           <Term k="alignment">Світогляд</Term> (необовʼязково)
         </span>
@@ -2819,4 +2836,18 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
       </button>
     </div>
   );
+}
+
+/**
+ * «Змінити вид / клас»: список відкривається під карткою обраного, а картка
+ * довга — тож ведемо око до списку, а не лишаємо гравця гортати самому.
+ */
+function toggleGrid(
+  open: boolean,
+  setOpen: (value: boolean) => void,
+  anchor: { current: HTMLElement | null },
+) {
+  setOpen(!open);
+  if (open) return;
+  window.setTimeout(() => anchor.current?.scrollIntoView({ block: "start" }), 0);
 }

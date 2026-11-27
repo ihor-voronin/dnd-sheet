@@ -5,8 +5,9 @@
  * нічого, а перезавантаження сторінки не починає створення заново.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { StepJumpBar } from "./StepJumpBar";
 import { ActiveGloss, GlossProvider, Term } from "../../components/Term";
 import {
   ABILITY_SHORT,
@@ -54,6 +55,20 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(true);
   const [classEquipment, setClassEquipment] = useState<string | null>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const shownStep = useRef<string | null>(null);
+  const [body, setBody] = useState<HTMLDivElement | null>(null);
+
+  // Новий крок починається згори: інакше «Далі» лишає гравця внизу нового
+  // кроку (кнопка була внизу попереднього) і гортати доводиться самому.
+  useEffect(() => {
+    if (!view) return;
+    if (shownStep.current !== null && shownStep.current !== step) {
+      const top = rootRef.current ? rootRef.current.getBoundingClientRect().top + window.scrollY - 8 : 0;
+      window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+    }
+    shownStep.current = step;
+  }, [step, view]);
 
   useEffect(() => {
     let cancelled = false;
@@ -205,7 +220,7 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
 
   return (
     <GlossProvider>
-      <section className="wizard wizard--layout">
+      <section className="wizard wizard--layout" ref={rootRef}>
         <header className="wizard-header">
           <div>
             <h1>Створення персонажа</h1>
@@ -261,7 +276,8 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
             </p>
           ) : null}
 
-          <div className="wizard-body">
+          <StepJumpBar host={body} step={step} />
+          <div className="wizard-body" ref={setBody}>
             {step === "species" ? (
               <SpeciesStep
                 answers={view.answers}

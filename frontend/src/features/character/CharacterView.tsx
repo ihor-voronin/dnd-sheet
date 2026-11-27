@@ -721,7 +721,7 @@ export function CharacterView({
             </button>
           </div>
           <div className="sheet-export">
-            <span className="sheet-export__label">Завантажити</span>
+            <span className="sheet-export__label">{pdfReady ? "Завантажити" : "Роздрукувати"}</span>
             {pdfReady ? (
               <>
                 <a
@@ -734,14 +734,6 @@ export function CharacterView({
                 </a>
               </>
             ) : null}
-            <a
-              className="sheet-btn sheet-btn--link"
-              href={exportUrl(id, "markdown")}
-              download
-              title="Текст листа для нотаток і чатів"
-            >
-              Markdown
-            </a>
             <a
               className="sheet-btn sheet-btn--link"
               href={`/api/v1/characters/${encodeURIComponent(id)}/print`}

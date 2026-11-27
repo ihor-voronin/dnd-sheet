@@ -1524,3 +1524,115 @@ textarea:focus {
     white-space: nowrap;
   }
 }
+
+/* Таблиця характеристик на телефоні: п'ять колонок не влазять у 393px,
+   тож кожна характеристика — картка: назва й опис угорі, а «База / Вид /
+   Разом / Модифікатор» — рядком під ними, з підписами над числами. */
+@media (max-width: 620px) {
+  .ability-table--wizard,
+  .ability-table--wizard tbody {
+    display: block;
+  }
+
+  .ability-table--wizard thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .ability-table--wizard tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 6px 14px;
+    padding: 12px 0 12px 10px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .ability-table--wizard tbody tr.ability-row--primary {
+    box-shadow: inset 3px 0 0 var(--act);
+  }
+
+  .ability-table--wizard tbody tr > th {
+    flex: 1 0 100%;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .ability-table--wizard tbody tr > td {
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .ability-table--wizard td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    color: var(--graphite);
+    font-family: var(--sans);
+    font-size: var(--t-xs);
+    font-weight: 400;
+  }
+
+  .ability-table--wizard td.ability-mod {
+    margin-left: auto;
+    padding: 0;
+  }
+
+  .ability-table--wizard .ability-role {
+    max-width: none;
+  }
+}
+
+/* Швидкий перехід по розділах кроку (телефон і вузьке вікно): липка смуга
+   над кроком, гортається вбік. На широкому екрані розділи й так видно. */
+.step-jump {
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .step-jump {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    display: flex;
+    gap: 6px;
+    margin: 0 -4px 8px;
+    padding: 8px 4px;
+    overflow-x: auto;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line-soft);
+    scrollbar-width: none;
+  }
+
+  .step-jump::-webkit-scrollbar {
+    display: none;
+  }
+
+  .step-jump__item {
+    flex: none;
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid var(--field-line);
+    border-radius: var(--r-field);
+    background: var(--leaf);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: var(--t-sm);
+    white-space: nowrap;
+  }
+
+  .step-jump__item--next {
+    border-color: var(--act);
+    color: var(--act-text);
+  }
+
+  .wizard-body [data-jump],
+  .wizard-body .wizard-block {
+    scroll-margin-top: 64px;
+  }
+}
