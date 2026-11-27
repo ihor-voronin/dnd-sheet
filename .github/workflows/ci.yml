@@ -27,7 +27,7 @@ jobs:
     name: pre-commit
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -41,22 +41,22 @@ jobs:
           if [ "${#TITLE}" -gt 100 ]; then echo "::error::Заголовок PR довший за 100 символів (${#TITLE})"; exit 1; fi
           if echo "$TITLE" | grep -qiw "wip"; then echo "::error::Заголовок PR містить WIP"; exit 1; fi
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_wrapper: false
       - name: Frontend dependencies (eslint, prettier, tsc для хуків)
         run: npm ci
         working-directory: frontend
       - run: pip install pre-commit
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -74,7 +74,7 @@ jobs:
     name: backend
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Unlock corpus (git-crypt)
         env:
@@ -86,9 +86,9 @@ jobs:
           git-crypt unlock "$RUNNER_TEMP/git-crypt.key"
           rm -f "$RUNNER_TEMP/git-crypt.key"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: Build test image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           target: test
@@ -107,8 +107,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
