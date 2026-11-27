@@ -2,78 +2,40 @@
 
 Корпус — це джерело правил: у ньому один `text_en`, у якому живуть і опис, і
 вміння. Переклад тому не лежить у записах довідника, а поруч — файлами в
-`content/translations/species/`:
+`content/translations/species/`, ключ — `sha1(оригінал)[:10]`. Немає
+перекладу — повертаємо `None`, і екран показує текст книги (без вигадок).
 
-    [{"id": "sha1(оригінал)[:10]", "name_uk": "Темний зір"}]
-    [{"id": "sha1(оригінал)[:10]", "text_uk": "У вас темний зір..."}]
-
-Ключ — хеш **оригіналу**, бо «Darkvision» у двадцяти видів — той самий рядок,
-і перекладати його двадцять разів не потрібно. Немає перекладу — повертаємо
-`None`, і екран показує текст книги (без вигадок).
-
-Файли читаються один раз на процес; тексти книг не змінюються.
+Читання файлів і кеш — спільні для всіх шарів, у `uk_text`.
 """
 
 from __future__ import annotations
 
-import hashlib
-import json
-import os
-from pathlib import Path
 from typing import Any
 
-#: Завантажений переклад: `{"names": {...}, "texts": {...}, "files": [...]}`.
+from dndsheet.characters.api import uk_text
+
+#: Назва шару в `content/translations/`.
+LAYER = "species"
+
+#: Сумісність: раніше кеш жив тут, і тести скидали його саме так.
 _CACHE: dict[str, Any] | None = None
 
 
 def ident(text: str) -> str:
-    """Ключ перекладу — перші 10 hex sha1 оригіналу."""
-    return hashlib.sha1(text.encode("utf-8")).hexdigest()[:10]
-
-
-def _folder() -> Path:
-    root = os.environ.get("DNDSHEET_CONTENT_DIR") or "content"
-    return Path(root) / "translations" / "species"
+    return uk_text.ident(text)
 
 
 def translations() -> dict[str, Any]:
     """Назви й тексти з усіх файлів каталогу (кеш на процес)."""
-    global _CACHE
-    if _CACHE is not None:
-        return _CACHE
-    names: dict[str, str] = {}
-    texts: dict[str, str] = {}
-    files: list[str] = []
-    folder = _folder()
-    if folder.is_dir():
-        for path in sorted(folder.glob("*.json")):
-            try:
-                rows = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                continue
-            if not isinstance(rows, list):
-                continue
-            files.append(path.name)
-            for row in rows:
-                if not isinstance(row, dict):
-                    continue
-                key = str(row.get("id") or "").strip()
-                if not key:
-                    continue
-                if isinstance(row.get("name_uk"), str) and row["name_uk"].strip():
-                    names[key] = row["name_uk"].strip()
-                elif isinstance(row.get("text_uk"), str) and row["text_uk"].strip():
-                    texts[key] = row["text_uk"].strip()
-    _CACHE = {"names": names, "texts": texts, "files": files}
-    return _CACHE
+    return uk_text.read(LAYER)
 
 
 def name_uk(name_en: str) -> str | None:
-    return translations()["names"].get(ident(name_en))
+    return uk_text.name_uk(LAYER, name_en)
 
 
 def text_uk(text_en: str) -> str | None:
-    return translations()["texts"].get(ident(text_en))
+    return uk_text.text_uk(LAYER, text_en)
 
 
 def enrich(payload: dict[str, Any]) -> dict[str, Any]:

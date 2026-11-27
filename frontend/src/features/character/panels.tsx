@@ -400,7 +400,9 @@ export function FeaturesList({ features }: { features: SheetViewPayload["feature
         <li key={`${feature.class_key}-${feature.name_en}-${feature.source ?? "class"}`}>
           <details className="feature">
             <summary className="feature__summary">
-              <span className="feature-name">{featureLabel(feature.name_en)}</span>
+              <span className="feature-name">
+                {featureLabel(feature.name_en, feature.name_uk)}
+              </span>
               <span className="feature-meta">
                 {feature.source === "subclass" && feature.subclass_name
                   ? `${termLabel(feature.subclass_name)} · `
@@ -411,7 +413,9 @@ export function FeaturesList({ features }: { features: SheetViewPayload["feature
                 ▾
               </span>
             </summary>
-            <RuleText text={featureText(feature.name_en, feature.description)} />
+            <RuleText
+              text={featureText(feature.name_en, feature.description, feature.text_uk)}
+            />
           </details>
         </li>
       ))}
@@ -550,7 +554,9 @@ export function FeatureResources({
       {resources.map((resource) => (
         <div key={resource.key} className="feature-resource">
           <span className="feature-resource__main">
-            <span className="feature-resource__name">{featureLabel(resource.name_en)}</span>
+            <span className="feature-resource__name">
+              {featureLabel(resource.name_en, resource.name_uk)}
+            </span>
             <span className="feature-resource__meta">
               {termLabel(resource.class_name)} ·{" "}
               {resource.recharge === "short"
@@ -561,7 +567,7 @@ export function FeatureResources({
           <Counter
             used={resource.used}
             total={resource.total}
-            title={featureLabel(resource.name_en)}
+            title={featureLabel(resource.name_en, resource.name_uk)}
             onChange={(used) => {
               if (disabled) return;
               onChange(resource.key, used);

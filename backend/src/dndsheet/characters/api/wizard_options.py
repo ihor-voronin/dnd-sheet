@@ -23,6 +23,7 @@ from dndsheet.characters.domain.wizard import (
 )
 from dndsheet.characters.api.species_traits import species_details
 from dndsheet.characters.api.features import class_details
+from dndsheet.characters.api import classes_uk
 from dndsheet.characters.api.background_info import background_details
 from dndsheet.compendium.api.serializers import (
     background_mechanics_full,
@@ -152,10 +153,25 @@ def _class_options(
         payload["skill_options"] = [skill.value for skill in definition.skill_options()]
         payload["cantrips_at_level_1"] = definition.cantrips_at(1)
         payload["spells_known_at_level_1"] = definition.spells_known_at(1)
+        # Список «усі вміння за рівнями» — теж українською: назви варіантів
+        # («Extra Attack (2)», «Destroy Undead (CR 1)») перекладені в тому ж шарі.
+        payload["features"] = [
+            {
+                **feature,
+                **(
+                    {"name_uk": uk_name}
+                    if (uk_name := classes_uk.name_uk(feature["name_en"]))
+                    else {}
+                ),
+            }
+            for feature in payload["features"]
+        ]
         # Опис класу й тексти вмінь — з книги: числа є в індексі, а «що це за
         # клас» і що робить уміння, там не сказано.
         details = class_details(service, definition.key, store)
         payload["description"] = details["description"]
+        if details.get("description_uk"):
+            payload["description_uk"] = details["description_uk"]
         levels = {feature.name_en: feature.level for feature in definition.features}
         # Тільки те, що клас справді дає на 1 рівні, і базові розділи
         # (хіти, володіння, спорядження). «Quick Build» і підкласи в тексті
@@ -166,6 +182,8 @@ def _class_options(
                 "name_en": item["name_en"],
                 "level": levels.get(item["name_en"], 1),
                 "text": item["text"],
+                **({"name_uk": item["name_uk"]} if item.get("name_uk") else {}),
+                **({"text_uk": item["text_uk"]} if item.get("text_uk") else {}),
             }
             for item in details["features"]
             if item["name_en"] in first_level or item["name_en"] in BASE_SECTIONS

@@ -107,11 +107,19 @@ export interface ClassView {
   cantrips_at_level_1: number;
   spells_known_at_level_1: number | null;
   subclass: { title: string; level: number; options: SubclassView[] } | null;
-  features: { name_en: string; level: number }[];
+  features: { name_en: string; level: number; name_uk?: string }[];
   /** Опис класу з книги. */
   description?: string;
+  /** Опис класу українською — машинна чернетка, оригінал вище. */
+  description_uk?: string;
   /** Текст умінь, які клас дає на 1 рівні (і базових розділів книги). */
-  feature_texts?: { name_en: string; level: number; text: string }[];
+  feature_texts?: {
+    name_en: string;
+    level: number;
+    text: string;
+    name_uk?: string;
+    text_uk?: string;
+  }[];
 }
 
 export interface BackgroundView {
@@ -288,11 +296,16 @@ export interface SheetFeature {
   source?: "class" | "subclass";
   subclass_name?: string | null;
   description?: string;
+  /** Українські назва й текст правила — з `content/translations/classes/`. */
+  name_uk?: string | null;
+  text_uk?: string | null;
 }
 
 export interface SheetFeatureResource {
   key: string;
   name_en: string;
+  /** Українська назва вміння (Rage → Лють), якщо переклад є. */
+  name_uk?: string | null;
   class_key: string;
   class_name: string;
   level: number;
@@ -569,7 +582,7 @@ export interface LevelUpPlan {
   hit_die: number;
   constitution_modifier: number;
   hp: { average: number; best_roll: number };
-  features: { name_en: string; level: number }[];
+  features: { name_en: string; level: number; name_uk?: string }[];
   subclass: LevelUpSubclass | null;
   subclass_features: { name_en: string; description: string }[];
   asi: { slots: number; taken: number; pending: boolean };
@@ -579,7 +592,7 @@ export interface LevelUpPlan {
   pact: { before: [number, number] | null; after: [number, number] | null };
   caster_level: { before: number; after: number };
   max_spell_level: number;
-  resources_added: { key: string; name_en: string }[];
+  resources_added: { key: string; name_en: string; name_uk?: string }[];
   allowed: boolean;
   blocked_reason: string | null;
   requirements: string[];

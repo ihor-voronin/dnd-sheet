@@ -652,8 +652,8 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
 
             {selected.description ? (
               <details className="reckoning species-description" open>
-                <summary>Опис класу (з книги)</summary>
-                <RuleText text={selected.description} />
+                <summary>Опис класу</summary>
+                <RuleText text={selected.description_uk || selected.description} />
               </details>
             ) : (
               <p className="hint hint--warn">
@@ -668,8 +668,10 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
                   {selected.feature_texts.map((feature) => (
                     <li key={feature.name_en}>
                       <details className="reckoning" open={feature.name_en === "Hit Points"}>
-                        <summary>{featureLabel(feature.name_en)}</summary>
-                        <RuleText text={featureText(feature.name_en, feature.text)} />
+                        <summary>{featureLabel(feature.name_en, feature.name_uk)}</summary>
+                        <RuleText
+                          text={featureText(feature.name_en, feature.text, feature.text_uk)}
+                        />
                       </details>
                     </li>
                   ))}
@@ -683,7 +685,7 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
                 <ul className="plain-list">
                   {selected.features.map((feature) => (
                     <li key={`${feature.level}-${feature.name_en}`}>
-                      {feature.level} рівень · {featureLabel(feature.name_en)}
+                      {feature.level} рівень · {featureLabel(feature.name_en, feature.name_uk)}
                     </li>
                   ))}
                 </ul>
@@ -692,8 +694,10 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
 
             {selected.description || selected.feature_texts?.length ? (
               <p className="hint">
-                Опис класу — мовою книги (англійською); назви й описи вмінь, які є в
-                глосарії, показані українською з англійською в дужках.
+                Український текст — машинна чернетка: числа, кубики й структура
+                звірені з оригіналом, літературна вичитка ще попереду. Оригінал
+                правила лишається в книзі; назви класів і підкласів показані з
+                англійською в дужках.
               </p>
             ) : null}
 

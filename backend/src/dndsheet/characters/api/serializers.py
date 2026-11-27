@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from dndsheet.characters.api import classes_uk
 from dndsheet.characters.application.rows import (
     feature_rows,
     proficiency_rows,
@@ -97,6 +98,11 @@ def computed_sheet(
                 "used": resource.used,
                 "recharge": resource.recharge,
                 "action": resource.action,
+                **(
+                    {"name_uk": uk_name}
+                    if (uk_name := classes_uk.name_uk(resource.name_en))
+                    else {}
+                ),
             }
             for resource in resources_for(character, computed.ability_modifiers)
         ],

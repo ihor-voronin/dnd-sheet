@@ -229,7 +229,7 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
     const feature = sheet.features.find((item) => item.name_en === resource.name_en);
     rows.push({
       id: `resource-${resource.key}`,
-      name: featureLabel(resource.name_en),
+      name: featureLabel(resource.name_en, resource.name_uk ?? feature?.name_uk),
       typeLabel: "Обмежене",
       range: "—",
       hit: "—",
@@ -241,7 +241,11 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
       attack: false,
       limited: true,
       resource,
-      description: featureText(resource.name_en, feature?.description),
+      description: featureText(
+        resource.name_en,
+        feature?.description,
+        feature?.text_uk,
+      ),
     });
   }
 

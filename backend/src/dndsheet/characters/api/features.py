@@ -8,8 +8,10 @@
 * підкласові — заголовки `##`, рівень читається з курсивного підпису
   `*6th-level Cleric feature*`, який стоїть на початку розділу.
 
-Текст не перекладається: це оригінал правил, як і назви заклять. Кеш живе на
-застосунку — тексти книг не змінюються.
+Текст правила лишається джерелом англійською: український переклад — окремий
+шар (`classes_uk`, файли в `content/translations/classes/`), і він додає
+`name_uk`/`text_uk` до тих самих записів. Кеш живе на застосунку — тексти книг
+не змінюються.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from dndsheet.characters.api import classes_uk
 from dndsheet.characters.domain.character import Character
 from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.shared.errors import NotFoundError
@@ -47,6 +50,9 @@ def enrich_features(
         texts = _class_texts(store, service, feature.get("class_key") or "")
         if texts:
             feature["description"] = texts.get(str(feature.get("name_en") or ""), "")
+        # Переклад уміння — окремим шаром: назва й текст показуються
+        # українською, оригінал лишається в payload для звірки з книгою.
+        classes_uk.enrich_feature(feature)
 
     for entry, definition in character.class_entries():
         if not entry.subclass_key:
@@ -224,12 +230,13 @@ def class_details(
     if entry is None:
         return {"description": "", "features": []}
     texts = _class_texts(store, service, class_key)
-    return {
+    payload: dict[str, Any] = {
         "description": _intro(entry.text_en or ""),
         "features": [
             {"name_en": name, "text": text} for name, text in texts.items()
         ],
     }
+    return classes_uk.enrich_details(payload)
 
 
 def _intro(text: str) -> str:

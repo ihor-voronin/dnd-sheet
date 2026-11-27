@@ -806,8 +806,14 @@ export function withEnglish(nameEn: string, uk?: string | null): string {
   return `${uk} (${nameEn})`;
 }
 
-export function featureLabel(nameEn: string): string {
-  return withEnglish(nameEn, ukFeature(nameEn)?.name);
+/** Назва вміння: спершу переклад із бекенду, далі словник, далі оригінал.
+ *
+ * Бекенд віддає `name_uk` для кожного класового вміння з
+ * `content/translations/classes/`, тому словник тут — лише запасний шлях
+ * (він молодший і покриває не все).
+ */
+export function featureLabel(nameEn: string, uk?: string | null): string {
+  return withEnglish(nameEn, uk || ukFeature(nameEn)?.name);
 }
 
 export function spellLabel(nameEn: string): string {
@@ -822,9 +828,13 @@ export function termLabel(nameEn: string): string {
   return withEnglish(nameEn, ukTerm(nameEn));
 }
 
-/** Опис уміння: український, якщо є; інакше — англійський з payload. */
-export function featureText(nameEn: string, fallback: string | null | undefined): string {
-  return ukFeature(nameEn)?.text ?? fallback ?? "";
+/** Опис уміння: переклад із бекенду, далі словник, далі англійський текст. */
+export function featureText(
+  nameEn: string,
+  fallback: string | null | undefined,
+  uk?: string | null,
+): string {
+  return uk || ukFeature(nameEn)?.text || fallback || "";
 }
 
 export function spellText(nameEn: string, fallback: string | null | undefined): string {

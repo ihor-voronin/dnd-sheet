@@ -368,7 +368,9 @@ export function LevelUpWizard({
                     >
                       <span>{withEnglish(subclassLabel(option.name_en), ukSubclass(option.id))}</span>
                       {option.features.length ? (
-                        <span className="meta">{option.features.map(featureLabel).join(" · ")}</span>
+                        <span className="meta">
+                          {option.features.map((name) => featureLabel(name)).join(" · ")}
+                        </span>
                       ) : null}
                     </button>
                   ))}
@@ -569,12 +571,16 @@ export function LevelUpWizard({
                 ) : null}
                 {plan.features.length ? (
                   <li>
-                    вміння: {plan.features.map((item) => featureLabel(item.name_en)).join(", ")}
+                    вміння: {plan.features
+                      .map((item) => featureLabel(item.name_en, item.name_uk))
+                      .join(", ")}
                   </li>
                 ) : null}
                 {plan.resources_added.length ? (
                   <li>
-                    ресурси: {plan.resources_added.map((item) => featureLabel(item.name_en)).join(", ")}
+                    ресурси: {plan.resources_added
+                      .map((item) => featureLabel(item.name_en, item.name_uk))
+                      .join(", ")}
                   </li>
                 ) : null}
                 {spells.length ? (

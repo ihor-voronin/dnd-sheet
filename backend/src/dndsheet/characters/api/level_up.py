@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
+from dndsheet.characters.api import classes_uk
 from dndsheet.characters.api.features import subclass_features
 from dndsheet.characters.application.level_up import LevelUpService
 from dndsheet.characters.domain.services.feature_resources import name_of
@@ -69,7 +70,15 @@ def plan_payload(
         "constitution_modifier": plan.constitution_modifier,
         "hp": {"average": plan.hp_average, "best_roll": plan.hp_best_roll},
         "features": [
-            {"name_en": feature.name_en, "level": feature.level}
+            {
+                "name_en": feature.name_en,
+                "level": feature.level,
+                **(
+                    {"name_uk": uk_name}
+                    if (uk_name := classes_uk.name_uk(feature.name_en))
+                    else {}
+                ),
+            }
             for feature in plan.features
         ],
         "subclass": _subclass_payload(plan, compendium, cache, current=current_subclass),
@@ -101,7 +110,15 @@ def plan_payload(
         "caster_level": {"before": plan.caster_level_before, "after": plan.caster_level_after},
         "max_spell_level": plan.max_spell_level,
         "resources_added": [
-            {"key": key, "name_en": name_of(key) or key}
+            {
+                "key": key,
+                "name_en": name_of(key) or key,
+                **(
+                    {"name_uk": uk_name}
+                    if (uk_name := classes_uk.name_uk(name_of(key) or key))
+                    else {}
+                ),
+            }
             for key in plan.resources_after
             if key not in plan.resources_before
         ],
