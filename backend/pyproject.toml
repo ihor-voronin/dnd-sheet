@@ -9,7 +9,9 @@ description = "D&D 5e (2014) character sheet builder and exporter, Ukrainian"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
-    "uvicorn[standard]>=0.30",
+    # Без [standard]: uvloop, httptools, watchfiles і websockets застосунку не потрібні
+    # (~20 МБ в образі); --reload у dev працює і без watchfiles.
+    "uvicorn>=0.30",
     "pydantic>=2.7",
     "jinja2>=3.1",
 ]
@@ -23,6 +25,8 @@ dev = [
     "jsonschema>=4.22",
     "httpx>=0.27",
     "import-linter>=2.0",
+    # Глосарій термінів (test_terminology); раніше приходив транзитивно з uvicorn[standard].
+    "pyyaml>=6",
 ]
 
 [tool.setuptools.packages.find]
