@@ -1,0 +1,119 @@
+# Перевірки перед комітом — за зразком GloPros, підлаштовані під dnd-sheet.
+#
+#   pre-commit install                 # один раз: ставить хуки pre-commit і commit-msg
+#   pre-commit run --all-files         # прогнати все вручну
+#   pre-commit run ruff-format --files backend/src/...   # один хук
+#
+# Форматери (ruff-format, prettier, end-of-file-fixer…) виправляють файли самі
+# й зупиняють коміт: перегляньте зміни, `git add` і комітьте ще раз.
+default_stages: ["pre-commit"]
+default_language_version:
+  node: lts
+default_install_hook_types: ["pre-commit", "commit-msg"]
+exclude: |
+  (?x)^(
+    frontend/src/contract/.*|
+    deploy/terraform/\.terraform\.lock\.hcl
+  )$
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+        args: ["--assume-in-merge"]
+      - id: end-of-file-fixer
+        alias: format-end-of-line
+        # Секрети зашифровані git-crypt: у робочій копії — текст, у git — шифр;
+        # будь-яка «правка» тут змінила б зашифрований вміст.
+        exclude: ^deploy/secrets/
+      - id: trailing-whitespace
+        exclude: ^deploy/secrets/|\.md$
+      - id: fix-byte-order-marker
+        # Windows PowerShell 5 читає .ps1 без BOM як cp1251 — BOM там потрібен.
+        exclude: \.ps1$
+      - id: check-json
+      - id: check-yaml
+      - id: check-toml
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.10
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff
+        name: Sort imports with ruff
+        alias: format-ruff-isort
+        args: ["--select", "I", "--fix"]
+      - id: ruff-format
+        alias: format-ruff
+
+  # Секрети в коді: TruffleHog з образу Docker (бінарника під Windows немає в winget).
+  # deploy/secrets/ у робочій копії розшифрований — там секрети за задумом, у git вони шифр.
+  - repo: local
+    hooks:
+      - id: trufflehog
+        name: trufflehog — секрети в змінених файлах
+        language: docker_image
+        entry: trufflesecurity/trufflehog:3.90.0 filesystem --fail --no-update --log-level=-1
+        exclude: ^deploy/secrets/
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1-1
+    hooks:
+      - id: shellcheck
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.14.1-1
+    hooks:
+      - id: shfmt
+        alias: format-shfmt
+        args: ["-w", "-i", "2", "-ci"]
+
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint
+
+  - repo: local
+    hooks:
+      - id: secrets-encrypted
+        name: deploy/secrets — у коміт лише зашифрованим (git-crypt)
+        entry: python scripts/check_secrets_encrypted.py
+        language: python
+        files: ^deploy/secrets/
+        pass_filenames: true
+
+      # Prettier і плагін сортування імпортів — з frontend/node_modules (версії як у GloPros):
+      # node-середовище pre-commit на Windows не дає prettier знайти плагін за назвою.
+      - id: prettier
+        name: format files with prettier
+        alias: format-prettier
+        language: system
+        entry: python scripts/rundir.py frontend npx --no-install prettier --write --ignore-unknown --log-level warn --
+        types_or: [javascript, jsx, ts, tsx, css, json]
+        files: ^frontend/
+
+      - id: eslint
+        name: lint javascript and typescript code
+        language: system
+        entry: python scripts/rundir.py frontend npx --no-install eslint --max-warnings=0 --no-warn-ignored --pass-on-unpruned-suppressions --
+        types_or: ["javascript", "jsx", "ts", "tsx"]
+        files: ^frontend/.*$
+
+      - id: tsc
+        name: validate typescript
+        language: system
+        entry: python scripts/rundir.py frontend npx --no-install tsc --noEmit
+        files: ^frontend/(.*\.(ts|tsx|json))$
+        pass_filenames: false
+
+      - id: terraform-fmt
+        name: terraform fmt
+        alias: format-terraform
+        language: system
+        entry: terraform fmt
+        files: \.(tf|tfvars)$
+        exclude: ^deploy/secrets/

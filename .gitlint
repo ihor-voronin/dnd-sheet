@@ -1,0 +1,13 @@
+# Повідомлення комітів (хук commit-msg). За зразком GloPros, без їхніх Jira-ключів
+# і правил гілок: заголовок — що змінилось, тіло — чому й що саме, списком.
+[general]
+ignore = body-is-missing
+
+[title-max-length]
+line-length = 100
+
+[body-max-line-length]
+line-length = 160
+
+[title-must-not-contain-word]
+words = WIP,wip

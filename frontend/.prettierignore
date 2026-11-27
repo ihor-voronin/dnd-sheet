@@ -1,0 +1,5 @@
+# Згенеровано з contract/sheet-document.schema.json (npm run contract) — не форматувати руками.
+src/contract/
+dist/
+node_modules/
+package-lock.json

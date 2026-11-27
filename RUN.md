@@ -274,6 +274,33 @@ npm run build                                                     # tsc + vite b
 
 ---
 
+## 5.1 Перевірки перед комітом (pre-commit)
+
+Налаштування — `.pre-commit-config.yaml`, за зразком GloPros. Один раз:
+
+```powershell
+pre-commit install          # хуки pre-commit і commit-msg
+cd frontend; npm install    # ESLint, Prettier з плагіном — їх хуки беруть звідси
+```
+
+Далі кожен `git commit` перевіряє змінені файли:
+
+| Хук | Що робить |
+| --- | --- |
+| ruff-check, ruff (isort), ruff-format | Python: лінт, порядок імпортів, форматування (`ruff.toml`) |
+| prettier | фронтенд: форматування й порядок імпортів (`frontend/.prettierrc.json`) |
+| eslint | фронтенд: лінт (`frontend/eslint.config.js`), без жодного попередження |
+| tsc | фронтенд: перевірка типів |
+| shellcheck, shfmt | скрипти `.sh` (відступ 2) |
+| terraform fmt | `deploy/terraform/*.tf` |
+| trufflehog | секрети в змінених файлах (образ Docker) |
+| secrets-encrypted | файли з `deploy/secrets/` ідуть у коміт лише зашифрованими git-crypt |
+| end-of-file, trailing-whitespace, BOM, json/yaml/toml, великі файли, конфлікти | дрібні перевірки з pre-commit-hooks |
+| gitlint | повідомлення коміту: заголовок ≤ 100 символів, рядки тіла ≤ 160 |
+
+Форматери виправляють файли самі й зупиняють коміт: перегляньте зміни,
+`git add`, комітьте ще раз. Прогнати все вручну — `pre-commit run --all-files`.
+
 ## 6. PDF: чому 503 і що робити
 
 `GET /api/v1/demo/export/pdf` повертає 503, поки немає робочого WeasyPrint.
