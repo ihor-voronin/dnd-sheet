@@ -781,10 +781,17 @@ export function CharacterView({
             </div>
           </section>
 
-          <section className="ddb-card">
-            <h2 className="ddb-card__title">
-              <span>Кістки хитів</span>
-            </h2>
+          {/* Кістки хитів не є ключовим блоком (хіти — так), тому згорнуті:
+              розгортає гравець, коли справді витрачає кістку. */}
+          <details className="ddb-card ddb-card--collapsible">
+            <summary className="ddb-card__title">
+              <span>
+                <span className="ddb-caret" aria-hidden>
+                  ▸
+                </span>{" "}
+                Кістки хитів
+              </span>
+            </summary>
             <HitDiceBlock
               resources={sheet.resources}
               conModifier={sheet.abilities.con?.modifier ?? 0}
@@ -793,7 +800,7 @@ export function CharacterView({
               run(spendHitDie(id, die, roll)).then((result) => result !== null)
             }
             />
-          </section>
+          </details>
 
           <div className="ddb-work">
             <nav className="ddb-tabs" aria-label="Розділи листа">

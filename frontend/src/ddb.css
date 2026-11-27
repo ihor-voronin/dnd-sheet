@@ -553,6 +553,31 @@ body.board {
   white-space: nowrap;
 }
 
+/* Згорнуті картки (кістки хитів): заголовок — це <summary>, тож прибираємо
+   стандартний трикутник і показуємо свій, який повертається при відкритті. */
+.ddb-card--collapsible > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.ddb-card--collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ddb-card--collapsible > summary .ddb-caret {
+  display: inline-block;
+  margin-right: 2px;
+  transition: transform 120ms ease;
+}
+
+.ddb-card--collapsible[open] > summary .ddb-caret {
+  transform: rotate(90deg);
+}
+
+.ddb-card--collapsible:not([open]) > summary {
+  margin-bottom: 0;
+}
+
 /* порятунки */
 
 .ddb-saves {
