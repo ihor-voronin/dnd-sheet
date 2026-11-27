@@ -506,7 +506,7 @@ export interface SheetViewPayload {
   abilities: Record<string, SheetAbility>;
   proficiency_bonus: number;
   saving_throws: Record<string, { value: number; proficient: boolean }>;
-  skills: Record<string, { value: number; proficient: boolean; expertise?: boolean }>;
+  skills: Record<string, { value: number; proficient: boolean; expertise?: boolean; disadvantage?: boolean }>;
   /** Експертність: скільки дали рівні, що обрано, з чого можна обрати. */
   expertise?: { slots: number; chosen: string[]; options: string[] };
   /** Бойовий стиль, втаємничення, метамагія, прийоми… (ключ «клас:група»). */
@@ -720,5 +720,14 @@ export type ClassChoiceGroup = {
   group: string;
   slots: number;
   chosen: string[];
-  options: { name_en: string; text_en: string; prerequisite?: string | null }[];
+  options: {
+    name_en: string;
+    name_uk?: string | null;
+    text_en: string;
+    text_uk?: string | null;
+    prerequisite?: string | null;
+    source?: string;
+    /** Чого бракує (рівня, дару пакту, закляття); null — доступно. */
+    locked?: string | null;
+  }[];
 };

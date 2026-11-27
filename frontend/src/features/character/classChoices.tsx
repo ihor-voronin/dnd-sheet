@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 
 import type { ClassChoiceGroup } from "../wizard/types";
+import { withEnglish } from "./uk";
 
 const GROUP_LABELS: Record<string, string> = {
   "Fighting Style": "Бойовий стиль",
@@ -16,8 +17,15 @@ const GROUP_LABELS: Record<string, string> = {
   Maneuvers: "Прийоми майстра битви",
   Infusions: "Вливання",
   "Favored Enemy": "Улюблений ворог",
-  "Natural Explorer": "Улюблена місцевість",
+  "Natural Explorer": "Природний дослідник",
+  "Circle Terrain": "Місцевість круга",
 };
+
+/** Книги поза PHB: опційні варіанти, ведучий може їх не дозволяти. */
+const SOURCE_TAGS: Record<string, string> = { tcoe: "TCoE", xgte: "XGtE" };
+
+type Option = ClassChoiceGroup["options"][number];
+const optionLabel = (option: Option) => withEnglish(option.name_en, option.name_uk);
 
 function ChoiceGroup({
   group,
@@ -34,7 +42,7 @@ function ChoiceGroup({
 
   const pending = group.slots - group.chosen.length;
   const dirty = picked.join("|") !== group.chosen.join("|");
-  const label = GROUP_LABELS[group.group] ?? group.group;
+  const label = withEnglish(group.group, GROUP_LABELS[group.group]);
   const text = new Map(group.options.map((option) => [option.name_en, option]));
 
   function toggle(value: string) {
@@ -49,7 +57,9 @@ function ChoiceGroup({
     <div className={`expertise${pending > 0 ? " expertise--pending" : ""}`}>
       <p className="expertise__head">
         {label}: {group.chosen.length} з {group.slots}
-        {group.chosen.length ? ` — ${group.chosen.join(", ")}` : ""}
+        {group.chosen.length
+          ? ` — ${group.chosen.map((name) => (text.get(name) ? optionLabel(text.get(name)!) : name)).join(", ")}`
+          : ""}
         {!open ? (
           <>
             {" "}
@@ -61,7 +71,8 @@ function ChoiceGroup({
       </p>
       {pending > 0 ? (
         <p className="hint hint--warn">
-          Рівні класу дають ще {pending} на вибір. Наведіть на варіант, щоб прочитати опис.
+          Рівні класу дають ще {pending} на вибір. Наведіть на варіант, щоб прочитати опис;
+          сірі варіанти потребують передумови (рівня, дару пакту чи закляття).
         </p>
       ) : null}
       {open ? (
@@ -73,20 +84,31 @@ function ChoiceGroup({
                 type="button"
                 className={`chip ${picked.includes(option.name_en) ? "chip--active" : ""}`}
                 aria-pressed={picked.includes(option.name_en)}
-                title={[option.prerequisite ? `Передумова: ${option.prerequisite}` : "", option.text_en]
+                title={[
+                  option.locked ? `Недоступно: ${option.locked}` : "",
+                  option.prerequisite ? `Передумова (prerequisite): ${option.prerequisite}` : "",
+                  option.text_uk || option.text_en,
+                ]
                   .filter(Boolean)
                   .join("\n\n")}
-                disabled={!picked.includes(option.name_en) && picked.length >= group.slots}
+                disabled={
+                  (!picked.includes(option.name_en) && picked.length >= group.slots) ||
+                  (Boolean(option.locked) && !picked.includes(option.name_en))
+                }
                 onClick={() => toggle(option.name_en)}
               >
-                {option.name_en}
+                {optionLabel(option)}
+                {option.source && SOURCE_TAGS[option.source] ? (
+                  <small className="chip__tag"> {SOURCE_TAGS[option.source]}</small>
+                ) : null}
               </button>
             ))}
           </div>
           {picked.map((name) =>
             text.get(name)?.text_en ? (
               <p key={name} className="hint">
-                <strong>{name}.</strong> {text.get(name)?.text_en}
+                <strong>{optionLabel(text.get(name)!)}.</strong>{" "}
+                {text.get(name)?.text_uk || text.get(name)?.text_en}
               </p>
             ) : null,
           )}

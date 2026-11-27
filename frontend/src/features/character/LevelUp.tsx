@@ -37,7 +37,7 @@ import {
 import type { LevelUpPlan, LevelUpReport, LevelUpView } from "../wizard/types";
 import { SubclassBrief } from "../wizard/SubclassBrief";
 import { RuleText } from "./panels";
-import { featureLabel, termLabel, ukSubclass, withEnglish } from "./uk";
+import { featureLabel, spellLabel, termLabel, ukSubclass, withEnglish } from "./uk";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"] as const;
 type AbilityCode = (typeof ABILITIES)[number];
@@ -105,6 +105,8 @@ export function LevelUpWizard({
   const [featAbility, setFeatAbility] = useState<string | null>(null);
   const [skill, setSkill] = useState<string | null>(null);
   const [replaceSpell, setReplaceSpell] = useState<{ from: string; to: string }>({ from: "", to: "" });
+  const [newSpells, setNewSpells] = useState<string[]>([]);
+  const [spellQuery, setSpellQuery] = useState("");
 
   const levelUp = useQuery({
     queryKey: ["level-up", characterId],
@@ -126,11 +128,33 @@ export function LevelUpWizard({
           (spell) => spell.class_key === plan.class_key && spell.level > 0 && !spell.always_prepared,
         )
       : [];
+  // Що обирається просто тут: заговори, відомі закляття (бард, чаклун…) і
+  // 2 закляття в книгу мага (PHB, p. 114). Ті, хто готує, лише готують на листі.
+  const ownSpells = (sheet.data?.sheet.spells ?? []).filter((spell) => spell.class_key === plan?.class_key);
+  const pickCantrips = gain.cantrips;
+  const pickLeveled = !plan
+    ? 0
+    : plan.class_key === "wizard"
+      ? plan.is_new_class
+        ? 6
+        : 2
+      : plan.limits.spells_known.after !== null
+        ? gain.leveled
+        : 0;
   const classSpells = useQuery({
     queryKey: ["class-spells", plan?.class_key, plan?.max_spell_level],
     queryFn: () => fetchClassSpells(plan!.class_key, plan!.max_spell_level),
-    enabled: Boolean(plan && replaceSpell.from),
+    enabled: Boolean(plan && (replaceSpell.from || pickCantrips + pickLeveled > 0)),
   });
+  const learnable = (classSpells.data?.items ?? []).filter(
+    (entry) =>
+      Number(entry.data.level ?? 0) <= (plan?.max_spell_level ?? 0) &&
+      !ownSpells.some((spell) => spell.name_en.toLowerCase() === entry.name_en.toLowerCase()),
+  );
+  const pickedOf = (cantrip: boolean) =>
+    newSpells.filter((name) =>
+      learnable.some((entry) => entry.name_en === name && (Number(entry.data.level ?? 0) === 0) === cantrip),
+    );
   const replacements = (classSpells.data?.items ?? []).filter(
     (entry) =>
       Number(entry.data.level ?? 0) > 0 &&
@@ -150,6 +174,7 @@ export function LevelUpWizard({
     setFeatId(null);
     setSkill(null);
     setReplaceSpell({ from: "", to: "" });
+    setNewSpells([]);
     // Підклас не обирається за гравця: раніше перший варіант ставав
     // «вибраним» сам, і його легко було не помітити.
     setSubclassKey(null);
@@ -243,12 +268,16 @@ export function LevelUpWizard({
         if (!skill) throw new Error("оберіть навичку, яку дає новий клас");
         body.skill = skill;
       }
+      const learned = learnable
+        .filter((entry) => newSpells.includes(entry.name_en))
+        .map((entry) => ({ name_en: entry.name_en, level: Number(entry.data.level ?? 0), entry_id: entry.id }));
+      body.spells = learned;
       if (replaceSpell.from) {
         if (!replaceSpell.to.trim()) throw new Error("впишіть, яке закляття стає на місце забутого");
         body.replace_spell = replaceSpell.from;
         const entry = replacements.find((item) => item.name_en === replaceSpell.to);
         if (!entry) throw new Error("оберіть нове закляття зі списку класу");
-        body.spells = [{ name_en: entry.name_en, level: Number(entry.data.level ?? 1), entry_id: entry.id }];
+        body.spells = [...learned, { name_en: entry.name_en, level: Number(entry.data.level ?? 1), entry_id: entry.id }];
       }
       const result = await levelUpCharacter(characterId, body);
       onDone(result.level_up);
@@ -657,22 +686,66 @@ export function LevelUpWizard({
 
             {plan.max_spell_level > 0 ? (
               <section className="wizard-block">
-                <h3>{nextStep()}. Закляття — обираються на листі</h3>
+                <h3>{nextStep()}. {pickCantrips + pickLeveled ? "Нові закляття" : "Закляття — готуються на листі"}</h3>
+                {pickCantrips + pickLeveled ? (
+                  <div className="levelup-spells">
+                    <p className="hint">
+                      {pickCantrips ? `Заговорів (cantrips): ${pickedOf(true).length} з ${pickCantrips}. ` : ""}
+                      {pickLeveled
+                        ? `${plan.class_key === "wizard" ? "У книгу заклять (spellbook)" : "Відомих заклять"}: ${pickedOf(false).length} з ${pickLeveled}, до ${plan.max_spell_level}-го рівня.`
+                        : ""}
+                    </p>
+                    <label className="search-field">
+                      <span className="visually-hidden">Пошук закляття</span>
+                      <input
+                        type="search"
+                        value={spellQuery}
+                        placeholder="Пошук закляття українською або англійською"
+                        onChange={(event) => setSpellQuery(event.target.value)}
+                      />
+                    </label>
+                    {classSpells.isPending ? <p className="meta">Читаємо список класу…</p> : null}
+                    <div className="chip-row">
+                      {learnable
+                        .filter((entry) => {
+                          const cantrip = Number(entry.data.level ?? 0) === 0;
+                          if (cantrip ? !pickCantrips : !pickLeveled) return false;
+                          const needle = spellQuery.trim().toLocaleLowerCase();
+                          return !needle || spellLabel(entry.name_en).toLocaleLowerCase().includes(needle);
+                        })
+                        .map((entry) => {
+                          const cantrip = Number(entry.data.level ?? 0) === 0;
+                          const active = newSpells.includes(entry.name_en);
+                          const full = pickedOf(cantrip).length >= (cantrip ? pickCantrips : pickLeveled);
+                          return (
+                            <button
+                              key={entry.id}
+                              type="button"
+                              className={`chip ${active ? "chip--active" : ""}`}
+                              aria-pressed={active}
+                              disabled={!active && full}
+                              onClick={() =>
+                                setNewSpells((current) =>
+                                  active ? current.filter((name) => name !== entry.name_en) : [...current, entry.name_en],
+                                )
+                              }
+                            >
+                              {spellLabel(entry.name_en)} · {cantrip ? "заговір" : `${Number(entry.data.level)} рів.`}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                ) : null}
                 <p className="hint">
                   {plan.class_key === "wizard"
-                    ? "Маг вписує в книгу заклять 2 нові закляття доступного рівня (PHB, с. 114); готує він лише з книги. "
+                    ? "Маг вписує в книгу 2 нові закляття за рівень (PHB, с. 114), а готує лише з книги. "
                     : ""}
-                  {gain.cantrips ? `Цей рівень дає заговорів: +${gain.cantrips}. ` : ""}
-                  {gain.leveled ? `Заклять: +${gain.leveled}. ` : ""}
-                  {gain.cantrips + gain.leveled
-                    ? "Доступні рівні заклять — до "
-                    : "Нових заклять цей рівень не додає. "}
-                  {gain.cantrips + gain.leveled ? `${plan.max_spell_level}-го. ` : ""}
-                  Тут ми їх не обираємо: після підвищення відкрийте{" "}
-                  <strong>лист персонажа → вкладка «Закляття» → «Додати закляття»</strong>.
-                  Там повний список класу з описами, фільтр за рівнем і позначка
-                  «підготовлено» для класів, що готують закляття. Так ви бачите
-                  всі варіанти й можете повернутися до вибору пізніше.
+                  {pickCantrips + pickLeveled
+                    ? "Описи заклять і підготовку на день — на листі, вкладка «Закляття»."
+                    : gain.leveled
+                      ? `Клас готує закляття щодня зі всього списку: тепер можна готувати на ${gain.leveled} більше, до ${plan.max_spell_level}-го рівня. Підготовка — на листі, вкладка «Закляття».`
+                      : "Нових заклять цей рівень не додає."}
                 </p>
                 {onOpenSpells ? (
                   <button type="button" className="button" onClick={onOpenSpells}>

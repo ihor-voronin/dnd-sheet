@@ -22,6 +22,7 @@ from dndsheet.characters.domain.services.feature_resources import resources_for
 from dndsheet.characters.domain.services.spell_slots import Spellcasting
 from dndsheet.characters.domain.wizard import STEP_ORDER, Draft, WizardStep
 from dndsheet.shared.kernel import Ability
+from dndsheet.shared.rules import stealth_disadvantage
 
 
 def computed_sheet(
@@ -54,6 +55,8 @@ def computed_sheet(
                 "value": value,
                 "proficient": computed.skill_proficiency[skill],
                 "expertise": computed.skill_expertise.get(skill, False),
+                # Завада на Скритність у важкій і частині середньої броні (PHB, p. 145).
+                "disadvantage": skill == "stealth" and stealth_disadvantage(character.inventory.worn_armor),
             }
             for skill, value in computed.skills.items()
         },

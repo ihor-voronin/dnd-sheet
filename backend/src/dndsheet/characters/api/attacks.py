@@ -83,6 +83,7 @@ def attacks_for(
             view = replace(view, damage=item.damage.strip())
         if item.notes:
             view = replace(view, notes=item.notes.strip())
+        view = _fighting_style(view, profile.properties.casefold(), character)
         attacks.append(
             {
                 "name_en": view.name_en,
@@ -95,6 +96,32 @@ def attacks_for(
             }
         )
     return attacks
+
+
+_DAMAGE = re.compile(r"^(\d+d\d+)([+-]\d+)?(.*)$")
+
+
+def _fighting_style(view, properties: str, character: Character):  # noqa: ANN001, ANN202 — AttackProfile
+    """Бойові стилі, що міняють рядок атаки (PHB, p. 72).
+
+    Dueling: +2 урону зброєю ближнього бою в одній руці — сервер не знає, що в
+    другій руці, тож додає й пише умову. Great Weapon Fighting — лише примітка.
+    """
+    melee = "ammunition" not in properties
+    if melee and "two-handed" not in properties and character.has_class_choice("dueling"):
+        match = _DAMAGE.match(view.damage)
+        if match:
+            bonus = int(match.group(2) or 0) + 2
+            view = replace(view, damage=f"{match.group(1)}{bonus:+d}{match.group(3)}")
+        view = replace(view, notes=", ".join(filter(None, [view.notes, "Дуель (Dueling): +2, якщо в другій руці немає зброї"])))
+    if melee and ("two-handed" in properties or "versatile" in properties) and character.has_class_choice(
+        "great weapon fighting"
+    ):
+        view = replace(
+            view,
+            notes=", ".join(filter(None, [view.notes, "Бій великою зброєю (Great Weapon Fighting): перекидайте 1 і 2 на кубиках урону"])),
+        )
+    return view
 
 
 def _singular(value: str) -> str:

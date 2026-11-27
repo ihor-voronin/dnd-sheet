@@ -298,6 +298,10 @@ class SubclassSpells:
     expanded: tuple[str, ...] = ()
     #: Завжди підготовлені за рівнем класу: {1: (bless, cure wounds), 3: (…)}.
     by_level: Mapping[int, tuple[str, ...]] = field(default_factory=lambda: MappingProxyType({}))
+    #: Круг Землі: місцевість → таблиця за рівнями (обирається в `class_choices`).
+    by_terrain: Mapping[str, Mapping[int, tuple[str, ...]]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -871,6 +875,9 @@ CHOICE_FEATURE_TYPES: Mapping[str, str] = {
     "Infusions": "artificer infusion",
 }
 
+#: Місцевості слідопита й Круга Землі (PHB, p. 68, 91), у порядку книги.
+TERRAINS = ("arctic", "coast", "desert", "forest", "grassland", "mountain", "swamp", "underdark")
+
 #: Групи, варіанти яких — не записи довідника, а перелік із книги (PHB, p. 91).
 CHOICE_FIXED_OPTIONS: Mapping[str, tuple[str, ...]] = {
     "Favored Enemy": (
@@ -878,9 +885,8 @@ CHOICE_FIXED_OPTIONS: Mapping[str, tuple[str, ...]] = {
         "fey", "fiends", "giants", "monstrosities", "oozes", "plants", "undead",
         "humanoids (two races)",
     ),
-    "Natural Explorer": (
-        "arctic", "coast", "desert", "forest", "grassland", "mountain", "swamp", "underdark",
-    ),
+    "Natural Explorer": TERRAINS,
+    "Circle Terrain": TERRAINS,
 }
 
 #: Вибори, яких індекс механік не має: (клас, підклас або None, група) → [(рівень, скільки)].
@@ -889,6 +895,7 @@ _EXTRA_CHOICES: Mapping[tuple[str, str | None, str], tuple[tuple[int, int], ...]
     ("fighter", "champion", "Fighting Style"): ((10, 1),),  # Additional Fighting Style
     ("ranger", None, "Favored Enemy"): ((1, 1), (6, 2), (14, 3)),
     ("ranger", None, "Natural Explorer"): ((1, 1), (6, 2), (10, 3)),
+    ("druid", "circle-of-the-land", "Circle Terrain"): ((2, 1),),
 }
 
 
@@ -907,3 +914,17 @@ def class_choice_slots(entries: Iterable[tuple[Any, ClassMechanics]]) -> dict[st
             if count > 0 and (group in CHOICE_FEATURE_TYPES or group in CHOICE_FIXED_OPTIONS):
                 slots[f"{entry.class_key}:{group}"] = count
     return slots
+
+
+#: Броня із завадою на Скритність (PHB, p. 145).
+_NOISY_ARMOR = frozenset(
+    {"padded", "scale mail", "half plate", "ring mail", "chain mail", "splint", "plate"}
+)
+
+
+def stealth_disadvantage(armor: Any) -> bool:
+    """Чи дає вдягнена броня заваду на Скритність (`armor` — предмет або None)."""
+    if armor is None:
+        return False
+    name = armor.name_en.strip().casefold().removesuffix(" armor")
+    return name in _NOISY_ARMOR

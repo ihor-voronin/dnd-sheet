@@ -25,6 +25,7 @@ from dndsheet.shared.rules import (
     BackgroundMechanics,
     ClassMechanics,
     SpeciesMechanics,
+    TERRAINS,
     SubclassSpells,
 )
 
@@ -166,15 +167,23 @@ class JsonMechanicsRepository:
                     continue
                 klass = str((record.get("data") or {}).get("class") or "").casefold()
                 definition = self._classes.get(klass)
-                table = subclass_spell_table(str(record.get("text_en") or ""), klass)
-                if definition is None or not table:
+                tables = subclass_spell_tables(str(record.get("text_en") or ""), klass)
+                if definition is None or not tables:
                     continue
+                # Круг Землі: по таблиці на кожну місцевість, у порядку з тексту (PHB, p. 68).
+                terrains = TERRAINS if len(tables) == len(TERRAINS) else ()
+                if len(tables) != 1 and not terrains:
+                    continue
+                table = tables[0] if not terrains else {}
                 slug = str(record.get("id") or "").rsplit("/", 1)[-1]
                 old = definition.subclass_spells.get(slug) or SubclassSpells()
                 merged = dict(definition.subclass_spells)
                 merged[slug] = replace(
                     old,
                     by_level=MappingProxyType(table),
+                    by_terrain=MappingProxyType(
+                        {name: MappingProxyType(rows) for name, rows in zip(terrains, tables)}
+                    ),
                     prepared=old.prepared or table.get(1, ()),
                 )
                 self._classes[klass] = replace(
@@ -234,21 +243,19 @@ class JsonMechanicsRepository:
 _SPELL_TABLE = re.compile(r"^\|\s*(\w+) Level\s*\|\s*(?:Circle\s+)?Spells?\s*\|[^\n]*\n\|[- |]+\|\n((?:\|[^\n]*\|\n?)+)", re.M)
 
 
-def subclass_spell_table(text: str, class_key: str) -> dict[int, tuple[str, ...]]:
-    """«| Cleric Level | Spells |» → {1: ("bless", "cure wounds"), 3: (…)}.
-
-    shortcut: таблиць класу в тексті кілька (Circle of the Land — по одній на
-    місцевість) — повертаємо порожньо; потрібен вибір місцевості.
-    """
-    tables = [m for m in _SPELL_TABLE.finditer(text) if m.group(1).casefold() == class_key]
-    if len(tables) != 1:
-        return {}
-    result: dict[int, tuple[str, ...]] = {}
-    for row in tables[0].group(2).splitlines():
-        cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
-        level = re.match(r"\d+", cells[0]) if cells else None
-        if level and len(cells) > 1:
-            result[int(level.group())] = tuple(
-                name.strip() for name in cells[1].split(",") if name.strip()
-            )
-    return result
+def subclass_spell_tables(text: str, class_key: str) -> list[dict[int, tuple[str, ...]]]:
+    """Кожна «| Cleric Level | Spells |» → {1: ("bless", "cure wounds"), 3: (…)}."""
+    tables: list[dict[int, tuple[str, ...]]] = []
+    for match in _SPELL_TABLE.finditer(text):
+        if match.group(1).casefold() != class_key:
+            continue
+        result: dict[int, tuple[str, ...]] = {}
+        for row in match.group(2).splitlines():
+            cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
+            level = re.match(r"\d+", cells[0]) if cells else None
+            if level and len(cells) > 1:
+                result[int(level.group())] = tuple(
+                    name.strip() for name in cells[1].split(",") if name.strip()
+                )
+        tables.append(result)
+    return tables

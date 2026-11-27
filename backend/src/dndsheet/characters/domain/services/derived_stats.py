@@ -406,7 +406,11 @@ class DerivedStatsCalculator:
             spells = definition.subclass_spells_for(entry.subclass_key)
             if spells is None:
                 continue
-            table = spells.by_level or ({1: spells.prepared} if spells.prepared else {})
+            terrain = character.class_choices.get(f"{entry.class_key}:Circle Terrain", ())
+            table = (
+                spells.by_terrain.get(terrain[0], {}) if spells.by_terrain and terrain
+                else spells.by_level or ({1: spells.prepared} if spells.prepared else {})
+            )
             for class_level, names in sorted(table.items()):
                 if class_level > entry.level:
                     continue

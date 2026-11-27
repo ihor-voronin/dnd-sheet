@@ -284,3 +284,28 @@ def test_defense_style_adds_ac_in_armor(rules) -> None:
     fighter.set_class_choice("fighter:Fighting Style", ["defense"], ["Defense", "Archery"])
     assert fighter.class_choices == {"fighter:Fighting Style": ("Defense",)}
     assert _sheet(fighter).armor_class == before + 1
+
+
+def test_circle_of_the_land_terrain_spells(rules) -> None:
+    druid = make_character(
+        rules, abilities=_scores(wis=16), classes=[CharacterClass("druid", 5, subclass_key="circle-of-the-land")]
+    )
+    assert druid.class_choice_slots["druid:Circle Terrain"] == 1
+    druid.set_class_choice("druid:Circle Terrain", ["mountain"], ["mountain", "forest"])
+    names = {spell.name_en for spell in _sheet(druid).granted_spells}
+    assert {"spider climb", "spike growth", "lightning bolt", "meld into stone"} <= {n.casefold() for n in names}
+
+
+def test_invocation_prerequisites(rules) -> None:
+    from dndsheet.characters.api.class_choices import missing_prerequisite
+    from dndsheet.characters.domain.spells import KnownSpell
+
+    warlock = make_character(rules, abilities=_scores(cha=16), classes=[CharacterClass("warlock", 5)])
+    assert missing_prerequisite(None, warlock, "warlock") is None
+    assert missing_prerequisite("Level 7 Warlock", warlock, "warlock")
+    assert missing_prerequisite("Pact of the Blade, Level 5 Warlock", warlock, "warlock")
+    assert missing_prerequisite("Spell: eldritch blast cantrip", warlock, "warlock")
+    warlock.set_class_choice("warlock:Pact Boon", ["Pact of the Blade"], ["Pact of the Blade"])
+    warlock.learn_spell(KnownSpell(name_en="Eldritch Blast", level=0, class_key="warlock"))
+    assert missing_prerequisite("Pact of the Blade, Level 5 Warlock", warlock, "warlock") is None
+    assert missing_prerequisite("Spell: eldritch blast cantrip", warlock, "warlock") is None

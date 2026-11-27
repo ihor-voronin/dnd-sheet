@@ -1,0 +1,867 @@
+[
+ {
+  "id": "49b1a8b5fa",
+  "en": "Agonizing Blast",
+  "name_uk": "Болісний постріл"
+ },
+ {
+  "id": "98969b85be",
+  "en": "Ambush",
+  "name_uk": "Засідка"
+ },
+ {
+  "id": "6f6567ffde",
+  "en": "Arcane Propulsion Armor",
+  "name_uk": "Броня таємної тяги"
+ },
+ {
+  "id": "569af032e1",
+  "en": "Archery",
+  "name_uk": "Стрільба"
+ },
+ {
+  "id": "dba03ba8b9",
+  "en": "Armor of Magical Strength",
+  "name_uk": "Броня магічної сили"
+ },
+ {
+  "id": "5391dcf6ca",
+  "en": "Armor of Shadows",
+  "name_uk": "Броня тіней"
+ },
+ {
+  "id": "72793cc655",
+  "en": "Ascendant Step",
+  "name_uk": "Висхідний крок"
+ },
+ {
+  "id": "51c6ec1450",
+  "en": "Aspect of the Moon",
+  "name_uk": "Лик Місяця"
+ },
+ {
+  "id": "e3364dbaa2",
+  "en": "Bait and Switch",
+  "name_uk": "Підміна"
+ },
+ {
+  "id": "1cfb33e87e",
+  "en": "Banishing Arrow",
+  "name_uk": "Вигнанна стріла"
+ },
+ {
+  "id": "aadfea60da",
+  "en": "Beast Speech",
+  "name_uk": "Мова звірів"
+ },
+ {
+  "id": "adef41c6a5",
+  "en": "Beguiling Arrow",
+  "name_uk": "Зваблива стріла"
+ },
+ {
+  "id": "bb8a117ebe",
+  "en": "Beguiling Influence",
+  "name_uk": "Звабливий вплив"
+ },
+ {
+  "id": "275c5d7b69",
+  "en": "Bewitching Whispers",
+  "name_uk": "Чаруючий шепіт"
+ },
+ {
+  "id": "76da10319f",
+  "en": "Blessed Warrior",
+  "name_uk": "Благословенний воїн"
+ },
+ {
+  "id": "d79e9ac2fa",
+  "en": "Blind Fighting",
+  "name_uk": "Бій наосліп"
+ },
+ {
+  "id": "86a73127a6",
+  "en": "Bond of the Talisman",
+  "name_uk": "Узи талісмана"
+ },
+ {
+  "id": "4e11b0401b",
+  "en": "Book of Ancient Secrets",
+  "name_uk": "Книга давніх таємниць"
+ },
+ {
+  "id": "39e36be8b4",
+  "en": "Boots of the Winding Path",
+  "name_uk": "Чоботи звивистого шляху"
+ },
+ {
+  "id": "f13d59afec",
+  "en": "Brace",
+  "name_uk": "Упор"
+ },
+ {
+  "id": "57aad0765c",
+  "en": "Breath of Winter",
+  "name_uk": "Подих зими"
+ },
+ {
+  "id": "1e10013e28",
+  "en": "Bursting Arrow",
+  "name_uk": "Розривна стріла"
+ },
+ {
+  "id": "6062517915",
+  "en": "Careful Spell",
+  "name_uk": "Обережне закляття"
+ },
+ {
+  "id": "b10b8e7a02",
+  "en": "Chains of Carceri",
+  "name_uk": "Ланцюги Карцері"
+ },
+ {
+  "id": "b69679734a",
+  "en": "Clench of the North Wind",
+  "name_uk": "Хватка північного вітру"
+ },
+ {
+  "id": "a5575285cb",
+  "en": "Cloak of Flies",
+  "name_uk": "Плащ із мух"
+ },
+ {
+  "id": "85a219f2d8",
+  "en": "Cloud Rune",
+  "name_uk": "Руна хмари"
+ },
+ {
+  "id": "b3bbe8e8b1",
+  "en": "Commander's Strike",
+  "name_uk": "Удар командира"
+ },
+ {
+  "id": "1d01fdfba1",
+  "en": "Commanding Presence",
+  "name_uk": "Владна присутність"
+ },
+ {
+  "id": "3c284a10d0",
+  "en": "Defense",
+  "name_uk": "Захист"
+ },
+ {
+  "id": "28cde586d7",
+  "en": "Devil's Sight",
+  "name_uk": "Диявольський зір"
+ },
+ {
+  "id": "866f1b5341",
+  "en": "Disarming Attack",
+  "name_uk": "Обеззброювальна атака"
+ },
+ {
+  "id": "a1e5af8d89",
+  "en": "Distant Spell",
+  "name_uk": "Далеке закляття"
+ },
+ {
+  "id": "5e642e48dd",
+  "en": "Distracting Strike",
+  "name_uk": "Відволікальний удар"
+ },
+ {
+  "id": "e00759836a",
+  "en": "Dreadful Word",
+  "name_uk": "Жахливе слово"
+ },
+ {
+  "id": "556974771a",
+  "en": "Druidic Warrior",
+  "name_uk": "Друїдський воїн"
+ },
+ {
+  "id": "d35f1802b3",
+  "en": "Dueling",
+  "name_uk": "Дуель"
+ },
+ {
+  "id": "f892d0b752",
+  "en": "Eldritch Mind",
+  "name_uk": "Містичний розум"
+ },
+ {
+  "id": "3906c3d778",
+  "en": "Eldritch Sight",
+  "name_uk": "Містичний зір"
+ },
+ {
+  "id": "66fd701b11",
+  "en": "Eldritch Smite",
+  "name_uk": "Містична кара"
+ },
+ {
+  "id": "c62564b1e8",
+  "en": "Eldritch Spear",
+  "name_uk": "Містичний спис"
+ },
+ {
+  "id": "1eca5500de",
+  "en": "Elemental Attunement",
+  "name_uk": "Налаштування на стихії"
+ },
+ {
+  "id": "e96b5c6696",
+  "en": "Empowered Spell",
+  "name_uk": "Посилене закляття"
+ },
+ {
+  "id": "5a76773348",
+  "en": "Enfeebling Arrow",
+  "name_uk": "Знесилювальна стріла"
+ },
+ {
+  "id": "0d506c8c8b",
+  "en": "Enhanced Arcane Focus",
+  "name_uk": "Покращений таємний фокус"
+ },
+ {
+  "id": "a1c4727ba4",
+  "en": "Enhanced Defense",
+  "name_uk": "Покращений захист"
+ },
+ {
+  "id": "24e1afb513",
+  "en": "Enhanced Weapon",
+  "name_uk": "Покращена зброя"
+ },
+ {
+  "id": "4854fdd0b0",
+  "en": "Eternal Mountain Defense",
+  "name_uk": "Захист вічної гори"
+ },
+ {
+  "id": "a539469e3d",
+  "en": "Evasive Footwork",
+  "name_uk": "Ухильні кроки"
+ },
+ {
+  "id": "9007873601",
+  "en": "Extended Spell",
+  "name_uk": "Подовжене закляття"
+ },
+ {
+  "id": "afe65bbed3",
+  "en": "Eyes of the Rune Keeper",
+  "name_uk": "Очі хранителя рун"
+ },
+ {
+  "id": "f1a47ed635",
+  "en": "Fangs of the Fire Snake",
+  "name_uk": "Ікла вогняного змія"
+ },
+ {
+  "id": "cca4f1e3a2",
+  "en": "Far Scribe",
+  "name_uk": "Далекий писар"
+ },
+ {
+  "id": "d48ba4998b",
+  "en": "Feinting Attack",
+  "name_uk": "Оманлива атака"
+ },
+ {
+  "id": "81f817ac2f",
+  "en": "Fiendish Vigor",
+  "name_uk": "Демонічна снага"
+ },
+ {
+  "id": "f8aaf1e13b",
+  "en": "Fire Rune",
+  "name_uk": "Руна вогню"
+ },
+ {
+  "id": "db5851c0cc",
+  "en": "Fist of Four Thunders",
+  "name_uk": "Кулак чотирьох громів"
+ },
+ {
+  "id": "53d4eeebb3",
+  "en": "Flames of the Phoenix",
+  "name_uk": "Полум’я фенікса"
+ },
+ {
+  "id": "a71e8378db",
+  "en": "Frost Rune",
+  "name_uk": "Руна морозу"
+ },
+ {
+  "id": "751e5f98e7",
+  "en": "Gaze of Two Minds",
+  "name_uk": "Погляд двох розумів"
+ },
+ {
+  "id": "8c2c5d231a",
+  "en": "Ghostly Gaze",
+  "name_uk": "Примарний погляд"
+ },
+ {
+  "id": "fc28eb524f",
+  "en": "Gift of the Depths",
+  "name_uk": "Дар глибин"
+ },
+ {
+  "id": "cad22127c5",
+  "en": "Gift of the Ever-Living Ones",
+  "name_uk": "Дар вічноживих"
+ },
+ {
+  "id": "6d066be8ff",
+  "en": "Gift of the Protectors",
+  "name_uk": "Дар захисників"
+ },
+ {
+  "id": "4157b7ab83",
+  "en": "Goading Attack",
+  "name_uk": "Провокаційна атака"
+ },
+ {
+  "id": "49bad1dd9c",
+  "en": "Gong of the Summit",
+  "name_uk": "Гонг вершини"
+ },
+ {
+  "id": "1eab8a7022",
+  "en": "Grappling Strike",
+  "name_uk": "Удар із захопленням"
+ },
+ {
+  "id": "470c555108",
+  "en": "Grasp of Hadar",
+  "name_uk": "Хватка Хадара"
+ },
+ {
+  "id": "e4cf9f88cb",
+  "en": "Grasping Arrow",
+  "name_uk": "Чіпка стріла"
+ },
+ {
+  "id": "df79e0268c",
+  "en": "Great Weapon Fighting",
+  "name_uk": "Бій великою зброєю"
+ },
+ {
+  "id": "1545ac5326",
+  "en": "Heightened Spell",
+  "name_uk": "Піднесене закляття"
+ },
+ {
+  "id": "f5cd5e9065",
+  "en": "Helm of Awareness",
+  "name_uk": "Шолом пильності"
+ },
+ {
+  "id": "1f4e7044c4",
+  "en": "Hill Rune",
+  "name_uk": "Руна пагорба"
+ },
+ {
+  "id": "2eef4ba240",
+  "en": "Homunculus Servant",
+  "name_uk": "Слуга-гомункул"
+ },
+ {
+  "id": "103a284e58",
+  "en": "Improved Pact Weapon",
+  "name_uk": "Покращена зброя пакту"
+ },
+ {
+  "id": "e1db8d5571",
+  "en": "Interception",
+  "name_uk": "Перехоплення"
+ },
+ {
+  "id": "8a1fae934a",
+  "en": "Investment of the Chain Master",
+  "name_uk": "Дарунок володаря ланцюга"
+ },
+ {
+  "id": "c1098774e9",
+  "en": "Lance of Lethargy",
+  "name_uk": "Спис млявості"
+ },
+ {
+  "id": "06b0991881",
+  "en": "Lifedrinker",
+  "name_uk": "Життєпивець"
+ },
+ {
+  "id": "78fd583e48",
+  "en": "Lunging Attack",
+  "name_uk": "Атака з випадом"
+ },
+ {
+  "id": "cc9e236be7",
+  "en": "Maddening Hex",
+  "name_uk": "Шаленяче прокляття"
+ },
+ {
+  "id": "b427316c54",
+  "en": "Maneuvering Attack",
+  "name_uk": "Маневрова атака"
+ },
+ {
+  "id": "4c6d06a724",
+  "en": "Mask of Many Faces",
+  "name_uk": "Маска багатьох облич"
+ },
+ {
+  "id": "936fb9ea91",
+  "en": "Master of Myriad Forms",
+  "name_uk": "Майстер незліченних форм"
+ },
+ {
+  "id": "07787cc5ca",
+  "en": "Menacing Attack",
+  "name_uk": "Загрозлива атака"
+ },
+ {
+  "id": "1b4825c4b5",
+  "en": "Mind Sharpener",
+  "name_uk": "Гострий розум"
+ },
+ {
+  "id": "47eb8f4117",
+  "en": "Minions of Chaos",
+  "name_uk": "Посіпаки хаосу"
+ },
+ {
+  "id": "84b6ebf3a7",
+  "en": "Mire the Mind",
+  "name_uk": "Трясовина розуму"
+ },
+ {
+  "id": "78a65f16e0",
+  "en": "Mist Stance",
+  "name_uk": "Стійка туману"
+ },
+ {
+  "id": "a623b897c5",
+  "en": "Misty Visions",
+  "name_uk": "Туманні видіння"
+ },
+ {
+  "id": "b6fbf97a09",
+  "en": "One with Shadows",
+  "name_uk": "Єдиний із тінями"
+ },
+ {
+  "id": "46c58ea57a",
+  "en": "Otherworldly Leap",
+  "name_uk": "Потойбічний стрибок"
+ },
+ {
+  "id": "39954aee6b",
+  "en": "Pact of the Blade",
+  "name_uk": "Пакт клинка"
+ },
+ {
+  "id": "95a2eff610",
+  "en": "Pact of the Chain",
+  "name_uk": "Пакт ланцюга"
+ },
+ {
+  "id": "21011cd3d2",
+  "en": "Pact of the Talisman",
+  "name_uk": "Пакт талісмана"
+ },
+ {
+  "id": "cb16e12492",
+  "en": "Pact of the Tome",
+  "name_uk": "Пакт фоліанта"
+ },
+ {
+  "id": "96a04bd812",
+  "en": "Parry",
+  "name_uk": "Парирування"
+ },
+ {
+  "id": "b261422e99",
+  "en": "Piercing Arrow",
+  "name_uk": "Пронизлива стріла"
+ },
+ {
+  "id": "9ff5334c23",
+  "en": "Precision Attack",
+  "name_uk": "Точна атака"
+ },
+ {
+  "id": "0f8cc4f34d",
+  "en": "Protection",
+  "name_uk": "Оборона"
+ },
+ {
+  "id": "de8113de2a",
+  "en": "Protection of the Talisman",
+  "name_uk": "Оберіг талісмана"
+ },
+ {
+  "id": "45bf63e2d6",
+  "en": "Pushing Attack",
+  "name_uk": "Штовхальна атака"
+ },
+ {
+  "id": "10bee66b39",
+  "en": "Quick Toss",
+  "name_uk": "Швидкий кидок"
+ },
+ {
+  "id": "ec915762cd",
+  "en": "Quickened Spell",
+  "name_uk": "Пришвидшене закляття"
+ },
+ {
+  "id": "e738f88733",
+  "en": "Radiant Weapon",
+  "name_uk": "Сяйна зброя"
+ },
+ {
+  "id": "9cb518b637",
+  "en": "Rally",
+  "name_uk": "Згуртування"
+ },
+ {
+  "id": "46c53cc9e0",
+  "en": "Rebuke of the Talisman",
+  "name_uk": "Відсіч талісмана"
+ },
+ {
+  "id": "d939cc2ab6",
+  "en": "Relentless Hex",
+  "name_uk": "Невідступне прокляття"
+ },
+ {
+  "id": "950e96763c",
+  "en": "Repeating Shot",
+  "name_uk": "Повторний постріл"
+ },
+ {
+  "id": "41b3eb1414",
+  "en": "Repelling Blast",
+  "name_uk": "Відкидальний постріл"
+ },
+ {
+  "id": "c6d0b39f79",
+  "en": "Replicate Magic Item",
+  "name_uk": "Відтворення магічного предмета"
+ },
+ {
+  "id": "27f8e25898",
+  "en": "Repulsion Shield",
+  "name_uk": "Щит відштовхування"
+ },
+ {
+  "id": "634c8c011a",
+  "en": "Resistant Armor",
+  "name_uk": "Стійка броня"
+ },
+ {
+  "id": "54b9372a3a",
+  "en": "Returning Weapon",
+  "name_uk": "Зброя-бумеранг"
+ },
+ {
+  "id": "a251d1a7df",
+  "en": "Ride the Wind",
+  "name_uk": "Верхи на вітрі"
+ },
+ {
+  "id": "b12208363c",
+  "en": "Riposte",
+  "name_uk": "Контратака"
+ },
+ {
+  "id": "9053981919",
+  "en": "River of Hungry Flame",
+  "name_uk": "Ріка голодного полум’я"
+ },
+ {
+  "id": "8480d546a6",
+  "en": "Rush of the Gale Spirits",
+  "name_uk": "Натиск духів бурі"
+ },
+ {
+  "id": "6f337b001a",
+  "en": "Sculptor of Flesh",
+  "name_uk": "Скульптор плоті"
+ },
+ {
+  "id": "a09699e060",
+  "en": "Seeking Arrow",
+  "name_uk": "Самонавідна стріла"
+ },
+ {
+  "id": "a37d3e6885",
+  "en": "Seeking Spell",
+  "name_uk": "Самонавідне закляття"
+ },
+ {
+  "id": "f9367c50dd",
+  "en": "Shadow Arrow",
+  "name_uk": "Тіньова стріла"
+ },
+ {
+  "id": "10068ddc32",
+  "en": "Shape the Flowing River",
+  "name_uk": "Ліпити плинну ріку"
+ },
+ {
+  "id": "c5df075dbf",
+  "en": "Shroud of Shadow",
+  "name_uk": "Савана тіні"
+ },
+ {
+  "id": "4e71d8a3dd",
+  "en": "Sign of Ill Omen",
+  "name_uk": "Знак лихої прикмети"
+ },
+ {
+  "id": "41286ca71a",
+  "en": "Spell-Refueling Ring",
+  "name_uk": "Перстень відновлення заклять"
+ },
+ {
+  "id": "c3708dad58",
+  "en": "Stone Rune",
+  "name_uk": "Руна каменю"
+ },
+ {
+  "id": "1103cf5aed",
+  "en": "Storm Rune",
+  "name_uk": "Руна бурі"
+ },
+ {
+  "id": "5903ec55a7",
+  "en": "Subtle Spell",
+  "name_uk": "Непомітне закляття"
+ },
+ {
+  "id": "576bf25c90",
+  "en": "Superior Technique",
+  "name_uk": "Вища техніка"
+ },
+ {
+  "id": "e1d6571123",
+  "en": "Sweeping Attack",
+  "name_uk": "Розмашиста атака"
+ },
+ {
+  "id": "7e662c2bdd",
+  "en": "Sweeping Cinder Strike",
+  "name_uk": "Розмашистий удар жару"
+ },
+ {
+  "id": "ac4c386c29",
+  "en": "Tactical Assessment",
+  "name_uk": "Тактична оцінка"
+ },
+ {
+  "id": "2f59f4c6de",
+  "en": "Thief of Five Fates",
+  "name_uk": "Викрадач п’яти доль"
+ },
+ {
+  "id": "41f10198b5",
+  "en": "Thirsting Blade",
+  "name_uk": "Спраглий клинок"
+ },
+ {
+  "id": "b29a2aa5d9",
+  "en": "Thrown Weapon Fighting",
+  "name_uk": "Бій метальною зброєю"
+ },
+ {
+  "id": "3833d6d644",
+  "en": "Tomb of Levistus",
+  "name_uk": "Гробниця Левістуса"
+ },
+ {
+  "id": "cbc82d86a8",
+  "en": "Transmuted Spell",
+  "name_uk": "Перетворене закляття"
+ },
+ {
+  "id": "6f8219f092",
+  "en": "Trickster's Escape",
+  "name_uk": "Втеча шахрая"
+ },
+ {
+  "id": "2e64235b8e",
+  "en": "Trip Attack",
+  "name_uk": "Атака-підсічка"
+ },
+ {
+  "id": "26e8ae6c9e",
+  "en": "Twinned Spell",
+  "name_uk": "Подвоєне закляття"
+ },
+ {
+  "id": "3706f2436e",
+  "en": "Two-Weapon Fighting",
+  "name_uk": "Бій двома зброями"
+ },
+ {
+  "id": "fb90630c6a",
+  "en": "Unarmed Fighting",
+  "name_uk": "Бій без зброї"
+ },
+ {
+  "id": "01b9e65df3",
+  "en": "Unbroken Air",
+  "name_uk": "Непорушне повітря"
+ },
+ {
+  "id": "8bcc6dcf07",
+  "en": "Undying Servitude",
+  "name_uk": "Безсмертне служіння"
+ },
+ {
+  "id": "5c2c890260",
+  "en": "Visions of Distant Realms",
+  "name_uk": "Видіння далеких світів"
+ },
+ {
+  "id": "8b0cc169a7",
+  "en": "Voice of the Chain Master",
+  "name_uk": "Голос володаря ланцюга"
+ },
+ {
+  "id": "34edafce2f",
+  "en": "Water Whip",
+  "name_uk": "Водяний батіг"
+ },
+ {
+  "id": "655f5c5d23",
+  "en": "Wave of Rolling Earth",
+  "name_uk": "Хвиля котючої землі"
+ },
+ {
+  "id": "bd717cbd99",
+  "en": "Whispers of the Grave",
+  "name_uk": "Шепіт могили"
+ },
+ {
+  "id": "90e73c0799",
+  "en": "Witch Sight",
+  "name_uk": "Відьомський зір"
+ },
+ {
+  "id": "4dcb151df9",
+  "en": "aberrations",
+  "name_uk": "Аберації"
+ },
+ {
+  "id": "8fa68a8ce5",
+  "en": "arctic",
+  "name_uk": "Арктика"
+ },
+ {
+  "id": "c761d60741",
+  "en": "beasts",
+  "name_uk": "Звірі"
+ },
+ {
+  "id": "8f334320dc",
+  "en": "celestials",
+  "name_uk": "Небожителі"
+ },
+ {
+  "id": "366eb327e2",
+  "en": "coast",
+  "name_uk": "Узбережжя"
+ },
+ {
+  "id": "affa040a22",
+  "en": "constructs",
+  "name_uk": "Конструкти"
+ },
+ {
+  "id": "2d5128d7e4",
+  "en": "desert",
+  "name_uk": "Пустеля"
+ },
+ {
+  "id": "8d057dabba",
+  "en": "dragons",
+  "name_uk": "Дракони"
+ },
+ {
+  "id": "5fe58fe829",
+  "en": "elementals",
+  "name_uk": "Елементалі"
+ },
+ {
+  "id": "dd2a3ccc62",
+  "en": "fey",
+  "name_uk": "Феї"
+ },
+ {
+  "id": "1c8c795936",
+  "en": "fiends",
+  "name_uk": "Дияволи"
+ },
+ {
+  "id": "0bcd9af79f",
+  "en": "forest",
+  "name_uk": "Ліс"
+ },
+ {
+  "id": "1fd655f2cf",
+  "en": "giants",
+  "name_uk": "Велетні"
+ },
+ {
+  "id": "3a3d1a3ec9",
+  "en": "grassland",
+  "name_uk": "Степ"
+ },
+ {
+  "id": "26edb86632",
+  "en": "humanoids (two races)",
+  "name_uk": "Гуманоїди (дві раси)"
+ },
+ {
+  "id": "56b5965f7d",
+  "en": "monstrosities",
+  "name_uk": "Монстри"
+ },
+ {
+  "id": "d79ac4a2b1",
+  "en": "mountain",
+  "name_uk": "Гори"
+ },
+ {
+  "id": "1b2e0f0d57",
+  "en": "oozes",
+  "name_uk": "Слизи"
+ },
+ {
+  "id": "f17ded9743",
+  "en": "plants",
+  "name_uk": "Рослини"
+ },
+ {
+  "id": "efaa5e4b16",
+  "en": "swamp",
+  "name_uk": "Болото"
+ },
+ {
+  "id": "44e1d91739",
+  "en": "undead",
+  "name_uk": "Нежить"
+ },
+ {
+  "id": "2d15ba2e85",
+  "en": "underdark",
+  "name_uk": "Підзем’я"
+ }
+]

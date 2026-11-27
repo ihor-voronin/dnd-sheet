@@ -571,7 +571,9 @@ def set_class_choice(
         character = _sheet_service(request).set_class_choice(
             character_id,
             body,
-            allowed=allowed_names(group, _compendium(request)),
+            allowed=allowed_names(
+                group, _compendium(request), _sheet_service(request).load(character_id)
+            ),
             expected_version=version,
         )
     except KeyError as exc:

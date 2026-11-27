@@ -152,7 +152,14 @@ export function SkillTable({
           >
             <span className="ddb-skill__abil">{ABILITY_SHORT[SKILL_ABILITY[skill]] ?? ""}</span>
             <span className="ddb-skill__dot" aria-hidden />
-            <span className="ddb-skill__name">{skillLabel(skill)}</span>
+            <span className="ddb-skill__name">
+              {skillLabel(skill)}
+              {value.disadvantage ? (
+                <span className="ddb-skill__dis" title="Броня дає заваду (disadvantage) на цю навичку">
+                  {" "}З
+                </span>
+              ) : null}
+            </span>
             <span className="ddb-skill__value">
               {render(`skill:${skill}`, value.value, `Навичка ${skillLabel(skill)}`)}
             </span>

@@ -1424,3 +1424,6 @@ textarea:focus {
   color: var(--brass);
   font-weight: 700;
 }
+
+.ddb-skill__dis { color: var(--wax); font-weight: 700; font-size: 0.8em; }
+.chip__tag { opacity: .65; font-size: .75em; }
