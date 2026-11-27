@@ -11,9 +11,31 @@ import re
 from typing import Any
 
 from dndsheet.characters.api import uk_text
+from dndsheet.characters.domain import derived_choices
 from dndsheet.characters.domain.character import Character
+from dndsheet.characters.domain.proficiencies import ProficiencyKind
 from dndsheet.compendium.application.service import CompendiumService
-from dndsheet.shared.rules import CHOICE_FEATURE_TYPES, CHOICE_FIXED_OPTIONS
+from dndsheet.shared.kernel import Skill
+from dndsheet.shared.rules import (
+    ALL_TOOLS,
+    CHOICE_FEATURE_TYPES,
+    CHOICE_FIXED_OPTIONS,
+    LANGUAGES,
+    WEAPONS,
+    DerivedChoice,
+)
+from dndsheet.sheets.domain.labels import DEMO_SKILLS, LANGUAGE_LABELS
+
+#: Класи, з яких риси беруть закляття (назви — як у глосарії).
+CLASS_UK = {
+    "artificer": "Артифіцер",
+    "bard": "Бард",
+    "cleric": "Жрець",
+    "druid": "Друїд",
+    "sorcerer": "Чародій",
+    "warlock": "Чаклун",
+    "wizard": "Маг",
+}
 
 
 #: Шар перекладу в `content/translations/` (назви й тексти за хешем оригіналу).
@@ -42,7 +64,96 @@ def missing_prerequisite(prerequisite: str | None, character: Character, class_k
     return None
 
 
+def _plain(name_en: str, name_uk: str | None = None, locked: str | None = None) -> dict[str, Any]:
+    return {"name_en": name_en, "name_uk": name_uk, "text_en": "", "prerequisite": None, "locked": locked}
+
+
+def _derived_options(
+    group_key: str, choice: DerivedChoice, compendium: CompendiumService, character: Character | None
+) -> list[dict[str, Any]]:
+    """Варіанти вибору риси чи стилю: навички, інструменти, мови, зброя, закляття."""
+    owned = character.all_proficiencies() if character is not None else None
+    chosen = set(character.class_choices.get(group_key, ())) if character is not None else set()
+
+    def lock(kind: ProficiencyKind, value: str, shown: str) -> str | None:
+        if owned is None or shown in chosen or not owned.has(kind, value):
+            return None
+        return "уже є володіння"
+
+    rows: list[dict[str, Any]] = []
+    if choice.kind in ("skill", "skill_or_tool"):
+        for skill in Skill:
+            uk, en = DEMO_SKILLS[skill]
+            rows.append(_plain(en, uk, lock(ProficiencyKind.SKILL, skill.value, en)))
+    if choice.kind in ("tool", "skill_or_tool"):
+        rows.extend(_plain(tool, None, lock(ProficiencyKind.TOOL, tool, tool)) for tool in ALL_TOOLS)
+    if choice.kind == "language":
+        rows.extend(
+            _plain(name, LANGUAGE_LABELS.get(name, (None,))[0], lock(ProficiencyKind.LANGUAGE, name, name))
+            for name in LANGUAGES
+        )
+    if choice.kind == "weapon":
+        rows.extend(_plain(name, None, lock(ProficiencyKind.WEAPON, name, name)) for name in WEAPONS)
+    if choice.kind == "fixed":
+        rows.extend(_plain(name, CLASS_UK.get(name)) for name in choice.options)
+    if choice.kind == "optional":
+        seen: dict[str, dict[str, Any]] = {}
+        for entry in compendium.optional_features(choice.feature_type):
+            prerequisite = (entry.data or {}).get("prerequisite")
+            seen.setdefault(entry.name_en.casefold(), {
+                "name_en": entry.name_en,
+                "name_uk": uk_text.name_uk(LAYER, entry.name_en),
+                "text_en": entry.text_en or "",
+                "text_uk": uk_text.text_uk(LAYER, entry.text_en or ""),
+                "prerequisite": prerequisite,
+                "source": entry.source_id,
+                # Містичний адепт (Eldritch Adept) бере лише виклики без передумов.
+                "locked": "потрібна передумова чаклуна" if prerequisite and "invocation" in choice.feature_type else None,
+            })
+        rows = sorted(seen.values(), key=lambda item: item["name_en"])
+    if choice.kind == "spell":
+        rows = _spell_options(group_key, choice, compendium, character)
+    return rows
+
+
+def _spell_options(
+    group_key: str, choice: DerivedChoice, compendium: CompendiumService, character: Character | None
+) -> list[dict[str, Any]]:
+    """Закляття для риси: зі списку класу (або будь-якого), потрібного рівня й школи."""
+    spell_class = derived_choices.spell_class_for(
+        group_key, choice, character.class_choices if character is not None else {}
+    )
+    if spell_class is None:
+        return []
+    classes = tuple(CLASS_UK) if spell_class == "*" else (spell_class,)
+    found: dict[str, Any] = {}
+    for name in classes:
+        for entry in compendium.class_spells(name, max_level=choice.spell_level).spells:
+            data = entry.data or {}
+            if entry.spell_level != choice.spell_level:
+                continue
+            if choice.schools and (entry.spell_school or "") not in choice.schools:
+                continue
+            if choice.ritual and not data.get("ritual"):
+                continue
+            found.setdefault(entry.name_en.casefold(), entry)
+    return [
+        {
+            "name_en": entry.name_en,
+            "name_uk": uk_text.name_uk("spells", entry.name_en),
+            "text_en": entry.text_en or "",
+            "prerequisite": None,
+            "locked": None,
+            "school": entry.spell_school,
+        }
+        for entry in sorted(found.values(), key=lambda item: item.name_en)
+    ]
+
+
 def _options(group_key: str, compendium: CompendiumService, character: Character | None = None) -> list[dict[str, Any]]:
+    derived = character.derived_choice_groups.get(group_key) if character is not None else None
+    if derived is not None:
+        return _derived_options(group_key, derived, compendium, character)
     class_key, _, group = group_key.partition(":")
     if group in CHOICE_FIXED_OPTIONS:
         return [
@@ -74,14 +185,35 @@ def allowed_names(group_key: str, compendium: CompendiumService, character: Char
 
 def class_choices_payload(character: Character, compendium: CompendiumService) -> list[dict[str, Any]]:
     """Групи, які дали рівні: скільки можна, що обрано і з чого обирати."""
-    return [
-        {
-            "key": key,
-            "class_key": key.partition(":")[0],
-            "group": key.partition(":")[2],
-            "slots": slots,
-            "chosen": list(character.class_choices.get(key, ())),
-            "options": _options(key, compendium, character),
-        }
-        for key, slots in sorted(character.class_choice_slots.items())
-    ]
+    rows = []
+    # Спершу вибори класу (за ключем), далі риси й стилі — у порядку правил:
+    # «Клас заклять» Учня магії раніше за його заговори.
+    derived_order = list(character.derived_choice_groups)
+    slots_by_key = character.class_choice_slots
+    ordered = sorted(
+        slots_by_key.items(),
+        key=lambda pair: (1, derived_order.index(pair[0]), "") if pair[0] in derived_order else (0, 0, pair[0]),
+    )
+    for key, slots in ordered:
+        kind, owner, group = derived_choices.split_key(key)
+        derived = kind in ("feat", "style")
+        rows.append(
+            {
+                "key": key,
+                "class_key": key.partition(":")[0],
+                "group": group if derived else key.partition(":")[2],
+                # Хто дав вибір: риса чи бойовий стиль (для підпису на листі).
+                "origin": {"kind": kind, "key": owner, "name_uk": _owner_uk(kind, owner)} if derived else None,
+                "slots": slots,
+                "chosen": list(character.active_class_choices.get(key, ())),
+                "options": _options(key, compendium, character),
+            }
+        )
+    return rows
+
+
+def _owner_uk(kind: str, owner: str) -> str:
+    """Підпис джерела вибору: «Умілий (Skilled)», «Благословенний воїн (Blessed Warrior)»."""
+    name_en = owner.replace("-", " ").title()
+    layer = "feats" if kind == "feat" else LAYER
+    return uk_text.with_english(name_en, uk_text.name_uk(layer, name_en))

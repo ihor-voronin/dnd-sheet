@@ -55,6 +55,8 @@ from dndsheet.export.application.registry import RendererRegistry
 from dndsheet.export.domain.renderer import RenderOptions, RendererError, RendererUnavailable
 from dndsheet.sheets.application.build_document import build_sheet_document
 from dndsheet.shared.errors import ConflictError, DomainError, NotFoundError
+from dndsheet.shared.kernel import Ability
+from dndsheet.shared.rules import feat_ability_options
 
 router = APIRouter(prefix="/api/v1/characters", tags=["characters"])
 
@@ -119,7 +121,30 @@ def _sheet_payload(request: Request, character) -> dict:  # noqa: ANN001 — Cha
         getattr(request.app.state, "background_cache", {}),
     )
     payload["class_choices"] = class_choices_payload(character, compendium)
+    # Варіантна людина й власна лінія: риса на 1 рівні (PHB, p. 31; TCoE, p. 8).
+    payload["species_feat"] = (
+        {
+            "chosen": character.species_feat,
+            "ability": (
+                character.feat_abilities[character.species_feat].value
+                if character.species_feat in character.feat_abilities
+                else None
+            ),
+            "feat_abilities": _feat_ability_map(compendium),
+        }
+        if character.grants_species_feat
+        else None
+    )
     return payload
+
+
+def _feat_ability_map(compendium: CompendiumService) -> dict[str, list[str]]:
+    """Риси з +1 до характеристики: id → можливі характеристики."""
+    return {
+        entry.id: [ability.value for ability in options]
+        for entry in compendium.feats()
+        if (options := feat_ability_options(entry.text_en or ""))
+    }
 
 
 def _render(request: Request, document, render_format: str, options: RenderOptions) -> Response:  # noqa: ANN001
@@ -584,6 +609,39 @@ def set_class_choice(
         )
     except KeyError as exc:
         raise HTTPException(status_code=422, detail=f"невідома група {group!r}") from exc
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.post("/{character_id}/species-feat")
+def set_species_feat(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Риса виду: `{"feat_key": "phb-2014/feat/alert", "feat_ability": "dex", "version": N}`."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    feat_key = str(body.get("feat_key") or "").strip().casefold()
+    compendium = _compendium(request)
+    entry = next((item for item in compendium.feats() if item.id.casefold() == feat_key), None)
+    if entry is None:
+        raise HTTPException(status_code=422, detail=f"невідома риса {feat_key!r}")
+    options = feat_ability_options(entry.text_en or "")
+    raw_ability = body.get("feat_ability")
+    ability = None
+    if options:
+        try:
+            ability = Ability(str(raw_ability)) if raw_ability else options[0]
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=f"невідома характеристика {raw_ability!r}") from exc
+        if ability not in options:
+            raise HTTPException(status_code=422, detail=f"{entry.name_en}: {ability.value} не підвищується цією рисою")
+    try:
+        character = _sheet_service(request).set_species_feat(
+            character_id, feat_key, ability, expected_version=version
+        )
     except DomainError as exc:
         raise _http_error(exc) from exc
     return {"sheet": _sheet_payload(request, character), "version": character.version}

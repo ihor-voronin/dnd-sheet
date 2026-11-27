@@ -267,9 +267,12 @@ export interface SheetSpell {
   entry_id: string | null;
   prepared: boolean;
   always_prepared: boolean;
+  /** class | species | subclass | feat | fighting-style | invocation */
   source: string;
   /** Власне закляття: у довіднику його немає, текст дав гравець. */
   custom?: boolean;
+  /** Як чарується поза класом або що змінює виклик (Болісний розряд). */
+  note?: string;
   /** Короткі дані з довідника — для вкладки «Дії». */
   casting_time?: string;
   range?: string;
@@ -513,13 +516,20 @@ export interface SheetViewPayload {
   expertise?: { slots: number; chosen: string[]; options: string[] };
   /** Бойовий стиль, втаємничення, метамагія, прийоми… (ключ «клас:група»). */
   class_choices?: ClassChoiceGroup[];
-  armor_class: { value: number; parts: { label: string; value: number }[] };
+  armor_class: { value: number; parts: { label: string; value: number }[]; notes?: string[] };
+  /** Риса виду на 1 рівні (варіантна людина, власна лінія); null — вид не дає. */
+  species_feat?: {
+    chosen: string | null;
+    ability: string | null;
+    feat_abilities: Record<string, string[]>;
+  } | null;
   initiative: number;
   speed: number;
   passive_perception: number;
   passive_investigation?: number;
   passive_insight?: number;
   darkvision: number;
+  blindsight?: number;
   resistances: string[];
   hit_points: {
     maximum: number;
@@ -563,6 +573,8 @@ export interface SheetViewPayload {
     ability: string;
     notes: string;
     equipped: boolean;
+    /** weapon — зброя з інвентаря; unarmed — удар без зброї й природна зброя; spell — Shillelagh. */
+    kind?: "weapon" | "unarmed" | "spell";
   }[];
   attacks_per_action: number;
   proficiencies: { kind: string; value: string; source: { kind: string; key: string } }[];
@@ -722,6 +734,8 @@ export type ClassChoiceGroup = {
   key: string;
   class_key: string;
   group: string;
+  /** Хто дав вибір, якщо не клас: риса чи бойовий стиль. */
+  origin?: { kind: "feat" | "style"; key: string; name_uk: string } | null;
   slots: number;
   chosen: string[];
   options: {
@@ -733,5 +747,6 @@ export type ClassChoiceGroup = {
     source?: string;
     /** Чого бракує (рівня, дару угоди, закляття); null — доступно. */
     locked?: string | null;
+    school?: string | null;
   }[];
 };

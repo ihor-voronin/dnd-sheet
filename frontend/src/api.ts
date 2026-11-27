@@ -275,6 +275,19 @@ export function setCharacterClassChoice(
   });
 }
 
+/** Риса виду на 1 рівні (варіантна людина, власна лінія). */
+export function setCharacterSpeciesFeat(
+  id: string,
+  featKey: string,
+  featAbility: string | null,
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/species-feat`, {
+    method: "POST",
+    body: JSON.stringify({ feat_key: featKey, feat_ability: featAbility, version }),
+  });
+}
+
 // --- інвентар -------------------------------------------------------------
 
 export interface ItemBody {

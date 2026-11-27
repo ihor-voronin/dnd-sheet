@@ -127,6 +127,8 @@ SOURCE_KIND_LABELS: dict[str, tuple[str, str]] = {
     "class": ("клас", "class"),
     "species": ("вид", "species"),
     "background": ("передісторія", "background"),
+    "feat": ("риса", "feat"),
+    "item": ("предмет", "item"),
     "manual": ("вручну", "manual"),
 }
 
@@ -173,6 +175,9 @@ SPELL_SOURCE_LABELS: dict[str, tuple[str, str]] = {
     "class": ("від класу", "class"),
     "species": ("від виду", "species"),
     "subclass": ("від підкласу", "subclass"),
+    "feat": ("від риси", "feat"),
+    "fighting-style": ("від бойового стилю", "fighting style"),
+    "invocation": ("від виклику", "invocation"),
 }
 
 

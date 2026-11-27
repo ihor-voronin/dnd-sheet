@@ -15,8 +15,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Mapping
 
 from dndsheet.shared.kernel import Ability
+from dndsheet.shared.rules import die_size
 
 #: Властивості, які змінюють вибір здібності (рядок із довідника, нижній регістр).
 FINESSE = "finesse"
@@ -52,8 +54,16 @@ def attack_profile(
     dexterity_modifier: int,
     proficiency: int,
     proficient: bool = True,
+    alternatives: Mapping[Ability, int] | None = None,
+    min_die: str | None = None,
 ) -> AttackProfile | None:
-    """Порахувати атаку; `None`, якщо в довіднику немає кубика урону."""
+    """Порахувати атаку; `None`, якщо в довіднику немає кубика урону.
+
+    `alternatives` — інші характеристики, якими вміння дозволяють бити
+    (чернець — Спритність, хексблейд — Харизма, Shillelagh — Мудрість):
+    береться краща. `min_die` — кістка, яку вміння ставить замість меншої
+    (бойові мистецтва ченця, Shillelagh d8).
+    """
     if not profile.damage:
         return None
     dice, _, damage_type = profile.damage.partition(" ")
@@ -73,6 +83,11 @@ def attack_profile(
     else:
         ability = Ability.STR
     modifier = strength_modifier if ability is Ability.STR else dexterity_modifier
+    for other, value in (alternatives or {}).items():
+        if value > modifier:
+            ability, modifier = other, value
+    if min_die and die_size(min_die) > die_size(dice):
+        dice = min_die
     damage = dice + (f"{modifier:+d}" if modifier else "")
     if damage_type:
         damage = f"{damage} {damage_type}"

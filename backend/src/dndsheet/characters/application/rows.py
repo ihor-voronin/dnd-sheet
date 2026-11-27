@@ -20,7 +20,17 @@ from dndsheet.characters.domain.proficiencies import ProficiencyKind, Proficienc
 from dndsheet.characters.domain.services.derived_stats import ComputedSheet
 
 #: Звідки взялося закляття: від класу (вибір гравця), виду або підкласу.
-SpellSource = Literal["class", "species", "subclass"]
+SpellSource = Literal["class", "species", "subclass", "feat", "fighting-style", "invocation"]
+
+#: Як чарується закляття поза класом — українською для листа й PDF.
+USAGE_UK = {
+    "at will": "за бажанням, без комірки",
+    "1/long rest": "раз на тривалий відпочинок без комірки",
+    "1/short rest": "раз на короткий відпочинок без комірки",
+    "ritual only": "лише як ритуал",
+    "no slot": "без комірки",
+    "invisible": "рука невидима",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +44,8 @@ class SpellRow:
     #: Власне закляття: довідник його не знає, тому й опис — від гравця.
     custom: bool = False
     description: str | None = None
+    #: Примітка: як чарується (від виклику, риси) або що змінює (Болісний розряд).
+    note: str = ""
 
     @property
     def is_cantrip(self) -> bool:
@@ -85,6 +97,29 @@ def feature_rows(character: Character) -> tuple[FeatureRow, ...]:
     return tuple(items)
 
 
+#: Характеристика чарування в примітці до закляття поза класом.
+_ABILITY_UK = {
+    "str": "Сила",
+    "dex": "Спритність",
+    "con": "Статура",
+    "int": "Інтелект",
+    "wis": "Мудрість",
+    "cha": "Харизма",
+}
+
+
+def _casting_note(ability, computed: ComputedSheet) -> str:  # noqa: ANN001 — Ability | None
+    """«Інтелект: КС 11, атака +3» — для заклять від рис, стилів і викликів."""
+    if ability is None:
+        return ""
+    modifier = computed.ability_modifiers[ability]
+    dc = 8 + computed.proficiency_bonus + modifier
+    return f"{_ABILITY_UK[ability.value]}: КС {dc}, атака {computed.proficiency_bonus + modifier:+d}"
+
+
+_GRANTED_SOURCES = ("species", "subclass", "feat", "fighting-style", "invocation")
+
+
 def spell_rows(character: Character, computed: ComputedSheet) -> tuple[SpellRow, ...]:
     """Закляття персонажа: класові (вибір гравця) + надані видом і підкласом."""
     rows: list[SpellRow] = [
@@ -97,6 +132,7 @@ def spell_rows(character: Character, computed: ComputedSheet) -> tuple[SpellRow,
             source="class",
             custom=spell.custom,
             description=spell.description,
+            note=computed.spell_notes.get(spell.name_en.casefold(), ""),
         )
         for spell in character.spells
     ]
@@ -114,7 +150,17 @@ def spell_rows(character: Character, computed: ComputedSheet) -> tuple[SpellRow,
                 class_key=None,
                 prepared=granted.prepared,
                 always_prepared=granted.prepared,
-                source="species" if granted.source == "species" else "subclass",
+                source=granted.source if granted.source in _GRANTED_SOURCES else "subclass",
+                note="; ".join(
+                    filter(
+                        None,
+                        [
+                            USAGE_UK.get(granted.usage, granted.usage),
+                            _casting_note(granted.ability, computed),
+                            computed.spell_notes.get(granted.name_en.casefold()),
+                        ],
+                    )
+                ),
             )
         )
     return tuple(rows)

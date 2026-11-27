@@ -961,3 +961,295 @@ def armor_dex_cap(armor: Any) -> int | None:
 MUSICAL_INSTRUMENTS = (
     "bagpipes", "drum", "dulcimer", "flute", "horn", "lute", "lyre", "pan flute", "shawm", "viol",
 )
+
+
+# ---------------------------------------------------------------------------
+# вибори рис і бойових стилів (PHB, p. 165–170; TCoE, p. 22, 41, 79; XGtE, p. 73)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class DerivedChoice:
+    """Що треба обрати, коли взято рису чи стиль: «3 навички або інструменти».
+
+    `kind` каже, з чого обирати: skill, tool, skill_or_tool, language, weapon,
+    expertise, spell, fixed (готовий перелік `options`) або optional (записи
+    `optionalfeature` типу `feature_type`).
+    """
+
+    group: str
+    count: int
+    kind: str
+    spell_level: int = 0
+    schools: tuple[str, ...] = ()
+    #: Клас списку заклять; `None` — клас із вибору «Spell Class» тієї ж риси,
+    #: «*» — будь-який клас.
+    spell_class: str | None = None
+    ritual: bool = False
+    options: tuple[str, ...] = ()
+    feature_type: str = ""
+
+
+#: Класи, з яких Magic Initiate і Ritual Caster беруть закляття.
+FEAT_SPELL_CLASSES = ("bard", "cleric", "druid", "sorcerer", "warlock", "wizard")
+
+#: Інструменти ремісника (PHB, p. 154) — Artificer Initiate обирає один.
+ARTISAN_TOOLS = (
+    "alchemist's supplies", "brewer's supplies", "calligrapher's supplies", "carpenter's tools",
+    "cartographer's tools", "cobbler's tools", "cook's utensils", "glassblower's tools",
+    "jeweler's tools", "leatherworker's tools", "mason's tools", "painter's supplies",
+    "potter's tools", "smith's tools", "tinker's tools", "weaver's tools", "woodcarver's tools",
+)
+
+#: Усі інструменти, якими можна володіти (PHB, p. 154–155).
+ALL_TOOLS = ARTISAN_TOOLS + (
+    "disguise kit", "forgery kit", "herbalism kit", "navigator's tools", "poisoner's kit",
+    "thieves' tools", "vehicles (land)", "vehicles (water)",
+    "dice set", "dragonchess set", "playing card set", "three-dragon ante set",
+) + MUSICAL_INSTRUMENTS
+
+#: Стандартні й екзотичні мови (PHB, p. 123).
+LANGUAGES = (
+    "common", "dwarvish", "elvish", "giant", "gnomish", "goblin", "halfling", "orc",
+    "abyssal", "celestial", "draconic", "deep speech", "infernal", "primordial", "sylvan", "undercommon",
+)
+
+#: Проста й воєнна зброя (PHB, p. 149) — Weapon Master обирає чотири.
+WEAPONS = (
+    "club", "dagger", "greatclub", "handaxe", "javelin", "light hammer", "mace", "quarterstaff",
+    "sickle", "spear", "light crossbow", "dart", "shortbow", "sling",
+    "battleaxe", "flail", "glaive", "greataxe", "greatsword", "halberd", "lance", "longsword", "maul",
+    "morningstar", "pike", "rapier", "scimitar", "shortsword", "trident", "war pick", "warhammer", "whip",
+    "blowgun", "hand crossbow", "heavy crossbow", "longbow", "net",
+)
+
+_SPELL_CLASS = DerivedChoice("Spell Class", 1, "fixed", options=FEAT_SPELL_CLASSES)
+
+#: Риса (останній сегмент ключа) → вибори, які вона дає.
+FEAT_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
+    "skilled": (DerivedChoice("Skills or Tools", 3, "skill_or_tool"),),
+    "skill-expert": (DerivedChoice("Skill", 1, "skill"), DerivedChoice("Expertise", 1, "expertise")),
+    "prodigy": (
+        DerivedChoice("Skill", 1, "skill"),
+        DerivedChoice("Tool", 1, "tool"),
+        DerivedChoice("Language", 1, "language"),
+        DerivedChoice("Expertise", 1, "expertise"),
+    ),
+    "linguist": (DerivedChoice("Languages", 3, "language"),),
+    "weapon-master": (DerivedChoice("Weapons", 4, "weapon"),),
+    "magic-initiate": (
+        _SPELL_CLASS,
+        DerivedChoice("Cantrips", 2, "spell", spell_level=0),
+        DerivedChoice("1st-level Spell", 1, "spell", spell_level=1),
+    ),
+    "ritual-caster": (
+        _SPELL_CLASS,
+        DerivedChoice("Rituals", 2, "spell", spell_level=1, ritual=True),
+    ),
+    "elemental-adept": (
+        DerivedChoice("Damage Type", 1, "fixed", options=("acid", "cold", "fire", "lightning", "thunder")),
+    ),
+    "martial-adept": (DerivedChoice("Maneuvers", 2, "optional", feature_type="maneuver (battle master)"),),
+    "eldritch-adept": (DerivedChoice("Eldritch Invocations", 1, "optional", feature_type="eldritch invocation"),),
+    "metamagic-adept": (DerivedChoice("Metamagic", 2, "optional", feature_type="metamagic"),),
+    "fighting-initiate": (
+        DerivedChoice("Fighting Style", 1, "optional", feature_type="fighting style (fighter)"),
+    ),
+    "fey-touched": (
+        DerivedChoice(
+            "1st-level Spell", 1, "spell", spell_level=1, schools=("divination", "enchantment"), spell_class="*"
+        ),
+    ),
+    "shadow-touched": (
+        DerivedChoice(
+            "1st-level Spell", 1, "spell", spell_level=1, schools=("illusion", "necromancy"), spell_class="*"
+        ),
+    ),
+    "artificer-initiate": (
+        DerivedChoice("Cantrip", 1, "spell", spell_level=0, spell_class="artificer"),
+        DerivedChoice("1st-level Spell", 1, "spell", spell_level=1, spell_class="artificer"),
+        DerivedChoice("Tool", 1, "fixed", options=ARTISAN_TOOLS),
+    ),
+    "wood-elf-magic": (DerivedChoice("Cantrip", 1, "spell", spell_level=0, spell_class="druid"),),
+}
+
+#: Бойовий стиль → вибори (TCoE, p. 41): заговори жерця чи друїда, маневр.
+STYLE_CHOICES: Mapping[str, tuple[DerivedChoice, ...]] = {
+    "blessed warrior": (DerivedChoice("Cantrips", 2, "spell", spell_level=0, spell_class="cleric"),),
+    "druidic warrior": (DerivedChoice("Cantrips", 2, "spell", spell_level=0, spell_class="druid"),),
+    "superior technique": (
+        DerivedChoice("Maneuvers", 1, "optional", feature_type="maneuver (battle master)"),
+    ),
+}
+
+#: Закляття, які риса дає без вибору: (назва, рівень, як чарується).
+FEAT_SPELLS: Mapping[str, tuple[tuple[str, int, str], ...]] = {
+    "fey-touched": (("Misty Step", 2, "1/long rest"),),
+    "shadow-touched": (("Invisibility", 2, "1/long rest"),),
+    "telekinetic": (("Mage Hand", 0, "invisible"),),
+    "telepathic": (("Detect Thoughts", 2, "1/long rest"),),
+    "drow-high-magic": (
+        ("Detect Magic", 1, "at will"),
+        ("Levitate", 2, "1/long rest"),
+        ("Dispel Magic", 3, "1/long rest"),
+    ),
+    "wood-elf-magic": (("Longstrider", 1, "1/long rest"), ("Pass without Trace", 2, "1/long rest")),
+    "fey-teleportation": (("Misty Step", 2, "1/short rest"),),
+}
+
+#: Як чаруються закляття 1+ рівня з вибору риси (Magic Initiate: 1/тривалий відпочинок).
+FEAT_CHOICE_SPELL_NOTE: Mapping[str, str] = {
+    "magic-initiate": "1/long rest",
+    "fey-touched": "1/long rest",
+    "shadow-touched": "1/long rest",
+    "artificer-initiate": "1/long rest",
+    "ritual-caster": "ritual only",
+}
+
+#: Володіння, які риса дає без вибору: (вид, значення).
+FEAT_PROFICIENCIES: Mapping[str, tuple[tuple[str, str], ...]] = {
+    "lightly-armored": (("armor", "light"),),
+    "moderately-armored": (("armor", "medium"), ("armor", "shield")),
+    "heavily-armored": (("armor", "heavy"),),
+    "tavern-brawler": (("weapon", "improvised weapons"),),
+    "chef": (("tool", "cook's utensils"),),
+    "poisoner": (("tool", "poisoner's kit"),),
+    "gunner": (("weapon", "firearms"),),
+    "fey-teleportation": (("language", "sylvan"),),
+}
+
+#: Володіння від підкласу (останній сегмент ключа) без вибору: (вид, значення).
+#: Хексблейд — Hex Warrior (XGtE, p. 55); домени — Bonus Proficiency (PHB, p. 60–63).
+SUBCLASS_PROFICIENCIES: Mapping[str, tuple[tuple[str, str], ...]] = {
+    "the-hexblade": (("armor", "medium"), ("armor", "shield"), ("weapon", "martial")),
+    "life-domain": (("armor", "heavy"),),
+    "nature-domain": (("armor", "heavy"),),
+    "tempest-domain": (("armor", "heavy"), ("weapon", "martial")),
+    "war-domain": (("armor", "heavy"), ("weapon", "martial")),
+    "death-domain": (("weapon", "martial"),),
+    "forge-domain": (("armor", "heavy"), ("tool", "smith's tools")),
+    "order-domain": (("armor", "heavy"),),
+    "twilight-domain": (("armor", "heavy"), ("weapon", "martial")),
+    "college-of-valor": (("armor", "medium"), ("armor", "shield"), ("weapon", "martial")),
+    "college-of-swords": (("armor", "medium"), ("weapon", "scimitar")),
+    "battle-smith": (("weapon", "martial"), ("tool", "smith's tools")),
+    "armorer": (("armor", "heavy"), ("tool", "smith's tools")),
+    "bladesinging": (("armor", "light"), ("skill", "performance")),
+    "assassin": (("tool", "disguise kit"), ("tool", "poisoner's kit")),
+}
+
+#: Види, що дають рису на 1 рівні (PHB, p. 31; TCoE, p. 8).
+SPECIES_WITH_FEAT = frozenset({"variant human", "custom lineage"})
+
+
+# ---------------------------------------------------------------------------
+# містичні виклики (PHB, p. 110; XGtE, p. 56; TCoE, p. 70)
+# ---------------------------------------------------------------------------
+
+#: Виклик → закляття, яке він дає: (назва, рівень, як чарується).
+INVOCATION_SPELLS: Mapping[str, tuple[str, int, str]] = {
+    "armor of shadows": ("Mage Armor", 1, "at will"),
+    "ascendant step": ("Levitate", 2, "at will"),
+    "beast speech": ("Speak with Animals", 1, "at will"),
+    "bewitching whispers": ("Compulsion", 4, "1/long rest"),
+    "chains of carceri": ("Hold Monster", 5, "at will"),
+    "dreadful word": ("Confusion", 4, "1/long rest"),
+    "eldritch sight": ("Detect Magic", 1, "at will"),
+    "fiendish vigor": ("False Life", 1, "at will"),
+    "mask of many faces": ("Disguise Self", 1, "at will"),
+    "master of myriad forms": ("Alter Self", 2, "at will"),
+    "minions of chaos": ("Conjure Elemental", 5, "1/long rest"),
+    "mire the mind": ("Slow", 3, "1/long rest"),
+    "misty visions": ("Silent Image", 1, "at will"),
+    "otherworldly leap": ("Jump", 1, "at will"),
+    "sculptor of flesh": ("Polymorph", 4, "1/long rest"),
+    "sign of ill omen": ("Bestow Curse", 3, "1/long rest"),
+    "thief of five fates": ("Bane", 1, "1/long rest"),
+    "visions of distant realms": ("Arcane Eye", 4, "at will"),
+    "whispers of the grave": ("Speak with Dead", 3, "at will"),
+    "shroud of shadow": ("Invisibility", 2, "at will"),
+    "trickster's escape": ("Freedom of Movement", 4, "1/long rest"),
+    "gift of the depths": ("Water Breathing", 3, "1/long rest"),
+    "far scribe": ("Sending", 3, "no slot"),
+    "undying servitude": ("Animate Dead", 3, "1/long rest"),
+}
+
+#: Виклики, що змінюють Містичний розряд (Eldritch Blast): назва → примітка.
+ELDRITCH_BLAST_INVOCATIONS: Mapping[str, str] = {
+    "agonizing blast": "agonizing",
+    "eldritch spear": "range 300 feet",
+    "repelling blast": "push 10 feet",
+    "grasp of hadar": "pull 10 feet (1/turn)",
+    "lance of lethargy": "speed −10 feet (1/turn)",
+}
+
+
+# ---------------------------------------------------------------------------
+# природна зброя видів і удар без зброї (PHB, p. 195; VGtM; MPMM; MOoT; VRGR)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class NaturalWeapon:
+    """Природна зброя виду: нею б'ють як ударом без зброї, але з кубиком."""
+
+    name_en: str
+    die: str
+    damage_type: str
+    #: Кубик у Monsters of the Multiverse, якщо вид звідти.
+    die_mpmm: str | None = None
+    ability: Ability = Ability.STR
+    note: str = ""
+
+
+#: Ключ виду або підвиду → природна зброя.
+NATURAL_WEAPONS: Mapping[str, NaturalWeapon] = {
+    "tabaxi": NaturalWeapon("Cat's Claws", "1d4", "slashing", die_mpmm="1d6"),
+    "aarakocra": NaturalWeapon("Talons", "1d4", "slashing", die_mpmm="1d6"),
+    "lizardfolk": NaturalWeapon("Bite", "1d6", "piercing"),
+    "minotaur": NaturalWeapon("Horns", "1d6", "piercing"),
+    "leonin": NaturalWeapon("Claws", "1d4", "slashing"),
+    "tortle": NaturalWeapon("Claws", "1d4", "slashing", die_mpmm="1d6"),
+    "centaur": NaturalWeapon("Hooves", "1d4", "bludgeoning", die_mpmm="1d6"),
+    "satyr": NaturalWeapon("Ram", "1d4", "bludgeoning", die_mpmm="1d6"),
+    "dhampir": NaturalWeapon("Vampiric Bite", "1d4", "piercing", ability=Ability.CON),
+    "longtooth shifter": NaturalWeapon("Fangs", "1d6", "piercing", note="shifted only"),
+}
+
+#: Кістка бойових мистецтв ченця за рівнем (PHB, p. 76).
+MARTIAL_ARTS_DIE = ((17, "1d10"), (11, "1d8"), (5, "1d6"), (1, "1d4"))
+
+
+def martial_arts_die(monk_level: int) -> str | None:
+    """Кістка бойових мистецтв або `None`, якщо ченця немає."""
+    if monk_level <= 0:
+        return None
+    return next(die for level, die in MARTIAL_ARTS_DIE if monk_level >= level)
+
+
+def die_size(dice: str) -> int:
+    """Подвоєне середнє кидка, щоб порівнювати «1d6» і «2d4»; «1» → 2."""
+    match = re.fullmatch(r"(\d+)d(\d+)", dice.strip())
+    if match is None:
+        return int(dice) * 2 if dice.strip().isdigit() else 0
+    return int(match.group(1)) * (int(match.group(2)) + 1)
+
+
+def is_monk_weapon(name_en: str, properties: str, group: str) -> bool:
+    """Зброя ченця (PHB, p. 76): короткий меч і проста ближня без two-handed/heavy."""
+    folded = properties.casefold()
+    name = name_en.strip().casefold()
+    if "shortsword" in name:
+        return True
+    if "two-handed" in folded or "heavy" in folded:
+        return False
+    if group:
+        return group.casefold().startswith("simple melee")
+    # Без групи (власний предмет, запис іншої книги) — за назвою.
+    return "greatclub" not in name and any(base in name for base in _SIMPLE_MELEE_ONE_HANDED)
+
+
+#: Проста зброя ближнього бою без two-handed і heavy (PHB, p. 149).
+_SIMPLE_MELEE_ONE_HANDED = (
+    "club", "dagger", "handaxe", "javelin", "light hammer", "mace", "quarterstaff", "sickle", "spear",
+)

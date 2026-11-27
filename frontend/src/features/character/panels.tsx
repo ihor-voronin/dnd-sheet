@@ -263,6 +263,15 @@ export function CastingBlock({
   );
 }
 
+/** Звідки закляття, якщо не з класу. */
+const SPELL_SOURCE_TAGS: Record<string, string> = {
+  species: "від виду",
+  subclass: "від підкласу",
+  feat: "від риси",
+  "fighting-style": "від бойового стилю",
+  invocation: "від виклику",
+};
+
 export function SpellsKnownList({
   spells,
   onRemove,
@@ -316,10 +325,8 @@ export function SpellsKnownList({
                         ) : spell.prepared ? (
                           <span className="spell-tag">підготовлене</span>
                         ) : null}
-                        {spell.source === "species" ? (
-                          <span className="spell-tag">від виду</span>
-                        ) : spell.source === "subclass" ? (
-                          <span className="spell-tag">від підкласу</span>
+                        {SPELL_SOURCE_TAGS[spell.source] ? (
+                          <span className="spell-tag">{SPELL_SOURCE_TAGS[spell.source]}</span>
                         ) : null}
                       </span>
                       <span className="spell__chevron" aria-hidden>
@@ -342,6 +349,7 @@ export function SpellsKnownList({
                       ) : null}
                     </summary>
                     <div className="spell__body">
+                      {spell.note ? <p className="spell__note">{spell.note}</p> : null}
                       {meta.length ? <p className="spell__meta">{meta.join(" · ")}</p> : null}
                       {spell.components ? (
                         <p className="spell__components">Компоненти: {componentsLabel(spell.components)}</p>

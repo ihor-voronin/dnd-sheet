@@ -553,3 +553,120 @@ def test_only_three_items_can_be_attuned(client: TestClient) -> None:
         json={"fields": {"attuned": True}},
     )
     assert again.status_code == 200, "звільнене місце знову доступне"
+
+
+def _create_variant_human(client: TestClient) -> str:
+    draft_id = client.post("/api/v1/characters/wizard").json()["draft"]["id"]
+    steps = [
+        ("species", {"name": "Ліна", "species_key": "human", "subspecies_key": "variant human", "ability_choices": ["str", "con"]}),
+        ("class", {"class_key": "fighter"}),
+        ("abilities", {"method": "standard_array", "scores": {"str": 15, "dex": 14, "con": 13, "int": 12, "wis": 10, "cha": 8}}),
+        (
+            "background",
+            {
+                "background_key": "soldier",
+                "picks": [
+                    {"kind": "skill", "value": "acrobatics", "source": {"kind": "class", "key": "fighter"}},
+                    {"kind": "skill", "value": "perception", "source": {"kind": "class", "key": "fighter"}},
+                    {"kind": "skill", "value": "stealth", "source": {"kind": "species", "key": "variant human"}},
+                ],
+            },
+        ),
+    ]
+    for step, body in steps:
+        response = client.put(f"/api/v1/characters/wizard/{draft_id}/steps/{step}", json=body)
+        assert response.status_code == 200, f"{step}: {response.text}"
+    finished = client.post(f"/api/v1/characters/wizard/{draft_id}/finish")
+    assert finished.status_code == 200, finished.text
+    return finished.json()["character_id"]
+
+
+def test_variant_human_species_feat_and_feat_choices(client: TestClient) -> None:
+    """Варіантна людина бере рису на листі; вибір риси діє на володіння (PHB, p. 31, 170)."""
+    character_id = _create_variant_human(client)
+    sheet = client.get(f"/api/v1/characters/{character_id}").json()["sheet"]
+    assert sheet["species_feat"] == {"chosen": None, "ability": None, "feat_abilities": sheet["species_feat"]["feat_abilities"]}
+    assert any(row["kind"] == "unarmed" for row in sheet["attacks"]), "удар без зброї — із сервера"
+
+    wrong = client.post(f"/api/v1/characters/{character_id}/species-feat", json={"feat_key": "phb-2014/feat/nope"})
+    assert wrong.status_code == 422
+    taken = client.post(f"/api/v1/characters/{character_id}/species-feat", json={"feat_key": "phb-2014/feat/skilled"})
+    assert taken.status_code == 200, taken.text
+    sheet = taken.json()["sheet"]
+    assert sheet["species_feat"]["chosen"] == "phb-2014/feat/skilled"
+    group = next(item for item in sheet["class_choices"] if item["key"] == "feat:skilled:Skills or Tools")
+    assert group["slots"] == 3 and group["origin"]["kind"] == "feat"
+    stealth = next(option for option in group["options"] if option["name_en"] == "Stealth")
+    assert stealth["locked"], "Скритність уже є від виду — повторно не обрати"
+
+    chosen = client.post(
+        f"/api/v1/characters/{character_id}/class-choices",
+        json={"group": "feat:skilled:Skills or Tools", "values": ["Arcana", "History", "thieves' tools"]},
+    )
+    assert chosen.status_code == 200, chosen.text
+    sheet = chosen.json()["sheet"]
+    assert sheet["skills"]["arcana"]["proficient"] and sheet["skills"]["history"]["proficient"]
+    assert any(row["kind"] == "tool" and row["value"] == "thieves' tools" for row in sheet["proficiencies"])
+
+    # Варіантна людина з Resilient: +1 і рятівний кидок обраної характеристики.
+    swapped = client.post(
+        f"/api/v1/characters/{character_id}/species-feat",
+        json={"feat_key": "phb-2014/feat/resilient", "feat_ability": "wis"},
+    )
+    assert swapped.status_code == 200, swapped.text
+    sheet = swapped.json()["sheet"]
+    assert sheet["saving_throws"]["wis"]["proficient"]
+    assert not sheet["skills"]["arcana"]["proficient"], "вибори попередньої риси прибрано"
+
+
+def _create_simple(client: TestClient, species: str, klass: str, skills: list[str]) -> str:
+    draft_id = client.post("/api/v1/characters/wizard").json()["draft"]["id"]
+    steps = [
+        ("species", {"name": "Кіт", "species_key": species}),
+        ("class", {"class_key": klass}),
+        ("abilities", {"method": "standard_array", "scores": {"str": 13, "dex": 15, "con": 12, "int": 8, "wis": 14, "cha": 10}}),
+        (
+            "background",
+            {
+                "background_key": "hermit",
+                "picks": [{"kind": "skill", "value": v, "source": {"kind": "class", "key": klass}} for v in skills],
+            },
+        ),
+    ]
+    for step, body in steps:
+        response = client.put(f"/api/v1/characters/wizard/{draft_id}/steps/{step}", json=body)
+        assert response.status_code == 200, f"{step}: {response.text}"
+    finished = client.post(f"/api/v1/characters/wizard/{draft_id}/finish")
+    assert finished.status_code == 200, finished.text
+    return finished.json()["character_id"]
+
+
+def _level(client: TestClient, character_id: str, class_key: str, **extra) -> dict:
+    sheet = client.get(f"/api/v1/characters/{character_id}").json()["sheet"]
+    body = {"class_key": class_key, "version": sheet["character"]["version"], **extra}
+    response = client.post(f"/api/v1/characters/{character_id}/level-up", json=body)
+    assert response.status_code == 200, response.text
+    return response.json()["sheet"]
+
+
+def test_tabaxi_monk_claws_grow_with_martial_arts(client: TestClient) -> None:
+    """Кігті табаксі — удар без зброї: кістка бойових мистецтв і Спритність (PHB, p. 78; VGtM, p. 115)."""
+    character_id = _create_simple(client, "tabaxi", "monk", ["acrobatics", "stealth"])
+    sheet = client.get(f"/api/v1/characters/{character_id}").json()["sheet"]
+    claws = next(row for row in sheet["attacks"] if row["name_en"] == "Cat's Claws")
+    assert (claws["damage"], claws["ability"]) == ("1d4+3 slashing", "dex")
+    _level(client, character_id, "monk")
+    _level(client, character_id, "monk", subclass_key="phb-2014/subclass/way-of-the-open-hand")
+    _level(client, character_id, "monk", ability_increases={"dex": 2})
+    sheet = _level(client, character_id, "monk")
+    claws = next(row for row in sheet["attacks"] if row["name_en"] == "Cat's Claws")
+    assert (claws["damage"], claws["attack_bonus"]) == ("1d6+4 slashing", 3 + 4)
+    assert sheet["speed"] == 40 and sheet["attacks_per_action"] == 2
+
+
+def test_lizardfolk_bite_keeps_larger_die_after_monk_multiclass(client: TestClient) -> None:
+    character_id = _create_simple(client, "lizardfolk", "fighter", ["athletics", "survival"])
+    sheet = _level(client, character_id, "monk")
+    rows = {row["name_en"]: row for row in sheet["attacks"]}
+    assert rows["Bite"]["damage"].startswith("1d6"), "укус d6 більший за d4 бойових мистецтв 1 рівня"
+    assert rows["Unarmed Strike"]["damage"].startswith("1d4")

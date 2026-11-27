@@ -1697,6 +1697,14 @@ body.board {
   line-height: 1.4;
 }
 
+/* Як чарується поза класом або що змінює виклик (Болісний розряд). */
+.spell__note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
 .spell__components {
   margin: 3px 0 0;
   color: var(--ddb-dim);

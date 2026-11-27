@@ -23,6 +23,7 @@ from dndsheet.characters.domain.services.rest import RestReport, RestService
 from dndsheet.characters.domain.spells import KnownSpell
 from dndsheet.characters.domain.state import DeathSaves
 from dndsheet.shared.errors import ConflictError, NotFoundError, ValidationError
+from dndsheet.shared.kernel import Ability
 
 
 @dataclass(slots=True)
@@ -271,6 +272,20 @@ class SheetService:
         if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
             raise ValidationError("values має бути списком назв")
         character.set_class_choice(str(payload.get("group")), raw, allowed)
+        self.characters.save(character)
+        return character
+
+    def set_species_feat(
+        self,
+        character_id: str,
+        feat_key: str,
+        feat_ability: Ability | None,
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        """Риса виду на 1 рівні (варіантна людина, власна лінія)."""
+        character = self._load_versioned(character_id, expected_version)
+        character.set_species_feat(feat_key, feat_ability)
         self.characters.save(character)
         return character
 

@@ -22,6 +22,7 @@ import {
   patchCharacter,
   prepareCharacterSpells,
   setCharacterClassChoice,
+  setCharacterSpeciesFeat,
   setCharacterExpertise,
   removeCharacterItem,
   removeCharacterSpell,
@@ -55,7 +56,7 @@ import { InventoryPanel } from "./inventory";
 import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
 import { BackgroundPanel } from "./background";
-import { ClassChoices } from "./classChoices";
+import { ClassChoices, SpeciesFeat } from "./classChoices";
 import { ExpertisePicker } from "./expertise";
 import { ActionPanel } from "./actions";
 import { AddSpellForm, SpellsPreparePanel } from "./spells";
@@ -101,6 +102,9 @@ function partLabel(raw: string): string {
   if (roll) return `${roll[1]} рівень: кидок ${roll[2]}`;
   const average = raw.match(/^level-(\d+)-average: (d\d+)$/);
   if (average) return `${average[1]} рівень: середнє ${average[2]}`;
+  if (raw === "mage-armor") return "Чарівна броня (Mage Armor)";
+  if (raw === "dragon-hide") return "Драконяча шкура (Dragon Hide)";
+  if (raw === "draconic-resilience") return "Драконяча стійкість (Draconic Resilience)";
   if (raw.startsWith("unarmored-defense:")) {
     return `безбронний захист (${abilityLabel(raw.split(":")[1])})`;
   }
@@ -466,13 +470,22 @@ export function CharacterView({
               />
             </>
           ) : null}
-          {sheet.class_choices?.length ? (
+          {sheet.class_choices?.length || sheet.species_feat ? (
             <>
               <h3 className="ddb-work__title">
-                <span>Вибори класу</span>
+                <span>Вибори класу й рис</span>
               </h3>
+              {sheet.species_feat ? (
+                <SpeciesFeat
+                  value={sheet.species_feat}
+                  busy={busy}
+                  onSave={(featKey, ability) =>
+                    run(setCharacterSpeciesFeat(id, featKey, ability, versionRef.current))
+                  }
+                />
+              ) : null}
               <ClassChoices
-                groups={sheet.class_choices}
+                groups={sheet.class_choices ?? []}
                 busy={busy}
                 onSave={(group, values) =>
                   run(setCharacterClassChoice(id, group, values, versionRef.current))
@@ -671,6 +684,12 @@ export function CharacterView({
                 <span className="ddb-rows__label">Темний зір</span>
                 <span>{sheet.darkvision ? `${sheet.darkvision} фт` : "—"}</span>
               </li>
+              {sheet.blindsight ? (
+                <li>
+                  <span className="ddb-rows__label">Сліпе чуття</span>
+                  <span>{sheet.blindsight} фт</span>
+                </li>
+              ) : null}
               <li>
                 <span className="ddb-rows__label">Швидкість</span>
                 <span>{sheet.speed} фт</span>
@@ -709,9 +728,12 @@ export function CharacterView({
               label="Клас захисту"
               value={overrideNumber("armor_class", sheet.armor_class.value, "Клас захисту")}
               note="КЗ"
-              title={partList(sheet.armor_class.parts)}
+              title={[partList(sheet.armor_class.parts), ...(sheet.armor_class.notes ?? [])].join("\n")}
             />
           </div>
+          {sheet.armor_class.notes?.length ? (
+            <p className="hint">{sheet.armor_class.notes.join("; ")}</p>
+          ) : null}
 
           <section className="ddb-card">
             <h2 className="ddb-card__title">

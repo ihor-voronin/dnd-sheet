@@ -4,10 +4,14 @@
  * рівнів класу й підкласу, варіанти — з довідника. Тут лише вибір і збереження.
  */
 
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import type { ClassChoiceGroup } from "../wizard/types";
-import { withEnglish } from "./uk";
+import { fetchFeats } from "../../api";
+import { ABILITY_LABELS, DAMAGE_TYPE_LABELS, LANGUAGE_LABELS, TOOL_LABELS } from "../../labels";
+import type { ClassChoiceGroup, SheetViewPayload } from "../wizard/types";
+import { FeatPicker } from "./LevelUp";
+import { featLabel, itemLabel, withEnglish } from "./uk";
 
 const GROUP_LABELS: Record<string, string> = {
   "Fighting Style": "Бойовий стиль",
@@ -19,13 +23,49 @@ const GROUP_LABELS: Record<string, string> = {
   "Favored Enemy": "Улюблений ворог",
   "Natural Explorer": "Природжений дослідник",
   "Circle Terrain": "Місцевість кола",
+  // вибори рис і бойових стилів
+  "Skills or Tools": "Навички або інструменти",
+  Skill: "Навичка",
+  Tool: "Інструмент",
+  Language: "Мова",
+  Languages: "Мови",
+  Weapons: "Зброя",
+  "Spell Class": "Клас заклять",
+  Cantrips: "Заговори",
+  Cantrip: "Заговір",
+  "1st-level Spell": "Закляття 1 рівня",
+  Rituals: "Ритуали",
+  "Damage Type": "Тип урону",
+};
+
+/** Класи, з яких риси беруть закляття. */
+const CLASS_LABELS: Record<string, string> = {
+  artificer: "Артифіцер",
+  bard: "Бард",
+  cleric: "Жрець",
+  druid: "Друїд",
+  sorcerer: "Чародій",
+  warlock: "Чаклун",
+  wizard: "Маг",
 };
 
 /** Книги поза PHB: опційні варіанти, ведучий може їх не дозволяти. */
 const SOURCE_TAGS: Record<string, string> = { tcoe: "TCoE", xgte: "XGtE" };
 
 type Option = ClassChoiceGroup["options"][number];
-const optionLabel = (option: Option) => withEnglish(option.name_en, option.name_uk);
+/** Назва варіанта: переклад із сервера, далі словники інтерфейсу (інструменти, мови, зброя). */
+const optionLabel = (option: Option) => {
+  if (option.name_uk) return withEnglish(option.name_en, option.name_uk);
+  const key = option.name_en.toLowerCase();
+  const local = TOOL_LABELS[key] ?? LANGUAGE_LABELS[key] ?? DAMAGE_TYPE_LABELS[key] ?? CLASS_LABELS[key];
+  return local ? withEnglish(option.name_en, local) : itemLabel(option.name_en);
+};
+
+/** Підпис групи: «Бойовий стиль», а для риси — «Умілий (Skilled): Навички або інструменти». */
+function groupLabel(group: ClassChoiceGroup): string {
+  const label = withEnglish(group.group, GROUP_LABELS[group.group]);
+  return group.origin ? `${group.origin.name_uk}: ${label}` : label;
+}
 
 function ChoiceGroup({
   group,
@@ -42,7 +82,7 @@ function ChoiceGroup({
 
   const pending = group.slots - group.chosen.length;
   const dirty = picked.join("|") !== group.chosen.join("|");
-  const label = withEnglish(group.group, GROUP_LABELS[group.group]);
+  const label = groupLabel(group);
   const text = new Map(group.options.map((option) => [option.name_en, option]));
 
   function toggle(value: string) {
@@ -71,11 +111,15 @@ function ChoiceGroup({
       </p>
       {pending > 0 ? (
         <p className="hint hint--warn">
-          Рівні класу дають ще {pending} на вибір. Наведіть на варіант, щоб прочитати опис;
-          сірі варіанти потребують передумови (рівня, дару угоди чи закляття).
+          {group.origin ? (group.origin.kind === "feat" ? "Риса дає" : "Бойовий стиль дає") : "Рівні класу дають"}{" "}
+          ще {pending} на вибір. Наведіть на варіант, щоб прочитати опис; сірі варіанти
+          потребують передумови або вже є у персонажа.
         </p>
       ) : null}
-      {open ? (
+      {open && !group.options.length ? (
+        <p className="hint">Спершу оберіть клас заклять цієї риси — тоді тут з’явиться його список.</p>
+      ) : null}
+      {open && group.options.length ? (
         <>
           <div className="chip-row">
             {group.options.map((option) => (
@@ -152,5 +196,95 @@ export function ClassChoices({
         <ChoiceGroup key={group.key} group={group} busy={busy} onSave={onSave} />
       ))}
     </>
+  );
+}
+
+/** Риса виду на 1 рівні: варіантна людина й власна лінія (PHB, p. 31; TCoE, p. 8). */
+export function SpeciesFeat({
+  value,
+  busy,
+  onSave,
+}: {
+  value: NonNullable<SheetViewPayload["species_feat"]>;
+  busy: boolean;
+  onSave: (featKey: string, ability: string | null) => Promise<unknown>;
+}) {
+  const [open, setOpen] = useState(!value.chosen);
+  const [featId, setFeatId] = useState<string | null>(value.chosen);
+  const [ability, setAbility] = useState<string | null>(value.ability);
+  const feats = useQuery({ queryKey: ["feats"], queryFn: fetchFeats, enabled: open || Boolean(value.chosen) });
+  useEffect(() => {
+    setFeatId(value.chosen);
+    setAbility(value.ability);
+  }, [value.chosen, value.ability]);
+
+  const chosenName = (() => {
+    if (!value.chosen) return null;
+    const entry = feats.data?.find((feat) => feat.id === value.chosen);
+    return entry ? withEnglish(entry.name_en, entry.name_uk ?? featLabel(entry.name_en)) : value.chosen;
+  })();
+  const abilities = featId ? value.feat_abilities[featId] ?? [] : [];
+
+  return (
+    <div className={`expertise${value.chosen ? "" : " expertise--pending"}`}>
+      <p className="expertise__head">
+        Риса виду: {chosenName ?? "не обрано"}
+        {value.ability ? ` (+1 ${ABILITY_LABELS[value.ability] ?? value.ability})` : ""}
+        {!open ? (
+          <>
+            {" "}
+            <button type="button" className="link-button" onClick={() => setOpen(true)}>
+              змінити
+            </button>
+          </>
+        ) : null}
+      </p>
+      {!value.chosen ? (
+        <p className="hint hint--warn">
+          Варіантна людина й власна лінія беруть рису на 1 рівні. Вибори риси (навички, закляття)
+          з’являться нижче, щойно її оберете.
+        </p>
+      ) : null}
+      {open ? (
+        <>
+          {feats.isPending ? <p className="meta">Читаємо риси…</p> : null}
+          <FeatPicker
+            feats={feats.data ?? []}
+            value={featId}
+            onChange={(id) => {
+              setFeatId(id);
+              setAbility(value.feat_abilities[id]?.[0] ?? null);
+            }}
+          />
+          {abilities.length > 1 ? (
+            <label className="field">
+              <span>Риса дає +1 до характеристики — оберіть яку</span>
+              <select className="select" value={ability ?? ""} onChange={(event) => setAbility(event.target.value)}>
+                {abilities.map((code) => (
+                  <option key={code} value={code}>
+                    {ABILITY_LABELS[code] ?? code}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <div className="inline-row">
+            <button
+              type="button"
+              className="button button--primary"
+              disabled={busy || !featId || (featId === value.chosen && ability === value.ability)}
+              onClick={() => featId && void onSave(featId, abilities.length ? ability : null).then(() => setOpen(false))}
+            >
+              Зберегти рису
+            </button>
+            {value.chosen ? (
+              <button type="button" className="link-button" onClick={() => setOpen(false)}>
+                Скасувати
+              </button>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+    </div>
   );
 }

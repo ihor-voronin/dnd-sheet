@@ -42,7 +42,13 @@ from dndsheet.shared.kernel import (
     Skill,
     proficiency_bonus,
 )
-from dndsheet.shared.rules import ClassMechanics, armor_category, armor_dex_cap
+from dndsheet.characters.domain import derived_choices
+from dndsheet.shared.rules import (
+    ELDRITCH_BLAST_INVOCATIONS,
+    ClassMechanics,
+    armor_category,
+    armor_dex_cap,
+)
 
 SHIELD_AC_BONUS = 2
 UNARMORED_BASE = 10
@@ -72,8 +78,12 @@ class GrantedSpellView:
 
     name_en: str
     spell_level: int
-    source: str  # "species" | "subclass"
+    source: str  # "species" | "subclass" | "feat" | "fighting-style" | "invocation"
     prepared: bool = False
+    #: Як чарується поза класом: «at will», «1/long rest», «ritual only».
+    usage: str = ""
+    #: Характеристика чарування поза класом (Учень магії — клас риси).
+    ability: Ability | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +131,12 @@ class ComputedSheet:
     passive_insight: int = 10
     #: Вдягнене без володіння (PHB, p. 144): завада на СИЛ/СПР і заборона чарувати.
     armor_untrained: tuple[str, ...] = ()
+    #: Сліпе чуття (Blind Fighting, TCoE, p. 41), фути.
+    blindsight: int = 0
+    #: КЗ, що діє лише за умови (Пісня клинка): готові рядки для листа.
+    armor_class_notes: tuple[str, ...] = ()
+    #: Примітки до заклять за назвою (нижній регістр): виклики Містичного розряду.
+    spell_notes: dict[str, str] = field(default_factory=dict)
 
     # --- зручні похідні для рендерів --------------------------------------
 
@@ -275,7 +291,10 @@ class DerivedStatsCalculator:
             spellcasting=spellcasting,
             granted_spells=self._granted_spells(character),
             proficiencies=proficiencies,
-            darkvision=species.darkvision if species is not None else 0,
+            darkvision=self._darkvision(character, species),
+            blindsight=10 if character.has_class_choice("blind fighting") else 0,
+            armor_class_notes=self._armor_class_notes(character, modifiers_map),
+            spell_notes=self._spell_notes(character, modifiers_map),
             resistances=species.resistances if species is not None else (),
             carrying_capacity=strength * CARRY_PER_STRENGTH,
             carried_weight=character.inventory.total_weight,
@@ -315,6 +334,9 @@ class DerivedStatsCalculator:
             parts.append(ArmorClassPart(label=f"armor:{armor.name_en}", value=armor.armor_base))
             # Межа — за категорією броні: предмет із власного спорядження може не мати dex_cap.
             cap = armor_dex_cap(armor)
+            # Medium Armor Master: до +3 Спритності в середній броні (PHB, p. 168).
+            if cap == 2 and "medium-armor-master" in {derived_choices.feat_slug(f) for f in character.feats}:
+                cap = 3
             capped = dexterity if cap is None else min(dexterity, cap)
             if capped:
                 parts.append(ArmorClassPart(label="dexterity", value=capped))
@@ -353,6 +375,22 @@ class DerivedStatsCalculator:
                             ArmorClassPart(label="dexterity", value=dexterity),
                         ]
                     )
+            # Броня тіней (Armor of Shadows): Обладунок мага за бажанням — 13 + СПР
+            # (PHB, p. 110, 256); риса Dragon Hide — 13 + СПР (XGtE, p. 74).
+            if any(name.casefold() == "armor of shadows" for name in character.invocations):
+                options.append(
+                    [
+                        ArmorClassPart(label="mage-armor", value=13),
+                        ArmorClassPart(label="dexterity", value=dexterity),
+                    ]
+                )
+            if "dragon-hide" in {derived_choices.feat_slug(feat) for feat in character.feats}:
+                options.append(
+                    [
+                        ArmorClassPart(label="dragon-hide", value=13),
+                        ArmorClassPart(label="dexterity", value=dexterity),
+                    ]
+                )
             best = max(options, key=lambda option: sum(part.value for part in option))
             parts.extend(part for part in best if part.value or part.label != "dexterity")
         if character.inventory.worn_shield is not None:
@@ -361,6 +399,44 @@ class DerivedStatsCalculator:
         if bonus:
             parts.append(ArmorClassPart(label="bonus", value=bonus))
         return sum(part.value for part in parts), tuple(parts)
+
+    @staticmethod
+    def _darkvision(character: Character, species) -> int:  # noqa: ANN001 — SpeciesMechanics | None
+        """Темний зір виду; Диявольський зір (Devil's Sight) — 120 фт (PHB, p. 110)."""
+        base = species.darkvision if species is not None else 0
+        if any(name.casefold() == "devil's sight" for name in character.invocations):
+            return max(base, 120)
+        return base
+
+    @staticmethod
+    def _armor_class_notes(character: Character, modifiers: dict[Ability, int]) -> tuple[str, ...]:
+        """КЗ, що діє лише за умови: Клинкова пісня (TCoE, p. 76), Бойовий стиль «Захист»…"""
+        notes: list[str] = []
+        for entry in character.classes:
+            if entry.class_key == "wizard" and (entry.subclass_key or "").endswith("bladesinging"):
+                bonus = max(1, modifiers[Ability.INT])
+                notes.append(
+                    f"Клинкова пісня (Bladesong): +{bonus} до КЗ (Інтелект), поки діє — без середньої й "
+                    "важкої броні та щита"
+                )
+        return tuple(notes)
+
+    @staticmethod
+    def _spell_notes(character: Character, modifiers: dict[Ability, int]) -> dict[str, str]:
+        """Примітки до заклять: Містичний розряд з викликами (PHB, p. 110)."""
+        notes: list[str] = []
+        charisma = modifiers[Ability.CHA]
+        labels = {
+            "agonizing blast": f"Болісний розряд (Agonizing Blast): {charisma:+d} до урону кожного променя",
+            "eldritch spear": "Містичний спис (Eldritch Spear): дальність 300 фт",
+            "repelling blast": "Відштовхувальний розряд (Repelling Blast): відштовхує на 10 фт",
+            "grasp of hadar": "Хватка Хадара (Grasp of Hadar): притягує на 10 фт раз на хід",
+            "lance of lethargy": "Спис млявості (Lance of Lethargy): −10 фт швидкості раз на хід",
+        }
+        for name in character.invocations:
+            if name.casefold() in ELDRITCH_BLAST_INVOCATIONS:
+                notes.append(labels[name.casefold()])
+        return {"eldritch blast": "; ".join(notes)} if notes else {}
 
     @staticmethod
     def _hit_points(
@@ -421,6 +497,10 @@ class DerivedStatsCalculator:
                     )
             for name in character.spell_choices:
                 views.append(GrantedSpellView(name_en=name, spell_level=0, source="species"))
+        for name, level, source, usage, ability in derived_choices.granted_spells(character):
+            views.append(
+                GrantedSpellView(name_en=name, spell_level=level, source=source, usage=usage, ability=ability)
+            )
         for entry, definition in character.class_entries():
             spells = definition.subclass_spells_for(entry.subclass_key)
             if spells is None:

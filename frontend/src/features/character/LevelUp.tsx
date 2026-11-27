@@ -629,8 +629,9 @@ export function LevelUpWizard({
                       </label>
                     ) : null}
                     <p className="hint">
-                      +1 до характеристики, Tough, Alert, Mobile, Observant і Resilient лист
-                      рахує сам. Інші ефекти рис (переваги, нові дії) — текстом в «Уміннях».
+                      +1 до характеристики, Tough, Alert, Mobile, Observant, Resilient і броню рис
+                      лист рахує сам. Якщо риса дає вибір (навички, закляття, маневри), його буде
+                      запропоновано на листі в «Уміннях → Вибори класу й рис».
                     </p>
                   </div>
                 )}
@@ -933,7 +934,7 @@ function planPreview(plan: LevelUpPlan): string {
 }
 
 /** Риси: пошук, книга, вимоги й текст на розгортання. */
-function FeatPicker({
+export function FeatPicker({
   feats,
   value,
   onChange,

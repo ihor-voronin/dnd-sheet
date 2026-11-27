@@ -71,6 +71,7 @@ def computed_sheet(
         "armor_class": {
             "value": computed.armor_class,
             "parts": [{"label": part.label, "value": part.value} for part in computed.armor_class_parts],
+            "notes": list(computed.armor_class_notes),
         },
         "initiative": computed.initiative,
         "speed": computed.speed,
@@ -78,6 +79,7 @@ def computed_sheet(
         "passive_investigation": computed.passive_investigation,
         "passive_insight": computed.passive_insight,
         "darkvision": computed.darkvision,
+        "blindsight": computed.blindsight,
         "resistances": list(computed.resistances),
         "hit_points": {
             "maximum": computed.hit_points.maximum,
@@ -264,6 +266,7 @@ def spells(character: Character, computed: ComputedSheet) -> list[dict[str, Any]
             # Текст власного закляття йде як опис; книжковим його допише
             # довідник (див. `spell_meta.enrich_spells`).
             "description": row.description,
+            "note": row.note,
         }
         for row in spell_rows(character, computed)
     ]

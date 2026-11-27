@@ -23,7 +23,33 @@ import {
   spellLabel,
   weaponDamage,
   weaponNotes,
+  withEnglish,
 } from "./uk";
+
+/** Удар без зброї й природна зброя видів: назви з сервера англійською. */
+const UNARMED_LABELS: Record<string, string> = {
+  "Unarmed Strike": "Удар без зброї",
+  "Cat's Claws": "Котячі кігті",
+  Talons: "Пазурі",
+  Bite: "Укус",
+  Horns: "Роги",
+  Claws: "Кігті",
+  Hooves: "Копита",
+  Ram: "Таран",
+  "Vampiric Bite": "Вампірський укус",
+  Fangs: "Ікла",
+};
+
+function attackName(attack: SheetViewPayload["attacks"][number]): string {
+  if (attack.kind === "unarmed") return withEnglish(attack.name_en, UNARMED_LABELS[attack.name_en]);
+  const shillelagh = attack.name_en.match(/^(.*) \(Shillelagh\)$/);
+  if (shillelagh) return `${itemLabel(shillelagh[1])} — Дубинка (Shillelagh)`;
+  return itemLabel(attack.name_en);
+}
+
+const UNARMED_HINT =
+  "Можна вдарити, захопити ціль або штовхнути її на 5 фт чи збити з ніг. Для захвату й " +
+  "штовханини ціль рятується СИЛ або СПР (КС 8 + бонус майстерності + СИЛ).";
 
 type ActionType = "action" | "bonus" | "reaction" | "other";
 type Filter = "all" | "attack" | ActionType | "limited";
@@ -160,39 +186,41 @@ function availableSpells(sheet: SheetViewPayload): SheetSpell[] {
 function buildRows(sheet: SheetViewPayload): ActionRow[] {
   const rows: ActionRow[] = [];
   for (const [index, attack] of sheet.attacks.entries()) {
+    const unarmed = attack.kind === "unarmed";
     rows.push({
       id: `weapon-${index}`,
-      name: itemLabel(attack.name_en),
-      typeLabel: "Зброя",
+      name: attackName(attack),
+      typeLabel: unarmed ? "Удар" : attack.kind === "spell" ? "Закляття" : "Зброя",
       range: rangeLabel(attack.range) || "—",
       hit: modifierLabel(attack.attack_bonus),
       damage: weaponDamage(attack.damage),
-      notes: weaponNotes(attack.notes),
+      notes: unarmed
+        ? [attack.notes, attack.name_en === "Unarmed Strike" ? "захват або штовханина: рятунок СИЛ/СПР" : ""]
+            .filter(Boolean)
+            .join(", ")
+        : weaponNotes(attack.notes),
       actionType: "action",
       attack: true,
+      description: unarmed && attack.name_en === "Unarmed Strike" ? UNARMED_HINT : undefined,
     });
   }
 
-  const strength = sheet.abilities.str?.modifier ?? 0;
-  const unarmedDamage =
-    strength === 0
-      ? "1 дробляча"
-      : `1 ${strength > 0 ? "+" : "−"} ${Math.abs(strength)} дробляча`;
-  rows.push({
-    id: "unarmed",
-    name: "Удар без зброї",
-    typeLabel: "Дія",
-    range: "5 фт",
-    hit: modifierLabel(strength + sheet.proficiency_bonus),
-    damage: unarmedDamage,
-    notes: "захват або штовханина: рятунок СИЛ/СПР",
-    actionType: "action",
-    attack: true,
-    description:
-      "Можна вдарити (1 + модифікатор СИЛИ дроблячого урону), захопити ціль або " +
-      "штовхнути її на 5 фт чи збити з ніг. Для захвату й штовханини ціль " +
-      "рятується СИЛ або СПР (КС 8 + бонус майстерності + СИЛ).",
-  });
+  // Старий сервер без рядка удару — рахуємо самі, як раніше.
+  if (!sheet.attacks.some((attack) => attack.kind === "unarmed")) {
+    const strength = sheet.abilities.str?.modifier ?? 0;
+    rows.push({
+      id: "unarmed",
+      name: "Удар без зброї",
+      typeLabel: "Удар",
+      range: "5 фт",
+      hit: modifierLabel(strength + sheet.proficiency_bonus),
+      damage: strength === 0 ? "1 дробляча" : `1 ${strength > 0 ? "+" : "−"} ${Math.abs(strength)} дробляча`,
+      notes: "захват або штовханина: рятунок СИЛ/СПР",
+      actionType: "action",
+      attack: true,
+      description: UNARMED_HINT,
+    });
+  }
 
   const casters = sheet.spellcasting.classes;
   for (const spell of availableSpells(sheet)) {
@@ -276,7 +304,10 @@ export function ActionPanel({
           Атак за дію: <strong>{sheet.attacks_per_action}</strong>
         </span>
         <span className="action-panel__source">
-          {sheet.attacks.length ? `${sheet.attacks.length} зброї` : "зброї немає"}
+          {(() => {
+            const weapons = sheet.attacks.filter((attack) => (attack.kind ?? "weapon") === "weapon").length;
+            return weapons ? `${weapons} зброї` : "зброї немає";
+          })()}
         </span>
       </div>
 

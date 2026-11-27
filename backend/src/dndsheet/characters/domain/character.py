@@ -19,6 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Any, Iterable, Mapping
 
+from dndsheet.characters.domain import derived_choices
 from dndsheet.characters.domain.class_level import CharacterClass, MulticlassWaiver
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem
 from dndsheet.characters.domain.pick_rules import is_choice_label, validate_pick
@@ -45,8 +46,10 @@ from dndsheet.shared.kernel import MAX_LEVEL, Ability, AbilityScore, Money, Skil
 #: Ключ експертизи для злодійських інструментів (плут, PHB p. 96).
 THIEVES_TOOLS = "thieves' tools"
 from dndsheet.shared.rules import (
+    SPECIES_WITH_FEAT,
     BackgroundMechanics,
     ClassMechanics,
+    DerivedChoice,
     SpeciesMechanics,
     ability_bonus_totals,
     ability_spread,
@@ -95,7 +98,10 @@ class Character:
     #: Риса → характеристика, яку вона підвищила на 1 (Actor, Resilient…).
     feat_abilities: dict[str, Ability] = field(default_factory=dict)
     #: Вибори класу «клас:група» → назви: {"fighter:Fighting Style": ("Defense",)}.
+    #: Тут же вибори рис і стилів: «feat:skilled:Skills or Tools» (див. `derived_choices`).
     class_choices: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    #: Риса виду на 1 рівні (варіантна людина, власна лінія) — ключ із `feats`.
+    species_feat: str | None = None
     #: Скільки разів гравець уже взяв покращення характеристик або рису.
     #: Їх дають рівні з рисою «Ability Score Improvement», тож кількість
     #: використаних мусить бути не більшою за кількість таких рівнів.
@@ -206,11 +212,15 @@ class Character:
         Рахується з умінь класу, як і покращення характеристик: плут має його
         на 1 і 6 рівнях, бард — на 3 і 10.
         """
-        return 2 * sum(
+        from_classes = 2 * sum(
             1
             for entry, definition in self.class_entries()
             for feature in definition.features_at(entry.level)
             if feature.name_en == "Expertise"
+        )
+        # Skill Expert, Prodigy — ще одна експертиза (TCoE, p. 79; XGtE, p. 74).
+        return from_classes + sum(
+            derived_choices.FEAT_EXPERTISE.get(derived_choices.feat_slug(feat), 0) for feat in self.feats
         )
 
     def expertise_options(self) -> tuple[str, ...]:
@@ -230,14 +240,73 @@ class Character:
         return tuple(options)
 
     @property
+    def derived_choice_groups(self) -> dict[str, DerivedChoice]:
+        """Вибори, які дали риси й бойові стилі (див. `derived_choices`)."""
+        return derived_choices.derived_groups(self.feats, self.class_choices)
+
+    @property
     def class_choice_slots(self) -> dict[str, int]:
-        """Скільки бойових стилів, втаємничень, прийомів… дали рівні."""
-        return class_choice_slots(self.class_entries())
+        """Скільки бойових стилів, втаємничень, прийомів… дали рівні, риси й стилі."""
+        slots = class_choice_slots(self.class_entries())
+        for key, choice in self.derived_choice_groups.items():
+            slots[key] = slots.get(key, 0) + choice.count
+        return slots
+
+    @property
+    def active_class_choices(self) -> dict[str, tuple[str, ...]]:
+        """Лише ті вибори, які ще дають рівні чи риси: прибрана риса не діє."""
+        slots = self.class_choice_slots
+        return {key: values[: slots[key]] for key, values in self.class_choices.items() if key in slots}
+
+    @property
+    def invocations(self) -> tuple[str, ...]:
+        """Обрані містичні виклики — класом чаклуна чи рисою «Містичний адепт»."""
+        return tuple(
+            value
+            for key, values in self.active_class_choices.items()
+            if key.endswith(":Eldritch Invocations")
+            for value in values
+        )
 
     def has_class_choice(self, name: str) -> bool:
         """Чи обрано варіант (без регістру): `has_class_choice("archery")`."""
         wanted = name.casefold()
-        return any(value.casefold() == wanted for values in self.class_choices.values() for value in values)
+        return any(
+            value.casefold() == wanted for values in self.active_class_choices.values() for value in values
+        )
+
+    @property
+    def grants_species_feat(self) -> bool:
+        """Варіантна людина й власна лінія беруть рису на 1 рівні (PHB, p. 31; TCoE, p. 8)."""
+        return any(
+            (key or "").casefold() in SPECIES_WITH_FEAT for key in (self.species_key, self.subspecies_key)
+        )
+
+    def set_species_feat(self, feat_key: str, feat_ability: Ability | None = None) -> None:
+        """Обрати чи замінити рису виду; вибори попередньої риси прибираються."""
+        if not self.grants_species_feat:
+            raise ValidationError("вид персонажа не дає риси на 1 рівні")
+        key = feat_key.strip().casefold()
+        if not key:
+            raise ValidationError("риса без ключа")
+        old = self.species_feat
+        if key != old and key in self.feats:
+            raise ValidationError("цю рису персонаж уже має")
+        feats = tuple(feat for feat in self.feats if feat != old)
+        abilities = {name: value for name, value in self.feat_abilities.items() if name != old}
+        choices = dict(self.class_choices)
+        if old and old != key:
+            prefix = f"{derived_choices.FEAT_PREFIX}{derived_choices.feat_slug(old)}:"
+            choices = {name: values for name, values in choices.items() if not name.startswith(prefix)}
+        self.feats = feats + (key,)
+        if feat_ability is not None:
+            abilities[key] = feat_ability
+        self.feat_abilities = abilities
+        self.class_choices = choices
+        self.species_feat = key
+        # Експертиза від попередньої риси (Skill Expert) більше не дана.
+        self.expertise = self.expertise[: self.expertise_slots]
+        self.bump_version()
 
     def set_class_choice(self, group_key: str, values: Iterable[str], allowed: Iterable[str]) -> None:
         """Обрати варіанти групи; `allowed` — назви з довідника або книги."""
@@ -254,7 +323,15 @@ class Character:
                 chosen.append(value)
         if len(chosen) > slots:
             raise ValidationError(f"{group_key}: можна обрати {slots}, надіслано {len(chosen)}")
-        self.class_choices = {**self.class_choices, group_key: tuple(chosen)}
+        updated = {**self.class_choices, group_key: tuple(chosen)}
+        # Інший клас «Учня магії» — інший список: обрані з попереднього закляття скидаються.
+        if group_key.endswith(":Spell Class") and tuple(chosen) != self.class_choices.get(group_key, ()):
+            prefix = group_key.rsplit(":", 1)[0] + ":"
+            groups = self.derived_choice_groups
+            for key in list(updated):
+                if key.startswith(prefix) and key in groups and groups[key].kind == "spell":
+                    updated.pop(key)
+        self.class_choices = updated
         self.bump_version()
 
     def set_expertise(self, values: Iterable[str]) -> None:
@@ -633,6 +710,8 @@ class Character:
             for feat, ability in self.feat_abilities.items()
             if feat.rsplit("/", 1)[-1] == "resilient"
         )
+        # Риси (броня, обрані навички, інструменти, мови, зброя) і виклики.
+        items.extend(derived_choices.feat_proficiencies(self))
         collected = Proficiencies(items=tuple(items)).merge(self.chosen)
         return collected
 
