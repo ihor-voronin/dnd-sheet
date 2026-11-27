@@ -111,6 +111,34 @@ def test_subclass_features_have_ukrainian_texts() -> None:
     assert not missing, f"без перекладу: {missing[:10]}"
 
 
+def test_plan_features_have_ukrainian_texts_from_every_book() -> None:
+    """Текст уміння для плану — з усіх книг класу й з урахуванням підписів.
+
+    Опційні вміння TCoE («Metamagic Options», «Harness Divine Power») є лише
+    в TCoE, а індекс механік іноді склеює назви («Channel Divinity: …») чи
+    додає дужки («Destroy Undead (CR 1/2)»). План мусить знайти текст і
+    переклад для кожного такого рядка, інакше екран підвищення рівня показує
+    «тексту немає».
+    """
+    from dndsheet.characters.api import classes_uk
+    from dndsheet.characters.api.features import class_texts_all, feature_text_for
+    from dndsheet.compendium.infrastructure.factory import build_service
+
+    service = build_service()
+    sorcerer = class_texts_all(service, "sorcerer")
+    optional = feature_text_for("Metamagic Options", sorcerer)
+    assert optional, "опційне вміння TCoE має текст"
+    assert classes_uk.text_uk(optional), "і переклад"
+
+    cleric = class_texts_all(service, "cleric")
+    harness = feature_text_for("Channel Divinity: Harness Divine Power", cleric)
+    assert harness and "Harness Divine Power" not in harness.splitlines()[0]
+    assert classes_uk.text_uk(harness), "склеєна назва теж знаходить переклад"
+
+    destroyed = feature_text_for("Destroy Undead (CR 1/2)", cleric)
+    assert destroyed, "дужки з CR не заважають знайти розділ"
+
+
 def test_plan_for_saved_character(client: TestClient) -> None:
     response = client.get("/api/v1/characters/level-up-fighter/level-up")
     assert response.status_code == 200

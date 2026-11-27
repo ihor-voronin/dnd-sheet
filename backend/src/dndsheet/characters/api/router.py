@@ -32,6 +32,7 @@ from dndsheet.characters.api import classes_uk
 from dndsheet.characters.api.features import (
     class_texts_all,
     enrich_features,
+    feature_text_for,
     strip_level_line,
     subclass_features,
     subclass_intro,
@@ -276,7 +277,7 @@ def class_features(class_key: str, request: Request) -> dict:
     rows: list[dict[str, Any]] = []
     for feature in definition.features:
         row: dict[str, Any] = {"name_en": feature.name_en, "level": feature.level}
-        text = texts.get(feature.name_en)
+        text = feature_text_for(feature.name_en, texts)
         if text:
             row["text"] = text
         # Переклад — той самий шар, що й у главі класу: назва + текст.

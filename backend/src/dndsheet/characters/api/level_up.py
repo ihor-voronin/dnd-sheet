@@ -17,6 +17,9 @@ from typing import Any
 from dndsheet.characters.api import classes_uk, subclasses_uk
 from dndsheet.characters.api.features import (
     class_details,
+    class_texts_all,
+    feature_text_for,
+    strip_level_line,
     subclass_features,
     subclass_intro,
 )
@@ -64,10 +67,10 @@ def plan_payload(
     """Один план: числа домену + вибір із довідника."""
     # Тексти вмінь класу — щоб екран показав не лише назву, а й що саме дає
     # рівень (і українською, якщо переклад уже є).
-    class_features = {
-        item["name_en"]: item
-        for item in class_details(compendium, plan.class_key, cache)["features"]
-    }
+    # Тексти вмінь — з *усіх* книг класу (PHB + TCoE): опційні вміння
+    # («Magical Guidance», «Primal Knowledge») є лише в TCoE, і без цього
+    # екран підвищення рівня показував би «тексту немає».
+    class_texts = class_texts_all(compendium, plan.class_key, cache)
     return {
         "class_key": plan.class_key,
         "class_name": plan.class_name,
@@ -80,7 +83,7 @@ def plan_payload(
         "constitution_modifier": plan.constitution_modifier,
         "hp": {"average": plan.hp_average, "best_roll": plan.hp_best_roll},
         "features": [
-            _feature_payload(feature, class_features)
+            _feature_payload(feature, class_texts)
             for feature in plan.features
         ],
         "subclass": _subclass_payload(plan, compendium, cache, current=current_subclass),
@@ -130,20 +133,18 @@ def plan_payload(
     }
 
 
-def _feature_payload(feature: Any, details: dict[str, dict[str, Any]]) -> dict[str, Any]:  # noqa: ANN401
+def _feature_payload(feature: Any, texts: dict[str, str]) -> dict[str, Any]:  # noqa: ANN401
     """Нове вміння класу: назва, рівень і текст правила.
 
     `text` — оригінал книги (для звірки), `text_uk` — переклад, якщо він є.
     """
     row: dict[str, Any] = {"name_en": feature.name_en, "level": feature.level}
-    detail = details.get(feature.name_en)
-    if detail is not None:
-        if detail.get("text"):
-            row["text"] = detail["text"]
-        for key in ("name_uk", "text_uk"):
-            if detail.get(key):
-                row[key] = detail[key]
-    elif (uk_name := classes_uk.name_uk(feature.name_en)) :
+    text = feature_text_for(feature.name_en, texts)
+    if text:
+        row["text"] = text
+    classes_uk.enrich_feature(row)
+    strip_level_line(row)
+    if "name_uk" not in row and (uk_name := classes_uk.name_uk(feature.name_en)):
         row["name_uk"] = uk_name
     return row
 

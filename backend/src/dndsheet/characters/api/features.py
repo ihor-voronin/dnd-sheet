@@ -329,6 +329,34 @@ LEVEL_LINE_EN = re.compile(r"^\d+(?:st|nd|rd|th)-level [^\n]*?feature\s*\n+", re
 LEVEL_LINE_UK = re.compile(r"^Уміння [^\n]*?\d+-го рівня\s*\n+")
 
 
+def feature_text_for(name: str, texts: dict[str, str]) -> str | None:
+    """Текст уміння за назвою з індексу механік.
+
+    Індекс інколи склеює назви («Channel Divinity: Harness Divine Power»)
+    або додає уточнення в дужках («Destroy Undead (CR 1/2)»), а розділ у
+    главі класу — коротший. Тому пробуємо точну назву, частину після
+    двокрапки й назву без дужок.
+    """
+    candidates = [name]
+    if ": " in name:
+        candidates.append(name.split(": ", 1)[1])
+    stripped = re.sub(r"\s*\([^)]*\)\s*$", "", name).strip()
+    if stripped and stripped != name:
+        candidates.append(stripped)
+        if ": " in stripped:
+            candidates.append(stripped.split(": ", 1)[1])
+    for candidate in candidates:
+        text = texts.get(candidate)
+        if text:
+            return text
+    folded = {key.casefold(): value for key, value in texts.items()}
+    for candidate in candidates:
+        text = folded.get(candidate.casefold())
+        if text:
+            return text
+    return None
+
+
 def strip_level_line(payload: dict[str, Any]) -> dict[str, Any]:
     """Прибрати перший абзац-підпис рівня з тексту (для показу, не для ключа)."""
     for field, pattern in (("text", LEVEL_LINE_EN), ("text_uk", LEVEL_LINE_UK)):
