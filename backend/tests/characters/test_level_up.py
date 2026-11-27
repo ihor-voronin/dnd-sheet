@@ -137,7 +137,7 @@ def test_multiclass_allowed_with_requirement(rules) -> None:  # noqa: ANN001
     plan = planner(rules).plan(character, "wizard")
     assert plan.allowed is True
     assert plan.blocked_reason is None
-    # Новий клас дає ліміт заговорів мага й одразу слоти (див. наступний тест).
+    # Новий клас дає ліміт заговорів мага й одразу комірки (див. наступний тест).
     assert plan.cantrips_after == 3
 
 

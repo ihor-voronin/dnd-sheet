@@ -63,7 +63,7 @@ def test_second_class_grants_only_multiclass_proficiencies(rules) -> None:
     assert owned.has(ProficiencyKind.ARMOR, "medium"), "воїн мультикласом дає середню броню"
     assert owned.has(ProficiencyKind.WEAPON, "martial")
     assert not owned.has(ProficiencyKind.ARMOR, "heavy"), "важкої броні мультиклас не дає"
-    assert not owned.has(ProficiencyKind.SAVING_THROW, "str"), "порятунки — лише перший клас"
+    assert not owned.has(ProficiencyKind.SAVING_THROW, "str"), "рятівні кидки — лише перший клас"
 
 
 # --- закляття ----------------------------------------------------------------

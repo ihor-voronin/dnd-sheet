@@ -11,7 +11,7 @@
 * ключ класу/виду/передісторії читається з `RulesSource` у момент
   відновлення, тому числа не дублюються у файлі: правила лишаються єдиним
   джерелом істини;
-* усе, що зберігається, — це **стан**, а не похідні: максимум хітів, КЗ, слоти
+* усе, що зберігається, — це **стан**, а не похідні: максимум хітів, КЗ, комірки
   не пишуться, бо вони рахуються кожного разу з правил.
 """
 
@@ -187,14 +187,14 @@ def state_from_record(record: Mapping[str, Any] | None) -> SheetState:
         try:
             slots[int(key)] = int(value)
         except (TypeError, ValueError) as exc:
-            raise ValidationError(f"невірні витрачені слоти: {key!r}") from exc
+            raise ValidationError(f"невірні витрачені комірки: {key!r}") from exc
     dice: dict[int, int] = {}
     for key, value in (payload.get("hit_dice_used") or {}).items():
         text = str(key).lstrip("dD")
         try:
             dice[int(text)] = int(value)
         except (TypeError, ValueError) as exc:
-            raise ValidationError(f"невірні витрачені хіт-дайси: {key!r}") from exc
+            raise ValidationError(f"невірні витрачені кістки хітів: {key!r}") from exc
     return SheetState(
         slots_used=slots,
         pact_used=int(payload.get("pact_used") or 0),

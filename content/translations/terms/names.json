@@ -1,0 +1,1442 @@
+[
+ {
+  "id": "01050db39b",
+  "en": "// --- види -------------------------------------------------------------\n  aarakocra",
+  "name_uk": "Ааракокра"
+ },
+ {
+  "id": "6b7028bae6",
+  "en": "// назви передісторій (ключ — назва з корпусу, нижній регістр).\n  anthropologist",
+  "name_uk": "Антрополог"
+ },
+ {
+  "id": "4a54e6e88d",
+  "en": "aasimar",
+  "name_uk": "Аазімар"
+ },
+ {
+  "id": "dfbb13f311",
+  "en": "aberrant-mind",
+  "name_uk": "Аберантний розум"
+ },
+ {
+  "id": "d5c420e019",
+  "en": "acolyte",
+  "name_uk": "Послушник"
+ },
+ {
+  "id": "287e462ae6",
+  "en": "air genasi",
+  "name_uk": "Ґеназі (повітря)"
+ },
+ {
+  "id": "fdaab0ba43",
+  "en": "alchemist",
+  "name_uk": "Алхімік"
+ },
+ {
+  "id": "e2fa8daa7d",
+  "en": "ambition-domain",
+  "name_uk": "Амбіції"
+ },
+ {
+  "id": "eeb61dd5ea",
+  "en": "arcana-domain",
+  "name_uk": "Аркана"
+ },
+ {
+  "id": "6b7480c790",
+  "en": "archaeologist",
+  "name_uk": "Археолог"
+ },
+ {
+  "id": "35abba1c85",
+  "en": "armorer",
+  "name_uk": "Бронник"
+ },
+ {
+  "id": "25cf5836cd",
+  "en": "artificer",
+  "name_uk": "Артифіцер"
+ },
+ {
+  "id": "d3f79158a7",
+  "en": "artificer specialist",
+  "name_uk": "Фах артифіцера"
+ },
+ {
+  "id": "67722ffa22",
+  "en": "artillerist",
+  "name_uk": "Артилерист"
+ },
+ {
+  "id": "704d75e650",
+  "en": "asmodeus tiefling",
+  "name_uk": "Тіфлінґ (Асмодей)"
+ },
+ {
+  "id": "2822571142",
+  "en": "athlete",
+  "name_uk": "Атлет"
+ },
+ {
+  "id": "4954a49721",
+  "en": "augen trust (spy)",
+  "name_uk": "Аугенська довіра (шпигун)"
+ },
+ {
+  "id": "a9a6c5a1cd",
+  "en": "azorius functionary",
+  "name_uk": "Чиновник Азорія"
+ },
+ {
+  "id": "abc6ac2ce9",
+  "en": "baalzebul tiefling",
+  "name_uk": "Тіфлінґ (Баалзебуб)"
+ },
+ {
+  "id": "aed6a15ad8",
+  "en": "baldur's gate acolyte",
+  "name_uk": "Послушник (Ворота Балдура)"
+ },
+ {
+  "id": "5f4450d256",
+  "en": "baldur's gate charlatan",
+  "name_uk": "Шарлатан (Ворота Балдура)"
+ },
+ {
+  "id": "5c4ab1fcaa",
+  "en": "baldur's gate criminal",
+  "name_uk": "Злочинець (Ворота Балдура)"
+ },
+ {
+  "id": "3c52242b38",
+  "en": "baldur's gate entertainer",
+  "name_uk": "Розважальник (Ворота Балдура)"
+ },
+ {
+  "id": "bc6c26592d",
+  "en": "baldur's gate folk hero",
+  "name_uk": "Народний герой (Ворота Балдура)"
+ },
+ {
+  "id": "b660dcf9f1",
+  "en": "baldur's gate guild artisan",
+  "name_uk": "Ремісник гільдії (Ворота Балдура)"
+ },
+ {
+  "id": "e016b816d1",
+  "en": "baldur's gate hermit",
+  "name_uk": "Затворник (Ворота Балдура)"
+ },
+ {
+  "id": "290bbe9824",
+  "en": "baldur's gate noble",
+  "name_uk": "Дворянин (Ворота Балдура)"
+ },
+ {
+  "id": "3c3877ebf9",
+  "en": "baldur's gate outlander",
+  "name_uk": "Дикун (Ворота Балдура)"
+ },
+ {
+  "id": "8fc91dd661",
+  "en": "baldur's gate sage",
+  "name_uk": "Мудрець (Ворота Балдура)"
+ },
+ {
+  "id": "07aaf0fd26",
+  "en": "baldur's gate sailor",
+  "name_uk": "Моряк (Ворота Балдура)"
+ },
+ {
+  "id": "1048e830d4",
+  "en": "baldur's gate soldier",
+  "name_uk": "Солдат (Ворота Балдура)"
+ },
+ {
+  "id": "7de303968c",
+  "en": "baldur's gate urchin",
+  "name_uk": "Безпритульний (Ворота Балдура)"
+ },
+ {
+  "id": "1aef69619c",
+  "en": "barbarian",
+  "name_uk": "Варвар"
+ },
+ {
+  "id": "c40cbb33be",
+  "en": "bard",
+  "name_uk": "Бард"
+ },
+ {
+  "id": "1db8eb8a46",
+  "en": "bard college",
+  "name_uk": "Коледж бардів"
+ },
+ {
+  "id": "367fbfbd0f",
+  "en": "battle-smith",
+  "name_uk": "Бойовий коваль"
+ },
+ {
+  "id": "83c9dca7b8",
+  "en": "beasthide shifter",
+  "name_uk": "Перевертень (звіриношкурий)"
+ },
+ {
+  "id": "c28f217858",
+  "en": "boros legionnaire",
+  "name_uk": "Легіонер Борос"
+ },
+ {
+  "id": "80bb050f58",
+  "en": "bugbear",
+  "name_uk": "Бугбер"
+ },
+ {
+  "id": "52dbd58622",
+  "en": "bullywug",
+  "name_uk": "Буллівуґ"
+ },
+ {
+  "id": "f8683b9a8c",
+  "en": "celebrity adventurer's scion",
+  "name_uk": "Нащадок знаменитого шукача пригод"
+ },
+ {
+  "id": "c830af96b1",
+  "en": "centaur",
+  "name_uk": "Кентавр"
+ },
+ {
+  "id": "b1754112dc",
+  "en": "changeling",
+  "name_uk": "Чейнджлінг"
+ },
+ {
+  "id": "f56c1b3f54",
+  "en": "charlatan",
+  "name_uk": "Шарлатан"
+ },
+ {
+  "id": "f0b3857da9",
+  "en": "city watch",
+  "name_uk": "Міська варта"
+ },
+ {
+  "id": "a0c52b20b1",
+  "en": "clan crafter",
+  "name_uk": "Ремісник клану"
+ },
+ {
+  "id": "c244328b71",
+  "en": "cleric",
+  "name_uk": "Жрець"
+ },
+ {
+  "id": "28c5b85816",
+  "en": "clockwork-soul",
+  "name_uk": "Механічна душа"
+ },
+ {
+  "id": "5fd576559c",
+  "en": "cloistered scholar",
+  "name_uk": "Затворник-учений"
+ },
+ {
+  "id": "ea92af706f",
+  "en": "cobalt scholar (sage)",
+  "name_uk": "Учений Кобальту (Мудрець)"
+ },
+ {
+  "id": "1615a75def",
+  "en": "courtier",
+  "name_uk": "Придворний"
+ },
+ {
+  "id": "dcff95ace2",
+  "en": "criminal",
+  "name_uk": "Злочинець"
+ },
+ {
+  "id": "49a7bd202d",
+  "en": "custom background",
+  "name_uk": "Власна передісторія"
+ },
+ {
+  "id": "abe8a5ccce",
+  "en": "custom lineage",
+  "name_uk": "Власна лінія"
+ },
+ {
+  "id": "720682969d",
+  "en": "death-domain",
+  "name_uk": "Смерть"
+ },
+ {
+  "id": "2afd12ceea",
+  "en": "deep gnome",
+  "name_uk": "Глибинний гном"
+ },
+ {
+  "id": "688d6651a0",
+  "en": "deep/svirfneblin gnome",
+  "name_uk": "Глибинний гном (свірфнеблін)"
+ },
+ {
+  "id": "5f5fffa8e5",
+  "en": "dhampir",
+  "name_uk": "Дгампір"
+ },
+ {
+  "id": "1559ccf559",
+  "en": "dimir operative",
+  "name_uk": "Агент Дімір"
+ },
+ {
+  "id": "bf0c50c3cb",
+  "en": "dispater tiefling",
+  "name_uk": "Тіфлінґ (Диспатер)"
+ },
+ {
+  "id": "5cf5f0daac",
+  "en": "divine domain",
+  "name_uk": "Божественний домен"
+ },
+ {
+  "id": "9f39e67abe",
+  "en": "divine-soul",
+  "name_uk": "Божественна душа"
+ },
+ {
+  "id": "d3a2f3914e",
+  "en": "draconblood dragonborn",
+  "name_uk": "Драконороджений (драконокровний)"
+ },
+ {
+  "id": "5fc6363320",
+  "en": "draconic-bloodline",
+  "name_uk": "Драконяча кров"
+ },
+ {
+  "id": "cd8fb6407c",
+  "en": "dragonborn",
+  "name_uk": "Драконороджений"
+ },
+ {
+  "id": "a0d1ea1dab",
+  "en": "dragonborn (chromatic)",
+  "name_uk": "Драконороджений (хроматичний)"
+ },
+ {
+  "id": "b158f2adf3",
+  "en": "dragonborn (gem)",
+  "name_uk": "Драконороджений (самоцвітний)"
+ },
+ {
+  "id": "04a36cc35e",
+  "en": "dragonborn (metallic)",
+  "name_uk": "Драконороджений (металевий)"
+ },
+ {
+  "id": "5f319e8c3e",
+  "en": "drow elf",
+  "name_uk": "Дроу (темний ельф)"
+ },
+ {
+  "id": "54adbfe93f",
+  "en": "druid",
+  "name_uk": "Друїд"
+ },
+ {
+  "id": "aff1a9b7fc",
+  "en": "druid circle",
+  "name_uk": "Коло друїдів"
+ },
+ {
+  "id": "72995b1c8f",
+  "en": "duergar",
+  "name_uk": "Дуергар"
+ },
+ {
+  "id": "9c440f676f",
+  "en": "duergar dwarf",
+  "name_uk": "Дуергар (дворф)"
+ },
+ {
+  "id": "12cb96e516",
+  "en": "dwarf",
+  "name_uk": "Дворф"
+ },
+ {
+  "id": "db00fbc2f6",
+  "en": "earth genasi",
+  "name_uk": "Ґеназі (землі)"
+ },
+ {
+  "id": "bd8c8fe520",
+  "en": "eladrin",
+  "name_uk": "Еладрін"
+ },
+ {
+  "id": "034e837026",
+  "en": "eladrin elf",
+  "name_uk": "Еладрін (ельф)"
+ },
+ {
+  "id": "0761330c06",
+  "en": "elf",
+  "name_uk": "Ельф"
+ },
+ {
+  "id": "700c56c145",
+  "en": "entertainer",
+  "name_uk": "Розважальник"
+ },
+ {
+  "id": "b921dabed8",
+  "en": "faceless",
+  "name_uk": "Безликий"
+ },
+ {
+  "id": "deea10ec71",
+  "en": "faction agent",
+  "name_uk": "Агент фракції"
+ },
+ {
+  "id": "aa39ba4960",
+  "en": "failed merchant",
+  "name_uk": "Невдалий торговець"
+ },
+ {
+  "id": "8ef2a97c28",
+  "en": "fairy",
+  "name_uk": "Фея"
+ },
+ {
+  "id": "ea7398801c",
+  "en": "fallen aasimar",
+  "name_uk": "Аазімар (падший)"
+ },
+ {
+  "id": "ac13014ff5",
+  "en": "far traveler",
+  "name_uk": "Далекий мандрівник"
+ },
+ {
+  "id": "8384af9004",
+  "en": "feylost",
+  "name_uk": "Загублений у Фейвайлді"
+ },
+ {
+  "id": "b327c9a52f",
+  "en": "fierna tiefling",
+  "name_uk": "Тіфлінґ (Фіерна)"
+ },
+ {
+  "id": "856c501f98",
+  "en": "fighter",
+  "name_uk": "Воїн"
+ },
+ {
+  "id": "c78478cb83",
+  "en": "firbolg",
+  "name_uk": "Фірболґ"
+ },
+ {
+  "id": "a9ea5d1650",
+  "en": "fire genasi",
+  "name_uk": "Ґеназі (вогню)"
+ },
+ {
+  "id": "576b8ed65d",
+  "en": "fisher",
+  "name_uk": "Рибалка"
+ },
+ {
+  "id": "f4da9414f7",
+  "en": "folk hero",
+  "name_uk": "Народний герой"
+ },
+ {
+  "id": "e40b16fba4",
+  "en": "forest gnome",
+  "name_uk": "Лісовий гном"
+ },
+ {
+  "id": "f93b07aa4d",
+  "en": "forge-domain",
+  "name_uk": "Кузня"
+ },
+ {
+  "id": "7425c6216e",
+  "en": "gambler",
+  "name_uk": "Картяр"
+ },
+ {
+  "id": "b5ef18fc61",
+  "en": "gate warden",
+  "name_uk": "Вартовий брами"
+ },
+ {
+  "id": "2fba017c95",
+  "en": "genasi",
+  "name_uk": "Ґеназі"
+ },
+ {
+  "id": "5de5fd33d8",
+  "en": "ghostwise halfling",
+  "name_uk": "Напіврослик (примарний)"
+ },
+ {
+  "id": "9c21ac7f81",
+  "en": "giant foundling",
+  "name_uk": "Підкидьок велетнів"
+ },
+ {
+  "id": "0c2feb7b7b",
+  "en": "gith",
+  "name_uk": "Ґіт"
+ },
+ {
+  "id": "c9b72ce53a",
+  "en": "githyanki",
+  "name_uk": "Ґітянкі"
+ },
+ {
+  "id": "1fcd4410ef",
+  "en": "githzerai",
+  "name_uk": "Ґітзерай"
+ },
+ {
+  "id": "7050bf743f",
+  "en": "glasya tiefling",
+  "name_uk": "Тіфлінґ (Глазія)"
+ },
+ {
+  "id": "c352a6e967",
+  "en": "gnoll",
+  "name_uk": "Ґнол"
+ },
+ {
+  "id": "7d448a7974",
+  "en": "gnome",
+  "name_uk": "Гном"
+ },
+ {
+  "id": "91de67b243",
+  "en": "gnome (deep)",
+  "name_uk": "Гном (глибинний)"
+ },
+ {
+  "id": "13468a7fc8",
+  "en": "goblin",
+  "name_uk": "Ґоблін"
+ },
+ {
+  "id": "2250288341",
+  "en": "goblin (dankwood)",
+  "name_uk": "Ґоблін (данквудський)"
+ },
+ {
+  "id": "7707f51c79",
+  "en": "golgari agent",
+  "name_uk": "Агент Голгарі"
+ },
+ {
+  "id": "88b8c15a82",
+  "en": "goliath",
+  "name_uk": "Ґоліат"
+ },
+ {
+  "id": "3ce972e9f4",
+  "en": "grave-domain",
+  "name_uk": "Могила"
+ },
+ {
+  "id": "5561f66c28",
+  "en": "grimlock",
+  "name_uk": "Ґрімлок"
+ },
+ {
+  "id": "fc7b91b530",
+  "en": "grinner",
+  "name_uk": "Ґріннер"
+ },
+ {
+  "id": "e2cce41e74",
+  "en": "grung",
+  "name_uk": "Ґрунґ"
+ },
+ {
+  "id": "1e3d3f0cd2",
+  "en": "guild artisan",
+  "name_uk": "Ремісник гільдії"
+ },
+ {
+  "id": "82600473ff",
+  "en": "half-elf",
+  "name_uk": "Півельф"
+ },
+ {
+  "id": "963ba076e0",
+  "en": "half-orc",
+  "name_uk": "Піворк"
+ },
+ {
+  "id": "5d579c288e",
+  "en": "halfling",
+  "name_uk": "Напіврослик"
+ },
+ {
+  "id": "a4f7142d4e",
+  "en": "harengon",
+  "name_uk": "Харегон"
+ },
+ {
+  "id": "32376c9a41",
+  "en": "haunted one",
+  "name_uk": "Переслідуваний"
+ },
+ {
+  "id": "2d590827fe",
+  "en": "hermit",
+  "name_uk": "Затворник"
+ },
+ {
+  "id": "7c56649321",
+  "en": "hexblood",
+  "name_uk": "Гексблад"
+ },
+ {
+  "id": "3067589067",
+  "en": "high elf",
+  "name_uk": "Високий ельф"
+ },
+ {
+  "id": "31ee771fad",
+  "en": "hill dwarf",
+  "name_uk": "Пагорбовий дворф"
+ },
+ {
+  "id": "d2a9572d4a",
+  "en": "hobgoblin",
+  "name_uk": "Хобґоблін"
+ },
+ {
+  "id": "e5dc23cb63",
+  "en": "house agent",
+  "name_uk": "Агент дому"
+ },
+ {
+  "id": "d787f56b08",
+  "en": "human",
+  "name_uk": "Людина"
+ },
+ {
+  "id": "dc8513799b",
+  "en": "inheritor",
+  "name_uk": "Спадкоємець"
+ },
+ {
+  "id": "af62769021",
+  "en": "investigator",
+  "name_uk": "Дослідник"
+ },
+ {
+  "id": "32b43ea1e3",
+  "en": "izzet engineer",
+  "name_uk": "Інженер Іззет"
+ },
+ {
+  "id": "4d38e6cf73",
+  "en": "kalashtar",
+  "name_uk": "Калаштар"
+ },
+ {
+  "id": "47466b09df",
+  "en": "kender",
+  "name_uk": "Кендер"
+ },
+ {
+  "id": "c7ff4a8e7c",
+  "en": "kenku",
+  "name_uk": "Кенку"
+ },
+ {
+  "id": "75c8a04b7c",
+  "en": "knight of solamnia",
+  "name_uk": "Лицар Солампії"
+ },
+ {
+  "id": "5286d3ae89",
+  "en": "knight of the order",
+  "name_uk": "Лицар ордена"
+ },
+ {
+  "id": "e4e08776ee",
+  "en": "knowledge-domain",
+  "name_uk": "Знання"
+ },
+ {
+  "id": "66a48b2f7a",
+  "en": "kobold",
+  "name_uk": "Кобольд"
+ },
+ {
+  "id": "e537934744",
+  "en": "kuo-toa",
+  "name_uk": "Куо-тоа"
+ },
+ {
+  "id": "8bbcefc8c6",
+  "en": "leonin",
+  "name_uk": "Леонін"
+ },
+ {
+  "id": "8c41125106",
+  "en": "levistus tiefling",
+  "name_uk": "Тіфлінґ (Левістус)"
+ },
+ {
+  "id": "e0ed1aa16e",
+  "en": "life-domain",
+  "name_uk": "Життя"
+ },
+ {
+  "id": "5f0bcd6b5d",
+  "en": "light-domain",
+  "name_uk": "Світло"
+ },
+ {
+  "id": "6d1cc2200a",
+  "en": "lightfoot halfling",
+  "name_uk": "Легконогий напіврослик"
+ },
+ {
+  "id": "c43cd21edd",
+  "en": "lizardfolk",
+  "name_uk": "Ящіролюд"
+ },
+ {
+  "id": "9842483070",
+  "en": "locathah",
+  "name_uk": "Локата"
+ },
+ {
+  "id": "0ad6b5e974",
+  "en": "longtooth shifter",
+  "name_uk": "Перевертень (довгозубий)"
+ },
+ {
+  "id": "2d7c42d4e7",
+  "en": "lorehold student",
+  "name_uk": "Студент Лорголду"
+ },
+ {
+  "id": "fd887945a6",
+  "en": "lotusden halfling",
+  "name_uk": "Напіврослик (лотосової долини)"
+ },
+ {
+  "id": "665a84236f",
+  "en": "loxodon",
+  "name_uk": "Локсодон"
+ },
+ {
+  "id": "20e68bb0e7",
+  "en": "luxonborn (acolyte)",
+  "name_uk": "Народжений Люксоном (Послушник)"
+ },
+ {
+  "id": "787313525c",
+  "en": "mage of high sorcery",
+  "name_uk": "Маг Високого чаклунства"
+ },
+ {
+  "id": "962b49e9e4",
+  "en": "mammon tiefling",
+  "name_uk": "Тіфлінґ (Маммон)"
+ },
+ {
+  "id": "1fd1b45164",
+  "en": "marine",
+  "name_uk": "Морпіх"
+ },
+ {
+  "id": "07f8918108",
+  "en": "mark of handling human",
+  "name_uk": "Людина (тавро Приборкання)"
+ },
+ {
+  "id": "f06071cde1",
+  "en": "mark of healing halfling",
+  "name_uk": "Напіврослик (тавро Зцілення)"
+ },
+ {
+  "id": "3973750d39",
+  "en": "mark of hospitality halfling",
+  "name_uk": "Напіврослик (тавро Гостинності)"
+ },
+ {
+  "id": "8db0703cb3",
+  "en": "mark of making human",
+  "name_uk": "Людина (тавро Творення)"
+ },
+ {
+  "id": "807176a631",
+  "en": "mark of passage human",
+  "name_uk": "Людина (тавро Шляху)"
+ },
+ {
+  "id": "f55f7e267b",
+  "en": "mark of scribing gnome",
+  "name_uk": "Гном (тавро Письма)"
+ },
+ {
+  "id": "478c5f94be",
+  "en": "mark of sentinel human",
+  "name_uk": "Людина (тавро Вартового)"
+ },
+ {
+  "id": "19ea916524",
+  "en": "mark of shadow elf",
+  "name_uk": "Ельф (тавро Тіні)"
+ },
+ {
+  "id": "c0f1453009",
+  "en": "mark of warding dwarf",
+  "name_uk": "Дворф (тавро Захисту)"
+ },
+ {
+  "id": "07bf76edcd",
+  "en": "martial archetype",
+  "name_uk": "Військовий архетип"
+ },
+ {
+  "id": "455bd74fe7",
+  "en": "mephistopheles tiefling",
+  "name_uk": "Тіфлінґ (Мефістофель)"
+ },
+ {
+  "id": "df680f4f03",
+  "en": "mercenary veteran",
+  "name_uk": "Ветеран-найманець"
+ },
+ {
+  "id": "e98ab4e270",
+  "en": "merfolk",
+  "name_uk": "Морський народ"
+ },
+ {
+  "id": "dcb5612966",
+  "en": "minotaur",
+  "name_uk": "Мінотавр"
+ },
+ {
+  "id": "1d99bd5da9",
+  "en": "monastic tradition",
+  "name_uk": "Монастирська традиція"
+ },
+ {
+  "id": "6257b55733",
+  "en": "monk",
+  "name_uk": "Монах"
+ },
+ {
+  "id": "8af43b0b57",
+  "en": "mountain dwarf",
+  "name_uk": "Гірський дворф"
+ },
+ {
+  "id": "a233cea483",
+  "en": "myriad operative (criminal)",
+  "name_uk": "Агент Міради (Злочинець)"
+ },
+ {
+  "id": "4b6d158630",
+  "en": "nature-domain",
+  "name_uk": "Природа"
+ },
+ {
+  "id": "8eca84b70e",
+  "en": "noble",
+  "name_uk": "Дворянин"
+ },
+ {
+  "id": "58a1e1b609",
+  "en": "orc",
+  "name_uk": "Орк"
+ },
+ {
+  "id": "144bbdb0a9",
+  "en": "order-domain",
+  "name_uk": "Порядок"
+ },
+ {
+  "id": "f2a8e51c46",
+  "en": "orzhov representative",
+  "name_uk": "Представник Оржов"
+ },
+ {
+  "id": "e20eaeea92",
+  "en": "otherworldly patron",
+  "name_uk": "Потойбічний патрон"
+ },
+ {
+  "id": "d6570e852e",
+  "en": "outlander",
+  "name_uk": "Дикун"
+ },
+ {
+  "id": "5c8d2208a2",
+  "en": "owlin",
+  "name_uk": "Овлін"
+ },
+ {
+  "id": "404bc22088",
+  "en": "paladin",
+  "name_uk": "Паладин"
+ },
+ {
+  "id": "010e830e76",
+  "en": "pallid elf",
+  "name_uk": "Блідий ельф"
+ },
+ {
+  "id": "3644fb0ce5",
+  "en": "peace-domain",
+  "name_uk": "Мир"
+ },
+ {
+  "id": "a7df1e69b1",
+  "en": "plaintiff",
+  "name_uk": "Позивач"
+ },
+ {
+  "id": "fef38a162b",
+  "en": "planar philosopher",
+  "name_uk": "Планарний філософ"
+ },
+ {
+  "id": "c414c03251",
+  "en": "primal path",
+  "name_uk": "Прадавній шлях"
+ },
+ {
+  "id": "0af981226f",
+  "en": "prismari student",
+  "name_uk": "Студент Призмарі"
+ },
+ {
+  "id": "6352435cba",
+  "en": "protector aasimar",
+  "name_uk": "Аазімар (захисник)"
+ },
+ {
+  "id": "28cbcdc360",
+  "en": "quandrix student",
+  "name_uk": "Студент Квандрікс"
+ },
+ {
+  "id": "9c8a223c71",
+  "en": "rakdos cultist",
+  "name_uk": "Культист Ракдос"
+ },
+ {
+  "id": "e8126c64c3",
+  "en": "ranger",
+  "name_uk": "Слідопит"
+ },
+ {
+  "id": "26dc595c53",
+  "en": "ranger archetype",
+  "name_uk": "Архетип слідопита"
+ },
+ {
+  "id": "b3d90fa303",
+  "en": "ravenite dragonborn",
+  "name_uk": "Драконороджений (рейвеніт)"
+ },
+ {
+  "id": "8ffa7b7f88",
+  "en": "reborn",
+  "name_uk": "Відроджений"
+ },
+ {
+  "id": "cae039427f",
+  "en": "revelry pirate (sailor)",
+  "name_uk": "Пірат Гульби (Моряк)"
+ },
+ {
+  "id": "9621f8650c",
+  "en": "rewarded",
+  "name_uk": "Винагороджений"
+ },
+ {
+  "id": "d64cb3b991",
+  "en": "rival intern",
+  "name_uk": "Суперник-стажер"
+ },
+ {
+  "id": "4f65d7bee3",
+  "en": "rock gnome",
+  "name_uk": "Кам'яний гном"
+ },
+ {
+  "id": "f232febd10",
+  "en": "rogue",
+  "name_uk": "Плут"
+ },
+ {
+  "id": "3d7be84b9b",
+  "en": "roguish archetype",
+  "name_uk": "Злодійський архетип"
+ },
+ {
+  "id": "1840c1f646",
+  "en": "ruined",
+  "name_uk": "Зруйнований"
+ },
+ {
+  "id": "d1ccd7905e",
+  "en": "rune carver",
+  "name_uk": "Різьбяр рун"
+ },
+ {
+  "id": "d68a9257b7",
+  "en": "sacred oath",
+  "name_uk": "Священна клятва"
+ },
+ {
+  "id": "6dd34506bb",
+  "en": "sage",
+  "name_uk": "Мудрець"
+ },
+ {
+  "id": "994a4f198a",
+  "en": "sailor",
+  "name_uk": "Моряк"
+ },
+ {
+  "id": "9e119e407b",
+  "en": "satyr",
+  "name_uk": "Сатир"
+ },
+ {
+  "id": "d5eebf39ee",
+  "en": "scourge aasimar",
+  "name_uk": "Аазімар (бич)"
+ },
+ {
+  "id": "d38b30bfac",
+  "en": "sea elf",
+  "name_uk": "Морський ельф"
+ },
+ {
+  "id": "ff9412bb35",
+  "en": "selesnya initiate",
+  "name_uk": "Посвячений Селезнії"
+ },
+ {
+  "id": "9a97679dad",
+  "en": "shadar-kai",
+  "name_uk": "Шадар-кай"
+ },
+ {
+  "id": "18709c69f3",
+  "en": "shadar-kai elf",
+  "name_uk": "Шадар-кай (ельф)"
+ },
+ {
+  "id": "5336f39a6d",
+  "en": "shadow-magic",
+  "name_uk": "Тіньова магія"
+ },
+ {
+  "id": "f0a09ccac1",
+  "en": "shifter",
+  "name_uk": "Перевертень"
+ },
+ {
+  "id": "6ce987c4ae",
+  "en": "shipwright",
+  "name_uk": "Корабельник"
+ },
+ {
+  "id": "17a16591ad",
+  "en": "silverquill student",
+  "name_uk": "Студент Сільверквіллу"
+ },
+ {
+  "id": "5094e24180",
+  "en": "simic hybrid",
+  "name_uk": "Сіміцький гібрид"
+ },
+ {
+  "id": "e1cbf257b1",
+  "en": "simic scientist",
+  "name_uk": "Вчений Сімік"
+ },
+ {
+  "id": "260916a2dc",
+  "en": "skeleton",
+  "name_uk": "Скелет"
+ },
+ {
+  "id": "a24535d49a",
+  "en": "smuggler",
+  "name_uk": "Контрабандист"
+ },
+ {
+  "id": "5a58d84820",
+  "en": "soldier",
+  "name_uk": "Солдат"
+ },
+ {
+  "id": "d53a50985b",
+  "en": "solidarity-domain",
+  "name_uk": "Солідарність"
+ },
+ {
+  "id": "9266a1dc68",
+  "en": "sorcerer",
+  "name_uk": "Чародій"
+ },
+ {
+  "id": "0d7075a777",
+  "en": "sorcerous origin",
+  "name_uk": "Чарівниче походження"
+ },
+ {
+  "id": "71a0a2defc",
+  "en": "storm-sorcery",
+  "name_uk": "Штормове чаклунство"
+ },
+ {
+  "id": "d9197164bf",
+  "en": "stout halfling",
+  "name_uk": "Кремезний напіврослик"
+ },
+ {
+  "id": "5e6078dc0b",
+  "en": "strength-domain",
+  "name_uk": "Сила"
+ },
+ {
+  "id": "2e4c3ba50b",
+  "en": "swiftstride shifter",
+  "name_uk": "Перевертень (бистроногий)"
+ },
+ {
+  "id": "c1e0b696d6",
+  "en": "tabaxi",
+  "name_uk": "Табаксі"
+ },
+ {
+  "id": "4911467b42",
+  "en": "tempest-domain",
+  "name_uk": "Буря"
+ },
+ {
+  "id": "d76b8a2087",
+  "en": "the archfey",
+  "name_uk": "Архіфея"
+ },
+ {
+  "id": "30a3f2cd2a",
+  "en": "the fiend",
+  "name_uk": "Диявол"
+ },
+ {
+  "id": "59b74de730",
+  "en": "the fiends",
+  "name_uk": "Диявол"
+ },
+ {
+  "id": "9e8235c42f",
+  "en": "the great old one",
+  "name_uk": "Великий Стародавній"
+ },
+ {
+  "id": "6a682bd4d8",
+  "en": "the-celestial",
+  "name_uk": "Небесний"
+ },
+ {
+  "id": "7497d153e3",
+  "en": "the-fathomless",
+  "name_uk": "Бездонний"
+ },
+ {
+  "id": "d50611725a",
+  "en": "the-fiend",
+  "name_uk": "Диявол"
+ },
+ {
+  "id": "551e4c91c9",
+  "en": "the-genie",
+  "name_uk": "Джин"
+ },
+ {
+  "id": "4cfaa7701b",
+  "en": "the-hexblade",
+  "name_uk": "Хексблейд"
+ },
+ {
+  "id": "efc1a4b3ad",
+  "en": "the-undead",
+  "name_uk": "Нежить"
+ },
+ {
+  "id": "f1bea3ffe9",
+  "en": "the-undying",
+  "name_uk": "Невмирущий"
+ },
+ {
+  "id": "43513f9bf8",
+  "en": "tiefling",
+  "name_uk": "Тіфлінґ"
+ },
+ {
+  "id": "f8aa5c49f7",
+  "en": "tortle",
+  "name_uk": "Тортл"
+ },
+ {
+  "id": "5bcce9102f",
+  "en": "trickery-domain",
+  "name_uk": "Обман"
+ },
+ {
+  "id": "1f86e515aa",
+  "en": "triton",
+  "name_uk": "Тритон"
+ },
+ {
+  "id": "4b0e65bad0",
+  "en": "troglodyte",
+  "name_uk": "Троглодит"
+ },
+ {
+  "id": "e2471a1411",
+  "en": "twilight-domain",
+  "name_uk": "Сутінки"
+ },
+ {
+  "id": "887bc939f5",
+  "en": "urban bounty hunter",
+  "name_uk": "Мисливець за головами"
+ },
+ {
+  "id": "cf7c6f074e",
+  "en": "urchin",
+  "name_uk": "Безпритульний"
+ },
+ {
+  "id": "d6368f60d4",
+  "en": "uthgardt tribe member",
+  "name_uk": "Член племені Утгард"
+ },
+ {
+  "id": "7bb165e475",
+  "en": "variant city watch (investigator)",
+  "name_uk": "Варіант: міська варта (дослідник)"
+ },
+ {
+  "id": "8720891c6d",
+  "en": "variant criminal (spy)",
+  "name_uk": "Варіант: злочинець (шпигун)"
+ },
+ {
+  "id": "62b43dfb80",
+  "en": "variant entertainer (gladiator)",
+  "name_uk": "Варіант: розважальник (гладіатор)"
+ },
+ {
+  "id": "667de53a5c",
+  "en": "variant guild artisan (guild merchant)",
+  "name_uk": "Варіант: ремісник гільдії (гільдійний торговець)"
+ },
+ {
+  "id": "2c126fb16d",
+  "en": "variant human",
+  "name_uk": "Людина (варіант)"
+ },
+ {
+  "id": "c5991050b1",
+  "en": "variant noble (knight)",
+  "name_uk": "Варіант: дворянин (лицар)"
+ },
+ {
+  "id": "06ac20c65a",
+  "en": "variant noble (retainers)",
+  "name_uk": "Варіант: дворянин (почет)"
+ },
+ {
+  "id": "6bf32fe796",
+  "en": "variant sailor (pirate)",
+  "name_uk": "Варіант: моряк (пірат)"
+ },
+ {
+  "id": "b8925e75fa",
+  "en": "variant; aquatic elf descent half-elf",
+  "name_uk": "Півельф (водного роду)"
+ },
+ {
+  "id": "fdb901e7e5",
+  "en": "variant; devil's tongue tiefling",
+  "name_uk": "Тіфлінґ (диявольський язик)"
+ },
+ {
+  "id": "eeb2c6a6ad",
+  "en": "variant; drow descent half-elf",
+  "name_uk": "Півельф (дроу)"
+ },
+ {
+  "id": "9b9a9d8dd1",
+  "en": "variant; hellfire tiefling",
+  "name_uk": "Тіфлінґ (пекельний вогонь)"
+ },
+ {
+  "id": "321e7c3a4d",
+  "en": "variant; infernal legacy tiefling",
+  "name_uk": "Тіфлінґ (пекельна спадщина)"
+ },
+ {
+  "id": "6814695986",
+  "en": "variant; mark of detection half-elf",
+  "name_uk": "Півельф (тавро Виявлення)"
+ },
+ {
+  "id": "984c9e549b",
+  "en": "variant; mark of finding half-orc",
+  "name_uk": "Піворк (тавро Пошуку)"
+ },
+ {
+  "id": "28555c4e36",
+  "en": "variant; mark of finding human",
+  "name_uk": "Людина (тавро Пошуку)"
+ },
+ {
+  "id": "d6e6bd27f2",
+  "en": "variant; mark of storm half-elf",
+  "name_uk": "Півельф (тавро Бурі)"
+ },
+ {
+  "id": "f7f87bed20",
+  "en": "variant; moon elf or sun elf descent half-elf",
+  "name_uk": "Півельф (місячного або сонячного роду)"
+ },
+ {
+  "id": "89b51b00eb",
+  "en": "variant; winged tiefling",
+  "name_uk": "Тіфлінґ (крилатий)"
+ },
+ {
+  "id": "4e5b1ee895",
+  "en": "variant; wood elf descent half-elf",
+  "name_uk": "Півельф (лісового роду)"
+ },
+ {
+  "id": "14bddc1232",
+  "en": "vedalken",
+  "name_uk": "Ведалкен"
+ },
+ {
+  "id": "9f77808300",
+  "en": "verdan",
+  "name_uk": "Вердан"
+ },
+ {
+  "id": "91b5a8435b",
+  "en": "volstrucker agent",
+  "name_uk": "Агент Вольштрукер"
+ },
+ {
+  "id": "1325579906",
+  "en": "war domain",
+  "name_uk": "Війна"
+ },
+ {
+  "id": "805e2dbae2",
+  "en": "war-domain",
+  "name_uk": "Війна"
+ },
+ {
+  "id": "7a78f116ad",
+  "en": "warforged",
+  "name_uk": "Ворфордж"
+ },
+ {
+  "id": "842afdeebd",
+  "en": "warlock",
+  "name_uk": "Чаклун"
+ },
+ {
+  "id": "859cf76f86",
+  "en": "water genasi",
+  "name_uk": "Ґеназі (води)"
+ },
+ {
+  "id": "ab52e3f1b0",
+  "en": "waterdhavian noble",
+  "name_uk": "Дворянин Вотердіва"
+ },
+ {
+  "id": "419c24d048",
+  "en": "wild-magic",
+  "name_uk": "Дика магія"
+ },
+ {
+  "id": "e8f906e735",
+  "en": "wildhunt shifter",
+  "name_uk": "Перевертень (дикого лову)"
+ },
+ {
+  "id": "483866298c",
+  "en": "witchlight hand",
+  "name_uk": "Рука Вітчлайту"
+ },
+ {
+  "id": "c2842c3e1d",
+  "en": "witherbloom student",
+  "name_uk": "Студент Візерблуму"
+ },
+ {
+  "id": "af2c41eb4e",
+  "en": "wizard",
+  "name_uk": "Маг"
+ },
+ {
+  "id": "b3d7a17790",
+  "en": "wood elf",
+  "name_uk": "Лісовий ельф"
+ },
+ {
+  "id": "726420feae",
+  "en": "yuan-ti",
+  "name_uk": "Юань-ті"
+ },
+ {
+  "id": "cf36fa61dc",
+  "en": "yuan-ti pureblood",
+  "name_uk": "Юань-ті (чистокровний)"
+ },
+ {
+  "id": "43b4424453",
+  "en": "zariel tiefling",
+  "name_uk": "Тіфлінґ (Заріель)"
+ },
+ {
+  "id": "3b5e4ccfa8",
+  "en": "zeal-domain",
+  "name_uk": "Завзяття"
+ },
+ {
+  "id": "0d956d4190",
+  "en": "zombie",
+  "name_uk": "Зомбі"
+ }
+]

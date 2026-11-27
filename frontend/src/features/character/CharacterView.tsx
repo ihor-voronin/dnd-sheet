@@ -3,11 +3,11 @@
  * Усі числа приходять із сервера; компонент їх не перераховує. Клік по
  * похідному числу (КЗ, ініціатива, навичка) створює **виправлення** — сервер
  * зберігає його окремо й позначає поле як «вручну», доки гравець не скине.
- * Лічильники (хіти, слоти, хіт-дайси, кидки смерті) — це стан, а не
+ * Лічильники (хіти, комірки, кістки хітів, кидки смерті) — це стан, а не
  * виправлення: кожна зміна одразу йде на диск.
  *
  * Розкладка повторює звичний аркуш D&D Beyond: шапка з портретом, рядок
- * характеристик-гексагонів, далі три колонки — порятунки й володіння,
+ * характеристик-гексагонів, далі три колонки — рятівні кидки й володіння,
  * ініціатива з навичками, робоча панель із вкладками.
  */
 
@@ -34,6 +34,7 @@ import type { RestReport, SheetViewPayload } from "../wizard/types";
 import {
   ABILITY_LABELS,
   ALIGNMENT_LABELS,
+  abilityCodesUk,
   abilityLabel,
   damageTypeLabel,
   modifierLabel,
@@ -124,16 +125,16 @@ function describeRest(report: RestReport): string {
     if (report.hit_dice_before !== report.hit_dice_after) {
       parts.push(`кістки хітів: витрачено ${report.hit_dice_before} → ${report.hit_dice_after}`);
     }
-    if (report.slots_before > 0) parts.push("слоти відновлено");
+    if (report.slots_before > 0) parts.push("комірки відновлено");
     if (report.exhaustion_before !== report.exhaustion_after) {
-      parts.push(`втома ${report.exhaustion_before} → ${report.exhaustion_after}`);
+      parts.push(`виснаження ${report.exhaustion_before} → ${report.exhaustion_after}`);
     }
     if (report.temporary > 0) {
       parts.push(`тимчасові хіти ${report.temporary} збережено`);
     }
   } else {
     parts.push("хіти не змінилися — витрачайте кістки хітів");
-    if (report.slots_before > report.slots_after) parts.push("Pact Magic відновлено");
+    if (report.slots_before > report.slots_after) parts.push("комірки магії угоди (Pact Magic) відновлено");
   }
   if (report.features_reset.length) {
     parts.push(`відновлено: ${report.features_reset.join(", ")}`);
@@ -371,7 +372,7 @@ export function CharacterView({
       const name =
         character.classes.find((item) => item.key === waiver.class_key)?.name_en ??
         waiver.class_key;
-      const required = waiver.requirements.join(" або ");
+      const required = abilityCodesUk(waiver.requirements.join(" або "));
       return required ? `${termLabel(name)} · ${required}` : termLabel(name);
     })
     .join("; ");
@@ -558,7 +559,7 @@ export function CharacterView({
               disabled={busy}
               onClick={() => void rest("long")}
             >
-              Довгий відпочинок
+              Тривалий відпочинок
             </button>
           </div>
           <div className="ddb-export">
@@ -643,7 +644,7 @@ export function CharacterView({
         <div className="ddb-col">
           <section className="ddb-card">
             <h2 className="ddb-card__title">
-              <span>Кидки порятунку</span>
+              <span>Рятівні кидки</span>
             </h2>
             <SavePills saves={sheet.saving_throws} render={overrideNumber} />
           </section>
@@ -731,11 +732,11 @@ export function CharacterView({
                         {parts.join(" ")} = {value.total} · мод {modifierLabel(value.modifier)}
                       </span>
                       <span className="reckoning-row__save">
-                        порятунок{" "}
+                        рятівний кидок{" "}
                         {overrideNumber(
                           `save:${ability}`,
                           save.value,
-                          `Порятунок ${ABILITY_LABELS[ability]}`,
+                          `Рятівний кидок ${ABILITY_LABELS[ability]}`,
                         )}
                         {save.proficient ? <span className="dot" title="володіє" /> : null}
                       </span>
@@ -764,14 +765,14 @@ export function CharacterView({
                 </button>
               </span>
               <span>
-                Втома:{" "}
+                Виснаження:{" "}
                 <NumberField
                   value={sheet.state.exhaustion}
                   min={0}
                   max={6}
                   size="sm"
                   disabled={busy}
-                  title="Рівень втоми"
+                  title="Рівень виснаження"
                   onChange={(value) => patch({ exhaustion: value })}
                 />
               </span>

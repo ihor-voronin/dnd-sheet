@@ -23,6 +23,11 @@ export const ABILITY_SHORT: Record<string, string> = {
   cha: "ХАР",
 };
 
+/** «INT 13 і WIS 13» із сервера → «ІНТ 13 і МУД 13» (у даних коди лишаються англійські). */
+export function abilityCodesUk(text: string): string {
+  return text.replace(/\b(STR|DEX|CON|INT|WIS|CHA)\b/g, (code) => ABILITY_SHORT[code.toLowerCase()] ?? code);
+}
+
 export const SKILL_LABELS: Record<string, string> = {
   athletics: "Атлетика",
   acrobatics: "Акробатика",
@@ -106,7 +111,7 @@ export const ALIGNMENT_LABELS: Record<string, string> = {
 
 export const PROFICIENCY_LABELS: Record<string, string> = {
   skill: "навички",
-  saving_throw: "кидки порятунку",
+  saving_throw: "рятівні кидки",
   armor: "броня",
   weapon: "зброя",
   tool: "інструменти",
@@ -157,7 +162,7 @@ export const LANGUAGE_LABELS: Record<string, string> = {
   draconic: "драконяча",
   gnomish: "гномівська",
   goblin: "гоблінська",
-  halfling: "півросликів",
+  halfling: "напівросликів",
   orc: "ороча",
   abyssal: "безодні",
   sylvan: "лісова",
@@ -295,7 +300,7 @@ export function subclassLabel(key: string): string {
     .join(" ");
 }
 
-/** Людська назва значення володіння: навичка, порятунок, мова або тип броні. */
+/** Людська назва значення володіння: навичка, рятівний кидок, мова або тип броні. */
 export function proficiencyValue(kind: string, value: string): string {
   if (kind === "skill") return skillLabel(value);
   if (kind === "saving_throw") return abilityLabel(value);

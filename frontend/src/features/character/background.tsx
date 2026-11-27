@@ -11,7 +11,7 @@ import type { BackgroundDetails } from "../wizard/types";
 import { NoteArea, notesStatusText } from "./notes";
 import type { NoteStatus } from "./notes";
 import { RuleText } from "./panels";
-import { ukBackground, withEnglish } from "./uk";
+import { itemLabel, ukBackground, withEnglish } from "./uk";
 
 function joinOrDash(values: string[], kind: string, any: number): string {
   const labels = values.map((value) => proficiencyValue(kind, value));
@@ -60,7 +60,7 @@ export function BackgroundPanel({
     <div className="background-panel">
       <h3 className="ddb-work__title">
         <span>Передісторія</span>
-        <span className="short">{details.source_id || "2014"}</span>
+        <span className="short">{details.source_id === "custom" ? "власна" : details.source_id || "2014"}</span>
       </h3>
 
       <section className="bg-card">
@@ -93,7 +93,13 @@ export function BackgroundPanel({
         {details.equipment ? (
           <p className="bg-equipment">
             <span>Спорядження </span>
-            {equipmentUk ?? details.equipment}
+            {equipmentUk ??
+              (details.source_id === "custom"
+                ? details.equipment
+                    .split(", ")
+                    .map((name) => itemLabel(name))
+                    .join(", ")
+                : details.equipment)}
           </p>
         ) : null}
       </section>

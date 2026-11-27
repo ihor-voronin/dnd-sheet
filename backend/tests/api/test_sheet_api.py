@@ -142,7 +142,7 @@ def test_slots_cannot_exceed_the_maximum(client: TestClient) -> None:
         f"/api/v1/characters/{character_id}", json={"slots": {"1": 1}}
     )
     assert response.status_code == 422
-    assert "слотів 1 рівня" in response.json()["detail"]
+    assert "комірок 1 рівня" in response.json()["detail"]
 
 
 def test_death_saves_inspiration_and_notes(client: TestClient) -> None:

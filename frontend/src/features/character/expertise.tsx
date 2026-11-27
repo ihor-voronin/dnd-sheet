@@ -1,6 +1,6 @@
-/** Експертність плута й барда: вибір навичок із подвоєним бонусом майстерності.
+/** Експертиза плута й барда: вибір навичок із подвоєним бонусом майстерності.
  *
- * Скільки обирати і з чого — каже сервер (`sheet.expertise`): слоти рахуються
+ * Скільки обирати і з чого — каже сервер (`sheet.expertise`): кількість рахується
  * з умінь класу («Expertise» плута на 1 і 6, барда на 3 і 10 рівнях), а
  * варіанти — це навички, якими персонаж уже володіє, і злодійські інструменти
  * плута. Тут лише вибір і збереження.
@@ -44,7 +44,7 @@ export function ExpertisePicker({
   return (
     <div className={`expertise${pending > 0 ? " expertise--pending" : ""}`}>
       <p className="expertise__head">
-        <Term k="expertise">Експертність</Term>: {expertise.chosen.length} з {expertise.slots}
+        <Term k="expertise">Експертиза</Term>: {expertise.chosen.length} з {expertise.slots}
         {expertise.chosen.length ? ` — ${expertise.chosen.map(optionLabel).join(", ")}` : ""}
         {!open ? (
           <>
@@ -57,7 +57,7 @@ export function ExpertisePicker({
       </p>
       {pending > 0 ? (
         <p className="hint hint--warn">
-          Клас дає експертність ще в {pending} {pending === 1 ? "навичці" : "навичках"}: бонус
+          Клас дає експертизу ще в {pending} {pending === 1 ? "навичці" : "навичках"}: бонус
           майстерності для них подвоюється. Оберіть серед навичок, якими ви володієте.
         </p>
       ) : null}
@@ -93,7 +93,7 @@ export function ExpertisePicker({
                 })
               }
             >
-              Зберегти експертність ({picked.length} з {expertise.slots})
+              Зберегти експертизу ({picked.length} з {expertise.slots})
             </button>
             {expertise.chosen.length >= expertise.slots ? (
               <button type="button" className="link-button" onClick={() => setOpen(false)}>

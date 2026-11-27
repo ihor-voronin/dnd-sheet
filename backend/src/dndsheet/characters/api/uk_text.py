@@ -56,6 +56,8 @@ def read(layer: str) -> dict[str, Any]:
                 rows = json.loads(file.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
                 continue
+            if isinstance(rows, dict):  # предмети: {"items": [{"id": "<id запису>", ...}]}
+                rows = next((value for value in rows.values() if isinstance(value, list)), None)
             if not isinstance(rows, list):
                 continue
             files.append(file.name)
@@ -76,11 +78,22 @@ def read(layer: str) -> dict[str, Any]:
 
 
 def name_uk(layer: str, name_en: str) -> str | None:
-    return read(layer)["names"].get(ident(name_en))
+    names = read(layer)["names"]
+    # Корпус пише апостроф по-різному («Dark One's» і «Dark One’s») — пробуємо обидва.
+    return names.get(ident(name_en)) or names.get(ident(name_en.replace("'", "’"))) or names.get(
+        ident(name_en.replace("’", "'"))
+    )
 
 
 def text_uk(layer: str, text_en: str) -> str | None:
     return read(layer)["texts"].get(ident(text_en))
+
+
+def with_english(name_en: str, uk: str | None) -> str:
+    """Правило перекладу проєкту: «Українська (English)»; немає перекладу — оригінал."""
+    if not uk or uk.strip().casefold() == name_en.strip().casefold():
+        return name_en
+    return f"{uk} ({name_en})"
 
 
 def reset() -> None:
@@ -113,6 +126,7 @@ def enrich_item(
 
 
 __all__ = [
+    "with_english",
     "EMPTY",
     "enrich_item",
     "folder",

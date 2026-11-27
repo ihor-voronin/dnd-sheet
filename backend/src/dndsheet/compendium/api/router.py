@@ -88,7 +88,7 @@ def class_mechanics_list(service: Service) -> dict:
 
 @router.get("/classes/{class_name}/mechanics")
 def class_mechanics(class_name: str, service: Service) -> dict:
-    """Механіки одного класу: хіт-дайс, володіння, слоти, риси за рівнями."""
+    """Механіки одного класу: кість хітів, володіння, комірки, риси за рівнями."""
     try:
         return class_mechanics_full(service.class_mechanics(class_name))
     except NotFoundError as exc:

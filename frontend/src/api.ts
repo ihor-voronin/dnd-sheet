@@ -251,7 +251,7 @@ export function prepareCharacterSpells(
   });
 }
 
-/** Експертність: навички (або злодійські інструменти) з подвоєним бонусом. */
+/** Експертиза: навички (або злодійські інструменти) з подвоєним бонусом. */
 export function setCharacterExpertise(
   id: string,
   expertise: string[],

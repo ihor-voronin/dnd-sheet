@@ -3,12 +3,12 @@
 Ці тести — головний доказ етапу 2. Кожне очікуване число можна перевірити
 з книгою:
 
-* Воїн 1: хіт-дайс d10 → 10 + 2 (CON 15) = 12; КЗ 16 (кольчуга) + 2 (щит) = 18;
-  кидки порятунку STR/CON по +2 майстерності;
-* Варлок 1: d8 → 8 + 1 (CON 13) = 9; Pact Magic 1 слот 1 рівня; DC 8+2+3 = 13;
+* Воїн 1: кість хітів d10 → 10 + 2 (CON 15) = 12; КЗ 16 (кольчуга) + 2 (щит) = 18;
+  рятівні кидки STR/CON по +2 майстерності;
+* Варлок 1: d8 → 8 + 1 (CON 13) = 9; Pact Magic 1 комірка 1 рівня; DC 8+2+3 = 13;
   КЗ 11 (шкіряна) + 1 (DEX 13) = 12;
 * Воїн 2 / Візард 3: сумарний рівень 5 → бонус 3; рівень заклинателя 3 →
-  слоти 4×1 і 2×2; хіти 33; КЗ 16 (кольчуга, без бонусу DEX).
+  комірки 4×1 і 2×2; хіти 33; КЗ 16 (кольчуга, без бонусу DEX).
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ def test_warlock_numbers(cases, calculator: DerivedStatsCalculator) -> None:
     assert casting.slots.pact is not None
     assert casting.slots.pact.slots == 1
     assert casting.slots.pact.slot_level == 1
-    assert casting.slots.by_level == (), "Pact Magic не додається до звичайних слотів"
+    assert casting.slots.by_level == (), "Pact Magic не додається до звичайних комірок"
     warlock = casting.for_class("warlock")
     assert warlock is not None
     assert warlock.save_dc == 13  # 8 + 2 + 3
@@ -117,7 +117,7 @@ def test_multiclass_numbers(cases, calculator: DerivedStatsCalculator) -> None:
     assert wizard.cantrips_limit == 3
     assert wizard.prepared_limit == 5  # INT +2 і 3 рівні волшебника
 
-    # Мультиклас НЕ дає кидків порятунку другого класу (PHB, p. 164).
+    # Мультиклас НЕ дає рятівних кидків другого класу (PHB, p. 164).
     assert sheet.saving_throw_proficiency[Ability.INT] is False
     assert sheet.saving_throw_proficiency[Ability.STR] is True
     assert sheet.saving_throws[Ability.STR] == 4  # 1 + 3

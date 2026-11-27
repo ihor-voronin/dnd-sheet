@@ -101,11 +101,11 @@ export function SavePills({
           <li key={code} className={`ddb-save${save.proficient ? " is-prof" : ""}`}>
             <span
               className="ddb-save__dot"
-              title={save.proficient ? "володіє кидком порятунку" : "без володіння"}
+              title={save.proficient ? "володіє рятівним кидком" : "без володіння"}
             />
             <span className="ddb-save__name">{ABILITY_SHORT[code]}</span>
             <span className="ddb-save__value">
-              {render(`save:${code}`, save.value, `Порятунок ${abilityLabel(code)}`)}
+              {render(`save:${code}`, save.value, `Рятівний кидок ${abilityLabel(code)}`)}
             </span>
           </li>
         );
@@ -148,7 +148,7 @@ export function SkillTable({
           <li
             key={skill}
             className={`ddb-skill${value.proficient ? " is-prof" : ""}${value.expertise ? " is-expert" : ""}`}
-            title={value.expertise ? "Експертність: бонус майстерності подвоєно" : undefined}
+            title={value.expertise ? "Експертиза: бонус майстерності подвоєно" : undefined}
           >
             <span className="ddb-skill__abil">{ABILITY_SHORT[SKILL_ABILITY[skill]] ?? ""}</span>
             <span className="ddb-skill__dot" aria-hidden />

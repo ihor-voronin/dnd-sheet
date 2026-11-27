@@ -69,9 +69,9 @@ def test_class_numbers_are_in_range(spec: dict, classes: dict) -> None:
     problems: list[str] = []
     for key, entry in classes["classes"].items():
         if not limits["hit_die"]["min"] <= entry["hit_die"] <= limits["hit_die"]["max"]:
-            problems.append(f"{key}: хіт-дайс d{entry['hit_die']}")
+            problems.append(f"{key}: кість хітів d{entry['hit_die']}")
         if not entry["saving_throws"]:
-            problems.append(f"{key}: без кидків порятунку")
+            problems.append(f"{key}: без рятівних кидків")
         for ability in entry["saving_throws"]:
             if ability not in limits["abilities"]:
                 problems.append(f"{key}: невідома характеристика {ability!r}")
@@ -94,10 +94,10 @@ def test_spell_tables_have_canonical_shape(spec: dict, classes: dict) -> None:
     for key, entry in classes["classes"].items():
         slots = entry["spell_slots"]
         if slots and len(slots) != levels:
-            problems.append(f"{key}: таблиця слотів на {len(slots)} рядків, треба {levels}")
+            problems.append(f"{key}: таблиця комірок на {len(slots)} рядків, треба {levels}")
         for row in slots:
             if len(row) != spell_levels:
-                problems.append(f"{key}: рядок слотів на {len(row)} рівнів")
+                problems.append(f"{key}: рядок комірок на {len(row)} рівнів")
         pact = entry["pact_slots"]
         if pact and len(pact) != levels:
             problems.append(f"{key}: таблиця Pact Magic на {len(pact)} рядків")

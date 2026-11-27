@@ -1,4 +1,5 @@
 # Глосарій v0 — українська термінологія D&D 5e
+# Канонічні терміни й правило показу — docs/translation-rules.md.
 
 > **Статус: чернетка.** Кожен термін має бути звірений з офіційним українським PDF (наявний у власника проєкту)
 > і отримати `citation` (книга + сторінка). Поки `source` не вказано як `official`, термін вважається власним.
@@ -85,7 +86,7 @@ terms:
 
   - id: rules.disadvantage
     en: Disadvantage
-    uk: Перешкода
+    uk: Завада
     source: tbd
     citation: null
     status: draft
@@ -99,7 +100,7 @@ terms:
 
   - id: rules.difficulty_class
     en: Difficulty Class
-    uk: Складність
+    uk: КС (клас складності)
     source: own
     citation: null
     status: draft
@@ -132,11 +133,11 @@ terms:
     source: own
     citation: null
     status: draft
-    note: "Однина — «кістка хіту» («Кістка хіту d10»). Не «кістки хитів»: «хит» — інше слово."
+    note: "Однина — «кість хітів» («Кість хітів d10»). Не «кістки хитів»: «хит» — інше слово."
 
   - id: combat.damage
     en: Damage
-    uk: Шкода
+    uk: Урон
     source: tbd
     citation: null
     status: draft
@@ -200,7 +201,7 @@ terms:
 
   - id: char.feature
     en: Feature
-    uk: Особливість
+    uk: Уміння
     source: own
     citation: null
     status: draft
@@ -228,7 +229,7 @@ terms:
 
   - id: spell.cantrip
     en: Cantrip
-    uk: Фокус
+    uk: Заговір
     source: tbd
     citation: null
     status: draft

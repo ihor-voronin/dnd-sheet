@@ -1,4 +1,4 @@
-"""Стан здоровʼя персонажа: поточні хіти, тимчасові, кидки хіт-дайсів.
+"""Стан здоровʼя персонажа: поточні хіти, тимчасові, кидки кісток хітів.
 
 Максимум не зберігається: він залежить від класів, статури й рис, тому його
 рахує `DerivedStatsCalculator`. Тут — те, що є **станом**, а не правилом:
@@ -17,7 +17,7 @@ from dataclasses import dataclass, replace
 
 from dndsheet.shared.errors import ValidationError
 
-#: Хіт-дайс у 5e не буває більшим за d20 (і меншим за d4 у звичайних класів).
+#: Кість хітів у 5e не буває більшим за d20 (і меншим за d4 у звичайних класів).
 MIN_HIT_DIE = 4
 MAX_HIT_DIE = 20
 
@@ -53,7 +53,7 @@ class HitPointState:
             if MIN_HIT_DIE <= roll <= MAX_HIT_DIE:
                 continue
             raise ValidationError(
-                f"кидок хіт-дайса має бути в межах d{MIN_HIT_DIE}..d{MAX_HIT_DIE}, отримано {roll}"
+                f"кидок кості хітів має бути в межах d{MIN_HIT_DIE}..d{MAX_HIT_DIE}, отримано {roll}"
             )
         if self.override_max is not None:
             if isinstance(self.override_max, bool) or not isinstance(self.override_max, int):

@@ -48,7 +48,7 @@ class FeatureResource:
 
     @property
     def recharge_label(self) -> str:
-        return "короткий або довгий" if self.recharge == SHORT else "довгий"
+        return "короткий або тривалий" if self.recharge == SHORT else "тривалий"
 
 
 @dataclass(frozen=True, slots=True)

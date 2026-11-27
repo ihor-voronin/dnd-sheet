@@ -29,7 +29,8 @@ from dndsheet.characters.api.serializers import (
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.background_info import enrich_background
 from dndsheet.characters.api.class_choices import allowed_names, class_choices_payload
-from dndsheet.characters.api import classes_uk
+from dndsheet.characters.api import classes_uk, uk_text
+from dndsheet.characters.api.uk_text import with_english
 from dndsheet.characters.api.features import (
     class_texts_all,
     enrich_features,
@@ -407,7 +408,7 @@ def update_character(
     request: Request,
     payload: dict[str, Any] = Body(default_factory=dict),
 ) -> dict:
-    """Часткова зміна стану листа: хіти, слоти, кидки, виправлення, нотатки."""
+    """Часткова зміна стану листа: хіти, комірки, кидки, виправлення, нотатки."""
     body = dict(payload or {})
     version = body.pop("version", None)
     if version is not None and (isinstance(version, bool) or not isinstance(version, int)):
@@ -543,7 +544,7 @@ def set_expertise(
     request: Request,
     payload: dict[str, Any] = Body(default_factory=dict),
 ) -> dict:
-    """Експертність: `{"expertise": ["stealth", "thieves' tools"], "version": N}`."""
+    """Експертиза: `{"expertise": ["stealth", "thieves' tools"], "version": N}`."""
     body = dict(payload or {})
     version = _pop_version(body)
     try:
@@ -674,11 +675,46 @@ def level_up(
 
 
 def _feat_titles(request: Request) -> dict[str, str]:
-    """Назви рис за ключем: у документі показуємо текст, а не id запису."""
+    """Назви рис за ключем: «Пильний (Alert)», а не id запису."""
     return {
-        entry.id.casefold(): entry.name_en
+        entry.id.casefold(): with_english(entry.name_en, uk_text.name_uk("feats", entry.name_en))
         for entry in _compendium(request).feats()
     }
+
+
+def _display_name(name_en: str) -> str:
+    """«Warlock» → «Чаклун (Warlock)»: класи, види, передісторії, уміння, закляття."""
+    uk = uk_text.name_uk("terms", name_en.strip().casefold()) or next(
+        (found for layer in (*_NAME_LAYERS, "backgrounds") if (found := uk_text.name_uk(layer, name_en))),
+        None,
+    )
+    shown = name_en if not name_en.islower() else name_en.replace("-", " ").title()
+    return with_english(shown, uk)
+
+
+#: Шари перекладу, з яких беруться назви полів документа (за хешем назви).
+_NAME_LAYERS = ("spells", "classes", "subclasses", "optional-features", "feats")
+
+
+def _localize_labels(document, character):  # noqa: ANN001, ANN202 — SheetDocument, Character
+    """Назви заклять, умінь і предметів документа — українською (англійська лишається в `en`)."""
+    by_id = uk_text.read("items")["names"]
+    # Переклад предметів — за id запису довідника, тож назва → id береться з інвентаря.
+    items = {
+        item.name_en.casefold(): by_id[item.entry_id]
+        for item in character.inventory.items
+        if item.entry_id and item.entry_id in by_id
+    }
+    fields = {}
+    for key, field in document.fields.items():
+        label = field.label
+        if label is not None and label.uk == label.en:
+            uk = next((name for layer in _NAME_LAYERS if (name := uk_text.name_uk(layer, label.en))), None)
+            uk = uk or items.get(label.en.casefold())
+            if uk:
+                field = field.model_copy(update={"label": label.model_copy(update={"uk": uk})})
+        fields[key] = field
+    return document.model_copy(update={"fields": fields})
 
 
 @router.get("/{character_id}/export/{render_format}")
@@ -703,5 +739,7 @@ def character_export(
         computed,
         _attacks(request, character, computed),
         feat_titles=_feat_titles(request),
+        name=_display_name,
     )
+    document = _localize_labels(document, character)
     return _render(request, document, render_format, RenderOptions(show_originals=originals))

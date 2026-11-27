@@ -7,9 +7,9 @@
 
 Три види полів за походженням:
 
-* `computed` — порахував домен (КЗ, порятунки, навички, максимум хітів, слоти);
+* `computed` — порахував домен (КЗ, рятівні кидки, навички, максимум хітів, комірки);
 * `input` — стан, який гравець змінює за столом (поточні хіти, витрачені
-  слоти, кидки смерті, натхнення, втома, нотатки);
+  комірки, кидки смерті, натхнення, виснаження, нотатки);
 * `override` — гравець вписав своє число замість обчисленого.
 
 Стан листа потрапляє в документ **тим самим шляхом, що й на екран**: числа
@@ -19,7 +19,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Mapping
+from contextvars import ContextVar
+from typing import Any, Callable, Iterable, Mapping
 
 from dndsheet.characters.application.rows import (
     SpellRow,
@@ -84,7 +85,31 @@ TRAINING_LABELS: dict[str, tuple[str, str]] = {
 }
 
 
+#: Як показати назву з довідника («Warlock» → «Чаклун (Warlock)»); за замовчуванням — як є.
+#: ContextVar, а не параметр кожної функції: назви потрібні в десятку місць документа.
+_NAME: ContextVar[Callable[[str], str]] = ContextVar("sheet_name", default=lambda name: name)
+
+
+def _n(name: str) -> str:
+    return _NAME.get()(name)
+
+
 def build_sheet_document(
+    character: Character,
+    computed: ComputedSheet,
+    attacks: Iterable[Mapping[str, Any]] | None = None,
+    feat_titles: Mapping[str, str] | None = None,
+    name: Callable[[str], str] | None = None,
+) -> SheetDocument:
+    """Документ листа; `name` перекладає назви з довідника за правилом «Українська (English)»."""
+    token = _NAME.set(name or (lambda value: value))
+    try:
+        return _build(character, computed, attacks, feat_titles)
+    finally:
+        _NAME.reset(token)
+
+
+def _build(
     character: Character,
     computed: ComputedSheet,
     attacks: Iterable[Mapping[str, Any]] | None = None,
@@ -182,9 +207,9 @@ def _identity_fields(
     }
     species = character.species
     if species is not None:
-        name = species.name_en
+        name = _n(species.name_en)
         if character.subspecies_key:
-            name = f"{name} ({character.subspecies_key})"
+            name = f"{name}, {_n(character.subspecies_key)}"
         fields["identity.species"] = _text(
             "identity.species", name, LocalizedText(uk="Вид", en="Species")
         )
@@ -192,7 +217,7 @@ def _identity_fields(
     if background is not None:
         fields["identity.background"] = _text(
             "identity.background",
-            background.name_en,
+            _n(background.name_en),
             LocalizedText(uk="Передісторія", en="Background"),
         )
     if character.alignment:
@@ -235,14 +260,14 @@ def _identity_fields(
 
 def _waiver_text(character: Character, waiver) -> str:  # noqa: ANN001 — MulticlassWaiver
     definition = character.rules.class_mechanics(waiver.class_key)
-    name = definition.name_en if definition is not None else waiver.class_key
+    name = _n(definition.name_en) if definition is not None else waiver.class_key
     required = " або ".join(waiver.requirements)
     return f"{name} ({required})" if required else name
 
 
 def _classes_text(character: Character) -> str:
     return " / ".join(
-        f"{definition.name_en} {entry.level}"
+        f"{_n(definition.name_en)} {entry.level}"
         for entry, definition in character.class_entries()
     )
 
@@ -374,7 +399,7 @@ def _combat_fields(
         type="text",
         value=", ".join(f"d{die} × {count}" for die, count in sorted(computed.hit_dice.items())),
         origin="computed",
-        label=LocalizedText(uk="Кубики хітів", en="Hit Dice"),
+        label=LocalizedText(uk="Кістки хітів", en="Hit Dice"),
         editable=False,
     )
     fields["hitdice.left"] = Field(
@@ -382,7 +407,7 @@ def _combat_fields(
         type="text",
         value=_hit_dice_left(character, computed),
         origin="input",
-        label=LocalizedText(uk="Хіт-дайси: вільно", en="Hit Dice: available"),
+        label=LocalizedText(uk="Кістки хітів: вільно", en="Hit Dice: available"),
         editable=True,
     )
     fields["inspiration"] = Field(
@@ -398,7 +423,7 @@ def _combat_fields(
         type="number",
         value=state.exhaustion,
         origin="input",
-        label=LocalizedText(uk="Втома", en="Exhaustion"),
+        label=LocalizedText(uk="Виснаження", en="Exhaustion"),
         editable=True,
     )
     fields["death_saves"] = Field(
@@ -509,7 +534,7 @@ def _action_sections(
         fields[field_id] = Field(
             id=field_id,
             type="text",
-            value=f"{row.class_name} {row.level}",
+            value=f"{_n(row.class_name)} {row.level}",
             origin="computed",
             label=english_name(row.name_en),
             editable=False,
@@ -534,7 +559,7 @@ def _action_sections(
         fields[field_id] = Field(
             id=field_id,
             type="text",
-            value=f"{', '.join(values)} · {source_kind_label(source_kind).uk} {source_key}",
+            value=f"{', '.join(values)} · {source_kind_label(source_kind).uk} {_n(source_key)}",
             origin="computed",
             label=proficiency_kind_label(kind),
             editable=False,
@@ -581,7 +606,7 @@ def _spell_sections(
             value=item.save_dc,
             origin="computed",
             label=LocalizedText(
-                uk=f"Опір закляттям: {item.name_en}", en=f"Spell save DC: {item.name_en}"
+                uk=f"КС рятівного кидка закляття: {_n(item.name_en)}", en=f"Spell save DC: {item.name_en}"
             ),
             formula=Formula(
                 expr=f"8 + proficiency() + mod('{item.ability.value}')",
@@ -595,7 +620,7 @@ def _spell_sections(
             value=item.attack_bonus,
             origin="computed",
             label=LocalizedText(
-                uk=f"Бонус атаки закляттям: {item.name_en}",
+                uk=f"Бонус атаки закляттям: {_n(item.name_en)}",
                 en=f"Spell attack bonus: {item.name_en}",
             ),
             formula=Formula(
@@ -614,7 +639,7 @@ def _spell_sections(
             type="counter",
             value=f"{max(0, total - used)}/{total}",
             origin="input",
-            label=LocalizedText(uk=f"Слоти {level} рівня", en=f"Spell slots, level {level}"),
+            label=LocalizedText(uk=f"Комірки {level} рівня", en=f"Spell slots, level {level}"),
             hint=LocalizedText(uk=f"витрачено {used}", en=f"used {used}"),
             editable=True,
         )
@@ -629,7 +654,7 @@ def _spell_sections(
             value=f"{max(0, pact.slots - used)}/{pact.slots}",
             origin="input",
             label=LocalizedText(
-                uk=f"Pact Magic, {pact.slot_level} рівень", en=f"Pact Magic, level {pact.slot_level}"
+                uk=f"{_n('Pact Magic')}, {pact.slot_level} рівень", en=f"Pact Magic, level {pact.slot_level}"
             ),
             hint=LocalizedText(uk=f"витрачено {used}", en=f"used {used}"),
             editable=True,

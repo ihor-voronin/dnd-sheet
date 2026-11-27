@@ -128,7 +128,7 @@ _DICE_RE = re.compile(
 
 @dataclass(frozen=True, slots=True)
 class DiceExpression:
-    """Кидок у нотації NdM±K. Без переваг/перешкод — вони властивість кидка, не кубика."""
+    """Кидок у нотації NdM±K. Без переваг/завад — вони властивість кидка, не кубика."""
 
     count: int
     sides: int

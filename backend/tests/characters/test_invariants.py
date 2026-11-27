@@ -206,7 +206,7 @@ def test_multiclass_does_not_grant_saving_throws(rules) -> None:
         classes=[CharacterClass("fighter", 1), CharacterClass("wizard", 1)],
     )
     sources = character.all_proficiencies().sources(ProficiencyKind.SAVING_THROW, "int")
-    assert sources == (), "другий клас не дає кидків порятунку"
+    assert sources == (), "другий клас не дає рятівних кидків"
 
 
 # --- закляття --------------------------------------------------------------

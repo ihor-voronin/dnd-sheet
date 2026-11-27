@@ -136,7 +136,7 @@ def _species_entry(
         else None
     )
     # Підраса обовʼязкова лише там, де вона визначає числа (PHB: дворф, ельф,
-    # гном, піврослик; EEPC: genasi; ERLW: shifter; EGtW: aasimar; gith).
+    # гном, напіврослик; EEPC: genasi; ERLW: shifter; EGtW: aasimar; gith).
     payload["subspecies_required"] = requires_subspecies(item.key)
     return payload
 

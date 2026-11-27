@@ -29,7 +29,7 @@ def missing_prerequisite(prerequisite: str | None, character: Character, class_k
         if level and character.class_level(class_key) < int(level.group(1)):
             return f"потрібен {level.group(1)} рівень"
         if part.startswith("Pact of") and part not in character.class_choices.get(f"{class_key}:Pact Boon", ()):
-            return f"потрібен дар {part}"
+            return f"потрібна {uk_text.with_english(part, uk_text.name_uk(LAYER, part))}"
         if part.startswith("Spell:"):
             # «hex/curse»: закляття hex або прокляття (Hexblade's Curse) підкласу.
             names = re.sub(r"\bcantrip\b", "", part[6:]).strip().casefold().split("/")
@@ -37,7 +37,8 @@ def missing_prerequisite(prerequisite: str | None, character: Character, class_k
             subclass = next((e.subclass_key or "" for e in character.classes if e.class_key == class_key), "")
             curse = "curse" in names and "hexblade" in subclass
             if not curse and not known & {name.strip() for name in names}:
-                return f"потрібне закляття {'/'.join(names)}"
+                spell = names[0].strip().title()
+                return f"потрібне закляття {uk_text.with_english(spell, uk_text.name_uk('spells', spell))}"
     return None
 
 

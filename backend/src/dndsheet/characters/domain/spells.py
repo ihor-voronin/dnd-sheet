@@ -1,7 +1,7 @@
-"""Закляття персонажа й слоти Pact Magic.
+"""Закляття персонажа й комірки Pact Magic.
 
 Закляття належить **класу**, а не персонажу: у мультикласі «Пекельний
-договір» іде окремо від слотів волшебника, і ліміт відомих заклять у кожного
+договір» іде окремо від комірок волшебника, і ліміт відомих заклять у кожного
 класу свій. Тому `KnownSpell.class_key` обовʼязковий.
 """
 
@@ -65,14 +65,14 @@ class KnownSpell:
 
 @dataclass(frozen=True, slots=True)
 class PactMagic:
-    """Слоти Pact Magic: усі одного рівня, відновлюються на короткому відпочинку."""
+    """Комірки Pact Magic: усі одного рівня, відновлюються на короткому відпочинку."""
 
     slots: int
     slot_level: int
 
     def __post_init__(self) -> None:
         if self.slots < 0 or not 0 <= self.slot_level <= MAX_SPELL_LEVEL:
-            raise ValidationError("неприпустимі слоти Pact Magic")
+            raise ValidationError("неприпустимі комірки Pact Magic")
 
     @property
     def empty(self) -> bool:
@@ -81,7 +81,7 @@ class PactMagic:
 
 @dataclass(frozen=True, slots=True)
 class SpellSlots:
-    """Слоти заклять: звичайні за рівнями й (окремо) Pact Magic."""
+    """Комірки заклять: звичайні за рівнями й (окремо) Pact Magic."""
 
     by_level: tuple[tuple[int, int], ...] = ()
     pact: PactMagic | None = None

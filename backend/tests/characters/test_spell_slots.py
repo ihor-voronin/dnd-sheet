@@ -1,4 +1,4 @@
-"""Слоти заклять: мультиклас, Pact Magic, DC і бонус атаки."""
+"""Комірки заклять: мультиклас, Pact Magic, DC і бонус атаки."""
 
 from __future__ import annotations
 

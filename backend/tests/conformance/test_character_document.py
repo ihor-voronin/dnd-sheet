@@ -30,7 +30,7 @@ from rules_fixture import FixtureRules
 
 
 def _character_document(**state) -> SheetDocument:  # noqa: ANN003
-    """Варлок 1 зі змінами за столом: 4 хіти, витрачений слот, нотатка."""
+    """Варлок 1 зі змінами за столом: 4 хіти, витрачений комірка, нотатка."""
     rules = FixtureRules()
     case = {case.key: case for case in build_golden_cases(rules)}["warlock-1"]
     character = case.character

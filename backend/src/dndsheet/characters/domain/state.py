@@ -1,8 +1,8 @@
 """Стан листа: те, що гравець змінює за столом, а не правила.
 
-Домен відрізняє **правила** (КЗ, максимум хітів, слоти — похідні, їх не
-зберігають) від **стану** (скільки хітів зараз, скільки слотів витрачено,
-кидки смерті, натхнення, втома, ручні виправлення чисел, нотатки). Цей
+Домен відрізняє **правила** (КЗ, максимум хітів, комірки — похідні, їх не
+зберігають) від **стану** (скільки хітів зараз, скільки комірок витрачено,
+кидки смерті, натхнення, виснаження, ручні виправлення чисел, нотатки). Цей
 модуль — друга половина.
 
 `overrides` — свідомий компроміс з правилами: гравець може вписати своє
@@ -11,9 +11,9 @@
 `skill:athletics`, `save:str`), а не індекси: інакше після зміни порядку
 виправлення поїхали б на інше поле.
 
-Максимумів тут немає: скільки слотів і хіт-дайсів має персонаж, знає
+Максимумів тут немає: скільки комірок і кісток хітів має персонаж, знає
 `DerivedStatsCalculator`. Тому `SheetState` перевіряє лише абсолютні межі
-(слоти 1..9, кидки смерті 0..3, втома 0..6), а «не більше максимуму» —
+(комірки 1..9, кидки смерті 0..3, виснаження 0..6), а «не більше максимуму» —
 справа застосунку, який бачить обчислений лист.
 """
 
@@ -93,7 +93,7 @@ def _valid_override_key(key: str) -> str:
         try:
             Ability(cleaned.split(":", 1)[1])
         except ValueError as exc:
-            raise ValidationError(f"невідомий порятунок у виправленні: {cleaned!r}") from exc
+            raise ValidationError(f"невідомий рятівний кидок у виправленні: {cleaned!r}") from exc
         return cleaned
     raise ValidationError(f"поле {key!r} не можна виправити вручну")
 
@@ -114,25 +114,25 @@ class SheetState:
     notes: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
 
     def __post_init__(self) -> None:
-        _check_count(self.pact_used, "витрачені слоти Pact Magic")
-        _check_count(self.exhaustion, "рівень втоми", 6)
+        _check_count(self.pact_used, "витрачені комірки Pact Magic")
+        _check_count(self.exhaustion, "рівень виснаження", 6)
         cleaned_slots: dict[int, int] = {}
         for level, count in self.slots_used.items():
             try:
                 level = int(level)
             except (TypeError, ValueError) as exc:
-                raise ValidationError(f"рівень слотів {level!r} має бути числом") from exc
+                raise ValidationError(f"рівень комірок {level!r} має бути числом") from exc
             if not 1 <= level <= 9:
-                raise ValidationError(f"рівень слотів має бути 1..9, отримано {level}")
-            cleaned_slots[level] = _check_count(int(count), f"слоти {level} рівня")
+                raise ValidationError(f"рівень комірок має бути 1..9, отримано {level}")
+            cleaned_slots[level] = _check_count(int(count), f"комірки {level} рівня")
         cleaned_dice: dict[int, int] = {}
         for die, count in self.hit_dice_used.items():
             try:
                 die = int(die)
             except (TypeError, ValueError) as exc:
-                raise ValidationError(f"хіт-дайс {die!r} має бути числом") from exc
+                raise ValidationError(f"кість хітів {die!r} має бути числом") from exc
             if not 4 <= die <= 20:
-                raise ValidationError(f"хіт-дайс має бути d4..d20, отримано d{die}")
+                raise ValidationError(f"кість хітів має бути d4..d20, отримано d{die}")
             cleaned_dice[die] = _check_count(int(count), f"витрачені d{die}")
         cleaned_features: dict[str, int] = {}
         for key, count in self.feature_used.items():
@@ -158,7 +158,7 @@ class SheetState:
         object.__setattr__(self, "overrides", MappingProxyType(cleaned_overrides))
         object.__setattr__(self, "notes", MappingProxyType(cleaned_notes))
 
-    # --- слоти -------------------------------------------------------------
+    # --- комірки -------------------------------------------------------------
 
     def slot_used(self, level: int) -> int:
         return int(self.slots_used.get(level, 0))
@@ -177,7 +177,7 @@ class SheetState:
     def with_pact_used(self, used: int) -> "SheetState":
         return replace(self, pact_used=used)
 
-    # --- хіт-дайси ---------------------------------------------------------
+    # --- кістки хітів ---------------------------------------------------------
 
     def hit_die_used(self, die: int) -> int:
         return int(self.hit_dice_used.get(die, 0))
@@ -257,7 +257,7 @@ class SheetState:
         )
 
     def restored_hit_dice(self, restored: Iterable[tuple[int, int]]) -> "SheetState":
-        """Повернути частину витрачених хіт-дайсів: [(die, count_to_return)]."""
+        """Повернути частину витрачених кісток хітів: [(die, count_to_return)]."""
         values = dict(self.hit_dice_used)
         for die, count in restored:
             left = max(0, values.get(die, 0) - count)
@@ -268,7 +268,7 @@ class SheetState:
         return self.with_hit_dice_used(values)
 
     def healed_state(self) -> "SheetState":
-        """Після довгого відпочинку: смерть і натхнення скидаються, втома -1."""
+        """Після тривалого відпочинку: смерть і натхнення скидаються, виснаження -1."""
         return replace(
             self,
             death_saves=DeathSaves(),

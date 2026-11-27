@@ -42,7 +42,7 @@ from dndsheet.shared.events import (
 )
 from dndsheet.shared.kernel import MAX_LEVEL, Ability, AbilityScore, Money, Skill
 
-#: Ключ експертності для злодійських інструментів (плут, PHB p. 96).
+#: Ключ експертизи для злодійських інструментів (плут, PHB p. 96).
 THIEVES_TOOLS = "thieves' tools"
 from dndsheet.shared.rules import (
     BackgroundMechanics,
@@ -88,7 +88,7 @@ class Character:
     #: Самі бонуси виду (thaumaturgy тифлінга) не зберігаються — вони похідні.
     spell_choices: tuple[str, ...] = ()
     feats: tuple[str, ...] = ()
-    #: Експертність (PHB: плут 1/6, бард 3/10): навички або злодійські
+    #: Експертиза (PHB: плут 1/6, бард 3/10): навички або злодійські
     #: інструменти з подвоєним бонусом майстерності. Значення — ключі навичок
     #: (`stealth`) або `thieves' tools`.
     expertise: tuple[str, ...] = ()
@@ -101,7 +101,7 @@ class Character:
     #: використаних мусить бути не більшою за кількість таких рівнів.
     asi_taken: int = 0
     hp: HitPointState = field(default_factory=HitPointState)
-    #: Лічильники й виправлення листа (слоти, хіт-дайси, кидки смерті, нотатки).
+    #: Лічильники й виправлення листа (комірки, кістки хітів, кидки смерті, нотатки).
     state: SheetState = field(default_factory=SheetState)
     version: int = 1
     events: list[DomainEvent] = field(default_factory=list, repr=False, compare=False)
@@ -177,7 +177,7 @@ class Character:
 
     @property
     def hit_dice_pool(self) -> dict[int, int]:
-        """Скільки хіт-дайсів якого розміру: {10: 2, 6: 3} — Воїн 2 / Волшебник 3."""
+        """Скільки кісток хітів якого розміру: {10: 2, 6: 3} — Воїн 2 / Волшебник 3."""
         pool: dict[int, int] = {}
         for entry in self.classes:
             die = self.class_definition(entry.class_key).hit_die
@@ -201,7 +201,7 @@ class Character:
 
     @property
     def expertise_slots(self) -> int:
-        """Скільки експертностей дали рівні: кожне вміння «Expertise» — дві.
+        """Скільки експертиз дали рівні: кожне вміння «Expertise» — дві.
 
         Рахується з умінь класу, як і покращення характеристик: плут має його
         на 1 і 6 рівнях, бард — на 3 і 10.
@@ -214,7 +214,7 @@ class Character:
         )
 
     def expertise_options(self) -> tuple[str, ...]:
-        """Що можна взяти в експертність: навички з володінням + злодійські інструменти плута."""
+        """Що можна взяти в експертизу: навички з володінням + злодійські інструменти плута."""
         proficiencies = self.all_proficiencies()
         options = [
             skill.value
@@ -258,7 +258,7 @@ class Character:
         self.bump_version()
 
     def set_expertise(self, values: Iterable[str]) -> None:
-        """Обрати експертність (PHB, p. 96 і 54): не більше, ніж дали рівні."""
+        """Обрати експертизу (PHB, p. 96 і 54): не більше, ніж дали рівні."""
         chosen: list[str] = []
         for raw in values:
             value = str(raw).strip().casefold().replace("’", "'")
@@ -267,20 +267,20 @@ class Character:
         slots = self.expertise_slots
         if len(chosen) > slots:
             raise ValidationError(
-                f"експертностей можна обрати {slots}, надіслано {len(chosen)}"
+                f"експертиз можна обрати {slots}, надіслано {len(chosen)}"
             )
         allowed = set(self.expertise_options())
         wrong = [value for value in chosen if value not in allowed]
         if wrong:
             raise ValidationError(
-                "експертність можна взяти лише для навичок, якими персонаж володіє"
+                "експертизу можна взяти лише для навичок, якими персонаж володіє"
                 f" (або злодійських інструментів плута): {', '.join(wrong)}"
             )
         self.expertise = tuple(chosen)
         self.bump_version()
 
     def roll_index_for(self, class_key: str) -> int:
-        """Місце кидка хіт-дайса для наступного рівня в `hp.rolls`.
+        """Місце кидка кості хітів для наступного рівня в `hp.rolls`.
 
         Кидки впорядковані за рівнями всіх класів (спершу рівні 2..N першого,
         далі 1..M другого), тому рівень узятий у класі, який стоїть не
@@ -390,7 +390,7 @@ class Character:
     def raise_level(self, class_key: str) -> None:
         """Узяти наступний рівень у наявному класі (мультиклас не додає).
 
-        Числа (хіти, слоти, вміння) не змінюються тут: вони похідні від
+        Числа (хіти, комірки, вміння) не змінюються тут: вони похідні від
         рівнів. Цей метод лише рухає рівень і тримає інваріант сумарного.
         """
         wanted = class_key.strip().casefold()
@@ -551,10 +551,10 @@ class Character:
     def all_proficiencies(self) -> Proficiencies:
         """Усі володіння: правила класу, виду, передісторії + вибір гравця.
 
-        Перший клас дає все: порятунки, броню, зброю, інструменти. Кожен
+        Перший клас дає все: рятівні кидки, броню, зброю, інструменти. Кожен
         наступний — лише те, що таблиця мультикласу (PHB, p. 164) називає для
         нього: у воїна легка й середня броня, щити, проста й військова зброя, у
-        плута — легка броня й злодійські інструменти, у мага — нічого. Порятунків
+        плута — легка броня й злодійські інструменти, у мага — нічого. Рятівних кидків
         мультиклас не дає взагалі. Навички на вибір (бард, слідопит, плут) — це
         вибір гравця, вони живуть у `chosen`.
         """
@@ -623,7 +623,7 @@ class Character:
                 for name in background.tool_proficiencies
                 if not is_choice_label(name)
             )
-        # Resilient: володіння порятунком обраної характеристики (PHB, p. 168).
+        # Resilient: володіння рятівним кидком обраної характеристики (PHB, p. 168).
         items.extend(
             Proficiency(
                 kind=ProficiencyKind.SAVING_THROW,
@@ -665,7 +665,7 @@ class Character:
     def set_hit_points(self, hp: HitPointState) -> None:
         if len(hp.rolls) > max(0, self.total_level - 1):
             raise ValidationError(
-                f"кидків хіт-дайсів не може бути більше за {max(0, self.total_level - 1)}"
+                f"кидків кісток хітів не може бути більше за {max(0, self.total_level - 1)}"
             )
         self.hp = hp
         self.bump_version()
@@ -692,7 +692,7 @@ class Character:
         self.bump_version()
 
     def set_state(self, state: SheetState) -> None:
-        """Замінити стан листа. Хіт-дайсів не може бути більше, ніж є."""
+        """Замінити стан листа. Кість хітівів не може бути більше, ніж є."""
         pool = self.hit_dice_pool
         for die, used in state.hit_dice_used.items():
             if used > pool.get(die, 0):
@@ -873,7 +873,7 @@ class Character:
         нічого не каже.
 
         Ліміт і найвищий рівень беруться з правил класу: клас без підготовки
-        сюди не доходить, рівень закляття понад слоти — відмова.
+        сюди не доходить, рівень закляття понад комірки — відмова.
         """
         wanted = class_key.strip().casefold()
         limit = self.prepared_limit(wanted)
@@ -1177,7 +1177,7 @@ class Character:
     def _validate_hit_points(self) -> None:
         if len(self.hp.rolls) > max(0, self.total_level - 1):
             raise ValidationError(
-                f"кидків хіт-дайсів не може бути більше за {max(0, self.total_level - 1)}"
+                f"кидків кісток хітів не може бути більше за {max(0, self.total_level - 1)}"
             )
 
     def _validate_asi(self) -> None:

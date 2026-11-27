@@ -2,7 +2,7 @@
 
 Застосунок бачить і агрегат, і обчислений лист — тому саме тут перевіряється
 те, чого не знає домен: «витрачено не більше, ніж максимум». Домен
-відповідає за інваріанти стану (кидки смерті 0..3, хіт-дайси не більше
+відповідає за інваріанти стану (кидки смерті 0..3, кістки хітів не більше
 наявних), застосунок — за числа, які залежать від правил класу.
 
 Кожна зміна пише агрегат на диск і повертає його; невдала — не пише нічого,
@@ -27,7 +27,7 @@ from dndsheet.shared.errors import ConflictError, NotFoundError, ValidationError
 
 @dataclass(slots=True)
 class SheetService:
-    """Сценарії листа: змінити стан, відпочити, витратити хіт-дайс."""
+    """Сценарії листа: змінити стан, відпочити, витратити кість хітів."""
 
     characters: CharacterRepository
     calculator: DerivedStatsCalculator | None = None
@@ -80,15 +80,15 @@ class SheetService:
             if "temporary" in current:
                 temporary = _int(current["temporary"], "тимчасові хіти")
             if "damage" in current:
-                damage = _int(current["damage"], "шкода")
+                damage = _int(current["damage"], "урон")
                 if damage < 0:
-                    raise ValidationError("шкода не може бути відʼємною")
+                    raise ValidationError("урон не може бути відʼємною")
             if "heal" in current:
                 heal = _int(current["heal"], "лікування")
                 if heal < 0:
                     raise ValidationError("лікування не може бути відʼємним")
             if damage is not None and heal is not None:
-                raise ValidationError("шкода й лікування — це окремі запити")
+                raise ValidationError("урон і лікування — це окремі запити")
 
         if "death_saves" in patch:
             saves = patch["death_saves"] or {}
@@ -107,19 +107,19 @@ class SheetService:
         if "inspiration" in patch:
             state = state.with_inspiration(bool(patch["inspiration"]))
         if "exhaustion" in patch:
-            state = state.with_exhaustion(_int(patch["exhaustion"], "втома"))
+            state = state.with_exhaustion(_int(patch["exhaustion"], "виснаження"))
         if "slots" in patch:
             state = state.with_slots_used(
                 self._slots(patch["slots"], sheet.spellcasting.slots.by_level)
             )
         if "pact_used" in patch:
             pact = sheet.spellcasting.slots.pact
-            used = _int(patch["pact_used"], "витрачені слоти Pact Magic")
+            used = _int(patch["pact_used"], "витрачені комірки Pact Magic")
             if pact is None and used:
                 raise ValidationError("персонаж не має Pact Magic")
             if pact is not None and used > pact.slots:
                 raise ValidationError(
-                    f"слотів Pact Magic усього {pact.slots}, витрачено {used}"
+                    f"комірок Pact Magic усього {pact.slots}, витрачено {used}"
                 )
             state = state.with_pact_used(used)
         if "hit_dice" in patch:
@@ -246,7 +246,7 @@ class SheetService:
         *,
         expected_version: int | None = None,
     ) -> Character:
-        """Обрати експертність (навички з подвоєним бонусом майстерності)."""
+        """Обрати експертизу (навички з подвоєним бонусом майстерності)."""
         character = self._load_versioned(character_id, expected_version)
         raw = payload.get("expertise")
         if raw is None:
@@ -421,11 +421,11 @@ class SheetService:
             try:
                 level = int(key)
             except (TypeError, ValueError) as exc:
-                raise ValidationError(f"рівень слотів {key!r} має бути числом") from exc
-            count = _int(value, f"витрачені слоти {level} рівня")
+                raise ValidationError(f"рівень комірок {key!r} має бути числом") from exc
+            count = _int(value, f"витрачені комірки {level} рівня")
             if count > limits.get(level, 0):
                 raise ValidationError(
-                    f"слотів {level} рівня всього {limits.get(level, 0)}, витрачено {count}"
+                    f"комірок {level} рівня всього {limits.get(level, 0)}, витрачено {count}"
                 )
             if count:
                 used[level] = count
@@ -445,7 +445,7 @@ class SheetService:
             try:
                 die = int(text)
             except ValueError as exc:
-                raise ValidationError(f"хіт-дайс {key!r} має бути числом") from exc
+                raise ValidationError(f"кість хітів {key!r} має бути числом") from exc
             count = _int(value, f"витрачені d{die}")
             if count:
                 used[die] = count

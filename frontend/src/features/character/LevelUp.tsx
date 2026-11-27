@@ -26,6 +26,7 @@ import type { FeatEntry } from "../wizard/types";
 import { ActiveGloss, GlossProvider, Term } from "../../components/Term";
 import {
   ABILITY_LABELS,
+  abilityCodesUk,
   abilityGenitive,
   abilityModifier,
   classGuide,
@@ -37,7 +38,7 @@ import {
 import type { LevelUpPlan, LevelUpReport, LevelUpView } from "../wizard/types";
 import { SubclassBrief } from "../wizard/SubclassBrief";
 import { RuleText } from "./panels";
-import { featureLabel, spellLabel, termLabel, ukSubclass, withEnglish } from "./uk";
+import { featLabel, featureLabel, spellLabel, termLabel, ukSubclass, withEnglish } from "./uk";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"] as const;
 type AbilityCode = (typeof ABILITIES)[number];
@@ -376,13 +377,13 @@ export function LevelUpWizard({
             {fresh.map((item) => {
               const title = item.allowed
                 ? planTitle(item)
-                : `${termLabel(item.class_name)} — ${item.requirements.join(" / ")}`;
+                : `${termLabel(item.class_name)} — ${abilityCodesUk(item.requirements.join(" / "))}`;
               return (
                 <button
                   key={item.class_key}
                   type="button"
                   className={`chip ${classKey === item.class_key ? "chip--active" : ""}`}
-                  title={item.blocked_reason ?? item.requirements.join(" / ")}
+                  title={abilityCodesUk(item.blocked_reason ?? item.requirements.join(" / "))}
                   disabled={!item.allowed && !ignoreRequirements}
                   onClick={() => setClassKey(item.class_key)}
                 >
@@ -399,7 +400,7 @@ export function LevelUpWizard({
               <h3>{nextStep()}. Хіти</h3>
               <p className="hint">
                 Максимум <Term k="hit_points">хітів</Term> росте з кожним рівнем: результат{" "}
-                <Term k="hit_die">хіт-дайса</Term> d{plan.hit_die} + модифікатор Статури (
+                <Term k="hit_die">кості хітів</Term> d{plan.hit_die} + модифікатор Статури (
                 {modifierLabel(plan.constitution_modifier)}), щонайменше 1. Середнє (
                 {Math.floor(plan.hit_die / 2) + 1}) надійніше; кидок може дати більше або менше.
                 Вибір остаточний.
@@ -467,8 +468,8 @@ export function LevelUpWizard({
 
             {plan.features.some((item) => item.name_en === "Expertise") ? (
               <p className="hint hint--warn">
-                Цей рівень дає <Term k="expertise">експертність</Term> у двох навичках. Оберіть їх
-                одразу після підвищення: лист персонажа → блок «Навички» → «Експертність».
+                Цей рівень дає <Term k="expertise">експертизу</Term> у двох навичках. Оберіть їх
+                одразу після підвищення: лист персонажа → блок «Навички» → «Експертиза».
               </p>
             ) : null}
 
@@ -662,7 +663,7 @@ export function LevelUpWizard({
                     <option value="">не замінювати</option>
                     {knownSpells.map((spell) => (
                       <option key={spell.name_en} value={spell.name_en}>
-                        {spell.name_en} ({spell.level} рів.)
+                        {spellLabel(spell.name_en)} ({spell.level} рів.)
                       </option>
                     ))}
                   </select>
@@ -675,7 +676,7 @@ export function LevelUpWizard({
                       <option value="">{classSpells.isPending ? "читаємо список…" : "— нове закляття —"}</option>
                       {replacements.map((entry) => (
                         <option key={entry.id} value={entry.name_en}>
-                          {entry.name_uk ? `${entry.name_uk} · ${entry.name_en}` : entry.name_en} ({Number(entry.data.level)} рів.)
+                          {spellLabel(entry.name_en)} ({Number(entry.data.level)} рів.)
                         </option>
                       ))}
                     </select>
@@ -780,7 +781,7 @@ export function LevelUpWizard({
                 </li>
                 {plan.allowed ? null : (
                   <li className="levelup-warning">
-                    вимоги мультикласу проігноровано: {plan.requirements.join(" або ")} — на
+                    вимоги мультикласу проігноровано: {abilityCodesUk(plan.requirements.join(" або "))} — на
                     листі буде позначка
                   </li>
                 )}
@@ -799,13 +800,13 @@ export function LevelUpWizard({
                   .filter((row) => row.before !== row.after)
                   .map((row) => (
                     <li key={row.level}>
-                      <Term k="spell_slot">слоти</Term> {row.level} рівня: {row.before} → {row.after}
+                      <Term k="spell_slot">комірки</Term> {row.level} рівня: {row.before} → {row.after}
                     </li>
                   ))}
                 {plan.pact.after ? (
                   <li>
                     <Term k="pact_magic">магія пакту</Term>: {plan.pact.before?.[0] ?? 0} →{" "}
-                    {plan.pact.after[0]} слотів {plan.pact.after[1]} рівня
+                    {plan.pact.after[0]} комірок {plan.pact.after[1]} рівня
                   </li>
                 ) : null}
                 {plan.asi.pending ? (
@@ -883,7 +884,7 @@ function humanError(raw: string): string {
     const total = Number(base) + Number(bonus);
     return `${ABILITY_LABELS[code]} уже ${total}, а +${amount} дасть ${total + Number(amount)} — більше 20 не можна. Оберіть іншу характеристику або +1 і +1.`;
   }
-  return raw;
+  return abilityCodesUk(raw);
 }
 
 /** Підпис під чипом класу: що дасть саме цей рівень — ще до кліку. */
@@ -916,7 +917,7 @@ function FeatPicker({
     (feat) =>
       !needle ||
       feat.name_en.toLocaleLowerCase().includes(needle) ||
-      (feat.name_uk ?? "").toLocaleLowerCase().includes(needle),
+      (feat.name_uk ?? featLabel(feat.name_en)).toLocaleLowerCase().includes(needle),
   );
   return (
     <div className="feat-picker">
@@ -972,7 +973,7 @@ function FeatOption({ feat, active, onPick }: { feat: FeatEntry; active: boolean
         <button type="button" className="option__pick" aria-pressed={active} onClick={onPick}>
           <span className="option__mark" aria-hidden="true">{active ? "✓" : ""}</span>
           <span className="option__name">
-            {feat.name_uk ? `${feat.name_uk} (${feat.name_en})` : feat.name_en}
+            {feat.name_uk ? withEnglish(feat.name_en, feat.name_uk) : featLabel(feat.name_en)}
           </span>
         </button>
         <span className="option__meta">{sourceLabel(feat.source_id)}</span>

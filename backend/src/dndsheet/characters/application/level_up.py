@@ -351,7 +351,7 @@ def _hp_choice(raw: Any, plan: LevelPlan) -> tuple[str, int | None]:
         raise ValidationError(f"невідомий спосіб рахувати хіти {mode!r}")
     roll = raw.get("roll")
     if isinstance(roll, bool) or not isinstance(roll, int):
-        raise ValidationError("кидок хіт-дайса має бути цілим числом")
+        raise ValidationError("кидок кості хітів має бути цілим числом")
     if not 1 <= roll <= plan.hit_die:
         raise ValidationError(f"кидок d{plan.hit_die} має бути в межах 1..{plan.hit_die}")
     return "roll", roll

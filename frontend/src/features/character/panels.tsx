@@ -23,6 +23,7 @@ import {
 import type { SheetViewPayload } from "../wizard/types";
 import {
   componentsLabel,
+  featLabel,
   featureLabel,
   featureText,
   itemLabel,
@@ -31,6 +32,7 @@ import {
   spellLabel,
   spellText,
   termLabel,
+  withEnglish,
   weaponDamage,
   weaponNotes,
 } from "./uk";
@@ -222,7 +224,7 @@ export function CastingBlock({
       <ul className="plain-list">
         {casting.classes.map((item) => (
           <li key={item.key}>
-            {termLabel(item.name_en)}: ОС порятунку {item.save_dc}, атака{" "}
+            {termLabel(item.name_en)}: КС рятівного кидка {item.save_dc}, атака{" "}
             {modifierLabel(item.attack_bonus)} (від {abilityGenitive(item.ability)})
             {item.prepares
               ? `, готує до ${item.prepared_limit}`
@@ -237,7 +239,7 @@ export function CastingBlock({
             <SlotTrack
               key={level}
               label={`${level} рівень`}
-              title={`слоти ${level} рівня`}
+              title={`комірки ${level} рівня`}
               used={resource.used}
               total={resource.total}
               onChange={(used) => onSlotsUsed(level, used)}
@@ -245,8 +247,8 @@ export function CastingBlock({
           ))}
         {resources.pact ? (
           <SlotTrack
-            label="Pact Magic"
-            title="слоти Pact Magic"
+            label="Магія угоди (Pact Magic)"
+            title="комірки магії угоди (Pact Magic)"
             used={resources.pact.used}
             total={resources.pact.total}
             onChange={onPactUsed}
@@ -254,7 +256,7 @@ export function CastingBlock({
         ) : null}
         {Object.values(resources.slots).some((resource) => resource.total > 0) ||
         resources.pact ? (
-          <p className="slot-hint">клік по ячейці витрачає слот, повторний — повертає</p>
+          <p className="slot-hint">клік по комірці витрачає її, повторний — повертає</p>
         ) : null}
       </div>
     </>
@@ -436,7 +438,7 @@ export function FeatsList({
         <li key={feat.key}>
           <details className="feature">
             <summary className="feature__summary">
-              <span className="feature-name">{feat.name_uk || feat.name_en}</span>
+              <span className="feature-name">{feat.name_uk ? withEnglish(feat.name_en, feat.name_uk) : featLabel(feat.name_en)}</span>
               <span className="feature-meta">
                 риса{feat.source_id ? ` · ${feat.source_id}` : ""}
               </span>
@@ -560,8 +562,8 @@ export function FeatureResources({
             <span className="feature-resource__meta">
               {termLabel(resource.class_name)} ·{" "}
               {resource.recharge === "short"
-                ? "короткий або довгий відпочинок"
-                : "довгий відпочинок"}
+                ? "короткий або тривалий відпочинок"
+                : "тривалий відпочинок"}
             </span>
           </span>
           <Counter

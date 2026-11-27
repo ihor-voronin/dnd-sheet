@@ -466,7 +466,7 @@ export function SpeciesStep({
         <p className="hint">
           <Term k="species">Вид</Term> — народ вашого героя. Він дає бонуси
           характеристик, швидкість і особливі вміння. Не знаєте, з чого почати —
-          людина, ельф, дворф і півросликів підходять будь-якому класу.
+          людина, ельф, дворф і напівросликів підходять будь-якому класу.
         </p>
       )}
 
@@ -976,7 +976,7 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
                 хіти на 1 рівні: {item.hit_die} + Статура
               </span>
               <span className="choice-meta">
-                порятунки: {item.saving_throws.map(abilityLabel).join(", ")}
+                рятівні кидки: {item.saving_throws.map(abilityLabel).join(", ")}
               </span>
               {item.spellcasting ? (
                 <span className="choice-meta">
@@ -1055,11 +1055,11 @@ function classFacts(item: ClassView): Fact[] {
     ]);
   }
   facts.push([
-    <Term k="hit_die">Хіт-дайс</Term>,
+    <Term k="hit_die">Кість хітів</Term>,
     `d${item.hit_die} — на 1 рівні ${item.hit_die} + модифікатор Статури хітів`,
   ]);
   facts.push([
-    <Term k="saving_throw">Порятунки</Term>,
+    <Term k="saving_throw">Рятівні кидки</Term>,
     item.saving_throws.map(abilityLabel).join(", "),
   ]);
   const skills = item.skill_options.map(skillLabel);
@@ -1322,7 +1322,7 @@ export function AbilitiesStep({
                 <th scope="row">
                   <span className="ability-name">{abilityLabel(ability)}</span>
                   {primary ? <span className="tag tag--key">основна для класу</span> : null}
-                  {save ? <span className="tag">порятунок класу</span> : null}
+                  {save ? <span className="tag">рятівний кидок класу</span> : null}
                   <span className="ability-role">
                     {ABILITY_ROLE[ability]}
                     {skills.length ? ` · навички: ${skills.join(", ")}` : ""}
@@ -2575,7 +2575,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
         <h3>
           <Term k="cantrip">Заговори</Term> — {cantrips.length} з {casting.cantrips_limit}
         </h3>
-        <p className="hint">Творяться без обмежень і не витрачають слотів.</p>
+        <p className="hint">Творяться без обмежень і не витрачають комірок.</p>
         <ul className="option-list">
           {(options.cantrips ?? []).filter(filter).map((entry) => (
             <SpellOption
@@ -2595,7 +2595,7 @@ export function SpellsStep({ answers, options, busy, onSubmit }: StepProps<Spell
           Закляття 1 рівня — {leveled.length} з {knownLimit}
         </h3>
         <p className="hint">
-          Кожне витрачає <Term k="spell_slot">слот</Term>; на 1 рівні їх 2 на день.
+          Кожне витрачає <Term k="spell_slot">комірку</Term>; на 1 рівні їх 2 на день.
           {casting.prepares ? ` Підготовлено ${preparedCount} з ${casting.prepared_limit}.` : ""}
         </p>
         <ul className="option-list">

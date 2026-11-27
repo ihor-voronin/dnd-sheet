@@ -2,7 +2,7 @@
  {
   "id": "49b1a8b5fa",
   "en": "Agonizing Blast",
-  "name_uk": "Болісний постріл"
+  "name_uk": "Болісний розряд"
  },
  {
   "id": "98969b85be",
@@ -32,7 +32,7 @@
  {
   "id": "72793cc655",
   "en": "Ascendant Step",
-  "name_uk": "Висхідний крок"
+  "name_uk": "Піднесений крок"
  },
  {
   "id": "51c6ec1450",
@@ -62,12 +62,12 @@
  {
   "id": "bb8a117ebe",
   "en": "Beguiling Influence",
-  "name_uk": "Звабливий вплив"
+  "name_uk": "Чари впливу"
  },
  {
   "id": "275c5d7b69",
   "en": "Bewitching Whispers",
-  "name_uk": "Чаруючий шепіт"
+  "name_uk": "Зачаровані шепоти"
  },
  {
   "id": "76da10319f",
@@ -252,7 +252,7 @@
  {
   "id": "afe65bbed3",
   "en": "Eyes of the Rune Keeper",
-  "name_uk": "Очі хранителя рун"
+  "name_uk": "Очі охоронця рун"
  },
  {
   "id": "f1a47ed635",
@@ -272,7 +272,7 @@
  {
   "id": "81f817ac2f",
   "en": "Fiendish Vigor",
-  "name_uk": "Демонічна снага"
+  "name_uk": "Диявольська міць"
  },
  {
   "id": "f8aaf1e13b",
@@ -392,7 +392,7 @@
  {
   "id": "06b0991881",
   "en": "Lifedrinker",
-  "name_uk": "Життєпивець"
+  "name_uk": "Пивець життя"
  },
  {
   "id": "78fd583e48",
@@ -417,7 +417,7 @@
  {
   "id": "936fb9ea91",
   "en": "Master of Myriad Forms",
-  "name_uk": "Майстер незліченних форм"
+  "name_uk": "Володар безлічі форм"
  },
  {
   "id": "07787cc5ca",
@@ -432,12 +432,12 @@
  {
   "id": "47eb8f4117",
   "en": "Minions of Chaos",
-  "name_uk": "Посіпаки хаосу"
+  "name_uk": "Слуги хаосу"
  },
  {
   "id": "84b6ebf3a7",
   "en": "Mire the Mind",
-  "name_uk": "Трясовина розуму"
+  "name_uk": "Замутити розум"
  },
  {
   "id": "78a65f16e0",
@@ -462,22 +462,22 @@
  {
   "id": "39954aee6b",
   "en": "Pact of the Blade",
-  "name_uk": "Пакт клинка"
+  "name_uk": "Угода клинка"
  },
  {
   "id": "95a2eff610",
   "en": "Pact of the Chain",
-  "name_uk": "Пакт ланцюга"
+  "name_uk": "Угода ланцюга"
  },
  {
   "id": "21011cd3d2",
   "en": "Pact of the Talisman",
-  "name_uk": "Пакт талісмана"
+  "name_uk": "Угода талісмана"
  },
  {
   "id": "cb16e12492",
   "en": "Pact of the Tome",
-  "name_uk": "Пакт фоліанта"
+  "name_uk": "Угода фоліанта"
  },
  {
   "id": "96a04bd812",
@@ -547,7 +547,7 @@
  {
   "id": "41b3eb1414",
   "en": "Repelling Blast",
-  "name_uk": "Відкидальний постріл"
+  "name_uk": "Відштовхувальний розряд"
  },
  {
   "id": "c6d0b39f79",
@@ -667,7 +667,7 @@
  {
   "id": "2f59f4c6de",
   "en": "Thief of Five Fates",
-  "name_uk": "Викрадач п’яти доль"
+  "name_uk": "Крадій п’яти доль"
  },
  {
   "id": "41f10198b5",
@@ -732,7 +732,7 @@
  {
   "id": "8b0cc169a7",
   "en": "Voice of the Chain Master",
-  "name_uk": "Голос володаря ланцюга"
+  "name_uk": "Голос володаря ланцюгів"
  },
  {
   "id": "34edafce2f",
@@ -747,7 +747,7 @@
  {
   "id": "bd717cbd99",
   "en": "Whispers of the Grave",
-  "name_uk": "Шепіт могили"
+  "name_uk": "Шепоти могили"
  },
  {
   "id": "90e73c0799",

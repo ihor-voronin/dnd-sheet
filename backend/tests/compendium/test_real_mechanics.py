@@ -1,7 +1,7 @@
 """Механіки на справжніх індексах `content/index/*-mechanics.json`.
 
 Стрибає, якщо індексів немає (свіжий клон). Коли є — перевіряє, що числа
-не суперечать книзі: 13 класів 2014, хіт-дайси на місці, підкласи з
+не суперечать книзі: 13 класів 2014, кістки хітів на місці, підкласи з
 правильних рівнів, Pact Magic лише у варлока, види мають бонуси характеристик.
 """
 
@@ -110,7 +110,7 @@ def test_full_casters_share_the_slot_table(service: CompendiumService) -> None:
 def test_half_casters_start_at_level_two(service: CompendiumService) -> None:
     paladin = service.class_mechanics("paladin")
     assert paladin.caster_progression is CasterProgression.HALF
-    assert all(count == 0 for count in paladin.slots_at(1)), "на 1 рівні слотів немає"
+    assert all(count == 0 for count in paladin.slots_at(1)), "на 1 рівні комірок немає"
     assert paladin.slots_at(2)[0] == 2
 
 

@@ -60,7 +60,7 @@ def computed_sheet(
             }
             for skill, value in computed.skills.items()
         },
-        # Експертність: скільки дали рівні, що обрано і з чого можна обрати.
+        # Експертиза: скільки дали рівні, що обрано і з чого можна обрати.
         "expertise": {
             "slots": character.expertise_slots,
             "chosen": list(character.expertise),

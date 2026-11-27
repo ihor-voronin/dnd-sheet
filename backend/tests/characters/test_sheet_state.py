@@ -175,7 +175,7 @@ def test_short_rest_restores_pact_only(rules) -> None:
     character.set_state(SheetState(pact_used=1, slots_used={1: 1}, hit_dice_used={8: 0}))
     RestService().short_rest(character)
     assert character.state.pact_used == 0
-    assert character.state.slot_used(1) == 1, "звичайні слоти короткий відпочинок не відновлює"
+    assert character.state.slot_used(1) == 1, "звичайні комірки короткий відпочинок не відновлює"
 
 
 def test_spend_hit_die_heals(rules) -> None:

@@ -66,7 +66,7 @@ class MarkdownRenderer:
     def _field_line(cls, field: Field, opts: RenderOptions) -> str:
         label = field.label.uk
         if opts.show_originals and field.label.en != field.label.uk:
-            label = f"{label} — {field.label.en}"
+            label = f"{label} ({field.label.en})"
         line = f"- **{label}**: {cls._format_value(field)}"
         if field.hint is not None and opts.show_originals:
             line += f" — {field.hint.uk}"
