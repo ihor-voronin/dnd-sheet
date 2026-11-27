@@ -4,11 +4,17 @@
  * За посиланням лист відкривається без входу: його видно, можна надрукувати чи
  * завантажити PDF, але змінити нічого не можна. Нове посилання замінює старе
  * (старе перестає працювати), «Вимкнути» відкликає його зовсім.
+ *
+ * Якщо є бот Telegram — ще й посилання `t.me/<бот>?startapp=s_<токен>`: воно
+ * відкриває той самий лист одразу в Mini App. У самому Telegram — кнопка
+ * «Надіслати в Telegram» з вибором чату.
  */
 
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { createShare, fetchShare, revokeShare } from "../../api";
+import { createShare, fetchAuthConfig, fetchShare, revokeShare } from "../../api";
+import { inTelegram, shareToTelegram, telegramShareLink } from "../../telegram";
 
 export function SharePanel({ characterId, onClose }: { characterId: string; onClose: () => void }) {
   const [token, setToken] = useState<string | null | undefined>(undefined);
@@ -26,7 +32,10 @@ export function SharePanel({ characterId, onClose }: { characterId: string; onCl
     };
   }, [characterId]);
 
+  const config = useQuery({ queryKey: ["auth-config"], queryFn: fetchAuthConfig, staleTime: Infinity });
+  const bot = config.data?.telegram_ready ? config.data.telegram_bot : null;
   const link = token ? `${window.location.origin}/#/s/${token}` : "";
+  const telegramLink = token && bot ? telegramShareLink(bot, token) : "";
 
   async function act(action: () => Promise<{ token: string | null }>) {
     setBusy(true);
@@ -41,9 +50,9 @@ export function SharePanel({ characterId, onClose }: { characterId: string; onCl
     }
   }
 
-  async function copy() {
+  async function copy(value: string = link) {
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(value);
       setCopied(true);
     } catch {
       setError("Не вдалося скопіювати — виділіть посилання й скопіюйте вручну.");
@@ -81,6 +90,32 @@ export function SharePanel({ characterId, onClose }: { characterId: string; onCl
               {copied ? "Скопійовано" : "Копіювати"}
             </button>
           </div>
+          {telegramLink ? (
+            <div className="share-panel__telegram">
+              <p className="meta">У Telegram лист відкриється одразу в застосунку:</p>
+              <div className="share-panel__link">
+                <input
+                  readOnly
+                  value={telegramLink}
+                  aria-label="Посилання на лист у Telegram"
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                {inTelegram ? (
+                  <button
+                    type="button"
+                    className="button button--primary"
+                    onClick={() => shareToTelegram(telegramLink, "Мій персонаж D&D")}
+                  >
+                    Надіслати в Telegram
+                  </button>
+                ) : (
+                  <button type="button" className="button" onClick={() => void copy(telegramLink)}>
+                    Копіювати
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : null}
           <div className="share-panel__actions">
             <button
               type="button"

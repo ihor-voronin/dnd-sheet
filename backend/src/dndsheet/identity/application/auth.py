@@ -19,11 +19,20 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from dndsheet.identity.domain.ports import SessionStore, UserStore
-from dndsheet.identity.domain.user import TelegramProfile, User, verify_telegram_login
+from dndsheet.identity.domain.user import (
+    TelegramProfile,
+    User,
+    verify_telegram_login,
+    verify_telegram_webapp,
+)
 from dndsheet.shared.errors import ValidationError
 
 #: Скільки живе сесія: 30 днів.
 SESSION_TTL = 30 * 24 * 60 * 60
+
+#: Скільки живе посилання для завантаження (PDF з Mini App): Telegram качає файл
+#: сам, без нашої сесії, тож у посиланні — окремий короткий токен.
+LINK_TTL = 5 * 60
 
 
 def token_hash(token: str) -> str:
@@ -48,6 +57,18 @@ class AuthService:
     def login_telegram(self, payload: Mapping[str, Any], *, now: float | None = None) -> LoginResult:
         profile = verify_telegram_login(payload, self.bot_token, now=now)
         return self._login(profile, now)
+
+    def login_telegram_webapp(self, init_data: str, *, now: float | None = None) -> LoginResult:
+        """Вхід із Mini App: Telegram уже підписав, хто відкрив застосунок."""
+        profile = verify_telegram_webapp(init_data, self.bot_token, now=now)
+        return self._login(profile, now)
+
+    def link_token(self, user: User, *, now: float | None = None) -> str:
+        """Короткий токен для посилання на файл (живе `LINK_TTL`)."""
+        token = secrets.token_urlsafe(24)
+        moment = time.time() if now is None else now
+        self.sessions.create(user.id, token_hash(token), moment + LINK_TTL)
+        return token
 
     def login_dev(self, name: str, *, now: float | None = None) -> LoginResult:
         if not self.dev_login_enabled:

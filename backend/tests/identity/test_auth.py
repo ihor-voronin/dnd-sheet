@@ -12,12 +12,13 @@ import json
 import shutil
 import time
 from pathlib import Path
+from urllib.parse import urlencode
 
 import pytest
 from fastapi.testclient import TestClient
 
 from dndsheet.api.app import create_app
-from dndsheet.identity.domain.user import verify_telegram_login
+from dndsheet.identity.domain.user import verify_telegram_login, verify_telegram_webapp
 from dndsheet.shared.errors import ValidationError
 
 BOT_TOKEN = "123456:TEST-TOKEN"
@@ -267,3 +268,89 @@ def test_share_link_is_read_only_and_revocable(monkeypatch: pytest.MonkeyPatch) 
     assert guest.get(f"/api/v1/shared/{token}").status_code == 404
     owner.delete(f"/api/v1/characters/{character_id}/share")
     assert guest.get(f"/api/v1/shared/{fresh}").status_code == 404
+
+
+# --- Mini App у Telegram ------------------------------------------------------
+
+
+def _init_data(telegram_id: int = 42, token: str = BOT_TOKEN, auth_date: int | None = None, **user: object) -> str:
+    """initData так, як його підписує Telegram для Mini App."""
+    fields = {
+        "auth_date": str(int(time.time()) if auth_date is None else auth_date),
+        "query_id": "AAHdF6IQAAAAAN0XohDhrOrc",
+        "user": json.dumps({"id": telegram_id, "first_name": "Ігор", **user}, ensure_ascii=False, separators=(",", ":")),
+        "signature": "ed25519-signature-is-part-of-the-check-string",
+    }
+    check = "\n".join(f"{key}={fields[key]}" for key in sorted(fields))
+    secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+    fields["hash"] = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+    return urlencode(fields)
+
+
+def test_webapp_init_data_gives_profile() -> None:
+    profile = verify_telegram_webapp(_init_data(username="igor", last_name="В."), BOT_TOKEN)
+    assert (profile.telegram_id, profile.first_name, profile.last_name, profile.username) == (42, "Ігор", "В.", "igor")
+
+
+def test_webapp_tampered_or_foreign_init_data_is_rejected() -> None:
+    forged = _init_data().replace("%22id%22%3A42", "%22id%22%3A43")
+    assert forged != _init_data()
+    with pytest.raises(ValidationError, match="підпис"):
+        verify_telegram_webapp(forged, BOT_TOKEN)
+    with pytest.raises(ValidationError):
+        verify_telegram_webapp(_init_data(token="999:OTHER"), BOT_TOKEN)
+    # Підпис віджета на сайті не підходить для Mini App і навпаки: різні ключі.
+    widget = urlencode(_signed({"id": 42, "first_name": "Ігор", "auth_date": int(time.time())}))
+    with pytest.raises(ValidationError):
+        verify_telegram_webapp(widget, BOT_TOKEN)
+    with pytest.raises(ValidationError):
+        verify_telegram_webapp("", BOT_TOKEN)
+
+
+def test_webapp_stale_init_data_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="застарів"):
+        verify_telegram_webapp(_init_data(auth_date=int(time.time()) - 3 * 24 * 3600), BOT_TOKEN)
+
+
+def test_mini_app_login_uses_bearer_token_and_same_account(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mini App: initData → токен у заголовку; той самий Telegram id — той самий гравець і ті самі персонажі."""
+    site = _app(monkeypatch, "webapp")
+    site.post("/api/v1/auth/telegram", json=_signed(_fields()))
+    character_id = _create(site)
+
+    # Інший «пристрій» без cookie (Telegram у браузері: iframe без сторонніх cookie).
+    mini = TestClient(site.app)
+    response = mini.post("/api/v1/auth/telegram-webapp", json={"init_data": _init_data()})
+    assert response.status_code == 200, response.text
+    token = response.json()["token"]
+    mini.cookies.clear()
+    bearer = {"Authorization": f"Bearer {token}"}
+    assert mini.get("/api/v1/auth/me").json()["user"] is None
+    assert mini.get("/api/v1/auth/me", headers=bearer).json()["user"]["name"] == "Ігор"
+    listed = mini.get("/api/v1/characters", headers=bearer).json()["items"]
+    assert [item["id"] for item in listed] == [character_id]
+
+    assert mini.post("/api/v1/auth/telegram-webapp", json={"init_data": _init_data(token="999:OTHER")}).status_code == 401
+    mini.post("/api/v1/auth/logout", headers=bearer)
+    assert mini.get("/api/v1/auth/me", headers=bearer).json()["user"] is None
+
+
+def test_link_token_opens_files_only_for_get(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Файл з Mini App качає сам Telegram: короткий токен у посиланні, лише для читання."""
+    owner = _app(monkeypatch, "link")
+    owner.post("/api/v1/auth/dev", json={"name": "Аня"})
+    character_id = _create(owner)
+    link = owner.post("/api/v1/auth/link-token").json()
+    assert link["token"] and link["ttl"] == 300
+
+    outsider = TestClient(owner.app)
+    assert outsider.get(f"/api/v1/characters/{character_id}/print").status_code == 401
+    page = outsider.get(f"/api/v1/characters/{character_id}/print", params={"link": link["token"]})
+    assert page.status_code == 200 and "data:font/woff2" in page.text
+    # Для змін посилання не годиться.
+    patch = outsider.patch(
+        f"/api/v1/characters/{character_id}", params={"link": link["token"]}, json={"hp": {"damage": 1}}
+    )
+    assert patch.status_code == 401
+    assert outsider.post("/api/v1/auth/link-token").status_code == 401
+

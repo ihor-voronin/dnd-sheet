@@ -2125,3 +2125,17 @@ input[type="radio"] {
 #my-characters {
   scroll-margin-top: 12px;
 }
+
+/* --- Mini App у Telegram --------------------------------------------------- */
+
+.telegram-status {
+  margin: 16px;
+}
+
+.share-panel__telegram {
+  margin-top: 14px;
+}
+
+.share-panel__telegram > .meta {
+  margin: 0 0 6px;
+}

@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Шрифти Alegreya — з @fontsource у збірці (див. src/main.tsx), без Google Fonts. -->
     <title>Листок персонажа · D&amp;D 5e</title>
+    <!--
+      Mini App у Telegram: скрипт Telegram вантажимо лише тоді, коли сторінку відкрив
+      Telegram (його параметри в hash або вже збережені ним у sessionStorage після
+      перезавантаження). Звичайний сайт telegram.org не чіпає. Синхронно й до
+      застосунку — так вимагає Telegram (див. src/telegram.ts).
+    -->
+    <script>
+      (function () {
+        var fromTelegram = /tgWebApp/.test(location.hash + location.search);
+        try {
+          fromTelegram = fromTelegram || !!sessionStorage.getItem("__telegram__initParams");
+        } catch (e) {}
+        if (fromTelegram) document.write('<script src="https://telegram.org/js/telegram-web-app.js?59"><\/script>');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

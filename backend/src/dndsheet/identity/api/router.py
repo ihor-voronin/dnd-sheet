@@ -3,6 +3,14 @@
 Сесія — cookie `dndsheet_session` (HttpOnly, SameSite=Lax): JavaScript сторінки
 її не бачить, а з чужого сайту вона не йде разом із POST-запитом.
 
+У Mini App у Telegram cookie може не дійти (Telegram у браузері вбудовує
+сторінку в iframe, де сторонні cookie блокуються), тому там сесія їде заголовком
+`Authorization: Bearer <токен>`. Підробити заголовок з чужого сайту не можна,
+тож він не послаблює захист від CSRF.
+
+Файли (PDF, друк) з Mini App качає сам Telegram, без нашої сесії: для них —
+короткий токен у посиланні (`?link=…`, 5 хвилин, лише GET).
+
 Режим одного користувача (`DNDSHEET_AUTH=off`) — для тестів і локального
 запуску без входу: кожен запит виконується від імені «локального гравця».
 """
@@ -14,7 +22,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Request, Response
 
-from dndsheet.identity.application.auth import SESSION_TTL, AuthService, LoginResult
+from dndsheet.identity.application.auth import LINK_TTL, SESSION_TTL, AuthService, LoginResult
 from dndsheet.identity.domain.user import User
 from dndsheet.shared.errors import ValidationError
 
@@ -34,6 +42,16 @@ def _service(request: Request) -> AuthService:
     return request.app.state.auth
 
 
+def session_token(request: Request) -> str | None:
+    """Токен сесії: заголовок Bearer (Mini App), посилання `?link=` (лише GET) або cookie."""
+    header = request.headers.get("authorization", "")
+    if header[:7].casefold() == "bearer ":
+        return header[7:].strip() or None
+    if request.method == "GET" and request.query_params.get("link"):
+        return request.query_params["link"]
+    return request.cookies.get(COOKIE)
+
+
 def current_user(request: Request) -> User | None:
     """Хто робить запит; `None` — гість."""
     if not request.app.state.auth_enabled:
@@ -41,7 +59,7 @@ def current_user(request: Request) -> User | None:
     cached = getattr(request.state, "user", False)
     if cached is not False:
         return cached
-    user = _service(request).current(request.cookies.get(COOKIE))
+    user = _service(request).current(session_token(request))
     request.state.user = user
     return user
 
@@ -116,6 +134,28 @@ def login_telegram(
     return _start_session(request, response, result)
 
 
+@router.post("/telegram-webapp")
+def login_telegram_webapp(
+    request: Request, response: Response, payload: dict[str, Any] = Body(default_factory=dict)
+) -> dict[str, Any]:
+    """Вхід із Mini App: `initData` від Telegram. Токен — і в cookie, і в тілі (для заголовка)."""
+    try:
+        result = _service(request).login_telegram_webapp(str(payload.get("init_data") or ""))
+    except ValidationError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    body = _start_session(request, response, result)
+    return {**body, "token": result.token}
+
+
+@router.post("/link-token")
+def link_token(request: Request) -> dict[str, Any]:
+    """Короткий токен для посилання на файл: PDF чи друк з Mini App качає сам Telegram."""
+    user = require_user(request)
+    if not request.app.state.auth_enabled:
+        return {"token": None, "ttl": 0}
+    return {"token": _service(request).link_token(user), "ttl": LINK_TTL}
+
+
 @router.post("/dev")
 def login_dev(
     request: Request, response: Response, payload: dict[str, Any] = Body(default_factory=dict)
@@ -132,6 +172,6 @@ def login_dev(
 
 @router.post("/logout")
 def logout(request: Request, response: Response) -> dict[str, Any]:
-    _service(request).logout(request.cookies.get(COOKIE))
+    _service(request).logout(session_token(request))
     response.delete_cookie(COOKIE, path="/")
     return {"user": None}

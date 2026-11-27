@@ -15,10 +15,36 @@ import type {
   StepView,
 } from "./features/wizard/types";
 
+//: Токен сесії Mini App (Telegram): там cookie може не дійти (iframe у Telegram
+//: у браузері), тож сесія їде заголовком. На звичайному сайті — порожньо, працює cookie.
+const SESSION_KEY = "dndsheet.session";
+let sessionToken: string | null = (() => {
+  try {
+    return window.sessionStorage.getItem(SESSION_KEY);
+  } catch {
+    return null;
+  }
+})();
+
+export function setSessionToken(token: string | null): void {
+  sessionToken = token;
+  try {
+    if (token) window.sessionStorage.setItem(SESSION_KEY, token);
+    else window.sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // приватний режим — токен житиме, доки відкрита сторінка
+  }
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
-    headers: { Accept: "application/json", "Content-Type": "application/json", ...init?.headers },
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+      ...init?.headers,
+    },
   });
   if (!response.ok) {
     let detail = `Запит ${url} завершився зі статусом ${response.status}`;
@@ -66,12 +92,31 @@ export function loginTelegram(payload: Record<string, unknown>): Promise<{ user:
   return request<{ user: AuthUser }>("/api/v1/auth/telegram", { method: "POST", body: JSON.stringify(payload) });
 }
 
+/** Вхід із Mini App: `initData` від Telegram; сервер повертає токен для заголовка. */
+export async function loginTelegramWebApp(initData: string): Promise<{ user: AuthUser }> {
+  const result = await request<{ user: AuthUser; token: string }>("/api/v1/auth/telegram-webapp", {
+    method: "POST",
+    body: JSON.stringify({ init_data: initData }),
+  });
+  setSessionToken(result.token);
+  return { user: result.user };
+}
+
+/** Посилання на файл, яке відкриється без сесії (5 хвилин): PDF чи друк з Mini App. */
+export async function linkWithToken(path: string): Promise<string> {
+  const { token } = await request<{ token: string | null }>("/api/v1/auth/link-token", { method: "POST", body: "{}" });
+  if (!token) return path;
+  return `${path}${path.includes("?") ? "&" : "?"}link=${encodeURIComponent(token)}`;
+}
+
 export function loginDev(name: string): Promise<{ user: AuthUser }> {
   return request<{ user: AuthUser }>("/api/v1/auth/dev", { method: "POST", body: JSON.stringify({ name }) });
 }
 
-export function logout(): Promise<{ user: null }> {
-  return request<{ user: null }>("/api/v1/auth/logout", { method: "POST", body: "{}" });
+export async function logout(): Promise<{ user: null }> {
+  const result = await request<{ user: null }>("/api/v1/auth/logout", { method: "POST", body: "{}" });
+  setSessionToken(null);
+  return result;
 }
 
 // --- демо-документ (PDF-контракт) ----------------------------------------

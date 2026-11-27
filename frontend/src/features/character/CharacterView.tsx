@@ -13,7 +13,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 import {
   addCharacterItem,
@@ -24,6 +24,7 @@ import {
   fetchShared,
   fetchSharedVersion,
   fetchRenderers,
+  linkWithToken,
   patchCharacter,
   prepareCharacterSpells,
   setCharacterClassChoice,
@@ -38,6 +39,7 @@ import {
 } from "../../api";
 import type { ItemBody, SpellBody } from "../../api";
 import { SharePanel } from "./SharePanel";
+import { inTelegram, openTelegramFile } from "../../telegram";
 import type { RestReport, SheetViewPayload } from "../wizard/types";
 import {
   ABILITY_LABELS,
@@ -165,6 +167,20 @@ function ReadOnly({ on, children }: { on: boolean; children: ReactNode }) {
       {children}
     </fieldset>
   );
+}
+
+/**
+ * PDF і друк у Mini App: webview Telegram не качає файли — їх відкриває сам
+ * Telegram (PDF — завантаженням, друк — у браузері телефона). Telegram іде за
+ * файлом без нашої сесії, тож власнику — посилання з коротким токеном.
+ * На звичайному сайті — нічого: працює звичайне посилання.
+ */
+function telegramFile(path: string, fileName?: string, needsLink = true) {
+  return (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!inTelegram) return;
+    event.preventDefault();
+    void (needsLink ? linkWithToken(path) : Promise.resolve(path)).then((url) => openTelegramFile(url, fileName));
+  };
 }
 
 export function CharacterView({
@@ -433,6 +449,7 @@ export function CharacterView({
   }
 
   const totalLevel = character.total_level;
+  const pdfName = `${character.name || "персонаж"}.pdf`;
   const speciesKey = character.species?.subspecies ?? character.species?.name_en;
   const speciesText = speciesKey ? speciesLabel(speciesKey) : "вид не вказано";
   const classText = character.classes.length
@@ -659,6 +676,7 @@ export function CharacterView({
                   className="sheet-btn sheet-btn--link sheet-btn--primary"
                   href={`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/export/pdf`}
                   download
+                  onClick={telegramFile(`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/export/pdf`, pdfName, false)}
                 >
                   PDF
                 </a>
@@ -666,6 +684,7 @@ export function CharacterView({
               <a
                 className="sheet-btn sheet-btn--link"
                 href={`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/print`}
+                onClick={telegramFile(`/api/v1/shared/${encodeURIComponent(shareToken ?? "")}/print`, undefined, false)}
                 target="_blank"
                 rel="noopener"
                 title="Аркуш у вкладці браузера — друк через Ctrl+P"
@@ -728,6 +747,7 @@ export function CharacterView({
                   className="sheet-btn sheet-btn--link sheet-btn--primary"
                   href={exportUrl(id, "pdf")}
                   download
+                  onClick={telegramFile(exportUrl(id, "pdf"), pdfName)}
                   title="Аркуш для гри (головна, закляття, спорядження) і додаткові аркуші з повними текстами умінь і заклять"
                 >
                   PDF
@@ -737,6 +757,7 @@ export function CharacterView({
             <a
               className="sheet-btn sheet-btn--link"
               href={`/api/v1/characters/${encodeURIComponent(id)}/print`}
+              onClick={telegramFile(`/api/v1/characters/${encodeURIComponent(id)}/print`)}
               target="_blank"
               rel="noopener"
               title="Той самий аркуш у вкладці браузера — друк через Ctrl+P"

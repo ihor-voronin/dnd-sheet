@@ -8,6 +8,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { inTelegram } from "../../telegram";
+
 export type NoteStatus = "idle" | "saving" | "saved" | "error";
 
 export const NOTE_SECTIONS: { key: string; label: string; hint: string }[] = [
@@ -121,14 +123,17 @@ export function NotesPanel({
           {notesStatusText(status, savedAt)}
         </span>
         <span className="notes-toolbar__actions">
-          <button
-            type="button"
-            className="note-tool"
-            onClick={onExport}
-            title="Завантажити всі розділи як Markdown"
-          >
-            Експорт .md
-          </button>
+          {/* У Telegram webview не зберігає файли з браузера — кнопка там нічого б не зробила. */}
+          {inTelegram ? null : (
+            <button
+              type="button"
+              className="note-tool"
+              onClick={onExport}
+              title="Завантажити всі розділи як Markdown"
+            >
+              Експорт .md
+            </button>
+          )}
           <button
             type="button"
             className="note-tool"

@@ -1,5 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { CharacterCard } from "./features/home/CharacterCard";
+import {
+  inTelegram,
+  initialHash,
+  onTelegramThemeChange,
+  paintTelegramChrome,
+  startTelegramShell,
+  telegram,
+  telegramBackButton,
+  telegramTheme,
+} from "./telegram";
 import {
   QueryClient,
   QueryClientProvider,
@@ -14,6 +25,7 @@ import {
   fetchCharacters,
   fetchMe,
   fetchShared,
+  loginTelegramWebApp,
   logout,
 } from "./api";
 import { LoginPanel } from "./features/auth/Login";
@@ -251,9 +263,12 @@ function LevelUpPage({ id, navigate }: { id: string; navigate: (next: Route) => 
 
 const THEME_KEY = "dndsheet.theme";
 
-/** Темна тема — типова; світлу гравець вмикає сам, вибір памʼятає браузер. */
+/** Темна тема — типова; світлу гравець вмикає сам, вибір памʼятає браузер.
+ *  У Telegram тема — як у самого Telegram (і змінюється разом із ним). */
 function useTheme(): ["night" | "day", () => void] {
   const [theme, setTheme] = useState<"night" | "day">(() => {
+    const fromTelegram = telegramTheme();
+    if (fromTelegram) return fromTelegram;
     try {
       return window.localStorage.getItem(THEME_KEY) === "day" ? "day" : "night";
     } catch {
@@ -261,8 +276,13 @@ function useTheme(): ["night" | "day", () => void] {
     }
   });
   useEffect(() => {
+    onTelegramThemeChange(() => setTheme(telegramTheme() ?? "night"));
+  }, []);
+  useEffect(() => {
     if (theme === "day") document.documentElement.dataset.theme = "day";
     else delete document.documentElement.dataset.theme;
+    paintTelegramChrome();
+    if (inTelegram) return;
     try {
       window.localStorage.setItem(THEME_KEY, theme);
     } catch {
@@ -293,7 +313,7 @@ function UserBar({ navigate }: { navigate: (next: Route) => void }) {
   return (
     <span className="userbar">
       <span className="meta">{user.name}</span>
-      {config.data?.auth_enabled ? (
+      {config.data?.auth_enabled && !inTelegram ? (
         <button
           type="button"
           className="link-button"
@@ -321,6 +341,16 @@ function Shell() {
   const [theme, toggleTheme] = useTheme();
   const user = useCurrentUser();
   const needsUser = route.name === "create" || route.name === "character" || route.name === "levelup";
+
+  // Telegram: його кнопка «Назад» — усюди, крім головної.
+  useEffect(
+    () =>
+      telegramBackButton(route.name !== "home", () => {
+        if (window.history.length > 1) window.history.back();
+        else navigate({ name: "home" });
+      }),
+    [route.name, navigate],
+  );
 
   // Лист персонажа має темну «дошку» на всю ширину; решта застосунку світла.
   // Клас ставимо і на <html>, інакше за межами body видно світлий canvas.
@@ -375,9 +405,11 @@ function Shell() {
             Довідник
           </button>
           <UserBar navigate={navigate} />
-          <button type="button" className="link-button theme-toggle" onClick={toggleTheme}>
-            {theme === "day" ? "Темна тема" : "Світла тема"}
-          </button>
+          {inTelegram ? null : (
+            <button type="button" className="link-button theme-toggle" onClick={toggleTheme}>
+              {theme === "day" ? "Темна тема" : "Світла тема"}
+            </button>
+          )}
         </nav>
       </div>
       {route.name === "kb" ? (
@@ -443,11 +475,50 @@ function Shell() {
   );
 }
 
+/**
+ * Mini App: до показу застосунку — вхід за `initData` від Telegram (гравцю не
+ * треба нічого натискати). Невдалий вхід не ховає довідник: застосунок
+ * відкривається як для гостя, з поясненням угорі.
+ */
+function TelegramGate({ children }: { children: ReactNode }) {
+  const client = useQueryClient();
+  const started = useRef(false);
+  const [state, setState] = useState<"pending" | "ready" | { error: string }>(inTelegram ? "pending" : "ready");
+
+  useEffect(() => {
+    if (!telegram || started.current) return;
+    started.current = true;
+    startTelegramShell();
+    const hash = initialHash();
+    if (hash) window.history.replaceState(null, "", hash);
+    loginTelegramWebApp(telegram.initData)
+      .then(() => {
+        void client.invalidateQueries({ queryKey: ["me"] });
+        setState("ready");
+      })
+      .catch((failure: unknown) => setState({ error: failure instanceof Error ? failure.message : String(failure) }));
+  }, [client]);
+
+  if (state === "pending") return <p className="status telegram-status">Входимо через Telegram…</p>;
+  return (
+    <>
+      {typeof state === "object" ? (
+        <p className="status status--error telegram-status" role="alert">
+          Не вдалося увійти через Telegram: {state.error}. Довідник доступний і так.
+        </p>
+      ) : null}
+      {children}
+    </>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Shell />
+        <TelegramGate>
+          <Shell />
+        </TelegramGate>
       </TooltipProvider>
     </QueryClientProvider>
   );

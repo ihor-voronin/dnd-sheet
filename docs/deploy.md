@@ -141,6 +141,46 @@ docker compose -f compose.yml start app
 - Змінити домен: `domain` у `deploy/secrets/terraform/terraform.tfvars` →
   `deploy.ps1 -NoBuild`. Старий запис Terraform видалить сам.
 
+## Вхід через Telegram і Mini App
+
+Бот — `@DnD_Sheet_VoroninAppBot`; назва й токен — у `deploy/secrets/prod.env`
+(`DNDSHEET_TELEGRAM_BOT`, `DNDSHEET_TELEGRAM_BOT_TOKEN`). Окремого сервера бота
+немає: і віджет на сайті, і Mini App працюють без нього.
+
+**На сайті** — віджет «Увійти через Telegram». У @BotFather: `/setdomain` →
+`dnd.voronin.app`.
+
+**У Telegram (Mini App)** — той самий сайт усередині Telegram:
+
+- вхід без кнопки: Telegram передає підписаний `initData`, сервер перевіряє
+  його (`POST /api/v1/auth/telegram-webapp`, ключ — HMAC «WebAppData» від
+  токена бота) і повертає токен сесії. Той самий Telegram id — той самий
+  гравець, персонажі спільні з сайтом;
+- сесія їде заголовком `Authorization: Bearer …`: у Telegram у браузері сайт
+  живе в iframe, куди cookie не доходять;
+- тема — як у Telegram; кнопка «Назад» Telegram; свайп униз не закриває
+  застосунок посеред листа;
+- PDF качає сам Telegram (`downloadFile`), друк відкривається в браузері
+  телефона — за посиланням з коротким токеном `?link=…` (5 хвилин, лише GET);
+- «Поділитися» дає ще й `https://t.me/DnD_Sheet_VoroninAppBot?startapp=s_<токен>`
+  — лист «лише читати» відкривається одразу в Telegram.
+
+Скрипт Telegram (`telegram-web-app.js`) вантажиться лише тоді, коли сторінку
+відкрив Telegram (див. `frontend/index.html`); звичайний сайт telegram.org не чіпає.
+
+Налаштування в @BotFather (робить власник бота):
+
+1. `/mybots` → бот → **Bot Settings → Configure Mini App → Enable Mini App** →
+   URL `https://dnd.voronin.app` — у профілі бота зʼявиться кнопка «Open».
+2. **Bot Settings → Menu Button** → URL `https://dnd.voronin.app`, текст
+   «Лист персонажа» — кнопка біля поля повідомлення.
+3. Посилання на застосунок: `https://t.me/DnD_Sheet_VoroninAppBot?startapp`.
+
+**Перевірити локально без Telegram**: `.claude/launch.json` → `miniapp-check`
+(тестовий токен `123456:TEST-TOKEN`). Підписати `initData` тим самим токеном
+(як у `backend/tests/identity/test_auth.py::_init_data`) і відкрити
+`http://localhost:8021/?x=1#tgWebAppData=<initData>&tgWebAppVersion=8.0&tgWebAppPlatform=android`.
+
 ## Секрети
 
 - **Додати людину** (щоб могла деплоїти): імпортувати її публічний ключ GPG і
