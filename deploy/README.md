@@ -15,9 +15,9 @@ SSH) лежать у [`deploy/secrets/`](secrets/) і **шифруються git
 | `secrets/prod.env` | змінні `DNDSHEET_*` для продакшну — на сервері стає `.env` поруч з `docker-compose.yml` |
 | `secrets/racknerd.env` | панель VPS (SolusVM) і пароль root — для консолі в панелі; по SSH пароль не пускає |
 | `secrets/cloudflare.env` | `CLOUDFLARE_API_TOKEN` — токен для запису DNS (зона `voronin.app`) |
-| `secrets/ssh/id_ed25519` | ключ деплою: Terraform заходить ним на сервер |
+| `secrets/ssh/id_ed25519` | ключ деплою: ним заходять на сервер Terraform, `deploy_app.py` і CI |
 | `secrets/terraform/terraform.tfvars` | адреса сервера, домен, зона Cloudflare |
-| `secrets/terraform/terraform.tfstate` | стан Terraform (зʼявляється після першого деплою) |
+| `secrets/terraform/terraform.tfstate` | стан Terraform (лише інфраструктура: DNS, налаштування сервера) |
 | `secrets/.gitattributes` | правило «шифрувати все в цій папці» (сам файл відкритий) |
 
 Назви файлів **не** шифруються — лише вміст. Тож не називайте файли так,
@@ -50,73 +50,11 @@ git-crypt add-gpg-user --trusted <відбиток ключа>
 так просто не вийде: той, хто вже мав ключ, міг зберегти старі секрети —
 тоді секрети треба замінити (новий токен у @BotFather тощо).
 
-## Деплой на VPS (Terraform)
+## Деплой
 
-Сервер — VPS на RackNerd. API для Terraform у RackNerd немає, тож Terraform
-не створює сервер, а доводить наявний до потрібного стану по SSH
-([`terraform/main.tf`](terraform/main.tf)):
-
-1. **bootstrap** — Docker з офіційного репозиторію, файрвол (22, 80, 443),
-   swap 2 ГБ, щоденний бекап бази в `/opt/dndsheet/backups` (14 днів),
-   вхід по SSH лише ключем;
-2. **image** — образ збирається на цьому компʼютері (корпус довідника не в git)
-   і їде на сервер через `docker save` / `docker load`;
-3. **dns** — запис A `dnd.voronin.app` → IP сервера в Cloudflare
-   ([`terraform/dns.tf`](terraform/dns.tf)), без проксі Cloudflare;
-4. **app** — `compose.yml` з Caddy (сам отримує сертифікат Let's Encrypt і
-   переводить HTTP на HTTPS; голий IP веде на домен), `.env` з
-   `secrets/prod.env`, запуск і перевірка: застосунок healthy, HTTPS відповідає.
-
-Кожен крок повторюється лише тоді, коли змінилося те, від чого він залежить:
-новий образ, конфіг, `.env` чи скрипт сервера.
-
-Усі доступи (панель і root, токен, ключ, змінні, стан Terraform) — у
-`secrets/`, зашифровані. Поза git лише тимчасовий стиснутий образ
-(`deploy/local/image.tar.gz`).
-
-`deploy.ps1` не запуститься, поки `secrets/` не розблоковано (`git-crypt unlock`).
-Стан Terraform комітьте після кожного деплою — інакше на іншому компʼютері
-Terraform не знатиме, що вже створено.
-
-### Перший запуск
-
-1. Додати ключ деплою на сервер — один раз, з паролем root:
-
-   ```powershell
-   Get-Content deploy\secrets\ssh\id_ed25519.pub | ssh root@<IP> "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
-   ```
-
-2. Перевірити, що ключ пускає без пароля:
-
-   ```powershell
-   ssh -i deploy\secrets\ssh\id_ed25519 root@<IP> "cat /etc/os-release | head -2"
-   ```
-
-3. Токен Cloudflare: dash.cloudflare.com → My Profile → API Tokens →
-   Create Token → шаблон «Edit zone DNS», зона `voronin.app`; додати право
-   Zone · Zone · Read. Вписати в `deploy/secrets/cloudflare.env`.
-
-4. Деплой (Terraform покаже план і спитає `yes`):
-
-   ```powershell
-   .\deploy\terraform\deploy.ps1
-   ```
-
-Після першого деплою вхід паролем вимкнено — пароль root і панелі краще
-змінити, бо вони передавалися відкрито.
-
-### Далі
-
-```powershell
-.\deploy\terraform\deploy.ps1            # зібрати образ і оновити сервер
-.\deploy\terraform\deploy.ps1 -NoBuild   # лише конфіг або .env
-.\deploy\terraform\deploy.ps1 -Plan      # подивитися, що зміниться
-```
-
-Вхід «за іменем» на сервері вимкнений (`DNDSHEET_DEV_LOGIN=0`), тож без
-бота на сайті доступні довідник і посилання «поділитися». Щоб увімкнути вхід
-через Telegram: бот у @BotFather, там же `/setdomain` → `dnd.voronin.app`,
-назва й токен бота в `secrets/prod.env` — і `deploy.ps1 -NoBuild`.
+Застосунок деплоїть GitHub Actions після злиття в `main` ([docs/ci.md](../docs/ci.md));
+вручну з Windows — `deploy\terraform\deploy.ps1`, інфраструктура —
+`deploy.ps1 -Infra` ([docs/deploy.md](../docs/deploy.md)).
 
 ## Перед комітом
 

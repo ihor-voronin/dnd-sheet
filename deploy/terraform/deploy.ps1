@@ -1,11 +1,16 @@
-# Деплой dnd-sheet на VPS: зібрати образ тут і передати його Terraform.
+# Деплой dnd-sheet з Windows.
 #
-#   .\deploy.ps1            # зібрати образ і застосувати (Terraform покаже план і спитає)
-#   .\deploy.ps1 -NoBuild   # без перезбирання образу (лише конфіг або .env)
-#   .\deploy.ps1 -Plan      # лише показати, що зміниться
-#   .\deploy.ps1 -AutoApprove   # без питання «yes» (план усе одно друкується)
+#   .\deploy.ps1                 # зібрати образ і оновити застосунок (scripts/deploy_app.py)
+#   .\deploy.ps1 -NoBuild        # без перезбирання образу (лише конфіг або .env)
+#   .\deploy.ps1 -Infra          # інфраструктура через Terraform: DNS, налаштування сервера
+#   .\deploy.ps1 -Infra -Plan    # лише показати, що змінить Terraform
+#   .\deploy.ps1 -Infra -AutoApprove
+#
+# Після злиття в main застосунок деплоїть GitHub Actions (.github/workflows/deploy.yml) —
+# вручну це потрібно для перевірки гілки або коли CI недоступний.
 param(
     [switch]$NoBuild,
+    [switch]$Infra,
     [switch]$Plan,
     [switch]$AutoApprove
 )
@@ -17,31 +22,30 @@ $secrets = Join-Path $root "deploy\secrets"
 foreach ($file in Get-ChildItem $secrets -Recurse -File | Where-Object Name -ne ".gitattributes") {
     $bytes = [System.IO.File]::ReadAllBytes($file.FullName) | Select-Object -First 9
     if ($bytes.Count -eq 9 -and [System.Text.Encoding]::ASCII.GetString($bytes) -eq "`0GITCRYPT") {
-        throw "$($file.Name) зашифрований — спершу git-crypt unlock (див. deploy/README.md)."
+        throw "$($file.Name) зашифрований — спершу git-crypt unlock (див. docs/deploy.md)."
     }
+}
+
+if (-not $Infra) {
+    $python = (Get-Command python -ErrorAction SilentlyContinue).Source
+    if (-not $python) { throw "Потрібен Python 3 у PATH" }
+    $deployArgs = @((Join-Path $root "scripts\deploy_app.py"))
+    if (-not $NoBuild) { $deployArgs += "--build" }
+    & $python @deployArgs
+    if ($LASTEXITCODE -ne 0) { throw "деплой застосунку не вдався" }
+    return
 }
 
 # Токен Cloudflare (запис DNS) — зашифрований, у deploy/secrets/cloudflare.env.
 $cloudflareEnv = Join-Path $root "deploy\secrets\cloudflare.env"
-if (Test-Path $cloudflareEnv) {
-    foreach ($line in Get-Content $cloudflareEnv) {
-        if ($line -match '^\s*([A-Z_]+)\s*=\s*(.*?)\s*$') {
-            Set-Item -Path "Env:$($Matches[1])" -Value ($Matches[2].Trim("'`""))
-        }
+foreach ($line in Get-Content $cloudflareEnv) {
+    if ($line -match '^\s*([A-Z_]+)\s*=\s*(.*?)\s*$') {
+        Set-Item -Path "Env:$($Matches[1])" -Value ($Matches[2].Trim("'`""))
     }
 }
 if (-not $env:CLOUDFLARE_API_TOKEN) {
-    throw "Немає CLOUDFLARE_API_TOKEN: впишіть токен у deploy/secrets/cloudflare.env (див. deploy/README.md)."
+    throw "Немає CLOUDFLARE_API_TOKEN у deploy/secrets/cloudflare.env (див. docs/deploy.md)."
 }
-
-if (-not $NoBuild) {
-    Push-Location $root
-    try { docker compose build app } finally { Pop-Location }
-    if ($LASTEXITCODE -ne 0) { throw "docker compose build app не вдався" }
-}
-
-$imageId = docker image inspect --format "{{.Id}}" dndsheet:local
-if ($LASTEXITCODE -ne 0 -or -not $imageId) { throw "Немає образу dndsheet:local — запустіть без -NoBuild." }
 
 $terraform = (Get-Command terraform -ErrorAction SilentlyContinue).Source
 if (-not $terraform) {
@@ -57,6 +61,6 @@ try {
     # Масив явно: `if` розгорнув би масив з одного елемента в рядок.
     [string[]]$extra = @()
     if ($AutoApprove -and -not $Plan) { $extra += "-auto-approve" }
-    & $terraform $action -var-file="..\secrets\terraform\terraform.tfvars" -var "image_id=$imageId" @extra
+    & $terraform $action -var-file="..\secrets\terraform\terraform.tfvars" @extra
     if ($LASTEXITCODE -ne 0) { throw "terraform $action завершився з помилкою" }
 } finally { Pop-Location }

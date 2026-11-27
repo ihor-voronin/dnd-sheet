@@ -23,6 +23,9 @@ frontend/dist/
 deploy/local/
 # Terraform: плагіни й локальні змінні (адреса сервера).
 deploy/terraform/.terraform/
+# Стан Terraform — лише зашифрований у deploy/secrets/terraform; копії, які Terraform
+# кладе поруч (state rm, backup), відкриті — у git їм не можна.
+deploy/terraform/*.tfstate*
 deploy/terraform/terraform.tfvars
 *.local
 *.sqlite3

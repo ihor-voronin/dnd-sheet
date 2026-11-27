@@ -1,8 +1,12 @@
-# Деплой: сервер, Terraform і секрети
+# Деплой: сервер, Terraform, CI і секрети
 
 Сайт живе на **https://dnd.voronin.app** — VPS на RackNerd, домен у Cloudflare.
-Усе, що потрібно для деплою, лежить у репозиторії: код Terraform — відкрито,
-доступи й стан — зашифровані git-crypt. Деплой — одна команда з Windows:
+Усе, що потрібно для деплою, лежить у репозиторії: код — відкрито, доступи,
+стан Terraform і корпус книг — зашифровані git-crypt.
+
+- **Звичайно** деплоїть GitHub Actions: злиття PR у `main` → CI зелений →
+  `deploy.yml` (див. [docs/ci.md](ci.md)).
+- **Вручну з Windows** — та сама логіка однією командою:
 
 ```powershell
 .\deploy\terraform\deploy.ps1
@@ -10,84 +14,97 @@
 
 ## Як це влаштовано
 
+Дві частини, що змінюються з різною частотою:
+
 ```
-цей компʼютер                                   VPS (Ubuntu 24.04, 192.227.140.142)
-─────────────                                   ─────────────────────────────────
-docker compose build app  ──► dndsheet:local
-        │
-deploy.ps1 ─► terraform apply
-                 ├─ cloudflare_dns_record ────► Cloudflare: dnd.voronin.app → IP (без проксі)
-                 ├─ bootstrap  (SSH)  ────────► Docker, ufw, swap, бекапи, SSH лише ключем
-                 ├─ image      (SSH)  ────────► docker load  ◄─ image.tar.gz (~90 МБ)
-                 └─ app        (SSH)  ────────► /opt/dndsheet: compose.yml, Caddyfile, .env
-                                                  ├─ caddy  :80/:443  (Let's Encrypt)
-                                                  └─ app    :8000     (dndsheet:local)
+ЗАСТОСУНОК — з кожним злиттям у main             VPS (Ubuntu 24.04, 192.227.140.142)
+GitHub Actions (deploy.yml) або deploy.ps1        ─────────────────────────────────
+  docker build (runtime)  ──► dndsheet:local
+  scripts/deploy_app.py (SSH)
+     ├─ образ: docker save + gzip ──────────────► docker load (якщо id новий)
+     └─ compose.yml, Caddyfile, .env ───────────► /opt/dndsheet → docker compose up -d
+                                                    ├─ caddy  :80/:443  (Let's Encrypt)
+                                                    └─ app    :8000     (dndsheet:local)
+
+ІНФРАСТРУКТУРА — рідко, вручну
+deploy.ps1 -Infra ─► terraform apply
+  ├─ cloudflare_dns_record ─────────────────────► Cloudflare: dnd.voronin.app → IP (без проксі)
+  └─ bootstrap (SSH) ───────────────────────────► Docker, ufw, swap, бекапи, SSH лише ключем
 ```
 
-**Чому Terraform, а не створення сервера через API.** У RackNerd немає API для
-Terraform, тож сервер куплено вручну. Terraform доводить наявний сервер до
-потрібного стану по SSH і керує записом DNS у Cloudflare. Кожен крок — ресурс
-`terraform_data` з тригерами: він повторюється лише тоді, коли змінилося те,
-від чого залежить.
+**Застосунок — `scripts/deploy_app.py`.** Без стану: кожен запуск доводить
+сервер до того, що в репозиторії. Образ вантажиться лише коли його id
+змінився (id останнього лежить у `/opt/dndsheet/IMAGE_ID`), Caddy перечитує
+конфіг, скрипт чекає, поки застосунок стане healthy і HTTPS відповість. Той
+самий скрипт запускає і CI (Linux), і `deploy.ps1` (Windows).
+
+**Інфраструктура — Terraform.** У RackNerd немає API для Terraform, тож сервер
+куплено вручну; Terraform доводить його до потрібного стану по SSH і керує
+записом DNS у Cloudflare. Кожен крок повторюється лише тоді, коли змінилось те,
+від чого він залежить:
 
 | Крок | Повторюється, коли змінилось | Що робить |
 | --- | --- | --- |
 | `cloudflare_dns_record.site` | IP або домен | запис A `dnd.voronin.app` → IP, «сіра хмарка» (трафік прямо на сервер) |
 | `terraform_data.bootstrap` | `files/bootstrap.sh` | Docker з офіційного репозиторію, ufw (22, 80, 443), swap 2 ГБ, щоденний бекап бази, `PasswordAuthentication no` |
-| `terraform_data.image` | id локального образу | `docker save` + gzip тут → завантажити → `docker load` там |
-| `terraform_data.app` | образ, `compose.yml`, `Caddyfile`, `.env` | покласти файли в `/opt/dndsheet`, `docker compose up -d`, дочекатись healthy і HTTPS |
 
-**Чому образ збирається тут.** Корпус довідника (`content/compendium`,
-`content/bestiary`) не в git — це тексти книг. Сервер не може зібрати образ з
-GitHub, тому образ їде готовим, стиснутим (~90 МБ).
+**Чому застосунок не в Terraform.** Колись був — але стан Terraform мусив би
+після кожного деплою з CI комітитись назад у захищену гілку `main`. Скрипт без
+стану цього не потребує.
+
+**Чому образ збирається не на сервері.** Корпус довідника (`content/compendium`,
+`bestiary`, `index`) — тексти книг: у git він лише зашифрований. Розблокувати
+його вміє CI (секрет `GIT_CRYPT_KEY`) і ваш компʼютер, а не сервер.
 
 ## Файли
 
 | Шлях | Що це | У git |
 | --- | --- | --- |
-| `deploy/terraform/*.tf` | конфігурація Terraform | відкрито |
-| `deploy/terraform/files/` | `bootstrap.sh`, `compose.yml`, `Caddyfile.tftpl`, `save-image.ps1` | відкрито (LF) |
-| `deploy/terraform/deploy.ps1` | збірка образу + `terraform apply` | відкрито |
+| `scripts/deploy_app.py` | деплой застосунку (CI і Windows) | відкрито |
+| `deploy/terraform/*.tf` | інфраструктура: DNS, налаштування сервера | відкрито |
+| `deploy/terraform/files/` | `bootstrap.sh`, `compose.yml`, `Caddyfile.tftpl` | відкрито (LF) |
+| `deploy/terraform/deploy.ps1` | вхід з Windows: застосунок або `-Infra` | відкрито |
+| `.github/workflows/` | CI і деплой (docs/ci.md) | відкрито |
 | `deploy/secrets/prod.env` | змінні застосунку → `.env` на сервері | шифр |
 | `deploy/secrets/cloudflare.env` | `CLOUDFLARE_API_TOKEN` (DNS зони `voronin.app`) | шифр |
 | `deploy/secrets/racknerd.env` | панель VPS і пароль root (для консолі в панелі) | шифр |
-| `deploy/secrets/ssh/id_ed25519` | ключ, яким Terraform заходить на сервер | шифр |
+| `deploy/secrets/ssh/id_ed25519` | ключ, яким заходять на сервер | шифр |
 | `deploy/secrets/terraform/terraform.tfvars` | IP, домен, зона | шифр |
-| `deploy/secrets/terraform/terraform.tfstate` | стан Terraform | шифр |
-| `deploy/local/image.tar.gz` | тимчасовий архів образу | ні (`.gitignore`) |
+| `deploy/secrets/terraform/terraform.tfstate` | стан Terraform (лише інфраструктура) | шифр |
+| `content/compendium`, `bestiary`, `index` | корпус довідника (тексти книг) | шифр |
+| `deploy/local/` | тимчасове: ключ git-crypt для секрету GitHub | ні (`.gitignore`) |
 
-Шифрує все в `deploy/secrets/` правило `deploy/secrets/.gitattributes`. Назви
-файлів видно, вміст — ні.
+Шифрують правила `.gitattributes` у `deploy/secrets/` і в папках корпусу. Назви
+файлів видно, вміст — ні. Хук `secrets-encrypted` (pre-commit і CI) перевіряє,
+що в індексі все це справді шифр.
 
 ## Звичайний деплой
 
+Через PR: злили в `main` → CI → деплой сам. Вручну з Windows:
+
 ```powershell
-.\deploy\terraform\deploy.ps1            # зібрати образ і оновити сервер
-.\deploy\terraform\deploy.ps1 -NoBuild   # без перезбирання (змінився лише конфіг чи .env)
-.\deploy\terraform\deploy.ps1 -Plan      # лише показати, що зміниться
-.\deploy\terraform\deploy.ps1 -AutoApprove   # без питання «yes»
+.\deploy\terraform\deploy.ps1                # зібрати образ і оновити застосунок
+.\deploy\terraform\deploy.ps1 -NoBuild       # без перезбирання (змінився лише конфіг чи .env)
+.\deploy\terraform\deploy.ps1 -Infra -Plan   # що змінить Terraform
+.\deploy\terraform\deploy.ps1 -Infra         # застосувати інфраструктуру (спитає «yes»)
 ```
 
-Скрипт:
+`deploy.ps1` відмовляється працювати, поки щось у `deploy/secrets/` зашифроване.
 
-1. відмовляється працювати, поки щось у `deploy/secrets/` зашифроване;
-2. бере токен Cloudflare з `deploy/secrets/cloudflare.env`;
-3. збирає `dndsheet:local` (`docker compose build app`), якщо немає `-NoBuild`;
-4. передає Terraform id образу (`-var image_id=…`) і `terraform.tfvars`.
-
-**Після деплою закомітьте стан** — інакше на іншому компʼютері Terraform
+**Після `-Infra` закомітьте стан** — інакше на іншому компʼютері Terraform
 вирішить, що нічого ще не створено:
 
 ```powershell
 git add deploy/secrets/terraform
-git commit -m "Terraform state after deploy"
+git commit -m "Terraform state after infra change"
 ```
 
 ## Перший запуск на новому компʼютері
 
 1. Інструменти: `winget install --id Hashicorp.Terraform -e`,
-   `winget install --id AGWA.git-crypt -e`, Docker Desktop, GnuPG з вашим ключем.
-2. Розблокувати секрети:
+   `winget install --id AGWA.git-crypt -e`, Docker Desktop, Python 3, GnuPG з
+   вашим ключем.
+2. Розблокувати секрети й корпус:
 
    ```powershell
    git config gpg.program "C:/Program Files/GnuPG/bin/gpg.exe"
@@ -96,8 +113,7 @@ git commit -m "Terraform state after deploy"
 
    `gpg.program` потрібен, бо ключ лежить у GnuPG для Windows, а не в `gpg`
    з Git Bash.
-3. `.\deploy\terraform\deploy.ps1 -Plan` — має показати «No changes» (стан з git
-   збігається з сервером).
+3. `.\deploy\terraform\deploy.ps1 -Infra -Plan` — має показати «No changes».
 
 ## Доступ до сервера
 
@@ -210,20 +226,20 @@ backend; uvicorn — без `[standard]`.
 
 ## Підводні камені (вже обійдені)
 
-- **Провайдер `external` не бачить Docker Desktop** («permission denied … npipe»),
-  а `local-exec` бачить. Тому id образу передає `deploy.ps1`, а не Terraform.
-- **`cmd` ламає лапки** в шляхах `local-exec` на Windows — образ зберігає
-  `files/save-image.ps1`, викликаний через `interpreter` без лапок.
-- **PowerShell 5 читає `.ps1` без BOM як cp1251** — кирилиця ламає розбір.
-  `save-image.ps1` збережений з BOM.
+- **Terraform `local-exec` на Windows**: провайдер `external` не бачить Docker
+  Desktop, а `cmd` ламає лапки в шляхах. Через це образ і застосунок пішли з
+  Terraform у `scripts/deploy_app.py` (Python однаково працює на Windows і в CI).
+- **PowerShell 5 читає `.ps1` без BOM як cp1251** — кирилиця ламає розбір;
+  хук `fix-byte-order-marker` не чіпає `.ps1`.
 - **Файли для сервера мусять мати LF** — `deploy/terraform/files/.gitattributes`
-  (`eol=lf`), а Terraform ще й прибирає `\r` перед завантаженням.
+  (`eol=lf`), а скрипти ще й прибирають `` перед завантаженням.
+- **`deploy/local/` — лише тимчасове**: доступи й ключі — у `deploy/secrets/`.
 
 ## Коли щось пішло не так
 
 | Симптом | Де дивитись |
 | --- | --- |
-| `deploy.ps1`: «… зашифрований» | `git-crypt unlock` |
+| `deploy.ps1` чи CI: «… зашифрований» | `git-crypt unlock`; у CI — секрет `GIT_CRYPT_KEY` |
 | `app: healthy` не дочекались | у виводі — останні 60 рядків `docker logs dndsheet-app`; найчастіше `.env` |
 | `https: ще немає сертифіката` | `docker logs dndsheet-caddy`: запис DNS ще не поширився або закритий порт 80 |
 | Terraform хоче все створити заново | стан не закомічений або не розблокований |
