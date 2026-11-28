@@ -242,7 +242,8 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
       .filter(Boolean)
       .join(" · ");
     rows.push({
-      id: `spell-${spell.name_en}-${spell.source}`,
+      // Той самий заговір буває у двох класів мультикласу (свій КС у кожного): клас — частина ключа.
+      id: `spell-${spell.name_en}-${spell.source}-${spell.class_key}`,
       name: spellLabel(spell.name_en),
       typeLabel: spell.level === 0 ? "Заговір" : `Закляття ${spell.level} рівня`,
       range: rangeLabel(spell.range) || "—",
