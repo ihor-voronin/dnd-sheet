@@ -9,7 +9,8 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import Response as RawResponse
 from fastapi.staticfiles import StaticFiles
 from mcp.server.auth.routes import build_metadata
 from mcp.server.auth.settings import AuthSettings, ClientRegistrationOptions, RevocationOptions
@@ -189,6 +190,7 @@ def create_app() -> FastAPI:
 
     # MCP і OAuth — до SPA: StaticFiles на «/» забрав би їхні адреси собі.
     _configure_mcp(app, database)
+    _configure_crawlers(app)
 
     dist = Path(os.environ.get("DNDSHEET_SPA_DIST", _default_spa_dist()))
     if dist.is_dir():
@@ -228,6 +230,51 @@ def _configure_auth(app: FastAPI, database: Path, store: SqliteStore) -> None:
             store.claim_unowned(result.user.id)
 
     app.state.on_login = on_login
+
+
+#: Що не для пошуковиків: протокол OAuth, MCP, вхід і чужі листи за посиланням.
+_DISALLOW = (
+    "/authorize",
+    "/token",
+    "/register",
+    "/revoke",
+    "/mcp",
+    "/api/v1/auth/",
+    "/api/v1/oauth/",
+    "/api/v1/shared/",
+)
+
+
+def _configure_crawlers(app: FastAPI) -> None:
+    """robots.txt і sitemap.xml: без них сайт для пошуковиків — порожня сторінка без карти.
+
+    Ботів ІІ-пошуку не відганяємо: довідник українською — те, що варто знаходити.
+    Решта API відкрита: рендер сторінки пошуковиком теж читає довідник через API.
+    """
+    base = public_url()
+    robots = "\n".join(
+        [
+            "User-agent: *",
+            *(f"Disallow: {path}" for path in _DISALLOW),
+            "",
+            f"Sitemap: {base}/sitemap.xml",
+            "",
+        ]
+    )
+    sitemap = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"  <url><loc>{base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n"
+        "</urlset>\n"
+    )
+
+    @app.get("/robots.txt", include_in_schema=False)
+    def robots_txt() -> PlainTextResponse:
+        return PlainTextResponse(robots, headers={"Cache-Control": "public, max-age=3600"})
+
+    @app.get("/sitemap.xml", include_in_schema=False)
+    def sitemap_xml() -> RawResponse:
+        return RawResponse(sitemap, media_type="application/xml", headers={"Cache-Control": "public, max-age=3600"})
 
 
 def _configure_mcp(app: FastAPI, database: Path) -> None:

@@ -54,3 +54,23 @@ def test_markdown_export(client: TestClient) -> None:
 def test_unknown_format_returns_404(client: TestClient) -> None:
     response = client.get("/api/v1/demo/export/docx")
     assert response.status_code == 404
+
+
+def test_robots_points_to_the_sitemap_and_hides_private_paths(client: TestClient) -> None:
+    response = client.get("/robots.txt")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    text = response.text
+    assert "User-agent: *" in text
+    for path in ("/authorize", "/token", "/mcp", "/api/v1/shared/"):
+        assert f"Disallow: {path}" in text
+    # Довідник читається через API — його рендер пошуковиком не можна закривати.
+    assert "Disallow: /api/v1/compendium" not in text
+    assert "Sitemap: http://localhost:8000/sitemap.xml" in text
+
+
+def test_sitemap_lists_the_site(client: TestClient) -> None:
+    response = client.get("/sitemap.xml")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/xml")
+    assert "<loc>http://localhost:8000/</loc>" in response.text

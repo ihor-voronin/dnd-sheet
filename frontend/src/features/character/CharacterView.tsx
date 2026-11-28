@@ -199,6 +199,11 @@ export function CharacterView({
   });
 
   const id = sheet.character.id;
+  const characterName = sheet.character.name;
+  useEffect(() => {
+    // Вкладка й закладка браузера — з імʼям героя, а не загальна назва сайту.
+    document.title = `${characterName || "Персонаж"} — лист персонажа D&D 5e`;
+  }, [characterName]);
   // Версія для оптимістичного контролю: беремо з ref, а не з рендера, бо
   // клік може статися до того, як React перемалює після попередньої відповіді.
   const versionRef = useRef(initial.character.version);
