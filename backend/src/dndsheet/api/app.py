@@ -17,6 +17,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from starlette.routing import Route
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from dndsheet.api.storage import Storage, build_storage
 from dndsheet.assistant.server import build_server
 from dndsheet.characters.api.attacks import attacks_for
 from dndsheet.characters.api.knowledge import router as knowledge_router
@@ -32,13 +33,6 @@ from dndsheet.characters.infrastructure.compendium_rules import (
     CompendiumRulesSource,
     CompendiumSubclassCatalog,
 )
-from dndsheet.characters.infrastructure.json_store import default_data_dir
-from dndsheet.characters.infrastructure.sqlite_store import (
-    SqliteCharacterRepository,
-    SqliteDraftRepository,
-    SqliteShareRepository,
-    SqliteStore,
-)
 from dndsheet.compendium.api.router import router as compendium_router
 from dndsheet.compendium.infrastructure.factory import build_service
 from dndsheet.export.application.registry import RendererRegistry
@@ -53,8 +47,6 @@ from dndsheet.identity.application.auth import AuthService, LoginResult
 from dndsheet.identity.application.oauth import OAuthService
 from dndsheet.identity.domain.oauth import SCOPES
 from dndsheet.identity.infrastructure.client_metadata import fetch_client_metadata
-from dndsheet.identity.infrastructure.sqlite_identity import SqliteIdentityStore
-from dndsheet.identity.infrastructure.sqlite_oauth import SqliteOAuthStore
 from dndsheet.sheets.application.demo import build_demo_character, build_demo_document
 from dndsheet.site.api.router import router as site_router
 
@@ -80,11 +72,15 @@ def public_url() -> str:
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     # MCP у режимі без стану, але менеджеру сесій SDK потрібна своя група задач.
     server = getattr(app.state, "mcp", None)
-    if server is None:  # pragma: no cover — create_app завжди збирає MCP
-        yield
-        return
-    async with server.session_manager.run():
-        yield
+    try:
+        if server is None:  # pragma: no cover — create_app завжди збирає MCP
+            yield
+            return
+        async with server.session_manager.run():
+            yield
+    finally:
+        # Пул зʼєднань PostgreSQL (для SQLite — нічого).
+        app.state.storage.close()
 
 
 def create_app() -> FastAPI:
@@ -104,19 +100,16 @@ def create_app() -> FastAPI:
     app.state.compendium = compendium
     rules = CompendiumRulesSource(compendium)
     app.state.rules = rules
-    # Чернетки й персонажі — у базі SQLite `var/dndsheet.sqlite3` з власником;
-    # старі файли `var/characters/*.json` переносяться туди один раз і лишаються
-    # як резервна копія. Каталог можна перевизначити `DNDSHEET_DATA_DIR`.
-    data_dir = default_data_dir()
-    database = data_dir / "dndsheet.sqlite3"
-    store = SqliteStore(database)
-    store.import_json_once(data_dir / "characters", data_dir / "drafts")
-    characters = SqliteCharacterRepository(store, rules)
-    drafts = SqliteDraftRepository(store, rules)
+    # Персонажі, чернетки, користувачі, OAuth: SQLite `var/dndsheet.sqlite3` або
+    # PostgreSQL, якщо задано `DNDSHEET_DATABASE_URL` (api/storage.py, docs/database.md).
+    storage = build_storage(rules)
+    app.state.storage = storage
+    characters = storage.characters
+    drafts = storage.drafts
     app.state.characters = characters
     app.state.drafts = drafts
-    app.state.shares = SqliteShareRepository(store)
-    _configure_auth(app, database, store)
+    app.state.shares = storage.shares
+    _configure_auth(app, storage)
     app.state.wizard = WizardService(
         drafts=drafts,
         characters=characters,
@@ -192,7 +185,7 @@ def create_app() -> FastAPI:
     # MCP, OAuth і сторінки довідника — до SPA: StaticFiles на «/» забрав би їхні адреси собі.
     dist = Path(os.environ.get("DNDSHEET_SPA_DIST", _default_spa_dist()))
     app.state.spa_dist = dist
-    _configure_mcp(app, database, dist / "index.html")
+    _configure_mcp(app, storage, dist / "index.html")
     _configure_crawlers(app)
     app.include_router(site_router)
     _configure_spa_paths(app, dist / "index.html")
@@ -204,7 +197,7 @@ def create_app() -> FastAPI:
     return app
 
 
-def _configure_auth(app: FastAPI, database: Path, store: SqliteStore) -> None:
+def _configure_auth(app: FastAPI, storage: Storage) -> None:
     """Вхід через Telegram (токен і імʼя бота — із середовища) і хто володіє старими персонажами.
 
     Персонажі, перенесені з файлів, не мають власника. Їх отримує власник
@@ -212,7 +205,7 @@ def _configure_auth(app: FastAPI, database: Path, store: SqliteStore) -> None:
     задано — перший зареєстрований. Без входу (`DNDSHEET_AUTH=off`) усе
     належить локальному гравцю.
     """
-    identity = SqliteIdentityStore(database)
+    identity = storage.identity
     app.state.auth_enabled = auth_enabled()
     app.state.telegram_bot = os.environ.get("DNDSHEET_TELEGRAM_BOT", "").strip().lstrip("@")
     app.state.auth = AuthService(
@@ -222,16 +215,16 @@ def _configure_auth(app: FastAPI, database: Path, store: SqliteStore) -> None:
         dev_login_enabled=os.environ.get("DNDSHEET_DEV_LOGIN", "").strip() in {"1", "true", "on", "yes"},
     )
     if not app.state.auth_enabled:
-        store.claim_unowned(LOCAL_USER.id)
+        storage.claim_unowned(LOCAL_USER.id)
         return
     owner_raw = os.environ.get("DNDSHEET_OWNER_TELEGRAM_ID", "").strip()
 
     def on_login(result: LoginResult) -> None:
         if owner_raw:
             if str(result.user.telegram_id) == owner_raw:
-                store.claim_unowned(result.user.id)
+                storage.claim_unowned(result.user.id)
         elif result.created and identity.count() == 1:
-            store.claim_unowned(result.user.id)
+            storage.claim_unowned(result.user.id)
 
     app.state.on_login = on_login
 
@@ -308,7 +301,7 @@ class _BrowserOrMcp:
         await self.mcp_app(scope, receive, send)
 
 
-def _configure_mcp(app: FastAPI, database: Path, index: Path) -> None:
+def _configure_mcp(app: FastAPI, storage: Storage, index: Path) -> None:
     """MCP на `/mcp` і сайт як сервер авторизації для застосунків (ADR 0005).
 
     Без входу (`DNDSHEET_AUTH=off`) — MCP без токенів від імені локального гравця.
@@ -317,7 +310,7 @@ def _configure_mcp(app: FastAPI, database: Path, index: Path) -> None:
     resource = f"{base}/mcp"
     auth = provider = None
     if app.state.auth_enabled:
-        store = SqliteOAuthStore(database)
+        store = storage.oauth()
         service = OAuthService(store=store, issuer=base, resource=resource)
         provider = SiteOAuthProvider(
             service=service,

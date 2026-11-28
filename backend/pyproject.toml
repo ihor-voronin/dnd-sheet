@@ -16,6 +16,8 @@ dependencies = [
     "jinja2>=3.1",
     "mcp>=2.3,<3",
     "pyyaml>=6",
+    "psycopg[binary]>=3.2",
+    "psycopg-pool>=3.2",
 ]
 
 [project.optional-dependencies]
@@ -44,6 +46,8 @@ where = ["src"]
 [tool.setuptools.package-data]
 "dndsheet.export.infrastructure" = ["templates/*", "templates/fonts/*"]
 "dndsheet.site.api" = ["templates/*", "static/*"]
+# SQL migrations are read at runtime (python -m dndsheet.db migrate).
+"dndsheet.db" = ["migrations/*.sql"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests/characters"]
@@ -106,8 +110,11 @@ forbidden_modules = [
     "dndsheet.site.application",
     "dndsheet.site.infrastructure",
     "dndsheet.site.api",
+    "dndsheet.db",
     "fastapi",
     "sqlalchemy",
+    "psycopg",
+    "psycopg_pool",
     "jinja2",
 ]
 
