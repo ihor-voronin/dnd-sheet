@@ -4,6 +4,12 @@ The site runs at **https://dnd.voronin.app** — a RackNerd VPS, domain in Cloud
 Everything needed to deploy is in the repository: the code in plain text; credentials,
 Terraform state and the book corpus encrypted with git-crypt.
 
+> **Infrastructure moved (2026-11-28).** Terraform for the server (bootstrap, DNS) now runs
+> only from [ihor-voronin/vps-infra](https://github.com/ihor-voronin/vps-infra), which holds
+> a copy of the state. **Don't run `deploy.ps1 -Infra` here any more**: its old state would
+> fight the new one. The app deploy below is unchanged until dnd-sheet switches to the shared
+> deploy (vps-infra docs/platform.md § 8).
+
 - **Normally** GitHub Actions deploys: PR merged into `main` → CI green →
   `deploy.yml` (see [docs/ci.md](ci.md)).
 - **By hand from Windows** — the same logic in one command:
