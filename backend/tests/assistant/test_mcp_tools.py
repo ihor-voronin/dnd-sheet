@@ -182,9 +182,19 @@ def test_inventory_add_update_remove(site: TestClient, fighter: str) -> None:
     assert all(not item["name_en"].startswith("rope") for item in removed["sheet"]["items"])
 
 
-def test_level_up_and_class_choice(site: TestClient, fighter: str) -> None:
+def test_level_up_options_are_short(site: TestClient, fighter: str) -> None:
     options = tool(site, "level_up_options", character_id=fighter)
-    assert options
+    assert [plan["class_key"] for plan in options["plans"]] == ["fighter"]
+    assert {item["class_key"] for item in options["other_classes"]} >= {"wizard", "rogue"}
+    assert "feat_abilities" not in options
+    assert len(json.dumps(options, ensure_ascii=False)) < 20_000
+
+    wizard = tool(site, "level_up_options", character_id=fighter, class_key="Wizard")
+    assert [plan["class_key"] for plan in wizard["plans"]] == ["wizard"]
+    assert "немає плану" in tool_error(site, "level_up_options", character_id=fighter, class_key="pilot")
+
+
+def test_level_up_and_class_choice(site: TestClient, fighter: str) -> None:
     version = tool(site, "get_character", character_id=fighter)["version"]
     taken = tool(
         site,

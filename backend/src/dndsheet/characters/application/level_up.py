@@ -220,6 +220,8 @@ class LevelUpService:
         gain = after.hit_points.maximum - before.hit_points.maximum
         if character.hp.current is not None and gain > 0:
             character.set_hp(current=character.hp.current + gain)
+            # Звіт показує хіти вже після приросту, а не ті, що були до нього.
+            after = self.calculator.compute(character)
 
         self.characters.save(character)
         report = LevelUpReport(
