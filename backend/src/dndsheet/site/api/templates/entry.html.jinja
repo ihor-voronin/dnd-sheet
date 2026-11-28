@@ -3,11 +3,22 @@
 {% set record = page.record %}
 {% block content %}
 <article class="entry">
-  <header class="entry__head">
+  <header class="entry__head entry__head--emblem">
+    {{ emblem(record_emblem(record), 'emblem emblem--head', 56) }}
     <p class="kicker">{{ page.kind }}</p>
     <h1>{% if record.name_uk and record.name_uk != record.name_en %}{{ record.name_uk }} <span class="en" lang="en">{{ record.name_en }}</span>{% else %}<span lang="en">{{ record.name_en }}</span>{% endif %}</h1>
   </header>
   {{ m.facts(page.facts, glossary_keys) }}
+  {% if portraits %}
+  <figure class="portraits">
+    <ul>
+      {% for portrait in portraits %}
+      <li><img src="{{ portrait.url }}" width="88" height="88" alt="{{ portrait.label }}" loading="lazy" decoding="async"></li>
+      {% endfor %}
+    </ul>
+    <figcaption>Портрети для листа — у <a href="/#/create">застосунку</a> їх понад тисячу: під вид, клас і стать героя.</figcaption>
+  </figure>
+  {% endif %}
   {% for section in page.sections %}
   <section class="block"{% if section.anchor %} id="{{ section.anchor }}"{% endif %}>
     {% if section.heading %}<h{{ section.level }}>{{ section.heading }}</h{{ section.level }}>{% endif %}

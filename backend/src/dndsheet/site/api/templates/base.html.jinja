@@ -60,6 +60,8 @@
     лист, що сам рахує числа, друк у PDF. Переклад — аматорський, для зручності за столом.
   </p>
   {% block attribution %}{% endblock %}
+  <p class="foot__fcp">Емблеми — <a href="https://game-icons.net" rel="noopener">game-icons.net</a> (CC BY 3.0),
+    портрети намальовані для сайту: <a href="/kb/credits">подяки й ліцензії</a>.</p>
   <p lang="en" class="foot__fcp">
     This site is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards.
     Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
@@ -103,5 +105,6 @@
   }
 })();
 </script>
+{{ sprite.markup() | safe }}
 </body>
 </html>

@@ -24,6 +24,7 @@ export default defineConfig({
       "/llms.txt": api,
       // Portraits are drawn by the server (backend/src/dndsheet/visuals).
       "/assets/avatars": api,
+      "/assets/emblems": api,
     },
   },
   build: {

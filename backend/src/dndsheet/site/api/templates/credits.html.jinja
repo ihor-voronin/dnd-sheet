@@ -1,0 +1,48 @@
+{% extends "base.html.jinja" %}
+{% block content %}
+<article class="entry">
+  <header class="entry__head">
+    <p class="kicker">Довідник · ліцензії</p>
+    <h1>Подяки й ліцензії зображень</h1>
+    <p class="lead">Звідки на сайті картинки і хто їх автор. Жодних зображень Wizards of the Coast чи D&amp;D Beyond тут немає.</p>
+  </header>
+
+  <section class="block">
+    <h2>Портрети персонажів</h2>
+    <p>
+      Понад тисячу портретів для листа намальовано для цього сайту: їх складає код із простих фігур
+      (погруддя, обличчя виду, одяг і убір класу) у кольорах сайту. Сторонніх малюнків у них немає.
+    </p>
+  </section>
+
+  <section class="block">
+    <h2>Емблеми класів, шкіл магії й розділів</h2>
+    <p>
+      Іконки з <a href="https://game-icons.net" rel="noopener">game-icons.net</a> за ліцензією
+      <a href="https://creativecommons.org/licenses/by/3.0/" rel="noopener">Creative Commons Attribution 3.0</a>
+      (CC BY 3.0). Ми змінили лише колір. Автори:
+    </p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Емблема</th><th>Іконка</th><th>Автор</th></tr></thead>
+      <tbody>
+      {% for row in credits %}
+        <tr>
+          <td>{{ emblem(row.name, 'emblem emblem--inline', 18) }}{{ labels.get(row.name, row.name) }}</td>
+          <td><a href="{{ row.url }}" rel="noopener" lang="en">{{ row.icon }}</a></td>
+          <td lang="en">{{ row.author }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="block">
+    <h2>Шрифти й візерунки</h2>
+    <p>
+      Шрифти Alegreya й Alegreya Sans (Huerta Tipográfica) — за
+      <a href="https://openfontlicense.org" rel="noopener">SIL Open Font License 1.1</a>.
+      Іконка сайту (двадцятигранник), сітка шестикутників на тлі й візерунок майстра створення — наші.
+    </p>
+  </section>
+</article>
+{% endblock %}

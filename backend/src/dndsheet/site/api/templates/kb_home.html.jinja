@@ -10,13 +10,15 @@
 </header>
 <ul class="cards cards--sections">
   {% for item in sections %}
-  <li class="card">
+  <li class="card card--emblem">
+    {{ emblem('section-' ~ item.id, 'emblem emblem--card', 40) }}
     <h2><a href="/kb/{{ item.id }}">{{ item.label }}</a></h2>
     <p class="meta">{{ counts.get(item.id, 0) }}{% if item.id == 'classes' %} класів і {{ subclass_count }} підкласів{% endif %} · {{ item.hint }}</p>
   </li>
   {% endfor %}
   {% for path, title in static_pages %}
-  <li class="card card--soft">
+  <li class="card card--soft card--emblem">
+    {{ emblem('section-glossary' if 'glossary' in path else 'section-guide', 'emblem emblem--card', 40) }}
     <h2><a href="{{ path }}">{{ title.split(':')[0] }}</a></h2>
     <p class="meta">{{ title.split(':', 1)[1] | trim if ':' in title else '' }}</p>
   </li>

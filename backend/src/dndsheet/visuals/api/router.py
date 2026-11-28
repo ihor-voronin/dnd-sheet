@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Response
 
-from dndsheet.visuals.application import avatars
+from dndsheet.visuals.application import avatars, emblems
 from dndsheet.visuals.domain import catalog
 
 router = APIRouter(tags=["visuals"])
@@ -21,6 +21,15 @@ def portrait_svg(version: str, portrait_id: str) -> Response:
     # Стара версія в адресі (сторінка з попереднього деплою): віддаємо поточний малюнок,
     # але без довгого кешу — інакше під старою адресою назавжди лишився б новий файл.
     cache = _IMMUTABLE if version == avatars.VERSION else "public, max-age=300"
+    return Response(content=body, media_type="image/svg+xml", headers={"Cache-Control": cache})
+
+
+@router.get(emblems.PREFIX + "/{version}/{name}.svg")
+def emblem_svg(version: str, name: str) -> Response:
+    body = emblems.svg_file(name)
+    if body is None:
+        raise HTTPException(status_code=404, detail=f"немає емблеми {name!r}")
+    cache = _IMMUTABLE if version == emblems.VERSION else "public, max-age=300"
     return Response(content=body, media_type="image/svg+xml", headers={"Cache-Control": cache})
 
 

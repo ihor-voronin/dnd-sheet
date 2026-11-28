@@ -307,3 +307,73 @@ def test_noindex_policy_keeps_text_but_leaves_the_index(tmp: Path) -> None:
     assert '<meta name="robots" content="noindex, follow">' in response.text
     assert 'class="rules"' in response.text
     assert f"{closed.path}</loc>" not in client.get("/sitemaps/feats.xml").text
+
+
+# --- зображення: емблеми й портрети ---------------------------------------------
+
+
+def _symbols(html: str) -> list[str]:
+    return re.findall(r'<symbol id="e-([a-z-]+)"', html)
+
+
+def test_home_has_section_emblems_inline(client: TestClient) -> None:
+    html = client.get("/kb").text
+    used = re.findall(r'<use href="#e-([a-z-]+)"/>', html)
+    assert "section-spells" in used and "section-guide" in used
+    # Лише використані форми, кожна один раз, і жодного зовнішнього файла.
+    assert sorted(_symbols(html)) == sorted(set(used))
+    assert "/assets/emblems/" not in html
+    assert '<a href="/kb/credits">' in html
+
+
+def test_spell_list_marks_schools(client: TestClient) -> None:
+    html = client.get("/kb/spells").text
+    assert set(_symbols(html)) <= {
+        f"school-{school}"
+        for school in (
+            "abjuration",
+            "conjuration",
+            "divination",
+            "enchantment",
+            "evocation",
+            "illusion",
+            "necromancy",
+            "transmutation",
+        )
+    }
+    assert html.count('class="emblem emblem--inline"') > 100
+
+
+def test_class_pages_have_emblem_and_portraits(client: TestClient) -> None:
+    html = client.get("/kb/classes/wizard").text
+    assert _symbols(html) == ["class-wizard"]
+    portraits = re.findall(
+        r'<img src="(/assets/avatars/[^"]+)" width="88" height="88" alt="([^"]+)" loading="lazy"', html
+    )
+    assert len(portraits) == 4
+    assert all("-wizard-1.svg" in url for url, _ in portraits)
+    assert all(alt.startswith("Портрет:") for _, alt in portraits)
+    classes = client.get("/kb/classes").text
+    assert "class-barbarian" in _symbols(classes)
+
+
+def test_species_page_shows_its_portraits(client: TestClient) -> None:
+    html = client.get("/kb/species/elf").text
+    urls = re.findall(r'<img src="/assets/avatars/[^/]+/([a-z-]+\d)\.svg"', html)
+    assert urls == ["elf-f-fighter-1", "elf-m-wizard-1", "elf-f-cleric-1", "elf-m-rogue-1"]
+    kenku = client.get("/kb/species/kenku")
+    if kenku.status_code == 200:
+        assert "kenku-x-fighter-1" in kenku.text
+    background = client.get("/kb/backgrounds/acolyte").text
+    assert "/assets/avatars/" not in background
+    assert _symbols(background) == ["section-backgrounds"]
+
+
+def test_credits_page_names_every_author(client: TestClient) -> None:
+    response = client.get("/kb/credits")
+    assert response.status_code == 200
+    html = response.text
+    assert "CC BY 3.0" in html or "Attribution 3.0" in html
+    assert "Lorc" in html and "Delapouite" in html
+    assert "game-icons.net/1x1/lorc/lyre.html" in html
+    assert "клас: чарівник" in html

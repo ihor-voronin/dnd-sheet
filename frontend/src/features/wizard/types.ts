@@ -31,6 +31,8 @@ export interface TraitView {
 }
 
 export interface SpeciesView {
+  /** Портрет-приклад виду (адреса SVG). */
+  portrait?: string | null;
   key: string;
   name_en: string;
   source_id: string;
@@ -97,6 +99,8 @@ export interface SubclassView {
 }
 
 export interface ClassView {
+  /** Емблема класу (адреса SVG для маски). */
+  emblem?: string | null;
   key: string;
   name_en: string;
   hit_die: number;

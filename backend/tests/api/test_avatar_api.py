@@ -199,3 +199,29 @@ def test_wizard_keeps_the_gender(client: TestClient) -> None:
     assert client.get(step).json()["answers"]["gender"] == "female"
     record = client.app.state.drafts.get(draft_id)
     assert record.gender == "female"
+
+
+def test_emblem_files(client: TestClient) -> None:
+    from dndsheet.visuals.application import emblems
+
+    response = client.get(emblems.url("class-bard"))
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/svg+xml")
+    assert "immutable" in response.headers["cache-control"]
+    assert client.get("/assets/emblems/old/class-bard.svg").headers["cache-control"] == "public, max-age=300"
+    assert client.get(emblems.url("class-nobody")).status_code == 404
+
+
+def test_wizard_cards_carry_pictures(client: TestClient) -> None:
+    if not client.app.state.golden_cases:
+        pytest.skip("немає корпусу механік")
+    started = client.post(f"{API}/wizard").json()
+    species = {item["key"]: item for item in started["options"]["species"]}
+    assert species["dwarf"]["portrait"].startswith("/assets/avatars/")
+    assert "/dwarf-" in species["dwarf"]["portrait"]
+    assert any("/duergar-" in (child.get("portrait") or "") for child in species["dwarf"]["subspecies"])
+    draft_id = started["draft"]["id"]
+    client.put(f"{API}/wizard/{draft_id}/steps/species", json={"name": "Іва", "species_key": "human"})
+    classes = client.get(f"{API}/wizard/{draft_id}/steps/class").json()["options"]["classes"]
+    wizard = next(item for item in classes if item["key"] == "wizard")
+    assert wizard["emblem"].startswith("/assets/emblems/") and wizard["emblem"].endswith("/class-wizard.svg")
