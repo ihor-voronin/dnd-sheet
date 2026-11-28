@@ -6,7 +6,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { finishDraft, readDraft, readStep, startWizard, writeStep } from "../../api";
+import { ApiError, finishDraft, readDraft, readStep, startWizard, writeStep } from "../../api";
 import { ActiveGloss, GlossProvider, Term } from "../../components/Term";
 import { ABILITY_SHORT, STEP_LABELS, STEP_ORDER, abilityModifier, classGuide, modifierLabel } from "../../labels";
 import { speciesLabel, termLabel, titleCaseKey } from "../character/uk";
@@ -38,6 +38,8 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
   const [step, setStep] = useState<string>("species");
   const [view, setView] = useState<StepView | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Межа кількості персонажів (409): не «помилка сервера», а стан, з якого є вихід.
+  const [atLimit, setAtLimit] = useState(false);
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(true);
   const [classEquipment, setClassEquipment] = useState<string | null>(null);
@@ -82,7 +84,10 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
         setStep(started.step);
         setView(started);
       } catch (failure) {
-        if (!cancelled) setError(messageOf(failure));
+        if (!cancelled) {
+          setAtLimit(failure instanceof ApiError && failure.status === 409);
+          setError(messageOf(failure));
+        }
       } finally {
         if (!cancelled) setStarting(false);
       }
@@ -188,6 +193,20 @@ export function CreateWizard({ onFinished }: { onFinished: (characterId: string)
   }
 
   if (starting) return <p className="status">Готуємо чернетку…</p>;
+  if (!view && atLimit) {
+    return (
+      <section className="status wizard-limit" role="alert">
+        <h2>Досягнуто межі персонажів</h2>
+        <p>
+          {error ? error.charAt(0).toUpperCase() + error.slice(1) : "Персонажів забагато"}. Відкрийте того, кого вже не
+          граєте, і видаліть його внизу листа.
+        </p>
+        <a className="button" href="#/">
+          До моїх персонажів
+        </a>
+      </section>
+    );
+  }
   if (!view) {
     return (
       <p className="status status--error">

@@ -749,17 +749,6 @@ export function CharacterView({
                   Друк
                 </a>
               </div>
-              <div className="sheet-danger">
-                <button
-                  type="button"
-                  className="sheet-btn sheet-btn--danger"
-                  disabled={busy}
-                  onClick={() => void remove()}
-                  title="Видалити персонажа назавжди"
-                >
-                  Видалити персонажа
-                </button>
-              </div>
             </div>
           </>
         )}
@@ -1059,6 +1048,16 @@ export function CharacterView({
           </div>
         </div>
       </div>
+      {!readOnly && onDeleted ? (
+        <footer className="sheet-danger" aria-label="Видалення персонажа">
+          <p className="sheet-danger__text">
+            Персонаж більше не потрібен? Видалення остаточне: лист і посилання «лише читати» зникнуть.
+          </p>
+          <button type="button" className="sheet-btn sheet-btn--danger" disabled={busy} onClick={() => void remove()}>
+            Видалити персонажа…
+          </button>
+        </footer>
+      ) : null}
     </article>
   );
 }

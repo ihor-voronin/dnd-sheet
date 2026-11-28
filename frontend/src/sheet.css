@@ -214,21 +214,23 @@ body.board {
   box-shadow: 0 0 16px color-mix(in srgb, var(--patina) 45%, transparent);
 }
 
-/* Незворотне — воском, як і хіти: видно, але не кличе натиснути. */
-.sheet-btn--danger {
-  border-color: color-mix(in srgb, var(--wax) 55%, transparent);
-  color: var(--wax);
-}
-
-.sheet-btn--danger:hover:not(:disabled) {
-  border-color: var(--wax);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--wax) 30%, transparent);
-  color: var(--wax);
-}
-
+/* Видалення — в самому низу листа, окремо від дій за столом: не натиснути випадково. */
 .sheet-danger {
   display: flex;
-  margin-left: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-top: 8px;
+  padding: 16px 16px 18px;
+  border-top: 1px dashed var(--sheet-frame-soft);
+}
+
+.sheet-danger__text {
+  margin: 0;
+  max-width: 46em;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .sheet-btn--link {

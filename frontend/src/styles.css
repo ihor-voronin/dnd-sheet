@@ -1606,16 +1606,53 @@ body {
   padding: 0;
 }
 
+/* Лічильник — окремим рядком під заголовком: на телефоні не розриває «Мої персонажі». */
+.saved-count {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.saved-count--full {
+  color: var(--wax-text, var(--wax));
+}
+
+.wizard-limit h2 {
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+
+.wizard-limit p {
+  margin: 0 0 14px;
+}
+
 .home-mcp {
   margin: 34px 0 0;
 }
 
+/* Сторінка-інструкція: заголовки розділів помітно менші за заголовок сторінки, а кроки —
+   того ж розміру, що й текст (кроки тут головне, а не примітка). */
 .mcp-guide h3 {
-  margin: 22px 0 8px;
+  margin: 26px 0 8px;
+  font-size: var(--t-lg, 19px);
 }
 
-.mcp-steps li + li {
+.mcp-steps,
+.mcp-list {
+  margin: 0;
+  padding-left: 22px;
+  line-height: 1.55;
+}
+
+.mcp-steps li + li,
+.mcp-list li + li {
   margin-top: 8px;
+}
+
+.mcp-guide .login {
+  margin-top: 0;
 }
 
 .mcp-copy {

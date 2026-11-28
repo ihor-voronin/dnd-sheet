@@ -134,11 +134,29 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
     queryFn: fetchCharacters,
   });
 
+  // Лічильник — лише ближче до межі: гравцю з трьома героями «3 з 50» нічого не каже.
+  const limit = data?.limit ?? 0;
+  const full = Boolean(data && limit && data.total >= limit);
+  const nearLimit = Boolean(data && limit && data.total >= limit * 0.8);
+
   return (
     <section className="saved" id="my-characters">
       <div className="saved-head">
-        <h2>Мої персонажі</h2>
-        <button type="button" className="button button--primary" onClick={() => navigate({ name: "create" })}>
+        <h2>
+          Мої персонажі
+          {nearLimit ? (
+            <span className={`saved-count ${full ? "saved-count--full" : ""}`}>
+              {data!.total} з {limit}
+            </span>
+          ) : null}
+        </h2>
+        <button
+          type="button"
+          className="button button--primary"
+          disabled={full}
+          title={full ? "Досягнуто межі персонажів" : undefined}
+          onClick={() => navigate({ name: "create" })}
+        >
           Створити персонажа
         </button>
       </div>
@@ -148,7 +166,10 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
           Не вдалося прочитати список: {error instanceof Error ? error.message : String(error)}
         </p>
       ) : null}
-      {data?.draft_id ? (
+      {data?.draft_id && full ? (
+        <p className="hint">Є незавершене створення персонажа — завершити його можна, коли звільниться місце.</p>
+      ) : null}
+      {data?.draft_id && !full ? (
         <p className="hint">
           Є незавершене створення персонажа.{" "}
           <button
@@ -168,10 +189,10 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
           </button>
         </p>
       ) : null}
-      {data?.limit && data.total >= data.limit ? (
+      {full ? (
         <p className="hint hint--warn">
-          У вас {data.total} персонажів — це межа ({data.limit}). Щоб створити нового, видаліть когось на його листі:
-          «Дії з листом» → «Видалити персонажа».
+          Це межа: {limit} персонажів. Щоб створити нового, відкрийте того, кого вже не граєте, і видаліть його внизу
+          листа.
         </p>
       ) : null}
       {data && data.total === 0 ? (

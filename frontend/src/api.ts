@@ -35,6 +35,16 @@ export function setSessionToken(token: string | null): void {
   }
 }
 
+/** Помилка API з кодом відповіді: екрани відрізняють «межа» (409) від «сервер недоступний». */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
@@ -53,7 +63,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     } catch {
       /* тіло не JSON — лишаємо статус */
     }
-    throw new Error(detail);
+    throw new ApiError(detail, response.status);
   }
   return (await response.json()) as T;
 }

@@ -6,6 +6,8 @@
  */
 import { useState } from "react";
 
+import { LoginPanel } from "../auth/Login";
+
 function CopyLine({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -49,13 +51,18 @@ export function McpGuide({ signedIn }: { signedIn: boolean }) {
       </p>
 
       <h3>Перш ніж почати</h3>
-      <p>
-        Потрібен акаунт на сайті: хоч раз увійдіть через Telegram.{" "}
-        {signedIn ? "Ви вже увійшли — можна підключати." : "Застосунок не створює акаунтів сам."}
-      </p>
+      {signedIn ? (
+        <p>Ви вже увійшли на сайт — можна підключати.</p>
+      ) : (
+        <LoginPanel reason="Потрібен акаунт на сайті: увійдіть через Telegram хоча б раз. Застосунок не створює акаунтів сам." />
+      )}
 
-      <h3>Claude: сайт, застосунок для компʼютера чи телефона</h3>
-      <ol className="plain-list mcp-steps">
+      <h3>Claude</h3>
+      <p>
+        Додайте конектор на claude.ai або в Claude для компʼютера. Він привʼязаний до акаунта Claude, тож потім працює й
+        у застосунку на телефоні.
+      </p>
+      <ol className="mcp-steps">
         <li>Налаштування → «Конектори» (Connectors) → додати власний конектор (Add custom connector).</li>
         <li>
           Назва — будь-яка, наприклад <code>dnd-sheet</code>. Адреса:
@@ -65,6 +72,7 @@ export function McpGuide({ signedIn }: { signedIn: boolean }) {
           Натисніть «Підключити» (Connect). Відкриється цей сайт: увійдіть через Telegram, перевірте назву застосунку й
           адресу повернення та натисніть «Дозволити».
         </li>
+        <li>Перевірте: напишіть Claude «Покажи моїх персонажів» — у відповіді буде ваш список.</li>
       </ol>
 
       <h3>Claude Code</h3>
@@ -80,24 +88,21 @@ export function McpGuide({ signedIn }: { signedIn: boolean }) {
       </p>
 
       <h3>Що можна просити</h3>
-      <ul className="plain-list">
+      <ul className="mcp-list">
         {EXAMPLES.map((example) => (
           <li key={example}>«{example}»</li>
         ))}
       </ul>
 
       <h3>Межі й безпека</h3>
-      <ul className="plain-list">
+      <ul className="mcp-list">
         <li>Лише ваші персонажі; чужих асистент не бачить.</li>
         <li>До 50 персонажів на гравця — так само, як на сайті.</li>
         <li>
           Видалення — лише на ваше пряме прохання: асистент мусить назвати точне імʼя персонажа, а застосунок спитає
           підтвердження.
         </li>
-        <li>
-          Доступ живе годину й сам поновлюється; відключити застосунок можна будь-коли на головній, у розділі
-          «Підключені застосунки».
-        </li>
+        <li>Доступ діє, доки ви його не відкличете: на головній, у розділі «Підключені застосунки» → «Відключити».</li>
       </ul>
     </article>
   );
