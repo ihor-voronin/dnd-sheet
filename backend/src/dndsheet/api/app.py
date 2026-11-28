@@ -116,7 +116,8 @@ def create_app() -> FastAPI:
     app.include_router(sharing_router)
     app.include_router(characters_router)
 
-    @app.get("/healthz", tags=["ops"])
+    # HEAD too: uptime checks (the README badge via shields.io) send HEAD, not GET.
+    @app.api_route("/healthz", methods=["GET", "HEAD"], tags=["ops"])
     def healthz() -> dict[str, str]:
         return {"status": "ok"}
 
