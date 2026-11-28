@@ -86,8 +86,8 @@ where the fix belongs (and a fork button).
 ## How it works
 
 ```
-Browser / Telegram Mini App
-  React SPA (Vite, TanStack Query)
+Browser / Telegram Mini App            Search engines, link previews
+  React SPA (Vite, TanStack Query)       server-rendered /kb/… pages
         │  JSON API, session via cookie or Bearer (Mini App)
         ▼
 FastAPI  ── DDD bounded contexts, boundaries enforced by import-linter
@@ -97,6 +97,7 @@ FastAPI  ── DDD bounded contexts, boundaries enforced by import-linter
   ├─ sheets       SheetDocument — the canonical sheet document (JSON Schema in contract/)
   ├─ export       PDF (Jinja → HTML → WeasyPrint), Markdown — behind the SheetRenderer port
   ├─ identity     Telegram sign-in (Login Widget and Mini App), sessions
+  ├─ site         public HTML pages: compendium /kb/…, glossary, guide, sitemaps (Jinja, no SPA)
   └─ shared       kernel: abilities, dice, armor, money, rules tables
         │
         ▼
@@ -197,7 +198,7 @@ owner's GPG key or with the `GIT_CRYPT_KEY` GitHub Actions secret.
 ```
 backend/src/dndsheet/   FastAPI app (contexts — see "How it works")
 backend/tests/          tests: domain, rules, API, contracts, printing
-frontend/src/           React SPA: features/{home,knowledge,wizard,character,auth,bugs}, telegram.ts
+frontend/src/           React SPA: features/{home,wizard,character,auth,bugs,mcp,oauth}, seo/, telegram.ts
 contract/               sheet JSON Schema and corpus formats — the single source of types
 content/                glossary, source registry, translations (plain);
                         compendium/, bestiary/, index/ (encrypted)
@@ -223,7 +224,7 @@ docs/                   plan, ADRs, per-area descriptions (below)
 | [docs/export.md](docs/export.md) | printing and PDF |
 | [docs/api-compendium.md](docs/api-compendium.md) | compendium API |
 | [docs/mcp.md](docs/mcp.md) | MCP server for AI assistants, OAuth sign-in |
-| [docs/seo.md](docs/seo.md) | search engines and link previews: what's done, what's next |
+| [docs/seo.md](docs/seo.md) | SEO: analysis, server-rendered compendium pages, licensing policy, sitemaps, what's next |
 | [docs/format.md](docs/format.md) | corpus record format |
 | [docs/books.md](docs/books.md) | the 2014 book line and what each book provides |
 | [docs/translation-rules.md](docs/translation-rules.md), [docs/translation.md](docs/translation.md) | translation rules and status |
