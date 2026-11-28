@@ -245,9 +245,16 @@ def build_server(
         return await changed("POST", f"{_API}/{segment(character_id)}/hit-dice", {"die": die, "roll": roll})
 
     @server.tool(title="Level-up options", annotations=READ_ONLY)
-    async def level_up_options(character_id: CharacterId) -> dict[str, Any]:
-        """What the next level gives in each current class and each class the character could add."""
-        return compact(await api("GET", f"{_API}/{segment(character_id)}/level-up"))
+    async def level_up_options(
+        character_id: CharacterId,
+        class_key: Annotated[
+            str | None,
+            Field(description="One class's plan, also a new class for multiclassing; omit for the current classes"),
+        ] = None,
+    ) -> dict[str, Any]:
+        """What the next level gives: the plans of the character's current classes (or of `class_key`),
+        plus which other classes could be added and why not."""
+        return _level_up_plans(await api("GET", f"{_API}/{segment(character_id)}/level-up"), class_key)
 
     @server.tool(title="Level up", annotations=CHANGES)
     async def level_up(
@@ -414,6 +421,37 @@ def _checked(reply: Reply) -> Any:  # noqa: ANN401
     if reply.status == 409:
         raise ToolError(f"{reply.detail} — прочитайте лист ще раз і повторіть зі свіжою версією")
     raise ToolError(reply.detail)
+
+
+def _level_up_plans(result: dict[str, Any], class_key: str | None) -> dict[str, Any]:
+    """Не всі 13 планів (~75 КБ): лише потрібні, решта класів — одним рядком кожен."""
+    plans = result.get("plans") or []
+    if class_key:
+        wanted = class_key.strip().casefold()
+        chosen = [plan for plan in plans if plan.get("class_key") == wanted]
+        if not chosen:
+            raise ToolError(f"немає плану для класу {class_key!r}")
+    else:
+        chosen = [plan for plan in plans if not plan.get("is_new_class")]
+    shown = {plan.get("class_key") for plan in chosen}
+    shaped: dict[str, Any] = {
+        key: result.get(key) for key in ("character_id", "name", "version", "total_level", "max_level", "can_level_up")
+    }
+    shaped["plans"] = compact(chosen)
+    shaped["other_classes"] = [
+        {
+            "class_key": plan.get("class_key"),
+            "class_name": plan.get("class_name"),
+            "allowed": plan.get("allowed"),
+            "blocked_reason": plan.get("blocked_reason"),
+        }
+        for plan in plans
+        if plan.get("class_key") not in shown
+    ]
+    # Риси з +1 до характеристики потрібні лише тоді, коли цей рівень дає ASI.
+    if any((plan.get("asi") or {}).get("pending") for plan in chosen):
+        shaped["feat_abilities"] = result.get("feat_abilities")
+    return shaped
 
 
 def _step(result: dict[str, Any]) -> dict[str, Any]:
