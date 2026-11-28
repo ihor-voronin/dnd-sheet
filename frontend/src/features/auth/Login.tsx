@@ -117,7 +117,7 @@ export function LoginPanel({ reason, existingOnly = false }: { reason?: string; 
       ) : null}
       {error ? <p className="status status--error">{error}</p> : null}
       <p className="hint">
-        Без входу доступний <a href="#/kb">довідник</a>: види, класи, передісторії, риси, закляття, предмети.
+        Без входу доступний <a href="/kb">довідник</a>: види, класи, передісторії, риси, закляття, предмети.
       </p>
     </section>
   );

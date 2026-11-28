@@ -1,0 +1,11 @@
+{% extends "base.html.jinja" %}
+{% block content %}
+<header class="entry__head">
+  <p class="kicker">404</p>
+  <h1>Такої сторінки немає</h1>
+  <p class="lead">Адреса <code>{{ path }}</code> нікуди не веде. Можливо, запис перейменовано — пошукайте в розділі:</p>
+</header>
+<nav class="chips" aria-label="Розділи довідника">
+  {% for item in sections %}<a class="chip" href="/kb/{{ item.id }}">{{ item.label }}</a>{% endfor %}
+</nav>
+{% endblock %}

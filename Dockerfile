@@ -70,6 +70,8 @@ WORKDIR /app
 # content/raw (the source books) doesn't go into the image — only ingest needs it.
 COPY content/sources.yml /app/content/sources.yml
 COPY content/books_market.json /app/content/books_market.json
+# The terminology glossary: the UA/EN table on the public glossary page (/kb/glossary).
+COPY content/glossary.uk.yml /app/content/glossary.uk.yml
 COPY content/compendium/ /app/content/compendium/
 COPY content/bestiary/ /app/content/bestiary/
 COPY content/index/ /app/content/index/
@@ -116,7 +118,6 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
 COPY pyproject.toml uv.lock /app/
 COPY backend/ /app/backend/
 COPY contract/ /app/contract/
-COPY content/glossary.uk.yml /app/content/glossary.uk.yml
 COPY frontend/src/ /app/frontend/src/
 COPY scripts/ /app/scripts/
 
