@@ -234,7 +234,7 @@ docs/                   plan, ADRs, per-area descriptions (below)
 | [docs/translation-rules.md](docs/translation-rules.md), [docs/translation.md](docs/translation.md) | translation rules and status |
 | [docs/deploy.md](docs/deploy.md) | server, Terraform, secrets, Telegram, backups |
 | [docs/database.md](docs/database.md) | shared PostgreSQL: setup, migrations, moving off SQLite, rollback, experiments |
-| [docs/platform.md](docs/platform.md) | several projects on one VPS: platform repository, secrets, deploys |
+| [docs/platform.md](docs/platform.md) | several projects on one VPS: moved to the [vps-infra](https://github.com/ihor-voronin/vps-infra/blob/main/docs/platform.md) repository |
 | [docs/ci.md](docs/ci.md) | GitHub Actions, rules for `main`, auto-deploy |
 | [docs/next-steps.md](docs/next-steps.md) | what's next |
 

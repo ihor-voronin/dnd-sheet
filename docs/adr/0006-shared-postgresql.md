@@ -123,8 +123,9 @@ CouchDB; PocketBase (repository archived 2026-10).
 8. **Cutover by a short maintenance window**, with a copy that verifies itself (row counts +
    SHA-256 per table) inside the copying transaction, and a verified reverse copy for rollback.
 
-Where it lives and how it's deployed alongside other projects (a platform repository, the
-shared Caddy, passwords kept on the server) is planned in [`docs/platform.md`](../platform.md).
+Where it lives and how it's deployed alongside other projects is the separate repository
+[vps-infra](https://github.com/ihor-voronin/vps-infra/blob/main/docs/platform.md) (owner's decision, 2026-11-28). It covers the shared Caddy,
+DB passwords in git-crypt in both repositories, and the shared deploy.
 
 ## Consequences
 
