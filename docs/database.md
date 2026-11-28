@@ -100,22 +100,16 @@ VPS (2 vCPU, 2.4 GiB RAM, 29 GB disk)
   this exact configuration: the app role can't CREATE/ALTER/DROP/TRUNCATE, another
   project's roles can't connect, the superuser over TCP is rejected, and the owner can't
   create roles or databases.
-- **Secrets** (git-crypt, `deploy/secrets/`, to be added in step 1 of § 9):
-  - `postgres.env`: `POSTGRES_PASSWORD` (superuser) → `/opt/pg/.env`, mode 600;
-  - `prod.env` gains `DNDSHEET_DATABASE_URL=postgresql://dndsheet_app:<pw>@pg:5432/dndsheet`;
-  - `migrate.env`: `DNDSHEET_DATABASE_URL=postgresql://dndsheet:<pw>@pg:5432/dndsheet` (owner).
-    It is used only by the one-shot migration container and never reaches the app's environment.
-
-  Passwords are generated (`python -c "import secrets; print(secrets.token_urlsafe(32))"`).
-  Rotation is `ALTER ROLE … PASSWORD` plus an edit to the env file and a redeploy.
-- **How it gets there.** The stack changes rarely, like the bootstrap, so it belongs with
-  Terraform: a `terraform_data.postgres` that uploads `deploy/postgres/*` and runs
-  `docker compose up -d` when their hash changes, plus the backup cron. A small
-  `scripts/deploy_postgres.py` in the style of `deploy_app.py` works just as well. Pick one
-  in step 1. The files in `deploy/postgres/` are ready either way.
-- **Ownership.** While dnd-sheet is the only user, `deploy/postgres/` lives here. When the
-  second project arrives, move it to a small infra repository: the shared server shouldn't
-  live inside one app's repo.
+- **Secrets.** The superuser password is in git-crypt (`/opt/pg/.env`, mode 600). The
+  project passwords are generated on the server and never committed. `provision.sh`
+  writes `/opt/pg/projects/<slug>/app.env` (the app's `DNDSHEET_DATABASE_URL`, loaded by
+  its compose) and `owner.env` (for the one-shot migration container only). The app's
+  environment never holds the owner password. Why that and not git-crypt in each repo, and
+  how rotation works: [docs/platform.md § 4](platform.md#4-secrets-database-passwords-never-leave-the-server).
+- **How it gets there, and who owns it.** It's part of the platform, not of dnd-sheet. The
+  plan is a separate platform repository with its own deploy, which also takes Caddy and
+  the bootstrap out of this repo: [docs/platform.md](platform.md). `deploy/postgres/` lives
+  here only until that repository exists.
 
 ## 3. Migrations
 
@@ -131,7 +125,7 @@ VPS (2 vCPU, 2.4 GiB RAM, 29 GB disk)
   before `docker compose up -d`:
 
   ```bash
-  docker run --rm --network pg --env-file /opt/dndsheet/migrate.env dndsheet:local \
+  docker run --rm --network pg --env-file /opt/pg/projects/dndsheet/owner.env dndsheet:local \
     python -m dndsheet.db migrate
   ```
 
@@ -198,10 +192,10 @@ docker compose -f compose.yml stop app
 # 2. A consistent snapshot (the same command the daily backup uses).
 sqlite3 var/dndsheet.sqlite3 ".backup 'backups/dndsheet-cutover.sqlite3'"
 # 3. Copy and verify, as the owner role, with the image that's about to run.
-docker run --rm --network pg --env-file migrate.env -v /opt/dndsheet/backups:/backups:ro \
+docker run --rm --network pg --env-file /opt/pg/projects/dndsheet/owner.env -v /opt/dndsheet/backups:/backups:ro \
   dndsheet:local python -m dndsheet.db copy-from-sqlite /backups/dndsheet-cutover.sqlite3
-# 4. Switch: DNDSHEET_DATABASE_URL (app role) in deploy/secrets/prod.env, then from the repo:
-#    .\deploy\terraform\deploy.ps1 -NoBuild
+# 4. Switch: add /opt/pg/projects/dndsheet/app.env to the app's env_file (a one-line
+#    change in deploy/compose.yml), then deploy as usual.
 # 5. Smoke test: sign in with Telegram, open a character, change something, open a share
 #    link, reconnect the MCP client (a token refresh goes through oauth_tokens).
 ```
@@ -214,8 +208,8 @@ daily SQLite backups for 30 days.
 | When | How | Data loss |
 | --- | --- | --- |
 | During the window, before step 4 | nothing to undo: start the app again (`docker compose start app`) | none |
-| After the switch, nothing written yet | remove `DNDSHEET_DATABASE_URL` from `prod.env`, `deploy.ps1 -NoBuild` | none (the SQLite file is the same) |
-| After users wrote to PostgreSQL | stop the app; `python -m dndsheet.db copy-to-sqlite /app/var/dndsheet-from-pg.sqlite3` (owner role); move it over `var/dndsheet.sqlite3` (`chown 10001`); remove the URL; deploy | none: the reverse copy is verified the same way |
+| After the switch, nothing written yet | drop `app.env` from the app's `env_file` and redeploy | none (the SQLite file is the same) |
+| After users wrote to PostgreSQL | stop the app; `python -m dndsheet.db copy-to-sqlite /app/var/dndsheet-from-pg.sqlite3` (owner role); move it over `var/dndsheet.sqlite3` (`chown 10001`); drop `app.env` from `env_file`; deploy | none: the reverse copy is verified the same way |
 | The database itself is broken | `pg_restore` last night's dump (§ 6), or the steps above from the restored database | since the last dump |
 
 The reverse copy creates the SQLite schema with the SQLite adapters themselves, so the file
@@ -304,14 +298,16 @@ make it worth another look.
 
 ## 9. Steps and effort
 
-Estimates are focused working time for one person who knows this repository.
+Estimates are focused working time for one person who knows this repository. With the
+platform repository ([docs/platform.md § 8](platform.md#8-moving-dnd-sheet-to-this-layout))
+the same work moves there: steps 1–5 become its steps 4–5, and the rest stays the same.
 
 | # | Step | Effort | Needs the owner |
 | --- | --- | --- | --- |
 | 0 | Prototype: adapters, migrations, copy/verify, tests, CI (this branch) | done | review |
-| 1 | Secrets (`postgres.env`, `migrate.env`, URL in `prod.env`); choose Terraform or a script for `deploy/postgres`; bring the `pg` stack up on the VPS | 2–3 h | OK to touch the server and the secrets |
-| 2 | `create-project.sql` for `dndsheet`; check the roles on the server as in § 2 | 0.5 h | — |
-| 3 | App compose joins the external `pg` network; `deploy_app.py` runs the migration container before `up -d` (only when `migrate.env` exists) | 1–2 h | — |
+| 1 | Superuser password in git-crypt; the platform deploy brings the `pg` stack up on the VPS | 2–3 h | OK to touch the server and the secrets |
+| 2 | `provision.sh dndsheet DNDSHEET_DATABASE_URL` (runs `create-project.sql`, writes the env files); check the roles on the server as in § 2 | 0.5 h | — |
+| 3 | App compose joins the external `pg` network; `deploy_app.py` runs the migration container before `up -d` (only when `owner.env` exists) | 1–2 h | — |
 | 4 | `backup.sh` in cron (daily and weekly check), `PING_URL`, R2 off-site copy | 2–3 h | an R2 token, a healthchecks.io URL |
 | 5 | Rehearsal on the server: last night's SQLite backup → `dndsheet_rehearsal`, verify, drop | 0.5–1 h | — |
 | 6 | Cutover (§ 4), smoke test | 0.5 h (≈5 min downtime) | a time slot |

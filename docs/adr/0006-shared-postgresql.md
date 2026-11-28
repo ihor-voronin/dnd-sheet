@@ -123,6 +123,9 @@ CouchDB; PocketBase (repository archived 2026-10).
 8. **Cutover by a short maintenance window**, with a copy that verifies itself (row counts +
    SHA-256 per table) inside the copying transaction, and a verified reverse copy for rollback.
 
+Where it lives and how it's deployed alongside other projects (a platform repository, the
+shared Caddy, passwords kept on the server) is planned in [`docs/platform.md`](../platform.md).
+
 ## Consequences
 
 - About 60 MiB more RAM on the box, and a second thing to back up, monitor and upgrade. In
