@@ -60,6 +60,41 @@ describe("App shell", () => {
     expect(await screen.findAllByText(/github\.com|GitHub/)).not.toHaveLength(0);
   });
 
+  it("opens the bug report and the assistant page at real addresses", async () => {
+    const { user } = await renderApp("/bugs");
+    expect(await screen.findByRole("heading", { name: "Знайшли помилку?" })).toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "ІІ-асистент (MCP)" }));
+    await waitFor(() => expect(window.location.pathname).toBe("/mcp"));
+  });
+
+  it("moves old #/bugs links to the real address", async () => {
+    await renderApp("#/mcp");
+    await waitFor(() => expect(window.location.pathname).toBe("/mcp"));
+    expect(window.location.hash).toBe("");
+  });
+
+  it("drops the page path when an in-app #/ link is followed", async () => {
+    await renderApp("/bugs");
+    window.location.hash = "#/create";
+    await waitFor(() => expect(window.location.pathname).toBe("/"));
+    expect(window.location.hash).toBe("#/create");
+  });
+
+  it("sends old compendium links to the server pages", async () => {
+    await renderApp("#/kb/spells/phb-2014%2Fspell%2Ffireball");
+    const links = await import("./seo/kbLinks");
+    await waitFor(() => expect(links.openServerPage).toHaveBeenCalledWith("/kb/spells/fireball"));
+  });
+
+  it("links the compendium as real pages from the home page", async () => {
+    override("GET", "/api/v1/auth/me", { status: 200, body: { user: null } });
+    await renderApp("#/");
+    expect(await screen.findByRole("link", { name: "Відкрити довідник" })).toHaveAttribute("href", "/kb");
+    expect(screen.getByRole("link", { name: "Довідник" })).toHaveAttribute("href", "/kb");
+    const spells = await screen.findByRole("link", { name: /Закляття/ });
+    expect(spells).toHaveAttribute("href", "/kb/spells");
+  });
+
   it("signs out", async () => {
     override("GET", "/api/v1/auth/config", {
       status: 200,

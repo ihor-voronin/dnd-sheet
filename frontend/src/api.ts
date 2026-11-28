@@ -1,8 +1,6 @@
 import type { ClassChoiceGroup } from "./features/wizard/types";
 import type {
-  BackgroundView,
   ClassSpell,
-  ClassView,
   DraftView,
   FeatEntry,
   FinishedCharacter,
@@ -10,7 +8,6 @@ import type {
   LevelUpView,
   RestReport,
   SheetViewPayload,
-  SpeciesView,
   StepView,
 } from "./features/wizard/types";
 
@@ -638,42 +635,6 @@ export interface BooksOverview {
 
 export function fetchBooksOverview(): Promise<BooksOverview> {
   return getJson<BooksOverview>("/api/v1/compendium/books");
-}
-
-// --- база знань (без входу) ------------------------------------------------
-
-export function fetchKbSpecies(): Promise<{ items: SpeciesView[] }> {
-  return getJson("/api/v1/kb/species");
-}
-
-export function fetchKbClasses(): Promise<{ items: ClassView[] }> {
-  return getJson("/api/v1/kb/classes");
-}
-
-export function fetchKbBackgrounds(): Promise<{ items: BackgroundView[] }> {
-  return getJson("/api/v1/kb/backgrounds");
-}
-
-const categoryCache = new Map<string, Promise<ItemSearchResult[]>>();
-
-/** Усі записи категорії довідника (закляття, риси, опційні вміння) — для пошуку українською на клієнті. */
-export function fetchCategory(category: string): Promise<ItemSearchResult[]> {
-  const cached = categoryCache.get(category);
-  if (cached) return cached;
-  const loading = (async () => {
-    const all: ItemSearchResult[] = [];
-    for (let offset = 0; ; offset += CATALOG_PAGE) {
-      const page = await getJson<{ items: ItemSearchResult[]; total: number }>(
-        `/api/v1/compendium/entries?category=${encodeURIComponent(category)}&limit=${CATALOG_PAGE}&offset=${offset}`,
-      );
-      all.push(...page.items);
-      if (!page.items.length || all.length >= page.total) break;
-    }
-    return all;
-  })();
-  categoryCache.set(category, loading);
-  loading.catch(() => categoryCache.delete(category));
-  return loading;
 }
 
 export function fetchEntry(entryId: string): Promise<CompendiumEntry> {

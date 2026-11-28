@@ -9,6 +9,12 @@ import { afterEach, beforeEach, vi } from "vitest";
 import { lookup } from "./tape";
 import type { Reply } from "./tape";
 
+// Довідник — серверні сторінки: перехід туди в jsdom не працює, тож тести бачать лише виклик.
+vi.mock("../seo/kbLinks", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../seo/kbLinks")>()),
+  openServerPage: vi.fn(),
+}));
+
 const here = dirname(fileURLToPath(import.meta.url));
 const itemsUk = readFileSync(join(here, "..", "..", "public", "items-uk.json"), "utf-8");
 

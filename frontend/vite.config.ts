@@ -15,6 +15,13 @@ export default defineConfig({
     proxy: {
       "/api": api,
       "/healthz": api,
+      // Server-rendered pages: the compendium, guides, sitemaps (backend/src/dndsheet/site).
+      "/kb": api,
+      "/guides": api,
+      "/sitemap.xml": api,
+      "/sitemaps": api,
+      "/robots.txt": api,
+      "/llms.txt": api,
     },
   },
   build: {
