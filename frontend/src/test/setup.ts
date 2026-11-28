@@ -100,8 +100,27 @@ beforeEach(() => {
   requests.length = 0;
 });
 
+/**
+ * Links to real paths (`/kb/…` — the server-rendered compendium, `/bugs`) leave the SPA.
+ * jsdom can't follow them ("Not implemented: navigation") and floods the log, so a click on
+ * such a link is recorded here instead; hash links (`#/…`) work as usual.
+ */
+export const navigations: string[] = [];
+document.addEventListener(
+  "click",
+  (event) => {
+    const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+    const href = link?.getAttribute("href") ?? "";
+    if (!link || href.startsWith("#")) return;
+    event.preventDefault();
+    navigations.push(href);
+  },
+  true,
+);
+
 afterEach(() => {
   cleanup();
+  navigations.length = 0;
   overrides.length = 0;
   window.localStorage.clear();
   window.sessionStorage.clear();
