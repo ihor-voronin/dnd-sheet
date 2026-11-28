@@ -131,6 +131,24 @@ Limited class resources (`feature_resources`) are a separate layer:
 * the counters live in `SheetState.feature_used`, are checked against the limit and reset
   by rests by their own rule.
 
+### Custom features
+
+What the table has but the books don't — a DM's boon, an item's ability, a house rule —
+goes in as a **custom feature** («Додати власне вміння» on the Уміння tab): a name, the
+text in the player's words and, optionally, where it comes from (`origin`: "дар майстра",
+"Перстень вогню"), the character level it came at, and **uses** per short or long rest.
+
+* It's stored with the character (`custom_features` in the record, `domain/custom_features.py`),
+  up to 50 per character, the text up to 4000 characters. The sheet derives no numbers
+  from it; it's shown with the «власне» mark.
+* With `uses` it becomes a counter like a class resource: `feature_resources` gets a
+  `custom:<id>` entry (class `custom`), spent with `PATCH {"feature_used": {"custom:<id>": 1}}`
+  and restored by the rest it names. Changing the uses trims the spent count; removing the
+  uses or the feature drops it.
+* The sheet payload lists them in `custom_features` (each with `source: "custom"`, `id`,
+  `origin`, `level`, `text`, `uses`, `recharge`, `used`, `resource_key`); PDF/print show a
+  «Власні вміння» group, Markdown a "custom · origin · level · uses" line with the text.
+
 ## Actions in combat
 
 The Actions tab gathers everything that can be done on a turn into one model:
@@ -180,6 +198,9 @@ on another device".
 | `POST` | `/api/v1/characters/{id}/items` | `{"item": {...}}` — add an item |
 | `PATCH` | `/api/v1/characters/{id}/items/{index}` | `{"fields": {...}}` — change it |
 | `DELETE` | `/api/v1/characters/{id}/items/{index}` | remove an item |
+| `POST` | `/api/v1/characters/{id}/custom-features` | `{"feature": {"name", "text", "origin"?, "level"?, "uses"?, "recharge"?}}` — add a custom feature; the response has its `feature_id` |
+| `PATCH` | `/api/v1/characters/{id}/custom-features/{feature_id}` | `{"fields": {...}}` — change it; `null` clears `origin`, `level`, `uses` |
+| `DELETE` | `/api/v1/characters/{id}/custom-features/{feature_id}` | remove it (and its counter) |
 | `GET` | `/api/v1/characters/{id}` | the full sheet |
 | `GET` | `/api/v1/characters/{id}/version` | the version number (live sync) |
 | `GET` | `/api/v1/characters/{id}/export/pdf`, `/print` | printing (see [`export.md`](export.md)) |

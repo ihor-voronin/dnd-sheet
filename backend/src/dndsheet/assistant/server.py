@@ -38,6 +38,9 @@ The site computes every number (AC, HP, attack bonuses, slots); never compute or
 - Names and errors come back in Ukrainian; answer the player in their language.
 - A player can have at most `limit` characters (list_characters shows it); at the limit, starting
   or finishing a character fails until one is deleted.
+- Things the player's table has but the books don't (homebrew, a DM's boon, an item's power) go
+  in as custom entries: manage_custom_features for features, manage_spells with `custom: true`
+  for spells. Write their text as the player gives it; the site adds no numbers from them.
 - delete_character is permanent. Use it only when the player explicitly asks to delete a
   specific character, and confirm the name with them first.
 """
@@ -89,7 +92,7 @@ def build_server(
     async def changed(method: str, path: str, body: dict[str, Any]) -> dict[str, Any]:
         result = await api(method, path, body=body)
         shaped = {"sheet": summary(result["sheet"]), "version": result.get("version")}
-        for extra in ("rest", "level_up"):
+        for extra in ("rest", "level_up", "feature_id"):
             if extra in result:
                 shaped[extra] = result[extra]
         return shaped
@@ -207,28 +210,77 @@ def build_server(
     async def manage_spells(
         character_id: CharacterId,
         version: Version,
-        action: Literal["learn", "forget", "prepare"],
-        class_key: Annotated[str, Field(description="The class the spell belongs to, e.g. wizard")],
+        action: Literal["learn", "forget", "prepare", "update"],
+        class_key: Annotated[
+            str,
+            Field(
+                description=(
+                    'The class the spell belongs to, e.g. wizard; "other" for a custom spell that belongs '
+                    "to no class (a DM's boon, an item's power)"
+                )
+            ),
+        ],
         spells: Annotated[
             list[dict[str, Any]],
             Field(
                 description=(
-                    'learn/forget: one spell {"name_en", "level", "entry_id"?}; '
-                    "prepare: the whole prepared list for the class"
+                    'learn/forget: one spell {"name_en", "level", "entry_id"?}. A custom spell (not in the '
+                    'books) is learned with {"name_en", "level" 0-9, "custom": true, "description", and '
+                    'optionally "school", "casting_time", "range", "duration", "components" (free text), '
+                    '"concentration", "ritual" (bool)}. update (custom spells only): '
+                    '[{"name_en": current name, "fields": {any of those keys, incl. a new "name_en", '
+                    '"level" or "class_key"}}]. prepare: the whole prepared list for the class'
                 )
             ),
         ],
     ) -> dict[str, Any]:
-        """Learn or forget a spell outside a level-up, or set the day's prepared spells of a class."""
+        """Learn or forget a spell outside a level-up, set the day's prepared spells of a class, or add
+        and edit a custom spell. Custom spells are always prepared; under a class they count toward
+        its limits, under "other" they don't."""
         base = f"{_API}/{segment(character_id)}/spells"
         if action == "prepare":
             return await changed(
                 "POST", f"{base}/prepare", {"class_key": class_key, "spells": spells, "version": version}
             )
         if len(spells) != 1:
-            raise ToolError("learn і forget — по одному закляттю")
+            raise ToolError("learn, forget і update — по одному закляттю")
         body = {**spells[0], "class_key": class_key, "version": version}
+        if action == "update":
+            return await changed("PATCH", base, body)
         return await changed("POST" if action == "learn" else "DELETE", base, body)
+
+    @server.tool(title="Manage custom features", annotations=DESTRUCTIVE)
+    async def manage_custom_features(
+        character_id: CharacterId,
+        version: Version,
+        action: Literal["add", "update", "remove"],
+        feature: Annotated[
+            dict[str, Any] | None,
+            Field(
+                description=(
+                    'add: {"name", "text", "origin"? (where it comes from: a DM boon, an item), '
+                    '"level"? 1-20, "uses"? 1-99 per rest, "recharge"? "short"|"long" (default long)}; '
+                    "update: only the fields to change, null clears origin/level/uses"
+                )
+            ),
+        ] = None,
+        feature_id: Annotated[
+            str | None, Field(description="The custom feature's `id` from the sheet (update/remove)")
+        ] = None,
+    ) -> dict[str, Any]:
+        """Add, change or remove a custom feature: something the table has that the books don't
+        (homebrew, a DM's boon, an item's ability). It is text only; with `uses` it gets a counter
+        that rests restore, spent via update_character feature_used {"custom:<id>": n}."""
+        base = f"{_API}/{segment(character_id)}/custom-features"
+        if action == "add":
+            return await changed("POST", base, {"feature": feature or {}, "version": version})
+        if not feature_id:
+            raise ToolError("вкажіть feature_id власного вміння")
+        if action == "update":
+            return await changed(
+                "PATCH", f"{base}/{segment(feature_id)}", {"fields": feature or {}, "version": version}
+            )
+        return await changed("DELETE", f"{base}/{segment(feature_id)}", {"version": version})
 
     @server.tool(title="Rest", annotations=CHANGES)
     async def rest(character_id: CharacterId, kind: Literal["short", "long"]) -> dict[str, Any]:

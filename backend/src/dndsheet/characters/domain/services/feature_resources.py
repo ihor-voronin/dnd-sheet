@@ -341,7 +341,26 @@ def resources_for(character: "Character", ability_modifiers: Mapping[Ability, in
                 action="action",
             ),
         )
-    return tuple(_with_feat_resources(character, resources))
+    return tuple(_with_feat_resources(character, resources)) + _custom_resources(character)
+
+
+def _custom_resources(character: "Character") -> tuple[FeatureResource, ...]:
+    """Лічильники власних умінь («2 рази на короткий відпочинок») — як класові."""
+    return tuple(
+        FeatureResource(
+            key=feature.resource_key,
+            name_en=feature.name,
+            class_key="custom",
+            class_name="Custom",
+            level=feature.level or character.total_level,
+            total=feature.uses,
+            used=min(character.state.feature_used.get(feature.resource_key, 0), feature.uses),
+            recharge=feature.recharge or LONG,
+            action="other",
+        )
+        for feature in character.custom_features
+        if feature.resource_key is not None and feature.uses is not None
+    )
 
 
 #: Риси й стилі з лічильником: ключ, назва, скільки, коли відновлюється.

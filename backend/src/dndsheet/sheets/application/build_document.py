@@ -24,6 +24,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 from dndsheet.characters.application.rows import (
     SpellRow,
+    custom_feature_rows,
     feature_rows,
     item_rows,
     proficiency_rows,
@@ -519,6 +520,28 @@ def _action_sections(
             editable=False,
         )
         feature_ids.append(field_id)
+    # Власні вміння: назва й текст від гравця, позначені «власне» — щоб на
+    # папері їх не сплутали з книжковими.
+    for index, row in enumerate(custom_feature_rows(character), start=1):
+        field_id = f"feature.custom.{index}"
+        parts = ["власне"]
+        if row.origin:
+            parts.append(row.origin)
+        if row.level:
+            parts.append(f"{row.level} рівень")
+        if row.uses:
+            rest = "короткий відпочинок" if row.recharge == "short" else "тривалий відпочинок"
+            parts.append(f"{max(0, row.uses - row.used)}/{row.uses}, {rest}")
+        fields[field_id] = Field(
+            id=field_id,
+            type="text",
+            value=" · ".join(parts),
+            origin="input",
+            label=LocalizedText(uk=row.name, en=row.name),
+            hint=LocalizedText(uk=row.text, en=row.text) if row.text else None,
+            editable=False,
+        )
+        feature_ids.append(field_id)
     if feature_ids:
         sections.append(Section(id="features", title=FEATURES_SECTION, columns=2, fields=feature_ids))
 
@@ -651,7 +674,7 @@ def _spell_sections(character: Character, computed: ComputedSheet, fields: dict[
             label=english_name(row.name_en),
             # Власне закляття не має тексту в книзі: у документ іде те, що
             # гравець написав сам (у підказці, щоб не ламати сітку).
-            hint=(LocalizedText(uk=row.description, en=row.description) if row.custom and row.description else None),
+            hint=_custom_spell_hint(row),
             editable=False,
         )
         spell_ids.append(field_id)
@@ -667,10 +690,23 @@ def _spell_sections(character: Character, computed: ComputedSheet, fields: dict[
     return sections
 
 
+def _custom_spell_hint(row: SpellRow) -> LocalizedText | None:
+    """Дані й текст власного закляття: «воплочення · 1 дія · 18 м — текст»."""
+    if not row.custom:
+        return None
+    meta = [value for value in (row.school, row.casting_time, row.range, row.duration, row.components) if value]
+    if row.concentration:
+        meta.append("концентрація")
+    if row.ritual:
+        meta.append("ритуал")
+    text = " — ".join(part for part in (" · ".join(meta), row.description or "") if part)
+    return LocalizedText(uk=text, en=text) if text else None
+
+
 def _spell_value(row: SpellRow) -> str:
     level = spell_level_label(row.level).uk
     if row.custom:
-        return f"{level} · власне"
+        return f"{level} · власне" + (" · поза класом" if row.class_key == "other" else "")
     if row.source != "class":
         return f"{level} · {spell_source_label(row.source).uk}"
     if row.always_prepared:

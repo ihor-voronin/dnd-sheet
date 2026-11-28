@@ -166,9 +166,10 @@ interface ActionRow {
 
 function spellTime(spell: SheetSpell): ActionType {
   const text = (spell.casting_time ?? "").toLowerCase();
-  if (text.includes("bonus action")) return "bonus";
-  if (text.includes("reaction")) return "reaction";
-  if (text.includes("action")) return "action";
+  // Власне закляття гравець описує українською: «1 бонусна дія», «реакція».
+  if (text.includes("bonus action") || text.includes("бонусн")) return "bonus";
+  if (text.includes("reaction") || text.includes("реакці")) return "reaction";
+  if (text.includes("action") || text.includes("дія") || text.includes("дію")) return "action";
   return "other";
 }
 
@@ -224,7 +225,9 @@ function buildRows(sheet: SheetViewPayload): ActionRow[] {
 
   const casters = sheet.spellcasting.classes;
   for (const spell of availableSpells(sheet)) {
-    const caster = casters.find((item) => item.key === spell.class_key) ?? casters[0];
+    // Власне закляття поза класом не має КС і атаки класу — не позичаємо їх в іншого.
+    const caster =
+      spell.class_key === "other" ? undefined : (casters.find((item) => item.key === spell.class_key) ?? casters[0]);
     const hit = spell.save
       ? `КС ${caster?.save_dc ?? "—"}`
       : spell.attack_roll

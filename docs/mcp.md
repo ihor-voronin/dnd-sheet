@@ -32,7 +32,8 @@ an app's access at once.
 | `update_character` | hit points, damage and healing, spent slots and feature uses, death saves, exhaustion, inspiration, notes, equipped items |
 | `start_character` → `get_creation_step` / `set_creation_step` → `finish_character` | the site's creation wizard, step by step, with only the options the rules allow |
 | `manage_inventory` | add, change, remove items |
-| `manage_spells` | learn or forget a spell, set the day's prepared spells |
+| `manage_spells` | learn or forget a spell, set the day's prepared spells; add and edit a custom spell (`custom: true`, class `"other"` for one outside any class) |
+| `manage_custom_features` | add, change, remove a custom feature — a DM's boon, an item's ability, a house rule; with `uses` it gets a counter rests restore |
 | `rest`, `spend_hit_dice` | short and long rests, hit dice |
 | `level_up_options`, `level_up` | what the next level gives, and taking it |
 | `set_class_choice`, `set_expertise` | fighting style, invocations, metamagic…; expertise |
@@ -40,6 +41,11 @@ an app's access at once.
 | `export_pdf` | a PDF download link (5 minutes) |
 | `search_compendium`, `get_compendium_entry` | the rules: spells, items, feats, species… |
 | `delete_character` | delete a character for good — only with its exact name, after you confirm |
+
+Custom features and spells are what the table has but the books don't: the assistant writes
+them as the player says, the sheet marks them «власне» and computes nothing from them. The
+sheet summary lists them (`custom_features`, and `custom: true` on spells) with their text
+cut to 200 characters.
 
 Also a resource, `character://<id>` (the sheet as Markdown), and three prompts: a character
 from an idea, level-up advice, applying a session recap to the sheet.

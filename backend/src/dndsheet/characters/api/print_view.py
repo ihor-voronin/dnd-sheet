@@ -202,6 +202,8 @@ OTHER_SOURCES = {
     "src:pact-boon": "Дар угоди",
     "src:secrets": "Магічні таємниці",
     "src:feature": "Від уміння",
+    # Власні закляття поза класом (дар майстра, предмет).
+    "other": "Власні, поза класом",
 }
 
 COINS = (("pp", "пм"), ("gp", "зм"), ("ep", "ем"), ("sp", "см"), ("cp", "мм"))
@@ -580,6 +582,17 @@ def _features(
     result = list(groups.values())
     if feats:
         result.append({"title": "Риси", "items": feats})
+    custom = [
+        {
+            "title": feature.get("name") or "",
+            "en": "",
+            "meta": _custom_feature_meta(feature),
+            "blocks": rule_blocks(feature.get("text")),
+        }
+        for feature in sheet.get("custom_features", [])
+    ]
+    if custom:
+        result.append({"title": "Власні вміння", "items": custom})
     choices = [
         {
             "title": choice.get("title_uk") or choice.get("title") or choice.get("label") or "",
@@ -593,6 +606,19 @@ def _features(
     if choices:
         result.append({"title": "Вибори класу", "items": choices})
     return result
+
+
+def _custom_feature_meta(feature: Mapping[str, Any]) -> str:
+    """«власне · дар майстра · 3 рівень · 2 / короткий відпочинок»."""
+    parts = ["власне"]
+    if feature.get("origin"):
+        parts.append(str(feature["origin"]))
+    if feature.get("level"):
+        parts.append(f"{feature['level']} рівень")
+    if feature.get("uses"):
+        rest = "короткий відпочинок" if feature.get("recharge") == "short" else "тривалий відпочинок"
+        parts.append(f"{feature['uses']} / {rest}")
+    return " · ".join(parts)
 
 
 def _choice_values(choice: Mapping[str, Any]) -> list[str]:
@@ -665,13 +691,15 @@ def _spellcasting(
     for spell in spells:
         level = int(spell.get("level") or 0)
         name_en = spell["name_en"]
-        uk_name = uk_text.name_uk("spells", name_en)
-        if uk_name is None:
+        custom = bool(spell.get("custom"))
+        # Власне закляття назвав гравець: ні перекладу, ні пошуку в книзі.
+        uk_name = None if custom else uk_text.name_uk("spells", name_en)
+        if uk_name is None and not custom:
             # Заговори виду й доменні закляття записані ключем («thaumaturgy»,
             # «beacon of hope») — беремо назву з книги, за нею й переклад.
             name_en = _book_spell_name(compendium, name_en)
             uk_name = uk_text.name_uk("spells", name_en)
-        tags = []
+        tags = ["власне"] if custom else []
         if spell.get("concentration"):
             tags.append("конц.")
         if spell.get("ritual"):
@@ -691,7 +719,11 @@ def _spellcasting(
                 "components": spell.get("components") or "",
                 "components_short": components_short(spell.get("components")),
                 "tags": " ".join(tags),
-                "class": _uk(display_name(spell.get("class_key", "").title())) if spell.get("class_key") else "",
+                "class": (
+                    _uk(display_name(spell.get("class_key", "").title()))
+                    if spell.get("class_key") and spell.get("class_key") != "other"
+                    else ""
+                ),
                 "group": spell.get("class_key") or f"src:{spell.get('source') or 'other'}",
                 "blocks": rule_blocks(spell.get("description_uk") or spell.get("description")),
                 "higher": rule_blocks(

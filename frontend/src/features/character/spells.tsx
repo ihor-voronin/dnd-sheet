@@ -14,8 +14,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
-import { fetchClassSpells } from "../../api";
-import type { SpellBody } from "../../api";
+import { OTHER_SPELL_CLASS, fetchClassSpells } from "../../api";
+import type { CustomSpellFields as CustomSpellFieldsBody, SpellBody } from "../../api";
 import type { SheetSpell, SheetSpellcasting } from "../wizard/types";
 
 import { spellLabel, termLabel } from "./uk";
@@ -244,6 +244,175 @@ function PreparedClass({
 }
 
 // ---------------------------------------------------------------------------
+// власне закляття: поля, спільні для додавання й редагування
+// ---------------------------------------------------------------------------
+
+/** Чернетка власного закляття у формі (рядки — як у полях вводу). */
+type CustomDraft = {
+  name: string;
+  level: number;
+  description: string;
+  school: string;
+  casting_time: string;
+  range: string;
+  duration: string;
+  components: string;
+  concentration: boolean;
+  ritual: boolean;
+};
+
+const EMPTY_DRAFT: CustomDraft = {
+  name: "",
+  level: 1,
+  description: "",
+  school: "",
+  casting_time: "",
+  range: "",
+  duration: "",
+  components: "",
+  concentration: false,
+  ritual: false,
+};
+
+function draftOf(spell: SheetSpell): CustomDraft {
+  return {
+    name: spell.name_en,
+    level: spell.level,
+    description: spell.description ?? "",
+    school: spell.school ?? "",
+    casting_time: spell.casting_time ?? "",
+    range: spell.range ?? "",
+    duration: spell.duration ?? "",
+    components: spell.components ?? "",
+    concentration: Boolean(spell.concentration),
+    ritual: Boolean(spell.ritual),
+  };
+}
+
+/** Поля чернетки для сервера: порожні рядки — `null`. */
+function draftBody(draft: CustomDraft): Omit<SpellBody, "class_key" | "name_en"> {
+  const text = (value: string) => value.trim() || null;
+  return {
+    level: draft.level,
+    description: text(draft.description),
+    school: text(draft.school),
+    casting_time: text(draft.casting_time),
+    range: text(draft.range),
+    duration: text(draft.duration),
+    components: text(draft.components),
+    concentration: draft.concentration,
+    ritual: draft.ritual,
+  };
+}
+
+const META_FIELDS: {
+  key: "school" | "casting_time" | "range" | "duration" | "components";
+  label: string;
+  hint: string;
+}[] = [
+  { key: "school", label: "Школа", hint: "втілення, ілюзія…" },
+  { key: "casting_time", label: "Час", hint: "1 дія" },
+  { key: "range", label: "Дистанція", hint: "18 м, дотик" },
+  { key: "duration", label: "Тривалість", hint: "1 хвилина" },
+  { key: "components", label: "Компоненти", hint: "В, С, М (перо)" },
+];
+
+function CustomSpellFields({ draft, onChange }: { draft: CustomDraft; onChange: (draft: CustomDraft) => void }) {
+  const set = <K extends keyof CustomDraft>(key: K, value: CustomDraft[K]) => onChange({ ...draft, [key]: value });
+  return (
+    <>
+      <label className="field inv-form__wide">
+        Назва
+        <input
+          className="inv-search__input"
+          value={draft.name}
+          maxLength={120}
+          placeholder="Наприклад, «Благословення столу»"
+          onChange={(event) => set("name", event.target.value)}
+        />
+      </label>
+      <label className="field">
+        Рівень
+        <select className="select" value={draft.level} onChange={(event) => set("level", Number(event.target.value))}>
+          <option value={0}>заговір</option>
+          {Array.from({ length: 9 }, (_, index) => index + 1).map((value) => (
+            <option key={value} value={value}>
+              {value} рівень
+            </option>
+          ))}
+        </select>
+      </label>
+      {META_FIELDS.map((item) => (
+        <label key={item.key} className="field">
+          {item.label}
+          <input
+            className="inv-search__input"
+            value={draft[item.key]}
+            maxLength={120}
+            placeholder={item.hint}
+            onChange={(event) => set(item.key, event.target.value)}
+          />
+        </label>
+      ))}
+      <label className="field inv-form__check">
+        <input
+          type="checkbox"
+          checked={draft.concentration}
+          onChange={(event) => set("concentration", event.target.checked)}
+        />
+        концентрація
+      </label>
+      <label className="field inv-form__check">
+        <input type="checkbox" checked={draft.ritual} onChange={(event) => set("ritual", event.target.checked)} />
+        ритуал
+      </label>
+      <label className="field inv-form__wide">
+        Текст (що робить)
+        <textarea
+          className="spell-add__text"
+          rows={3}
+          maxLength={4000}
+          value={draft.description}
+          placeholder="Своїми словами: ефект, урон, рятунок. Це побачить лист і PDF."
+          onChange={(event) => set("description", event.target.value)}
+        />
+      </label>
+    </>
+  );
+}
+
+/** Клас власного закляття: клас персонажа або «поза класом» (дар майстра, предмет). */
+function CustomClassSelect({
+  classes,
+  value,
+  onChange,
+}: {
+  classes: CastingClass[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="field">
+      Чий
+      <select className="select" value={value} onChange={(event) => onChange(event.target.value)}>
+        {classes.map((item) => (
+          <option key={item.key} value={item.key}>
+            {termLabel(item.name_en)}
+          </option>
+        ))}
+        <option value={OTHER_SPELL_CLASS}>поза класом</option>
+      </select>
+    </label>
+  );
+}
+
+function customHint(classKey: string): string {
+  return classKey === OTHER_SPELL_CLASS
+    ? "Поза класом — дар майстра чи сила предмета: місця в лімітах не займає, КС і атаки класу не має (впишіть їх у текст)."
+    : "Власне закляття класу завжди підготовлене й займає місце в денному ліміті — якщо місця немає, спершу зніміть підготовку з іншого.";
+}
+
+// ---------------------------------------------------------------------------
 // додати закляття
 // ---------------------------------------------------------------------------
 
@@ -257,32 +426,28 @@ export function AddSpellForm({
   onAdd: (spell: SpellBody) => Promise<boolean>;
 }) {
   const classes = casting.classes;
+  // Без класу, що чарує, лишається тільки власне закляття поза класом.
+  const onlyCustom = !classes.length;
   const [open, setOpen] = useState(false);
-  const [classKey, setClassKey] = useState(classes[0]?.key ?? "");
-  const [custom, setCustom] = useState(false);
+  const [classKey, setClassKey] = useState(classes[0]?.key ?? OTHER_SPELL_CLASS);
+  const [custom, setCustom] = useState(onlyCustom);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Pick | null>(null);
-  const [name, setName] = useState("");
-  const [level, setLevel] = useState(1);
-  const [description, setDescription] = useState("");
+  const [draft, setDraft] = useState<CustomDraft>(EMPTY_DRAFT);
   const [prepared, setPrepared] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const current = classes.find((item) => item.key === classKey) ?? classes[0];
   const list = useQuery({
-    queryKey: ["class-spells", classKey, current?.max_spell_level ?? 0],
-    queryFn: () => fetchClassSpells(classKey, current?.max_spell_level ?? 0),
-    enabled: open && !custom && Boolean(classKey),
+    queryKey: ["class-spells", current?.key ?? "", current?.max_spell_level ?? 0],
+    queryFn: () => fetchClassSpells(current?.key ?? "", current?.max_spell_level ?? 0),
+    enabled: open && !custom && Boolean(current),
   });
-
-  if (!classes.length) return null;
 
   function reset() {
     setPicked(null);
-    setName("");
-    setLevel(1);
-    setDescription("");
+    setDraft(EMPTY_DRAFT);
     setQuery("");
     setError(null);
     setPrepared(Boolean(current?.prepares));
@@ -290,6 +455,7 @@ export function AddSpellForm({
 
   function openForm() {
     reset();
+    setCustom(onlyCustom);
     setOpen(true);
   }
 
@@ -309,26 +475,25 @@ export function AddSpellForm({
     .slice(0, 40);
 
   async function submit() {
-    const finalName = custom ? name.trim() : (picked?.name_en ?? "");
+    const finalName = custom ? draft.name.trim() : (picked?.name_en ?? "");
     if (!finalName) {
       setError(custom ? "Впишіть назву власного закляття" : "Оберіть закляття зі списку");
       return;
     }
-    if (custom && level === 0) {
-      setError("Власний заговір теж можна додати — оберіть «заговір», якщо це він");
-    }
     setSaving(true);
     setError(null);
     try {
-      const body: SpellBody = {
-        class_key: classKey,
-        name_en: finalName,
-        level: custom ? level : (picked?.level ?? 0),
-        entry_id: custom ? null : (picked?.entry_id ?? null),
-        prepared,
-        custom,
-        description: custom ? description.trim() || null : null,
-      };
+      const body: SpellBody = custom
+        ? { class_key: classKey, name_en: finalName, custom: true, prepared: true, ...draftBody(draft) }
+        : {
+            class_key: current?.key ?? classKey,
+            name_en: finalName,
+            level: picked?.level ?? 0,
+            entry_id: picked?.entry_id ?? null,
+            prepared,
+            custom: false,
+            description: null,
+          };
       const ok = await onAdd(body);
       if (!ok) {
         setError("Не вдалося додати закляття");
@@ -346,21 +511,23 @@ export function AddSpellForm({
   if (!open) {
     return (
       <button type="button" className="button spell-add__open" disabled={busy} onClick={openForm}>
-        + закляття
+        {onlyCustom ? "+ Додати власне закляття" : "+ закляття"}
       </button>
     );
   }
 
   return (
     <section className="inv-form spell-add">
-      <p className="inv-form__title">Додати закляття</p>
+      <p className="inv-form__title">{onlyCustom ? "Власне закляття" : "Додати закляття"}</p>
       <div className="inv-form__grid">
-        {classes.length > 1 ? (
+        {custom ? (
+          <CustomClassSelect classes={classes} value={classKey} onChange={setClassKey} />
+        ) : classes.length > 1 ? (
           <label className="field">
             Клас
             <select
               className="select"
-              value={classKey}
+              value={current?.key ?? ""}
               onChange={(event) => {
                 setClassKey(event.target.value);
                 setPicked(null);
@@ -376,52 +543,25 @@ export function AddSpellForm({
           </label>
         ) : null}
 
-        <label className="field inv-form__check inv-form__wide">
-          <input
-            type="checkbox"
-            checked={custom}
-            onChange={(event) => {
-              setCustom(event.target.checked);
-              setPicked(null);
-              setError(null);
-            }}
-          />
-          власне закляття (немає в книзі)
-        </label>
+        {onlyCustom ? null : (
+          <label className="field inv-form__check inv-form__wide">
+            <input
+              type="checkbox"
+              checked={custom}
+              onChange={(event) => {
+                setCustom(event.target.checked);
+                // Назад до книжкового — клас мусить бути класом персонажа.
+                if (!event.target.checked && classKey === OTHER_SPELL_CLASS) setClassKey(classes[0]?.key ?? "");
+                setPicked(null);
+                setError(null);
+              }}
+            />
+            власне закляття (немає в книзі)
+          </label>
+        )}
 
         {custom ? (
-          <>
-            <label className="field inv-form__wide">
-              Назва
-              <input
-                className="inv-search__input"
-                value={name}
-                placeholder="Наприклад, «Благословення столу»"
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-            <label className="field">
-              Рівень
-              <select className="select" value={level} onChange={(event) => setLevel(Number(event.target.value))}>
-                <option value={0}>заговір</option>
-                {Array.from({ length: 9 }, (_, index) => index + 1).map((value) => (
-                  <option key={value} value={value}>
-                    {value} рівень
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field inv-form__wide">
-              Текст (що робить)
-              <textarea
-                className="spell-add__text"
-                rows={3}
-                value={description}
-                placeholder="Своїми словами: ефект, урон, рятунок. Це побачить лист і PDF."
-                onChange={(event) => setDescription(event.target.value)}
-              />
-            </label>
-          </>
+          <CustomSpellFields draft={draft} onChange={setDraft} />
         ) : (
           <>
             <label className="field inv-form__wide">
@@ -458,10 +598,7 @@ export function AddSpellForm({
         )}
 
         {custom ? (
-          <p className="hint inv-form__wide">
-            Власне закляття завжди підготовлене: у нього немає списку класу, з якого його готувати. Місце в денному
-            ліміті воно займає — якщо місця немає, спершу зніміть підготовку з іншого закляття.
-          </p>
+          <p className="hint inv-form__wide">{customHint(classKey)}</p>
         ) : (
           <label className="field inv-form__check inv-form__wide">
             <input type="checkbox" checked={prepared} onChange={(event) => setPrepared(event.target.checked)} />
@@ -482,6 +619,71 @@ export function AddSpellForm({
           {saving ? "Додаємо…" : "Додати"}
         </button>
         <button type="button" className="button" onClick={() => setOpen(false)}>
+          Скасувати
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// змінити власне закляття
+// ---------------------------------------------------------------------------
+
+export function EditCustomSpellForm({
+  spell,
+  casting,
+  busy,
+  onSave,
+  onCancel,
+}: {
+  spell: SheetSpell;
+  casting: SheetSpellcasting;
+  busy: boolean;
+  onSave: (fields: CustomSpellFieldsBody) => Promise<boolean>;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<CustomDraft>(() => draftOf(spell));
+  const [classKey, setClassKey] = useState(spell.class_key ?? OTHER_SPELL_CLASS);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    if (!draft.name.trim()) {
+      setError("Впишіть назву власного закляття");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const ok = await onSave({ name_en: draft.name.trim(), class_key: classKey, ...draftBody(draft) });
+      if (!ok) setError("Не вдалося зберегти закляття");
+    } catch (failure) {
+      setError(messageOf(failure));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="inv-form spell-add spell-edit">
+      <p className="inv-form__title">Змінити власне закляття</p>
+      <div className="inv-form__grid">
+        <CustomClassSelect classes={casting.classes} value={classKey} onChange={setClassKey} />
+        <CustomSpellFields draft={draft} onChange={setDraft} />
+        <p className="hint inv-form__wide">{customHint(classKey)}</p>
+      </div>
+      {error ? <p className="status status--error">{error}</p> : null}
+      <div className="inv-form__actions">
+        <button
+          type="button"
+          className="button button--primary"
+          disabled={saving || busy}
+          onClick={() => void submit()}
+        >
+          {saving ? "Зберігаємо…" : "Зберегти"}
+        </button>
+        <button type="button" className="button" onClick={onCancel}>
           Скасувати
         </button>
       </div>
