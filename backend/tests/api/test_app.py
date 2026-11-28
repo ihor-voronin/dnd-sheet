@@ -19,6 +19,11 @@ def test_healthz(client: TestClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_healthz_answers_head(client: TestClient) -> None:
+    """Uptime checks (the README badge) send HEAD: a 404 there reads as "the site is down"."""
+    assert client.head("/healthz").status_code == 200
+
+
 def test_renderers_listed(client: TestClient) -> None:
     response = client.get("/api/v1/renderers")
     assert response.status_code == 200
