@@ -17,6 +17,7 @@ import type { MouseEvent, ReactNode } from "react";
 import {
   addCharacterItem,
   addCharacterSpell,
+  addCustomFeature,
   deleteCharacter,
   exportUrl,
   fetchCharacter,
@@ -29,6 +30,7 @@ import {
   prepareCharacterSpells,
   removeCharacterItem,
   removeCharacterSpell,
+  removeCustomFeature,
   restCharacter,
   setCharacterClassChoice,
   setCharacterExpertise,
@@ -36,8 +38,10 @@ import {
   setCharacterSpeciesSource,
   spendHitDie,
   updateCharacterItem,
+  updateCustomFeature,
+  updateCustomSpell,
 } from "../../api";
-import type { ItemBody, SpellBody } from "../../api";
+import type { CustomFeatureBody, CustomSpellFields, ItemBody, SpellBody } from "../../api";
 import {
   ABILITY_LABELS,
   ALIGNMENT_LABELS,
@@ -54,6 +58,7 @@ import { SharePanel } from "./SharePanel";
 import { ActionPanel } from "./actions";
 import { BackgroundPanel } from "./background";
 import { ClassChoices, SpeciesFeat, SpeciesSource } from "./classChoices";
+import { CustomFeaturesPanel } from "./customFeatures";
 import { EditableNumber, NumberField, Pips } from "./editing";
 import { ExpertisePicker } from "./expertise";
 import { HitDiceBlock, HitPointsBlock } from "./hp";
@@ -62,7 +67,7 @@ import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
 import { CastingBlock, FeatsList, FeatureResources, FeaturesList, ProficienciesList, SpellsKnownList } from "./panels";
 import { AbilityHex, HexStat, PassiveList, ProficiencyGroups, SavePills, SkillTable, initials } from "./sheetParts";
-import { AddSpellForm, SpellsPreparePanel } from "./spells";
+import { AddSpellForm, EditCustomSpellForm, SpellsPreparePanel } from "./spells";
 import { speciesLabel, termLabel, ukSubclass, withEnglish } from "./uk";
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
@@ -194,6 +199,8 @@ export function CharacterView({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [restNote, setRestNote] = useState<string | null>(null);
+  // Власне закляття, яке зараз змінюють (назва + клас — його ключ на сервері).
+  const [editingSpell, setEditingSpell] = useState<{ name_en: string; class_key: string } | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({
     ...initial.state.notes,
   });
@@ -295,6 +302,31 @@ export function CharacterView({
       setError(messageOf(failure));
       return false;
     }
+  }
+
+  async function saveCustomSpell(fields: CustomSpellFields): Promise<boolean> {
+    if (!editingSpell) return false;
+    await applySpellChange(
+      updateCustomSpell(id, editingSpell.name_en, editingSpell.class_key, fields, versionRef.current),
+    );
+    setEditingSpell(null);
+    return true;
+  }
+
+  // Власні вміння: як закляття, помилку показує форма (а не загальне «не вдалося»).
+  async function addFeature(feature: CustomFeatureBody): Promise<boolean> {
+    await applySpellChange(addCustomFeature(id, feature, versionRef.current));
+    return true;
+  }
+
+  async function updateFeature(featureId: string, fields: CustomFeatureBody): Promise<boolean> {
+    await applySpellChange(updateCustomFeature(id, featureId, fields, versionRef.current));
+    return true;
+  }
+
+  async function removeFeature(feature: { id: string }): Promise<boolean> {
+    const result = await run(removeCustomFeature(id, feature.id, versionRef.current));
+    return result !== null;
   }
 
   async function savePrepared(
@@ -496,6 +528,13 @@ export function CharacterView({
     },
   ];
 
+  // Закляття могло зникнути (змінили на іншому пристрої) — тоді форми немає.
+  const editedSpell = editingSpell
+    ? sheet.spells.find(
+        (item) => item.custom && item.name_en === editingSpell.name_en && item.class_key === editingSpell.class_key,
+      )
+    : undefined;
+
   const workTab = (() => {
     if (tab === "actions") {
       return <ActionPanel sheet={sheet} onUseFeature={setFeatureUse} />;
@@ -534,6 +573,26 @@ export function CharacterView({
             spells={sheet.spells}
             casting={sheet.spellcasting.classes}
             onRemove={(spell) => void removeSpell(spell)}
+            onEdit={(spell) =>
+              spell.class_key && setEditingSpell({ name_en: spell.name_en, class_key: spell.class_key })
+            }
+            editing={
+              editedSpell
+                ? {
+                    name_en: editedSpell.name_en,
+                    class_key: editedSpell.class_key,
+                    form: (
+                      <EditCustomSpellForm
+                        spell={editedSpell}
+                        casting={casting}
+                        busy={busy}
+                        onSave={saveCustomSpell}
+                        onCancel={() => setEditingSpell(null)}
+                      />
+                    ),
+                  }
+                : null
+            }
           />
         </>
       );
@@ -596,6 +655,17 @@ export function CharacterView({
             <span className="short">натисніть, щоб читати</span>
           </h3>
           <FeaturesList features={sheet.features} />
+          <h3 className="sheet-work__title">
+            <span>Власні вміння</span>
+            <span className="short">дар майстра, предмет, домашнє правило</span>
+          </h3>
+          <CustomFeaturesPanel
+            features={sheet.custom_features ?? []}
+            busy={busy}
+            onAdd={addFeature}
+            onUpdate={updateFeature}
+            onRemove={removeFeature}
+          />
           {sheet.feat_details?.length ? (
             <>
               <h3 className="sheet-work__title">

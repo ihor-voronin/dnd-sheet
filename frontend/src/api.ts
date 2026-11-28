@@ -372,6 +372,70 @@ export interface SpellBody {
   /** Власне закляття: його немає в книзі, текст дав гравець. */
   custom?: boolean;
   description?: string | null;
+  /** Короткі дані власного закляття — вільним текстом (книжковим їх дає довідник). */
+  school?: string | null;
+  casting_time?: string | null;
+  range?: string | null;
+  duration?: string | null;
+  components?: string | null;
+  concentration?: boolean;
+  ritual?: boolean;
+}
+
+/** Клас власного закляття, яке не належить жодному класу персонажа. */
+export const OTHER_SPELL_CLASS = "other";
+
+/** Що можна змінити у власному закляття (назву й клас теж). */
+export type CustomSpellFields = Partial<Omit<SpellBody, "entry_id" | "prepared" | "custom">>;
+
+export function updateCustomSpell(
+  id: string,
+  nameEn: string,
+  classKey: string,
+  fields: CustomSpellFields,
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/spells`, {
+    method: "PATCH",
+    body: JSON.stringify({ name_en: nameEn, class_key: classKey, fields, version }),
+  });
+}
+
+// --- власні вміння ----------------------------------------------------------
+
+export interface CustomFeatureBody {
+  name: string;
+  text: string;
+  origin: string | null;
+  level: number | null;
+  uses: number | null;
+  recharge: "short" | "long" | null;
+}
+
+export function addCustomFeature(id: string, feature: CustomFeatureBody, version: number): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/custom-features`, {
+    method: "POST",
+    body: JSON.stringify({ feature, version }),
+  });
+}
+
+export function updateCustomFeature(
+  id: string,
+  featureId: string,
+  fields: Partial<CustomFeatureBody>,
+  version: number,
+): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/custom-features/${encodeURIComponent(featureId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ fields, version }),
+  });
+}
+
+export function removeCustomFeature(id: string, featureId: string, version: number): Promise<SheetMutation> {
+  return request<SheetMutation>(`/api/v1/characters/${id}/custom-features/${encodeURIComponent(featureId)}`, {
+    method: "DELETE",
+    body: JSON.stringify({ version }),
+  });
 }
 
 export function addCharacterSpell(id: string, spell: SpellBody, version: number): Promise<SheetMutation> {

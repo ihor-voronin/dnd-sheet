@@ -256,7 +256,7 @@ def test_exports_show_custom_entries(client: TestClient) -> None:
                 "version": sheet["character"]["version"],
                 "feature": {
                     "name": "Око ворона",
-                    "text": "Бачить крізь туман.",
+                    "text": "Бачить крізь туман.\n\n- на 9 м",
                     "origin": "амулет",
                     "level": 2,
                     "uses": 1,
@@ -286,6 +286,8 @@ def test_exports_show_custom_entries(client: TestClient) -> None:
     assert "Око ворона" in markdown and "власне · амулет · 2 рівень · 1/1, короткий відпочинок" in markdown
     assert "Шепіт амулета" in markdown and "поза класом" in markdown
     assert "віщування" in markdown and "Чути шепіт." in markdown
+    # Абзаци тексту гравця лишаються в пункті списку (з відступом), а не ламають список.
+    assert "Бачить крізь туман.\n  \n  - на 9 м" in markdown
 
     printed = _ok_text(client.get(f"{API}/custom-export/print"))
     assert "Власні вміння" in printed and "Бачить крізь туман." in printed

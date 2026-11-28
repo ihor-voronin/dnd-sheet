@@ -2831,6 +2831,67 @@ body.board {
   }
 }
 
+/* --- власні вміння й закляття ------------------------------------------ */
+
+.custom-features .feature-list {
+  margin-bottom: 8px;
+}
+
+.custom-features .feature__summary .spell-tag {
+  flex: none;
+}
+
+/* «Звідки» пише гравець, і воно буває довгим: дані — другим рядком, з переносом. */
+.custom-features .feature__summary {
+  flex-wrap: wrap;
+}
+
+.custom-features .feature__summary .feature__chevron {
+  margin-left: auto;
+}
+
+.character-view .custom-features .feature__summary .feature-meta {
+  order: 3;
+  flex-basis: 100%;
+  margin-left: 0;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.custom-features .feature__summary .feature-meta:empty {
+  display: none;
+}
+
+/* Позначки у формах закляття й уміння — прапорець і підпис в один рядок. */
+.inv-form .field.inv-form__check {
+  flex-direction: row;
+  align-items: center;
+}
+
+.inv-form .field.inv-form__check input {
+  width: 18px;
+  min-width: 0;
+}
+
+.custom-features__actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 9px 9px;
+}
+
+.custom-features__open {
+  margin-bottom: 10px;
+}
+
+@media (max-width: 420px) {
+  /* На телефоні форма в одну колонку: «звідки» і «дистанція» не влазять удвох. */
+  .custom-form .inv-form__grid,
+  .spell-add .inv-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 620px) {
   .sheet-portrait {
     width: 58px;

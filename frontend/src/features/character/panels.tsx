@@ -5,6 +5,8 @@
  * вкладок, спільні шматки живуть тут і приймають лише дані (та, де треба,
  * один колбек на зміну стану).
  */
+import type { ReactNode } from "react";
+
 import {
   ABILITY_SHORT,
   PROFICIENCY_LABELS,
@@ -262,6 +264,8 @@ const SPELL_SOURCE_TAGS: Record<string, string> = {
   "pact-boon": "від дару угоди",
   secrets: "магічні таємниці",
   feature: "від уміння класу",
+  // Власне закляття поза класом: дар майстра, сила предмета.
+  other: "поза класом",
 };
 
 type SheetSpell = SheetViewPayload["spells"][number];
@@ -282,7 +286,9 @@ function byClass(list: SheetSpell[], casting: CastingClassRow[]) {
       const caster = casting.find((item) => item.key === key);
       const title = caster
         ? `${termLabel(caster.name_en)} · КС ${caster.save_dc} · атака ${caster.attack_bonus >= 0 ? "+" : ""}${caster.attack_bonus}`
-        : (SPELL_SOURCE_TAGS[key.replace(/^src:/, "")] ?? "інші джерела");
+        : key === "other"
+          ? "Власні, поза класом"
+          : (SPELL_SOURCE_TAGS[key.replace(/^src:/, "")] ?? "інші джерела");
       return { key, title, items };
     });
 }
@@ -290,10 +296,16 @@ function byClass(list: SheetSpell[], casting: CastingClassRow[]) {
 export function SpellsKnownList({
   spells,
   onRemove,
+  onEdit,
+  editing,
   casting = [],
 }: {
   spells: SheetViewPayload["spells"];
   onRemove?: (spell: SheetViewPayload["spells"][number]) => void;
+  /** Змінити власне закляття: книжкові не редагуються. */
+  onEdit?: (spell: SheetViewPayload["spells"][number]) => void;
+  /** Форма редагування замість картки (назва власного закляття, яке зараз змінюють). */
+  editing?: { name_en: string; class_key: string | null; form: ReactNode } | null;
   /** Класи, що чарують: у мультикласі закляття рівня групуються за класом —
    * від класу залежать КС рятівного кидка й бонус атаки (PHB, p. 164). */
   casting?: CastingClassRow[];
@@ -329,8 +341,16 @@ export function SpellsKnownList({
                     rangeLabel(spell.range),
                     durationLabel(spell.duration),
                   ].filter(Boolean);
+                  if (
+                    editing &&
+                    spell.custom &&
+                    editing.name_en === spell.name_en &&
+                    editing.class_key === spell.class_key
+                  ) {
+                    return <li key={`${spell.name_en}-${spell.source}-edit`}>{editing.form}</li>;
+                  }
                   return (
-                    <li key={`${spell.name_en}-${spell.source}`}>
+                    <li key={`${spell.name_en}-${spell.source}-${spell.class_key ?? ""}`}>
                       <details className="spell">
                         <summary className="spell__summary">
                           <span className="spell__name">
@@ -347,10 +367,28 @@ export function SpellsKnownList({
                             {SPELL_SOURCE_TAGS[spell.source] ? (
                               <span className="spell-tag">{SPELL_SOURCE_TAGS[spell.source]}</span>
                             ) : null}
+                            {spell.custom && spell.class_key === "other" && !multi ? (
+                              <span className="spell-tag">поза класом</span>
+                            ) : null}
                           </span>
                           <span className="spell__chevron" aria-hidden>
                             ▾
                           </span>
+                          {onEdit && spell.custom ? (
+                            <button
+                              type="button"
+                              className="spell__remove"
+                              title="Змінити власне закляття"
+                              aria-label={`Змінити «${spell.name_en}»`}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                onEdit(spell);
+                              }}
+                            >
+                              ✎
+                            </button>
+                          ) : null}
                           {onRemove && spell.source === "class" ? (
                             <button
                               type="button"
@@ -580,7 +618,7 @@ export function FeatureResources({
           <span className="feature-resource__main">
             <span className="feature-resource__name">{featureLabel(resource.name_en, resource.name_uk)}</span>
             <span className="feature-resource__meta">
-              {termLabel(resource.class_name)} ·{" "}
+              {resource.class_key === "custom" ? "власне" : termLabel(resource.class_name)} ·{" "}
               {resource.recharge === "short" ? "короткий або тривалий відпочинок" : "тривалий відпочинок"}
             </span>
           </span>
