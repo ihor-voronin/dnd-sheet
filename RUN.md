@@ -435,7 +435,7 @@ contract/        # JSON Schema + fixtures (single source of types)
 content/         # glossary, sources, translations; encrypted corpus and indexes
 frontend/        # React SPA (Vite, TanStack Query, Radix Tooltip)
 deploy/          # Terraform, server files, encrypted secrets
-.github/         # CI and deploy workflows, ruleset for main
+.github/         # CI and deploy workflows, rulesets for main
 docs/            # plan, ADRs, per-area docs
 scripts/         # preflight, ingest, translations, deploy, hooks
 ```

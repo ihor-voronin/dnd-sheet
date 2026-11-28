@@ -81,7 +81,10 @@ next deploy restores the old version) or by re-running an earlier successful Dep
 
 ## Rules for main
 
-Defined in [`.github/rulesets/main.json`](../.github/rulesets/main.json):
+Two rulesets. GitHub applies both, and a bypass in one doesn't lift the rules of the other.
+
+[`.github/rulesets/main.json`](../.github/rulesets/main.json) — how a change gets in.
+Nobody bypasses it, the owner included:
 
 | Rule | Why |
 | --- | --- |
@@ -92,6 +95,13 @@ Defined in [`.github/rulesets/main.json`](../.github/rulesets/main.json):
 | squash-merge only, linear history | one commit per change, no merge commits |
 | no force-push or deletion of main | history can't be rewritten |
 | 0 required approvals | you can't approve your own PR; with a second contributor — 1 |
+
+[`.github/rulesets/main-merge.json`](../.github/rulesets/main-merge.json) — who lets it in.
+It blocks every update of main ("Restrict updates"); the only bypass is the Repository
+admin role, and only through a PR (`bypass_mode: pull_request`). In a personal
+repository the owner is the only admin — collaborators get write at most — so only the
+owner merges, and still only a PR that passed every rule of `main.json`. A collaborator
+can open PRs and push to their branches, but the Merge button stays disabled for them.
 
 ## One-time setup in GitHub
 
@@ -106,8 +116,9 @@ Defined in [`.github/rulesets/main.json`](../.github/rulesets/main.json):
 
    This key opens everything encrypted (deploy secrets and the corpus) — put it only
    into the GitHub secret. Secrets are not passed to PRs from forks.
-2. **Ruleset for main** — Settings → Rules → Rulesets → New ruleset → Import a
-   ruleset → `.github/rulesets/main.json`. When the file changes (a new required check
+2. **Rulesets for main** — Settings → Rules → Rulesets → New ruleset → Import a
+   ruleset, once for `.github/rulesets/main.json` and once for
+   `.github/rulesets/main-merge.json`. When the file changes (a new required check
    such as `diff-coverage`), edit the existing ruleset: Settings → Rules → Rulesets →
    main → Require status checks → Add checks.
 3. **`production` environment** — appears after the first deploy. In
