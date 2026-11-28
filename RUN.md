@@ -264,7 +264,7 @@ In the SPA, hover or focus a term to see the original English text.
 ```powershell
 python scripts\preflight.py                                            # no dependencies, stdlib only
 uv run pytest backend -q --cov --cov-config=backend/pyproject.toml  # backend tests, coverage ≥ 80%
-uv run lint-imports --config backend/pyproject.toml                  # bounded-context contracts
+uv run lint-imports backend/pyproject.toml                  # bounded-context contracts
 
 cd frontend
 npm run typecheck                                                      # tsc --noEmit

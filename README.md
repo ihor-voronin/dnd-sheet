@@ -165,7 +165,7 @@ branch ──► commit (pre-commit) ──► PR into main ──► CI: pre-co
   check and a check that secrets and the corpus go into git only encrypted.
 - **Tests:** `uv run pytest backend --cov --cov-config=backend/pyproject.toml`
   (900+ tests: rules, reference characters, 20 levels of every class, multiclass, API,
-  printing), `uv run lint-imports --config backend/pyproject.toml` (context boundaries),
+  printing), `uv run lint-imports backend/pyproject.toml` (context boundaries),
   `cd frontend; npm run test:coverage` (vitest + Testing Library over the real screens,
   answering `fetch` from API responses recorded by `scripts/record_frontend_tape.py`).
 - **Coverage:** at least 80% for the backend and the frontend, and at least 80% of the
