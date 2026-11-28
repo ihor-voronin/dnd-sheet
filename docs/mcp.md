@@ -29,7 +29,7 @@ an app's access at once.
 | --- | --- |
 | `list_characters` | your characters and an unfinished creation draft |
 | `get_character` | the sheet: a summary (numbers, state, items, spells) or everything |
-| `update_character` | hit points, damage and healing, spent slots and feature uses, death saves, exhaustion, inspiration, notes, equipped items |
+| `update_character` | hit points, damage and healing, spent slots and feature uses, death saves, exhaustion, inspiration, notes, equipped items; also `gender` and `avatar` |
 | `start_character` → `get_creation_step` / `set_creation_step` → `finish_character` | the site's creation wizard, step by step, with only the options the rules allow |
 | `manage_inventory` | add, change, remove items |
 | `manage_spells` | learn or forget a spell, set the day's prepared spells; add and edit a custom spell (`custom: true`, class `"other"` for one outside any class) |
@@ -37,6 +37,7 @@ an app's access at once.
 | `rest`, `spend_hit_dice` | short and long rests, hit dice |
 | `level_up_options`, `level_up` | what the next level gives, and taking it |
 | `set_class_choice`, `set_expertise` | fighting style, invocations, metamagic…; expertise |
+| `set_avatar` | the character's portrait: without `avatar`, the current one and 24 suggestions for its species, class and gender (with image URLs); with `avatar` and/or `gender` (and `version`) changes them |
 | `share_link` | the read-only link for the table or the DM |
 | `export_pdf` | a PDF download link (5 minutes) |
 | `search_compendium`, `get_compendium_entry` | the rules: spells, items, feats, species… |

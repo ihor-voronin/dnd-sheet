@@ -181,6 +181,15 @@ can't be lost by accident. All sections (with the appearance) can be exported to
 (not inside Telegram, where the webview can't save files). The set of sections is fixed:
 the domain validates note keys.
 
+## Portrait and gender
+
+The header shows the character's portrait (own drawings, see [visuals.md](visuals.md)); the
+owner clicks it to open the picker: 24 suggestions for the species, class and gender, the
+whole catalogue with filters, and the optional gender. Both are stored with the character
+(`avatar`, `gender`) and changed through the same versioned `PATCH`. Until the player picks
+one, a default portrait from the suggestions is shown. Home cards, the shared sheet and the
+printed sheet show it too.
+
 ## Live sync between devices
 
 Every 4 seconds the open sheet asks for its version number (`GET …/version`) and reloads

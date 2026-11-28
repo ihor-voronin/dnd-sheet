@@ -66,6 +66,11 @@ attack bonus.
 pencil): main page, spells, equipment, adventure log and extra pages with the full
 text of features and spells. Or the same page in the browser.
 
+**Portraits** — over a thousand character portraits drawn for the site (species × gender ×
+class); the sheet suggests 24 that fit the hero and the player can change it any time.
+Class, school-of-magic and section emblems from game-icons.net (CC BY 3.0, see
+[CREDITS.md](CREDITS.md)).
+
 **Sharing** — a read-only link (`/#/s/<token>`): the sheet can be viewed and printed
 without signing in, but not changed. A new link revokes the old one.
 
@@ -222,6 +227,7 @@ docs/                   plan, ADRs, per-area descriptions (below)
 | [docs/level-up.md](docs/level-up.md) | level-up and multiclass |
 | [docs/spells.md](docs/spells.md) | spells outside of level-up |
 | [docs/export.md](docs/export.md) | printing and PDF |
+| [docs/visuals.md](docs/visuals.md), [CREDITS.md](CREDITS.md) | portraits, emblems, backgrounds: sources, licences, cost |
 | [docs/api-compendium.md](docs/api-compendium.md) | compendium API |
 | [docs/mcp.md](docs/mcp.md) | MCP server for AI assistants, OAuth sign-in |
 | [docs/seo.md](docs/seo.md) | SEO: analysis, server-rendered compendium pages, licensing policy, sitemaps, what's next |
