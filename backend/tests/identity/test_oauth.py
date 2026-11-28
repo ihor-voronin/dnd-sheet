@@ -178,7 +178,7 @@ def test_full_flow_gives_tools_of_the_player(site: TestClient) -> None:
 
     response = _mcp(site, tokens["access_token"])
     assert response.status_code == 200, response.text
-    assert response.json()["result"]["structuredContent"] == {"items": [], "total": 0, "draft_id": None}
+    assert response.json()["result"]["structuredContent"] == {"items": [], "total": 0, "limit": 50, "draft_id": None}
 
     grants = site.get("/api/v1/oauth/grants").json()["items"]
     assert [(grant["client_id"], grant["name"]) for grant in grants] == [(client_id, "Тестовий асистент")]

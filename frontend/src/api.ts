@@ -35,6 +35,16 @@ export function setSessionToken(token: string | null): void {
   }
 }
 
+/** Помилка API з кодом відповіді: екрани відрізняють «межа» (409) від «сервер недоступний». */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
@@ -53,7 +63,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     } catch {
       /* тіло не JSON — лишаємо статус */
     }
-    throw new Error(detail);
+    throw new ApiError(detail, response.status);
   }
   return (await response.json()) as T;
 }
@@ -520,10 +530,17 @@ export type CharacterRosterEntry = {
 export function fetchCharacters(): Promise<{
   items: CharacterRosterEntry[];
   total: number;
+  /** Скільки персонажів можна мати (межа сервера). */
+  limit?: number;
   /** Незавершена чернетка гравця — продовжити з будь-якого пристрою. */
   draft_id?: string | null;
 }> {
   return getJson("/api/v1/characters");
+}
+
+/** Видалити персонажа назавжди (і посилання «лише читати» на нього). */
+export function deleteCharacter(id: string): Promise<{ deleted: string }> {
+  return request<{ deleted: string }>(`/api/v1/characters/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 // --- експорт --------------------------------------------------------------

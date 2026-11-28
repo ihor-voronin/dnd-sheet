@@ -1454,6 +1454,17 @@ textarea:focus {
   color: var(--wax-text) !important;
 }
 
+.character-view .sheet-btn--danger {
+  background: transparent !important;
+  border-color: color-mix(in srgb, var(--wax) 60%, transparent) !important;
+  color: var(--wax-text) !important;
+}
+
+.character-view .sheet-btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wax) 14%, transparent) !important;
+  border-color: var(--wax) !important;
+}
+
 .character-view .sheet-hp__act--heal {
   background: color-mix(in srgb, var(--ok) 16%, var(--leaf)) !important;
   border-color: var(--ok) !important;

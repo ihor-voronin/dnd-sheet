@@ -71,13 +71,13 @@ def rpc(site: TestClient, method: str, params: dict[str, Any] | None = None) -> 
     return body["result"]
 
 
-def tool(site: TestClient, name: str, **arguments: Any) -> dict[str, Any]:  # noqa: ANN401
+def tool(site: TestClient, name: str, /, **arguments: Any) -> dict[str, Any]:  # noqa: ANN401
     result = rpc(site, "tools/call", {"name": name, "arguments": arguments})
     assert result["isError"] is False, result["content"][0]["text"]
     return result["structuredContent"]
 
 
-def tool_error(site: TestClient, name: str, **arguments: Any) -> str:  # noqa: ANN401
+def tool_error(site: TestClient, name: str, /, **arguments: Any) -> str:  # noqa: ANN401
     result = rpc(site, "tools/call", {"name": name, "arguments": arguments})
     assert result["isError"] is True
     return result["content"][0]["text"]
@@ -110,11 +110,11 @@ def test_server_describes_itself(site: TestClient) -> None:
 
 def test_tools_are_annotated(site: TestClient) -> None:
     tools = {item["name"]: item for item in rpc(site, "tools/list")["tools"]}
-    assert "delete_character" not in tools
+    assert tools["delete_character"]["annotations"]["destructiveHint"] is True
     assert tools["list_characters"]["annotations"]["readOnlyHint"] is True
     assert tools["manage_inventory"]["annotations"]["destructiveHint"] is True
     assert tools["update_character"]["annotations"]["idempotentHint"] is True
-    assert len(tools) == 19
+    assert len(tools) == 20
 
 
 def test_sheet_summary_is_short_and_has_numbers(site: TestClient, fighter: str) -> None:
@@ -295,3 +295,38 @@ def test_sheet_resource_and_prompts(site: TestClient, fighter: str) -> None:
     ):
         text = rpc(site, "prompts/get", {"name": name, "arguments": arguments})["messages"][0]["content"]["text"]
         assert next(iter(arguments.values())) in text
+
+
+def _quick_character(site: TestClient, name: str) -> str:
+    draft_id = tool(site, "start_character")["draft_id"]
+    for step, answers in FIGHTER:
+        if step == "species":
+            answers = {**answers, "name": name}
+        tool(site, "set_creation_step", draft_id=draft_id, step=step, answers=answers)
+    return tool(site, "finish_character", draft_id=draft_id)["character_id"]
+
+
+def test_delete_needs_the_right_name(site: TestClient, fighter: str) -> None:
+    doomed = _quick_character(site, "Тимчасовий")
+    before = tool(site, "list_characters")
+    assert before["limit"] == 50
+
+    wrong = tool_error(site, "delete_character", character_id=doomed, name="Дарія")
+    assert "не збігається" in wrong and "Тимчасовий" in wrong
+    assert "немає персонажа" in tool_error(site, "delete_character", character_id="nope", name="x")
+
+    deleted = tool(site, "delete_character", character_id=doomed, name="тимчасовий")
+    assert deleted["deleted"] == doomed
+    assert deleted["characters_left"] == before["total"] - 1
+    after = tool(site, "list_characters")
+    assert doomed not in [item["id"] for item in after["items"]]
+    assert fighter in [item["id"] for item in after["items"]]
+
+
+def test_limit_is_explained_to_the_assistant(site: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    from dndsheet.characters.api import router as characters_router  # noqa: PLC0415
+
+    total = tool(site, "list_characters")["total"]
+    monkeypatch.setattr(characters_router, "CHARACTER_LIMIT", total)
+    message = tool_error(site, "start_character")
+    assert "межа" in message and "видаліть" in message

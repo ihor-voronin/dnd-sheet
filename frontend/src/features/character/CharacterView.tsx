@@ -17,6 +17,7 @@ import type { MouseEvent, ReactNode } from "react";
 import {
   addCharacterItem,
   addCharacterSpell,
+  deleteCharacter,
   exportUrl,
   fetchCharacter,
   fetchCharacterVersion,
@@ -173,12 +174,15 @@ export function CharacterView({
   initial,
   initialTab,
   shareToken,
+  onDeleted,
 }: {
   initial: SheetViewPayload;
   /** Вкладка, з якої відкрити лист: після підвищення рівня — «Закляття». */
   initialTab?: string;
   /** Лист за посиланням «лише читати»: жодних змін, друк і PDF — через посилання. */
   shareToken?: string;
+  /** Персонажа видалено: куди йти далі (зазвичай — до списку). */
+  onDeleted?: () => void;
 }) {
   const readOnly = Boolean(shareToken);
   const [shareOpen, setShareOpen] = useState(false);
@@ -294,6 +298,24 @@ export function CharacterView({
   ): Promise<boolean> {
     await applySpellChange(prepareCharacterSpells(id, classKey, picks, versionRef.current));
     return true;
+  }
+
+  async function remove() {
+    const name = sheet.character.name || "персонажа";
+    if (
+      !window.confirm(`Видалити «${name}» назавжди? Лист і посилання «лише читати» зникнуть, скасувати це не можна.`)
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteCharacter(id);
+      onDeleted?.();
+    } catch (failure) {
+      setError(messageOf(failure));
+      setBusy(false);
+    }
   }
 
   async function rest(kind: "short" | "long") {
@@ -1026,6 +1048,16 @@ export function CharacterView({
           </div>
         </div>
       </div>
+      {!readOnly && onDeleted ? (
+        <footer className="sheet-danger" aria-label="Видалення персонажа">
+          <p className="sheet-danger__text">
+            Персонаж більше не потрібен? Видалення остаточне: лист і посилання «лише читати» зникнуть.
+          </p>
+          <button type="button" className="sheet-btn sheet-btn--danger" disabled={busy} onClick={() => void remove()}>
+            Видалити персонажа…
+          </button>
+        </footer>
+      ) : null}
     </article>
   );
 }

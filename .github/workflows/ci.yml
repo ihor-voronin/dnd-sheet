@@ -7,6 +7,10 @@
 #   frontend      — types, ESLint, tests with coverage ≥ 80%, build;
 #   diff-coverage — PRs only: the lines a PR adds or changes are ≥ 80% covered.
 # On main, `badges` refreshes the README badges, and deploy.yml runs the deploy.
+#
+# On a PR, `backend` and `frontend` run only when their part changed (the `changes` job);
+# otherwise the job is skipped, which GitHub counts as passed for a required check. On main
+# everything always runs, so main is checked in full after every merge.
 name: CI
 
 on:
@@ -24,6 +28,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Which parts a PR touches. Not a required check: it only decides what runs.
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    outputs:
+      backend: ${{ steps.diff.outputs.backend }}
+      frontend: ${{ steps.diff.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Changed parts
+        id: diff
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          echo "$files"
+          # The test image also builds the SPA, and the contract feeds both: shared files run both.
+          shared='^(contract/|Dockerfile$|\.dockerignore$|\.github/workflows/ci\.yml$)'
+          backend='^(backend/|content/|scripts/|pyproject\.toml$|uv\.lock$)'
+          frontend='^frontend/'
+          has() { echo "$files" | grep -Eq "$1"; }
+          if has "$shared" || has "$backend"; then echo "backend=true"; else echo "backend=false"; fi >> "$GITHUB_OUTPUT"
+          if has "$shared" || has "$frontend"; then echo "frontend=true"; else echo "frontend=false"; fi >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
   pre-commit:
     name: pre-commit
     runs-on: ubuntu-24.04
@@ -73,6 +107,8 @@ jobs:
 
   backend:
     name: backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -119,6 +155,8 @@ jobs:
 
   frontend:
     name: frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -137,6 +175,13 @@ jobs:
       - name: Tests and coverage
         run: npm run test:coverage -- --reporter=default --reporter=junit --outputFile.junit=coverage/junit.xml
       - run: npm run build
+      # The glossary check scans the SPA's text too; it lives with the backend tests, so a
+      # frontend-only PR (backend skipped) runs it here. Python and the glossary are enough.
+      - name: Terminology (glossary)
+        working-directory: backend
+        run: |
+          pip install --quiet pytest pyyaml
+          python -m pytest tests/api/test_terminology.py -q -p no:cacheprovider
       - uses: actions/upload-artifact@v7
         with:
           name: frontend-coverage
@@ -145,9 +190,13 @@ jobs:
 
   # New and changed lines of a PR must be covered by tests: at least 80%, backend and
   # frontend together. Lines the PR doesn't touch don't count — old gaps don't block it.
+  # A skipped backend or frontend has no changed lines to cover, so only the reports that
+  # exist are checked; with neither (a docs-only PR) there's nothing to check.
   diff-coverage:
     name: diff-coverage
-    if: github.event_name == 'pull_request'
+    if: >-
+      github.event_name == 'pull_request' && !cancelled()
+      && needs.backend.result != 'failure' && needs.frontend.result != 'failure'
     needs: [backend, frontend]
     runs-on: ubuntu-24.04
     steps:
@@ -155,17 +204,26 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v8
+        if: needs.backend.result == 'success'
         with:
           name: backend-coverage
           path: coverage/
       - uses: actions/download-artifact@v8
+        if: needs.frontend.result == 'success'
         with:
           name: frontend-coverage
           path: frontend/coverage/
       # pipx is preinstalled on the runner: no extra action to pin.
       - name: Coverage of the changed lines
         run: |
-          pipx run diff-cover coverage/backend.xml frontend/coverage/cobertura-coverage.xml \
+          reports=()
+          if [ -f coverage/backend.xml ]; then reports+=(coverage/backend.xml); fi
+          if [ -f frontend/coverage/cobertura-coverage.xml ]; then reports+=(frontend/coverage/cobertura-coverage.xml); fi
+          if [ ${#reports[@]} -eq 0 ]; then
+            echo "No backend or frontend changes: nothing to cover." | tee diff-coverage.md
+            exit 0
+          fi
+          pipx run diff-cover "${reports[@]}" \
             --compare-branch "origin/${{ github.base_ref }}" \
             --fail-under 80 \
             --markdown-report diff-coverage.md

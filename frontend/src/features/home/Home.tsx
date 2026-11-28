@@ -83,11 +83,14 @@ function checkedLabel(date: string | null): string {
 export function Home({
   account,
   onOpenKb,
+  onOpenMcp,
   actions,
 }: {
   /** Список персонажів або вхід — залежно від того, чи гравець увійшов. */
   account: ReactNode;
   onOpenKb: (section?: string) => void;
+  /** Сторінка «Як підключити ІІ-асистента». */
+  onOpenMcp: () => void;
   actions: ReactNode;
 }) {
   const overview = useQuery({ queryKey: ["books-overview"], queryFn: fetchBooksOverview, staleTime: Infinity });
@@ -135,6 +138,20 @@ export function Home({
       </section>
 
       <section className="home-account">{account}</section>
+
+      <section className="home-mcp" aria-labelledby="home-mcp-title">
+        <h2 id="home-mcp-title" className="home-h2">
+          Персонажі в ІІ-асистенті
+        </h2>
+        <p className="home-note">
+          Підключіть Claude чи інший застосунок із MCP — і просіть звичайними словами: «створи барда-контрабандиста»,
+          «Розбійник отримав 7 урону», «ми відпочили», «підніми рівень». Асистент веде лише ваших персонажів і лише за
+          правилами сайту.
+        </p>
+        <button type="button" className="button" onClick={onOpenMcp}>
+          Як підключити
+        </button>
+      </section>
 
       <section className="home-contents" aria-labelledby="home-contents-title">
         <h2 id="home-contents-title" className="home-h2">

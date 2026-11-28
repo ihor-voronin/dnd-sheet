@@ -98,7 +98,7 @@ run inside one JSON-RPC endpoint; it adds risk without a player asking for it. T
 
 ### 4. Tools
 
-Grouped by what a player does (19 tools), not mirroring the ~70 REST endpoints. Changing
+Grouped by what a player does (20 tools), not mirroring the ~70 REST endpoints. Changing
 tools take the sheet's `version`, so the SPA and the assistant can't overwrite each other.
 Answers are short: a sheet summary (numbers and state, a few KB instead of ~20 KB), wizard
 options with prose cut to 160 characters.
@@ -116,9 +116,17 @@ options with prose cut to 160 characters.
 | `share_link` (`status` / `create` / `revoke`) | destructive |
 | `export_pdf` (a 5-minute link) | read-only |
 | `search_compendium`, `get_compendium_entry` | read-only |
+| `delete_character` (needs the exact name) | destructive |
 
-No delete tool: the API has none, and losing a character to a misread sentence is the worst
-failure this server could have.
+Deleting was left out at first — the API had none, and losing a character to a misread
+sentence is the worst failure this server could have. When the site got deletion, the tool
+followed with a guard: besides the id it takes the character's **name**, which must match
+(case aside), so a wrong id can't delete another character; the destructive annotation
+makes clients ask the player first.
+
+A player has at most 50 characters (`CHARACTER_LIMIT` in the router, the same for the SPA
+and MCP): starting or finishing a character beyond it is a 409 with an explanation, and
+`list_characters` shows the `limit`.
 
 ### 5. Resources and prompts
 
