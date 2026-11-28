@@ -41,9 +41,11 @@ where = ["src"]
 
 # The PDF template lives next to the renderer: without this line the wheel doesn't ship it,
 # and `pip install backend` gives a renderer that can't find 'sheet' (500 on /export/pdf).
+# tests/test_package_data.py fails for any file under src/ that no pattern here ships.
 [tool.setuptools.package-data]
 "dndsheet.export.infrastructure" = ["templates/*", "templates/fonts/*"]
 "dndsheet.site.api" = ["templates/*", "static/*"]
+"dndsheet.visuals.application" = ["*.json"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests/characters"]
