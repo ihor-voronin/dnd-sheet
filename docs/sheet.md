@@ -186,12 +186,15 @@ on another device".
 | `GET/POST/DELETE` | `/api/v1/characters/{id}/share` | the read-only share link |
 | `DELETE` | `/api/v1/characters/{id}` | delete the character for good, and its share link |
 
-**Deleting** — "Дії з листом" → "Видалити персонажа", after a confirmation naming the
-character. It can't be undone; someone else's character looks absent (404), as everywhere.
+**Deleting** — "Видалити персонажа…" at the very bottom of the sheet, away from the actions
+used at the table, after a confirmation naming the character. It can't be undone; someone
+else's character looks absent (404), as everywhere.
 
 **Limit** — at most 50 characters per player (`CHARACTER_LIMIT`). Starting the wizard and
 finishing a draft beyond it is a `409` that says to delete someone first; `GET
-/api/v1/characters` returns the `limit`, and the home page explains it when it's reached.
+/api/v1/characters` returns the `limit`. The home page shows "N з 50" from 40 on; at the
+limit "Створити персонажа" is disabled, an unfinished draft isn't offered to continue, and
+the wizard shows the limit with a way back to the list instead of a server error.
 
 `PATCH` accepts any subset of fields:
 
