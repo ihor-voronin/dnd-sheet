@@ -128,4 +128,4 @@ ENV DNDSHEET_DATA_DIR=/tmp/dndsheet-test
 
 # Coverage: below 80% the run fails (backend/pyproject.toml); the XML report goes to
 # /coverage — CI mounts a folder there and checks the coverage of the PR's new lines.
-CMD ["sh", "-c", "mkdir -p /coverage && python -m pytest backend -q --cov --cov-config=backend/pyproject.toml --cov-report=term --cov-report=xml:/coverage/backend.xml --junitxml=/coverage/backend-junit.xml && lint-imports --config backend/pyproject.toml"]
+CMD ["sh", "-c", "mkdir -p /coverage && python -m pytest backend -q --cov --cov-config=backend/pyproject.toml --cov-report=term --cov-report=xml:/coverage/backend.xml --junitxml=/coverage/backend-junit.xml && lint-imports backend/pyproject.toml"]

@@ -30,7 +30,7 @@ test:
 	cd frontend && npm run test:coverage
 
 arch:
-	$(BIN)/lint-imports --config backend/pyproject.toml
+	$(BIN)/lint-imports backend/pyproject.toml
 
 contract:
 	cd frontend && npm run contract
