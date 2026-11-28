@@ -21,6 +21,7 @@ from typing import Any, Iterable, Mapping
 
 from dndsheet.characters.domain import derived_choices
 from dndsheet.characters.domain.class_level import CharacterClass, MulticlassWaiver
+from dndsheet.characters.domain.custom_features import MAX_CUSTOM_FEATURES, CustomFeature
 from dndsheet.characters.domain.inventory import MAX_ATTUNED, Inventory, InventoryItem
 from dndsheet.characters.domain.pick_rules import is_choice_label, validate_pick
 from dndsheet.characters.domain.ports import RulesSource
@@ -31,7 +32,7 @@ from dndsheet.characters.domain.proficiencies import (
     ProficiencyKind,
     SourceKind,
 )
-from dndsheet.characters.domain.spells import KnownSpell
+from dndsheet.characters.domain.spells import OTHER_CLASS, KnownSpell
 from dndsheet.characters.domain.state import SheetState
 from dndsheet.characters.domain.vitals import HitPointState
 from dndsheet.shared.errors import NotFoundError, ValidationError
@@ -91,6 +92,8 @@ class Character:
     #: Самі бонуси виду (thaumaturgy тифлінга) не зберігаються — вони похідні.
     spell_choices: tuple[str, ...] = ()
     feats: tuple[str, ...] = ()
+    #: Власні вміння (дар майстра, сила предмета): текст гравця, без чисел.
+    custom_features: tuple[CustomFeature, ...] = ()
     #: Експертиза (PHB: плут 1/6, бард 3/10): навички або злодійські
     #: інструменти з подвоєним бонусом майстерності. Значення — ключі навичок
     #: (`stealth`) або `thieves' tools`.
@@ -136,6 +139,7 @@ class Character:
         self._validate_chosen()
         self._validate_spells()
         self._validate_spell_choices()
+        self._validate_custom_features(self.custom_features)
         self._validate_hit_points()
         self._validate_asi()
 
@@ -826,8 +830,43 @@ class Character:
         self._check_prepared_limit(self.spells + (spell,), spell.class_key)
         if spell in self.spells:
             return
+        if spell.custom and self._spell_index(spell.name_en, spell.class_key) is not None:
+            # Два записи з однією назвою й класом не розрізнити ні при
+            # редагуванні, ні при видаленні — тож другий не додаємо.
+            raise ValidationError(f"закляття {spell.name_en!r} уже є в листі")
         self.spells = self.spells + (spell,)
         self.bump_version()
+
+    def update_custom_spell(self, name_en: str, class_key: str, spell: KnownSpell) -> None:
+        """Замінити власне закляття новою версією (назва, рівень, клас, текст).
+
+        Книжкові не редагуються: їхній текст і дані — з довідника. Нова
+        версія проходить ті самі ліміти, що й нове закляття: зміна рівня чи
+        класу не має обходити правила.
+        """
+        index = self._spell_index(name_en, class_key)
+        if index is None:
+            raise ValidationError(f"закляття {name_en!r} немає у списку персонажа")
+        if not self.spells[index].custom or not spell.custom:
+            raise ValidationError(f"{name_en}: змінювати можна лише власне закляття")
+        clash = self._spell_index(spell.name_en, spell.class_key)
+        if clash is not None and clash != index:
+            raise ValidationError(f"закляття {spell.name_en!r} уже є в листі")
+        updated = self.spells[:index] + (spell,) + self.spells[index + 1 :]
+        self._validate_spell_limits(updated)
+        self._check_prepared_limit(updated, spell.class_key)
+        if updated == self.spells:
+            return
+        self.spells = updated
+        self.bump_version()
+
+    def _spell_index(self, name_en: str, class_key: str) -> int | None:
+        wanted_name = name_en.strip().casefold()
+        wanted_class = class_key.strip().casefold()
+        for index, spell in enumerate(self.spells):
+            if spell.name_en.casefold() == wanted_name and spell.class_key == wanted_class:
+                return index
+        return None
 
     def forget_spell(self, name_en: str, class_key: str) -> None:
         wanted_name = name_en.strip().casefold()
@@ -863,6 +902,61 @@ class Character:
         self.spell_choices = tuple(name.strip() for name in names if name.strip())
         self._validate_spell_choices()
         self.bump_version()
+
+    # ------------------------------------------------------------------
+    # власні вміння
+    # ------------------------------------------------------------------
+
+    def add_custom_feature(self, feature: CustomFeature) -> None:
+        updated = self.custom_features + (feature,)
+        self._validate_custom_features(updated)
+        self.custom_features = updated
+        self.bump_version()
+
+    def update_custom_feature(self, feature: CustomFeature) -> None:
+        """Замінити вміння з тим самим `id`; лічильник обрізається до нового максимуму."""
+        index = self._custom_feature_index(feature.id)
+        previous = self.custom_features[index]
+        if previous == feature:
+            return
+        updated = self.custom_features[:index] + (feature,) + self.custom_features[index + 1 :]
+        self._validate_custom_features(updated)
+        self.custom_features = updated
+        key = previous.resource_key
+        used = self.state.feature_used.get(key, 0) if key is not None else 0
+        if used:
+            # Без лічильника — забути витрачене; менший максимум — не більше за нього.
+            values = {name: count for name, count in self.state.feature_used.items() if name != key}
+            if feature.uses is not None:
+                values[key] = min(used, feature.uses)
+            self.state = self.state.with_feature_used(values)
+        self.bump_version()
+
+    def remove_custom_feature(self, feature_id: str) -> None:
+        index = self._custom_feature_index(feature_id)
+        removed = self.custom_features[index]
+        self.custom_features = self.custom_features[:index] + self.custom_features[index + 1 :]
+        if removed.resource_key in self.state.feature_used:
+            self.state = self.state.reset_features([removed.resource_key])
+        self.bump_version()
+
+    def custom_feature(self, feature_id: str) -> CustomFeature:
+        return self.custom_features[self._custom_feature_index(feature_id)]
+
+    def _custom_feature_index(self, feature_id: str) -> int:
+        wanted = (feature_id or "").strip()
+        for index, feature in enumerate(self.custom_features):
+            if feature.id == wanted:
+                return index
+        raise NotFoundError(f"немає власного вміння {feature_id!r}")
+
+    @staticmethod
+    def _validate_custom_features(features: tuple[CustomFeature, ...]) -> None:
+        if len(features) > MAX_CUSTOM_FEATURES:
+            raise ValidationError(f"власних умінь не може бути більше за {MAX_CUSTOM_FEATURES}")
+        ids = [feature.id for feature in features]
+        if len(set(ids)) != len(ids):
+            raise ValidationError("id власних умінь повторюються")
 
     def add_feat(self, feat_key: str) -> None:
         key = feat_key.strip().casefold()
@@ -1177,6 +1271,9 @@ class Character:
 
     def _validate_spell_limits(self, spells: tuple[KnownSpell, ...]) -> None:
         for spell in spells:
+            # Власне закляття поза класом не належить класу й не займає лімітів.
+            if spell.class_key == OTHER_CLASS:
+                continue
             if not self.has_class(spell.class_key):
                 raise ValidationError(f"немає класу {spell.class_key!r} для закляття {spell.name_en!r}")
         for entry, definition in self.class_entries():

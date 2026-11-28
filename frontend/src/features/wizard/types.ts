@@ -334,6 +334,23 @@ export interface SheetFeature {
   text_uk?: string | null;
 }
 
+/** Власне вміння: немає в книгах (дар майстра, сила предмета), текст дав гравець. */
+export interface SheetCustomFeature {
+  id: string;
+  name: string;
+  source: "custom";
+  /** Звідки: «дар майстра», «Перстень вогню». */
+  origin: string | null;
+  level: number | null;
+  text: string;
+  /** Скільки разів між відпочинками; null — без лічильника. */
+  uses: number | null;
+  recharge: "short" | "long" | null;
+  used: number;
+  /** Ключ лічильника в `feature_used` (той самий, що в ресурсах). */
+  resource_key: string | null;
+}
+
 export interface SheetFeatureResource {
   key: string;
   name_en: string;
@@ -598,6 +615,8 @@ export interface SheetViewPayload {
   };
   overridden: string[];
   features: SheetFeature[];
+  /** Власні вміння гравця — окремо від книжкових. */
+  custom_features?: SheetCustomFeature[];
   /** Вибрані риси з текстом: показуємо разом з уміннями. */
   feat_details?: {
     key: string;

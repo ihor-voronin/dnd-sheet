@@ -98,7 +98,7 @@ run inside one JSON-RPC endpoint; it adds risk without a player asking for it. T
 
 ### 4. Tools
 
-Grouped by what a player does (20 tools), not mirroring the ~70 REST endpoints. Changing
+Grouped by what a player does (21 tools), not mirroring the ~70 REST endpoints. Changing
 tools take the sheet's `version`, so the SPA and the assistant can't overwrite each other.
 Answers are short: a sheet summary (numbers and state, a few KB instead of ~20 KB), wizard
 options with prose cut to 160 characters.
@@ -109,7 +109,8 @@ options with prose cut to 160 characters.
 | `update_character` (HP, damage/healing, slots, feature uses, death saves, exhaustion, inspiration, notes, equipped) | idempotent |
 | `start_character`, `get_creation_step`, `set_creation_step`, `finish_character` | — / read-only / idempotent / — |
 | `manage_inventory` (`add` / `update` / `remove`) | destructive |
-| `manage_spells` (`learn` / `forget` / `prepare`) | — |
+| `manage_spells` (`learn` / `forget` / `prepare` / `update`; custom spells with `custom: true`, class `"other"` outside any class) | — |
+| `manage_custom_features` (`add` / `update` / `remove`) | destructive |
 | `rest`, `spend_hit_dice` | — |
 | `level_up_options`, `level_up` | read-only / — |
 | `set_class_choice`, `set_expertise` | idempotent |

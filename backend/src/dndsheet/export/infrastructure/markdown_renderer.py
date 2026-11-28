@@ -66,7 +66,8 @@ class MarkdownRenderer:
             label = f"{label} ({field.label.en})"
         line = f"- **{label}**: {cls._format_value(field)}"
         if field.hint is not None and opts.show_originals:
-            line += f" — {field.hint.uk}"
+            # Текст гравця (власне вміння) буває в кілька абзаців: відступ лишає їх у пункті списку.
+            line += " — " + field.hint.uk.strip().replace("\n", "\n  ")
         if field.origin == "override":
             line += _OVERRIDE_MARK
         return line

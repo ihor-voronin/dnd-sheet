@@ -375,6 +375,23 @@ def record_mutations(rec: Recorder, character_id: str) -> None:
     mutate("POST", f"{base}/items", {"item": {"name_en": "Rope, hempen (50 feet)", "kind": "gear", "quantity": 1}})
     mutate("PATCH", f"{base}/items/0", {"fields": {"equipped": True}})
     mutate("DELETE", f"{base}/items/0", {})
+    # Custom entries: a feature with a counter (added, edited, removed) and a spell outside any class.
+    added = rec.call(
+        "POST",
+        f"{base}/custom-features",
+        {
+            "feature": {"name": "Дар майстра", "text": "Раз на день — перекинути кидок.", "uses": 1},
+            "version": version,
+        },
+    )
+    version = added["version"]
+    feature_url = f"{base}/custom-features/{added['feature_id']}"
+    mutate("PATCH", feature_url, {"fields": {"origin": "Перстень"}})
+    mutate("DELETE", feature_url, {})
+    custom_spell = {"class_key": "other", "name_en": "Вогонь перстня", "level": 1, "custom": True}
+    mutate("POST", f"{base}/spells", {**custom_spell, "description": "1d10 вогню."})
+    mutate("PATCH", f"{base}/spells", {"class_key": "other", "name_en": "Вогонь перстня", "fields": {"level": 2}})
+    mutate("DELETE", f"{base}/spells", {"class_key": "other", "name_en": "Вогонь перстня"})
     share = rec.call("POST", f"{base}/share", {})
     token = share.get("token")
     if token:

@@ -114,7 +114,8 @@ def test_tools_are_annotated(site: TestClient) -> None:
     assert tools["list_characters"]["annotations"]["readOnlyHint"] is True
     assert tools["manage_inventory"]["annotations"]["destructiveHint"] is True
     assert tools["update_character"]["annotations"]["idempotentHint"] is True
-    assert len(tools) == 20
+    assert tools["manage_custom_features"]["annotations"]["destructiveHint"] is True
+    assert len(tools) == 21
 
 
 def test_sheet_summary_is_short_and_has_numbers(site: TestClient, fighter: str) -> None:
@@ -245,6 +246,119 @@ def test_spells_need_one_spell_for_learn(site: TestClient, fighter: str) -> None
         class_key="fighter",
         spells=[{"name_en": "Fire Bolt", "level": 0}],
     )
+
+
+def test_custom_features_through_tools(site: TestClient, fighter: str) -> None:
+    version = tool(site, "get_character", character_id=fighter)["version"]
+    added = tool(
+        site,
+        "manage_custom_features",
+        character_id=fighter,
+        version=version,
+        action="add",
+        feature={"name": "Дар майстра", "text": "Раз на день — перекинути кидок.", "uses": 1},
+    )
+    feature_id = added["feature_id"]
+    listed = added["sheet"]["custom_features"]
+    assert listed == [
+        {
+            "id": feature_id,
+            "name": "Дар майстра",
+            "origin": None,
+            "level": None,
+            "text": "Раз на день — перекинути кидок.",
+            "uses": 1,
+            "used": 0,
+            "recharge": "long",
+            "key": f"custom:{feature_id}",
+        }
+    ]
+    assert any(item["key"] == f"custom:{feature_id}" for item in added["sheet"]["feature_uses"])
+
+    spent = tool(
+        site,
+        "update_character",
+        character_id=fighter,
+        version=added["version"],
+        changes={"feature_used": {f"custom:{feature_id}": 1}},
+    )
+    assert spent["sheet"]["custom_features"][0]["used"] == 1
+
+    changed = tool(
+        site,
+        "manage_custom_features",
+        character_id=fighter,
+        version=spent["version"],
+        action="update",
+        feature_id=feature_id,
+        feature={"origin": "Перстень", "uses": None},
+    )
+    assert changed["sheet"]["custom_features"][0]["origin"] == "Перстень"
+    assert "uses" not in changed["sheet"]["custom_features"][0]
+
+    assert "feature_id" in tool_error(
+        site, "manage_custom_features", character_id=fighter, version=changed["version"], action="remove"
+    )
+    assert "версі" in tool_error(
+        site,
+        "manage_custom_features",
+        character_id=fighter,
+        version=changed["version"] - 1,
+        action="remove",
+        feature_id=feature_id,
+    )
+    removed = tool(
+        site,
+        "manage_custom_features",
+        character_id=fighter,
+        version=changed["version"],
+        action="remove",
+        feature_id=feature_id,
+    )
+    assert removed["sheet"]["custom_features"] == []
+
+
+def test_custom_spell_through_tools(site: TestClient, fighter: str) -> None:
+    version = tool(site, "get_character", character_id=fighter)["version"]
+    learned = tool(
+        site,
+        "manage_spells",
+        character_id=fighter,
+        version=version,
+        action="learn",
+        class_key="other",
+        spells=[{"name_en": "Вогонь перстня", "level": 1, "custom": True, "description": "1d10 вогню."}],
+    )
+    spell = next(item for item in learned["sheet"]["spells"] if item["name"] == "Вогонь перстня")
+    assert spell == {
+        "name": "Вогонь перстня",
+        "name_uk": None,
+        "level": 1,
+        "class": "other",
+        "prepared": True,
+        "custom": True,
+        "description": "1d10 вогню.",
+    }
+    updated = tool(
+        site,
+        "manage_spells",
+        character_id=fighter,
+        version=learned["version"],
+        action="update",
+        class_key="other",
+        spells=[{"name_en": "Вогонь перстня", "fields": {"level": 2, "school": "воплочення"}}],
+    )
+    assert next(item for item in updated["sheet"]["spells"] if item.get("custom"))["level"] == 2
+    forgotten = tool(
+        site,
+        "manage_spells",
+        character_id=fighter,
+        version=updated["version"],
+        action="forget",
+        class_key="other",
+        spells=[{"name_en": "Вогонь перстня"}],
+    )
+    assert not any(item.get("custom") for item in forgotten["sheet"]["spells"])
 
 
 def test_share_and_pdf_links(site: TestClient, fighter: str) -> None:

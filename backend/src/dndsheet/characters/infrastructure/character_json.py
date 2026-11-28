@@ -21,6 +21,7 @@ from typing import Any, Mapping
 
 from dndsheet.characters.domain.character import Character
 from dndsheet.characters.domain.class_level import CharacterClass, MulticlassWaiver
+from dndsheet.characters.domain.custom_features import CustomFeature
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem, ItemKind
 from dndsheet.characters.domain.ports import RulesSource
 from dndsheet.characters.domain.proficiencies import (
@@ -30,7 +31,7 @@ from dndsheet.characters.domain.proficiencies import (
     ProficiencyKind,
     SourceKind,
 )
-from dndsheet.characters.domain.spells import KnownSpell
+from dndsheet.characters.domain.spells import CUSTOM_META, KnownSpell
 from dndsheet.characters.domain.state import DeathSaves, SheetState
 from dndsheet.characters.domain.vitals import HitPointState
 from dndsheet.characters.domain.wizard import AbilityMethod, Draft
@@ -228,6 +229,16 @@ def spells_to_record(spells: tuple[KnownSpell, ...]) -> list[dict[str, Any]]:
             "always_prepared": spell.always_prepared,
             "custom": spell.custom,
             "description": spell.description,
+            # Короткі дані є лише у власного закляття: книжковим їх дає довідник.
+            **(
+                {
+                    **{key: getattr(spell, key) for key in CUSTOM_META},
+                    "concentration": spell.concentration,
+                    "ritual": spell.ritual,
+                }
+                if spell.custom
+                else {}
+            ),
         }
         for spell in spells
     ]
@@ -247,11 +258,49 @@ def spells_from_record(records: list[Mapping[str, Any]] | None) -> tuple[KnownSp
                     always_prepared=bool(record.get("always_prepared")),
                     custom=bool(record.get("custom")),
                     description=record.get("description") or None,
+                    **{key: record.get(key) or None for key in CUSTOM_META},
+                    concentration=bool(record.get("concentration")),
+                    ritual=bool(record.get("ritual")),
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:
             raise ValidationError(f"невірне закляття у файлі: {record!r}") from exc
     return tuple(spells)
+
+
+def custom_features_to_record(features: tuple[CustomFeature, ...]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": feature.id,
+            "name": feature.name,
+            "text": feature.text,
+            "origin": feature.origin,
+            "level": feature.level,
+            "uses": feature.uses,
+            "recharge": feature.recharge,
+        }
+        for feature in features
+    ]
+
+
+def custom_features_from_record(records: list[Mapping[str, Any]] | None) -> tuple[CustomFeature, ...]:
+    features: list[CustomFeature] = []
+    for record in records or ():
+        try:
+            features.append(
+                CustomFeature(
+                    id=str(record["id"]),
+                    name=str(record["name"]),
+                    text=str(record.get("text") or ""),
+                    origin=record.get("origin") or None,
+                    level=None if record.get("level") is None else int(record["level"]),
+                    uses=None if record.get("uses") is None else int(record["uses"]),
+                    recharge=record.get("recharge") or None,
+                )
+            )
+        except (KeyError, ValueError, TypeError) as exc:
+            raise ValidationError(f"неприпустиме власне вміння в записі: {record!r}") from exc
+    return tuple(features)
 
 
 # ---------------------------------------------------------------------------
@@ -309,6 +358,7 @@ def character_to_record(character: Character) -> dict[str, Any]:
         "spells": spells_to_record(character.spells),
         "spell_choices": list(character.spell_choices),
         "feats": list(character.feats),
+        "custom_features": custom_features_to_record(character.custom_features),
         "expertise": list(character.expertise),
         "feat_abilities": {key: ability.value for key, ability in character.feat_abilities.items()},
         "class_choices": {key: list(values) for key, values in character.class_choices.items()},
@@ -359,6 +409,7 @@ def character_from_record(record: Mapping[str, Any], rules: RulesSource) -> Char
         spells=spells_from_record(record.get("spells")),
         spell_choices=tuple(str(item) for item in record.get("spell_choices") or ()),
         feats=tuple(str(item) for item in record.get("feats") or ()),
+        custom_features=custom_features_from_record(record.get("custom_features")),
         expertise=tuple(str(item) for item in record.get("expertise") or ()),
         class_choices={
             str(key): tuple(str(value) for value in values)

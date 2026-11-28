@@ -11,16 +11,18 @@
 
 from __future__ import annotations
 
+import secrets
 from dataclasses import dataclass
 from typing import Any, Mapping
 
 from dndsheet.characters.domain.character import Character
+from dndsheet.characters.domain.custom_features import CustomFeature
 from dndsheet.characters.domain.inventory import InventoryItem, ItemKind
 from dndsheet.characters.domain.ports import CharacterRepository
 from dndsheet.characters.domain.services.derived_stats import DerivedStatsCalculator
 from dndsheet.characters.domain.services.feature_resources import resources_for
 from dndsheet.characters.domain.services.rest import RestReport, RestService
-from dndsheet.characters.domain.spells import KnownSpell
+from dndsheet.characters.domain.spells import CUSTOM_META, KnownSpell
 from dndsheet.characters.domain.state import DeathSaves
 from dndsheet.shared.errors import ConflictError, NotFoundError, ValidationError
 from dndsheet.shared.kernel import Ability
@@ -203,6 +205,32 @@ class SheetService:
         self.characters.save(character)
         return character
 
+    def update_custom_spell(
+        self,
+        character_id: str,
+        payload: Mapping[str, Any],
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        """Змінити власне закляття: `name_en` і `class_key` кажуть яке, `fields` — що змінити."""
+        character = self._load_versioned(character_id, expected_version)
+        name, class_key = _text(payload, "name_en"), _text(payload, "class_key")
+        known = _find_spell(character, name, class_key)
+        if known is None:
+            raise ValidationError(f"закляття {name!r} немає у списку персонажа")
+        if not known.custom:
+            raise ValidationError(f"{name}: змінювати можна лише власне закляття — книжкове дає довідник")
+        fields = payload.get("fields")
+        if not isinstance(fields, Mapping):
+            raise ValidationError("fields має бути обʼєктом")
+        unknown = set(fields) - _CUSTOM_SPELL_FIELDS
+        if unknown:
+            raise ValidationError(f"невідомі поля закляття: {', '.join(sorted(unknown))}")
+        merged = {**_spell_record(known), **fields, "custom": True}
+        character.update_custom_spell(name, class_key, _spell(merged))
+        self.characters.save(character)
+        return character
+
     def prepare_spells(
         self,
         character_id: str,
@@ -281,6 +309,68 @@ class SheetService:
         """Риса виду на 1 рівні (варіантна людина, власна лінія)."""
         character = self._load_versioned(character_id, expected_version)
         character.set_species_feat(feat_key, feat_ability)
+        self.characters.save(character)
+        return character
+
+    # ------------------------------------------------------------------
+    # власні вміння
+    # ------------------------------------------------------------------
+
+    def add_custom_feature(
+        self,
+        character_id: str,
+        payload: Mapping[str, Any],
+        *,
+        expected_version: int | None = None,
+    ) -> tuple[Character, CustomFeature]:
+        """Додати власне вміння; `id` дає сервер, щоб потім змінити або прибрати саме його."""
+        character = self._load_versioned(character_id, expected_version)
+        taken = {feature.id for feature in character.custom_features}
+        feature_id = secrets.token_hex(4)
+        while feature_id in taken:  # pragma: no cover — збіг майже неможливий
+            feature_id = secrets.token_hex(4)
+        feature = _custom_feature(feature_id, payload)
+        character.add_custom_feature(feature)
+        self.characters.save(character)
+        return character, feature
+
+    def update_custom_feature(
+        self,
+        character_id: str,
+        feature_id: str,
+        payload: Mapping[str, Any],
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        """Змінити лише надіслані поля; `null` прибирає необовʼязкове (звідки, рівень, лічильник)."""
+        character = self._load_versioned(character_id, expected_version)
+        current = character.custom_feature(feature_id)
+        if not isinstance(payload, Mapping):
+            raise ValidationError("fields має бути обʼєктом")
+        merged = {
+            "name": current.name,
+            "text": current.text,
+            "origin": current.origin,
+            "level": current.level,
+            "uses": current.uses,
+            "recharge": current.recharge,
+            **payload,
+        }
+        if "uses" in payload and payload["uses"] is None and "recharge" not in payload:
+            merged["recharge"] = None
+        character.update_custom_feature(_custom_feature(current.id, merged))
+        self.characters.save(character)
+        return character
+
+    def remove_custom_feature(
+        self,
+        character_id: str,
+        feature_id: str,
+        *,
+        expected_version: int | None = None,
+    ) -> Character:
+        character = self._load_versioned(character_id, expected_version)
+        character.remove_custom_feature(feature_id)
         self.characters.save(character)
         return character
 
@@ -519,6 +609,12 @@ def _spell(payload: Mapping[str, Any]) -> KnownSpell:
     custom = payload.get("custom", False)
     if not isinstance(custom, bool):
         raise ValidationError("custom має бути true або false")
+    flags: dict[str, bool] = {}
+    for key in ("concentration", "ritual"):
+        value = payload.get(key)
+        if value is not None and not isinstance(value, bool):
+            raise ValidationError(f"{key} має бути true або false")
+        flags[key] = bool(value)
     return KnownSpell(
         name_en=_text(payload, "name_en"),
         level=_int(payload.get("level"), "рівень закляття"),
@@ -527,6 +623,56 @@ def _spell(payload: Mapping[str, Any]) -> KnownSpell:
         prepared=True if custom else bool(payload.get("prepared", False)),
         custom=custom,
         description=_optional_str(payload.get("description")),
+        **{key: _optional_str(payload.get(key)) for key in CUSTOM_META},
+        **flags,
+    )
+
+
+#: Що можна змінити у власному закляття (назву й клас теж — це його ключ).
+_CUSTOM_SPELL_FIELDS = frozenset(
+    {"name_en", "level", "class_key", "description", "concentration", "ritual", *CUSTOM_META}
+)
+
+
+def _spell_record(spell: KnownSpell) -> dict[str, Any]:
+    return {
+        "name_en": spell.name_en,
+        "level": spell.level,
+        "class_key": spell.class_key,
+        "description": spell.description,
+        "concentration": spell.concentration,
+        "ritual": spell.ritual,
+        **{key: getattr(spell, key) for key in CUSTOM_META},
+    }
+
+
+# ---------------------------------------------------------------------------
+# власні вміння
+# ---------------------------------------------------------------------------
+
+_CUSTOM_FEATURE_FIELDS = frozenset({"name", "text", "origin", "level", "uses", "recharge"})
+
+
+def _custom_feature(feature_id: str, payload: Mapping[str, Any]) -> CustomFeature:
+    """Вміння з тіла запиту. Лічильник без відпочинку — до тривалого, як у більшості умінь."""
+    if not isinstance(payload, Mapping):
+        raise ValidationError("вміння має бути обʼєктом")
+    unknown = set(payload) - _CUSTOM_FEATURE_FIELDS
+    if unknown:
+        raise ValidationError(f"невідомі поля вміння: {', '.join(sorted(unknown))}")
+    text = payload.get("text")
+    if text is not None and not isinstance(text, str):
+        raise ValidationError("text має бути рядком")
+    uses = _optional_int(payload.get("uses"), "використання вміння")
+    recharge = _optional_str(payload.get("recharge"))
+    return CustomFeature(
+        id=feature_id,
+        name=_text(payload, "name"),
+        text=text or "",
+        origin=_optional_str(payload.get("origin")),
+        level=_optional_int(payload.get("level"), "рівень вміння"),
+        uses=uses,
+        recharge=(recharge or "long") if uses is not None else recharge,
     )
 
 
