@@ -17,6 +17,9 @@ class UserStore(Protocol):
     def count(self) -> int:
         """Скільки користувачів зареєстровано."""
 
+    def exists_telegram(self, telegram_id: int) -> bool:
+        """Чи входив уже цей акаунт Telegram на сайт."""
+
 
 class SessionStore(Protocol):
     def create(self, user_id: str, token_hash: str, expires_at: float) -> None:

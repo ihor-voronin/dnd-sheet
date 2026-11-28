@@ -22,6 +22,7 @@
 
 [![D&D 5e](https://img.shields.io/badge/D%26D%205e-2014%20rules-ED1C24?logo=dungeonsanddragons&logoColor=white)](docs/books.md)
 [![Compendium](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fihor-voronin%2Fdnd-sheet%2Fbadges%2Frecords.json)](docs/books.md)
+[![MCP](https://img.shields.io/badge/MCP-OAuth%202.1-D97757?logo=anthropic&logoColor=white)](docs/mcp.md)
 [![Ukrainian](https://img.shields.io/badge/%D0%BC%D0%BE%D0%B2%D0%B0-%D1%83%D0%BA%D1%80%D0%B0%D1%97%D0%BD%D1%81%D1%8C%D0%BA%D0%B0-0057B7?labelColor=FFD700)](docs/translation-rules.md)
 [![Telegram](https://img.shields.io/badge/Telegram-Mini%20App-26A5E4?logo=telegram&logoColor=white)](https://t.me/DnD_Sheet_VoroninAppBot)
 [![Secrets](https://img.shields.io/badge/secrets-git--crypt%20%F0%9F%94%92-555)](deploy/README.md)
@@ -71,6 +72,12 @@ without signing in, but not changed. A new link revokes the old one.
 **Phone and Telegram** — mobile layout for the sheet and the wizard; the Telegram
 Mini App uses Telegram's theme and Back button, lets Telegram download the PDF, and
 `t.me/<bot>?startapp=s_<token>` opens a shared sheet right inside the app.
+
+**AI assistant (MCP)** — `https://dnd.voronin.app/mcp`: connect Claude (or any MCP
+client) and it can create a character through the same wizard, take rests, track hit
+points and items, and level up — only your characters, only by the site's rules. Sign-in is
+OAuth with a consent screen on the site; connected apps are listed on the home page and can
+be disconnected. [`docs/mcp.md`](docs/mcp.md).
 
 **Found a bug?** — `#/bugs`, linked from every page footer: two dozen common
 complaints with sarcastic answers, each pointing to the folder in this repository
@@ -215,6 +222,7 @@ docs/                   plan, ADRs, per-area descriptions (below)
 | [docs/spells.md](docs/spells.md) | spells outside of level-up |
 | [docs/export.md](docs/export.md) | printing and PDF |
 | [docs/api-compendium.md](docs/api-compendium.md) | compendium API |
+| [docs/mcp.md](docs/mcp.md) | MCP server for AI assistants, OAuth sign-in |
 | [docs/format.md](docs/format.md) | corpus record format |
 | [docs/books.md](docs/books.md) | the 2014 book line and what each book provides |
 | [docs/translation-rules.md](docs/translation-rules.md), [docs/translation.md](docs/translation.md) | translation rules and status |

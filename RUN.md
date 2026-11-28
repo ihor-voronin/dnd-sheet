@@ -234,6 +234,11 @@ sign in under any name, which is why the port is bound to `127.0.0.1` only.
 **No sign-in at all** (`DNDSHEET_AUTH=off`) — single-player mode: everything belongs to
 a "local player". The tests run this way.
 
+**MCP for AI assistants** (`/mcp`, [`docs/mcp.md`](docs/mcp.md)) — with sign-in on, set
+`DNDSHEET_PUBLIC_URL` to the address clients use (default `http://localhost:8000`): it's
+the OAuth issuer, the resource tokens are bound to and the only allowed `Host` for `/mcp`.
+With `DNDSHEET_AUTH=off`, `/mcp` needs no token.
+
 ---
 
 ## 4. What to look at right away

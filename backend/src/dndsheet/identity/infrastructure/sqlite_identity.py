@@ -91,6 +91,11 @@ class SqliteIdentityStore:
         with closing(_connect(self.path)) as connection:
             return int(connection.execute("SELECT COUNT(*) FROM users").fetchone()[0])
 
+    def exists_telegram(self, telegram_id: int) -> bool:
+        with closing(_connect(self.path)) as connection:
+            row = connection.execute("SELECT 1 FROM users WHERE telegram_id = ?", (telegram_id,)).fetchone()
+        return row is not None
+
     # --- сесії ---------------------------------------------------------------
 
     def create(self, user_id: str, token_hash: str, expires_at: float) -> None:

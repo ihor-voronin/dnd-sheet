@@ -19,12 +19,20 @@ declare global {
   }
 }
 
-function TelegramButton({ bot, onDone }: { bot: string; onDone: (error: string | null) => void }) {
+function TelegramButton({
+  bot,
+  existingOnly,
+  onDone,
+}: {
+  bot: string;
+  existingOnly: boolean;
+  onDone: (error: string | null) => void;
+}) {
   const holder = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.onTelegramAuth = (user) => {
-      loginTelegram(user)
+      loginTelegram(user, existingOnly)
         .then(() => onDone(null))
         .catch((failure: unknown) => onDone(failure instanceof Error ? failure.message : String(failure)));
     };
@@ -41,12 +49,16 @@ function TelegramButton({ bot, onDone }: { bot: string; onDone: (error: string |
       delete window.onTelegramAuth;
       if (target) target.innerHTML = "";
     };
-  }, [bot, onDone]);
+  }, [bot, existingOnly, onDone]);
 
   return <div ref={holder} className="login-telegram" />;
 }
 
-export function LoginPanel({ reason }: { reason?: string }) {
+/**
+ * `existingOnly` — екран дозволу застосунку: увійти може лише той, хто вже має
+ * акаунт на сайті; новий акаунт тут не заводиться.
+ */
+export function LoginPanel({ reason, existingOnly = false }: { reason?: string; existingOnly?: boolean }) {
   const queryClient = useQueryClient();
   const config = useQuery({ queryKey: ["auth-config"], queryFn: fetchAuthConfig, staleTime: Infinity });
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +73,7 @@ export function LoginPanel({ reason }: { reason?: string }) {
   async function devLogin() {
     setBusy(true);
     try {
-      await loginDev(name);
+      await loginDev(name, existingOnly);
       done(null);
     } catch (failure) {
       done(failure instanceof Error ? failure.message : String(failure));
@@ -79,7 +91,7 @@ export function LoginPanel({ reason }: { reason?: string }) {
           "Увійдіть через Telegram, щоб створювати персонажів. Вони зберігаються на сервері й доступні з будь-якого пристрою."}
       </p>
       {data?.telegram_ready && data.telegram_bot ? (
-        <TelegramButton bot={data.telegram_bot} onDone={done} />
+        <TelegramButton bot={data.telegram_bot} existingOnly={existingOnly} onDone={done} />
       ) : data && !data.dev_login ? (
         <p className="hint">
           Вхід через Telegram ще не налаштовано: адміністратор має вказати бота (<code>DNDSHEET_TELEGRAM_BOT</code> і{" "}

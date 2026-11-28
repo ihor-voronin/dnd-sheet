@@ -20,6 +20,8 @@ import { CharacterCard } from "./features/home/CharacterCard";
 import { Home } from "./features/home/Home";
 import { KnowledgeBase, isKbSection } from "./features/knowledge/KnowledgeBase";
 import type { KbSection } from "./features/knowledge/KnowledgeBase";
+import { ConnectedApps } from "./features/oauth/ConnectedApps";
+import { Consent } from "./features/oauth/Consent";
 import { CreateWizard } from "./features/wizard/CreateWizard";
 import {
   inTelegram,
@@ -43,7 +45,8 @@ type Route =
   | { name: "levelup"; id: string }
   | { name: "shared"; token: string }
   | { name: "kb"; section?: KbSection; key?: string }
-  | { name: "bugs" };
+  | { name: "bugs" }
+  | { name: "oauth"; request: string };
 
 function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
@@ -51,6 +54,8 @@ function parseRoute(): Route {
   // Посилання «лише читати»: #/s/<токен> — відкривається без входу.
   if (hash.startsWith("s/")) return { name: "shared", token: decodeURIComponent(hash.slice(2)) };
   if (hash === "bugs") return { name: "bugs" };
+  // Застосунок (MCP) просить доступ: сюди веде сервер авторизації з `/authorize`.
+  if (hash.startsWith("oauth/")) return { name: "oauth", request: decodeURIComponent(hash.slice("oauth/".length)) };
   if (hash === "kb" || hash.startsWith("kb/")) {
     const [, section, ...rest] = hash.split("/");
     const key = rest.length ? decodeURIComponent(rest.join("/")) : undefined;
@@ -92,15 +97,17 @@ function useRoute(): [Route, (next: Route) => void] {
         ? "#/"
         : next.name === "bugs"
           ? "#/bugs"
-          : next.name === "create"
-            ? "#/create"
-            : next.name === "kb"
-              ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
-              : next.name === "levelup"
-                ? `#/character/${encodeURIComponent(next.id)}/level-up`
-                : next.name === "shared"
-                  ? `#/s/${encodeURIComponent(next.token)}`
-                  : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
+          : next.name === "oauth"
+            ? `#/oauth/${encodeURIComponent(next.request)}`
+            : next.name === "create"
+              ? "#/create"
+              : next.name === "kb"
+                ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
+                : next.name === "levelup"
+                  ? `#/character/${encodeURIComponent(next.id)}/level-up`
+                  : next.name === "shared"
+                    ? `#/s/${encodeURIComponent(next.token)}`
+                    : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
     if (window.location.hash === target) setRoute(next);
     else window.location.hash = target;
   }, []);
@@ -364,7 +371,9 @@ function Shell() {
                     ? "головна"
                     : route.name === "bugs"
                       ? "знайшли помилку"
-                      : "лист персонажа"}
+                      : route.name === "oauth"
+                        ? "підключення застосунку"
+                        : "лист персонажа"}
         </a>
         <nav className="topnav" aria-label="Розділи">
           <button
@@ -403,7 +412,9 @@ function Shell() {
           go={(section, key) => navigate({ name: "kb", section, key })}
         />
       ) : null}
-      {user === undefined && route.name !== "kb" ? <p className="status">Перевіряємо вхід…</p> : null}
+      {user === undefined && route.name !== "kb" && route.name !== "oauth" ? (
+        <p className="status">Перевіряємо вхід…</p>
+      ) : null}
       {user === null && needsUser ? (
         <LoginPanel
           reason={
@@ -418,7 +429,10 @@ function Shell() {
           onOpenKb={(section) => navigate({ name: "kb", section: isKbSection(section) ? section : undefined })}
           account={
             user === undefined ? null : user ? (
-              <CharactersList navigate={navigate} />
+              <>
+                <CharactersList navigate={navigate} />
+                <ConnectedApps />
+              </>
             ) : (
               <div id="login">
                 <LoginPanel />
@@ -456,6 +470,7 @@ function Shell() {
       {user && route.name === "levelup" ? <LevelUpPage id={route.id} navigate={navigate} /> : null}
       {route.name === "shared" ? <SharedPage token={route.token} /> : null}
       {route.name === "bugs" ? <BugReport /> : null}
+      {route.name === "oauth" ? <Consent requestId={route.request} /> : null}
       <footer className="site-footer">
         <a href="#/bugs" className="site-footer__bug">
           Знайшли помилку?
