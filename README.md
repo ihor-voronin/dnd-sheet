@@ -117,6 +117,10 @@ Key decisions live in [`docs/adr/`](docs/adr/):
   "Ukrainian (English)".
 - **One sheet document** ([0001](docs/adr/0001-spa-with-canonical-document.md)):
   the screen and the printout are built from the same `SheetDocument`.
+- **One shared PostgreSQL** ([0006](docs/adr/0006-shared-postgresql.md)): a PostgreSQL 18
+  instance serves every project on the VPS, with a database and least-privilege roles per
+  project. Storage stays behind the ports, and SQLite remains the default until the cutover
+  ([docs/database.md](docs/database.md)).
 
 ## Running locally
 
@@ -229,6 +233,7 @@ docs/                   plan, ADRs, per-area descriptions (below)
 | [docs/books.md](docs/books.md) | the 2014 book line and what each book provides |
 | [docs/translation-rules.md](docs/translation-rules.md), [docs/translation.md](docs/translation.md) | translation rules and status |
 | [docs/deploy.md](docs/deploy.md) | server, Terraform, secrets, Telegram, backups |
+| [docs/database.md](docs/database.md) | shared PostgreSQL: setup, migrations, moving off SQLite, rollback, experiments |
 | [docs/ci.md](docs/ci.md) | GitHub Actions, rules for `main`, auto-deploy |
 | [docs/next-steps.md](docs/next-steps.md) | what's next |
 

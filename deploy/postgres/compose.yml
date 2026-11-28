@@ -1,0 +1,43 @@
+# Shared PostgreSQL for every project on this VPS (docs/database.md, ADR 0006).
+#
+# A compose project of its own (`pg`), next to /opt/dndsheet, so an app deploy never restarts
+# the database. No published port: projects reach it as `pg:5432` on the external Docker
+# network `pg`, which their own compose files join. Each project gets its own database and two
+# roles (deploy/postgres/create-project.sql); no app connects as the superuser.
+#
+# On the server: /opt/pg/{compose.yml,postgresql.conf,pg_hba.conf,.env}, data in /opt/pg/data.
+name: pg
+
+services:
+  postgres:
+    # Pinned minor version: an upgrade is a one-line change here plus `docker compose up -d`.
+    image: postgres:18.7-alpine
+    container_name: pg
+    env_file: .env # POSTGRES_PASSWORD — the superuser, for administration only
+    environment:
+      # Collation that never changes under an OS/libc upgrade (no index rebuilds), UTF-8 text.
+      POSTGRES_INITDB_ARGS: "--locale-provider=builtin --builtin-locale=C.UTF-8 --encoding=UTF8"
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
+    volumes:
+      # A host folder, not a Docker volume: `docker compose down -v` can't delete the data.
+      - ${PG_DATA:-/opt/pg/data}:/var/lib/postgresql
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    # 2.4 GiB box shared with the apps: Postgres gets a hard ceiling; shared_buffers is 128 MB.
+    mem_limit: 512m
+    shm_size: 128m
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -q"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    networks: [pg]
+    restart: unless-stopped
+    # For a project that runs outside Docker on this host: publish on loopback only (never
+    # 0.0.0.0 — Docker's port rules bypass ufw).
+    # ports: ["127.0.0.1:5432:5432"]
+
+networks:
+  pg:
+    name: pg

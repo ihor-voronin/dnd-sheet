@@ -26,7 +26,7 @@ branch ──► PR into main ──► CI: pre-commit · backend · frontend ·
 | Check | What it does | Secrets |
 | --- | --- | --- |
 | **pre-commit** | PR title (≤ 100 characters, no WIP); the same hooks as locally, on changed files (all files on push): ruff, prettier, eslint, tsc, shellcheck, terraform fmt, `uv lock`, trufflehog, "secrets and corpus are encrypted" | none |
-| **backend** | unlocks the corpus (git-crypt), builds the test Docker image (`Dockerfile`, target `test`: the production environment plus the uv dev group) and runs all backend tests with coverage (fails below 80%) + import contracts; uploads the coverage report | `GIT_CRYPT_KEY` |
+| **backend** | unlocks the corpus (git-crypt), builds the test Docker image (`Dockerfile`, target `test`: the production environment plus the uv dev group) and runs all backend tests with coverage (fails below 80%) + import contracts, the PostgreSQL ones against a `postgres:18.7-alpine` service container (a skipped PostgreSQL test fails the job, [docs/database.md](database.md)); uploads the coverage report | `GIT_CRYPT_KEY` |
 | **frontend** | `npm ci`, types, ESLint (0 warnings), vitest with coverage (fails below 80% of lines or statements), build, the glossary check (`test_terminology.py`, Python only); uploads the coverage report | none |
 | **diff-coverage** | PRs only: [diff-cover](https://github.com/Bachmann1234/diff_cover) over the reports that exist — the lines the PR adds or changes must be ≥ 80% covered; the per-file table goes to the run summary | none |
 | **badges** | pushes to `main` only: `scripts/coverage_badges.py` turns the reports into shields.io JSON and force-pushes them to the `badges` branch (one commit, no history) | `GITHUB_TOKEN` (contents: write) |

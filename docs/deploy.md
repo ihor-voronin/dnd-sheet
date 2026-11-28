@@ -132,7 +132,7 @@ On the server:
 | What | Where |
 | --- | --- |
 | app | `/opt/dndsheet` (`compose.yml`, `Caddyfile`, `.env`) |
-| database | `/opt/dndsheet/var/dndsheet.sqlite3` (SQLite, WAL) |
+| database | `/opt/dndsheet/var/dndsheet.sqlite3` (SQLite, WAL); the move to a shared PostgreSQL is planned in [docs/database.md](database.md) |
 | backups | `/opt/dndsheet/backups/dndsheet-YYYY-MM-DD.sqlite3`, 14 days (`/etc/cron.daily/dndsheet-backup`) |
 | logs | `docker logs dndsheet-app`, `docker logs dndsheet-caddy` |
 

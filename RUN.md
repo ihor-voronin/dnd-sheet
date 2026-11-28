@@ -53,7 +53,9 @@ Check:
 uv run pytest backend -q
 ```
 
-Expected: all tests pass; 2 are skipped on Windows without GTK (PDF, see section 6).
+Expected: all tests pass; 2 are skipped on Windows without GTK (PDF, see section 6), and the
+PostgreSQL tests are skipped unless `DNDSHEET_TEST_DATABASE_URL` points at a Postgres
+(how to start one: [docs/database.md § 10](docs/database.md#10-local-development-and-tests)).
 
 ### 1.2 Frontend
 
