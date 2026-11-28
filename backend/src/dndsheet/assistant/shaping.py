@@ -89,10 +89,36 @@ def summary(sheet: dict[str, Any]) -> dict[str, Any]:
                 "level": item.get("level"),
                 "class": item.get("class_key"),
                 "prepared": item.get("prepared") or item.get("always_prepared"),
+                # Власне закляття: текст від гравця (коротко), книжкового тексту немає.
+                **(
+                    {"custom": True, "description": compact(item.get("description") or "")}
+                    if item.get("custom")
+                    else {}
+                ),
             }
             for item in sheet.get("spells") or []
         ],
         "features": [{"name": _uk(item), "level": item.get("level")} for item in sheet.get("features") or []],
+        "custom_features": [
+            {
+                "id": item.get("id"),
+                "name": item.get("name"),
+                "origin": item.get("origin"),
+                "level": item.get("level"),
+                "text": compact(item.get("text") or ""),
+                **(
+                    {
+                        "uses": item.get("uses"),
+                        "used": item.get("used"),
+                        "recharge": item.get("recharge"),
+                        "key": item.get("resource_key"),
+                    }
+                    if item.get("uses")
+                    else {}
+                ),
+            }
+            for item in sheet.get("custom_features") or []
+        ],
         "feature_uses": [
             {
                 "key": item.get("key"),

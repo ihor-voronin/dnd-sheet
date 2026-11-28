@@ -774,6 +774,80 @@ def remove_spell(
     return {"sheet": _sheet_payload(request, character), "version": character.version}
 
 
+@router.patch("/{character_id}/spells")
+def update_custom_spell(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Змінити власне закляття: `{"name_en", "class_key", "fields": {...}, "version"}`."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    try:
+        character = _sheet_service(request).update_custom_spell(character_id, body, expected_version=version)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.post("/{character_id}/custom-features")
+def add_custom_feature(
+    character_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Додати власне вміння: `{"feature": {"name", "text", "origin"?, "level"?, "uses"?, "recharge"?}}`."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    feature = body.pop("feature", None)
+    if not isinstance(feature, dict):
+        raise HTTPException(status_code=422, detail="feature має бути обʼєктом")
+    try:
+        character, added = _sheet_service(request).add_custom_feature(character_id, feature, expected_version=version)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version, "feature_id": added.id}
+
+
+@router.patch("/{character_id}/custom-features/{feature_id}")
+def update_custom_feature(
+    character_id: str,
+    feature_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Змінити власне вміння: `{"fields": {...}, "version"}`; `null` прибирає поле."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    fields = body.pop("fields", None)
+    if not isinstance(fields, dict):
+        raise HTTPException(status_code=422, detail="fields має бути обʼєктом")
+    try:
+        character = _sheet_service(request).update_custom_feature(
+            character_id, feature_id, fields, expected_version=version
+        )
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
+@router.delete("/{character_id}/custom-features/{feature_id}")
+def remove_custom_feature(
+    character_id: str,
+    feature_id: str,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> dict:
+    """Прибрати власне вміння (і його лічильник)."""
+    body = dict(payload or {})
+    version = _pop_version(body)
+    try:
+        character = _sheet_service(request).remove_custom_feature(character_id, feature_id, expected_version=version)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"sheet": _sheet_payload(request, character), "version": character.version}
+
+
 @router.post("/{character_id}/spells/prepare")
 def prepare_spells(
     character_id: str,

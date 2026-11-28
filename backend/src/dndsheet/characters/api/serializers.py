@@ -11,6 +11,7 @@ from typing import Any
 
 from dndsheet.characters.api import classes_uk
 from dndsheet.characters.application.rows import (
+    custom_feature_rows,
     feature_rows,
     proficiency_rows,
     spell_rows,
@@ -108,6 +109,8 @@ def computed_sheet(
         },
         "overridden": sorted(computed.overridden),
         "features": features(character),
+        # Власні вміння окремим списком: у них `id` (змінити, прибрати) і текст гравця.
+        "custom_features": custom_features(character),
         "attacks_per_action": 1 + sum(1 for row in feature_rows(character) if row.name_en.startswith("Extra Attack")),
         "feature_resources": [
             {
@@ -120,9 +123,11 @@ def computed_sheet(
                 "used": resource.used,
                 "recharge": resource.recharge,
                 "action": resource.action,
+                # Власне вміння названо гравцем — не перекладаємо його як книжкове.
                 **(
                     {"name_uk": uk_name}
-                    if (uk_name := classes_uk.name_uk(resource.name_en) or _RESOURCE_UK.get(resource.name_en))
+                    if resource.class_key != "custom"
+                    and (uk_name := classes_uk.name_uk(resource.name_en) or _RESOURCE_UK.get(resource.name_en))
                     else {}
                 ),
             }
@@ -274,6 +279,26 @@ def features(character: Character) -> list[dict[str, Any]]:
     ]
 
 
+def custom_features(character: Character) -> list[dict[str, Any]]:
+    """Власні вміння: `source: "custom"`, щоб їх не плутали з книжковими."""
+    return [
+        {
+            "id": row.id,
+            "name": row.name,
+            "source": "custom",
+            "origin": row.origin,
+            "level": row.level,
+            "text": row.text,
+            "uses": row.uses,
+            "recharge": row.recharge,
+            "used": row.used,
+            # Ключ для `feature_used` у PATCH листа (той самий лічильник, що в ресурсах).
+            "resource_key": row.resource_key,
+        }
+        for row in custom_feature_rows(character)
+    ]
+
+
 def spells(character: Character, computed: ComputedSheet) -> list[dict[str, Any]]:
     """Усі закляття персонажа: класові (вибір гравця) + надані видом/підкласом."""
     entry_ids = _entry_ids(character)
@@ -292,6 +317,21 @@ def spells(character: Character, computed: ComputedSheet) -> list[dict[str, Any]
             # довідник (див. `spell_meta.enrich_spells`).
             "description": row.description,
             "note": row.note,
+            # Короткі дані власного закляття вписав гравець; книжковим їх
+            # дописує довідник, тож тут їх немає.
+            **(
+                {
+                    "school": row.school or "",
+                    "casting_time": row.casting_time or "",
+                    "range": row.range or "",
+                    "duration": row.duration or "",
+                    "components": row.components or "",
+                    "concentration": row.concentration,
+                    "ritual": row.ritual,
+                }
+                if row.custom
+                else {}
+            ),
         }
         for row in spell_rows(character, computed)
     ]

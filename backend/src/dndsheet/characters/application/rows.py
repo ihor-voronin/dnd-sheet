@@ -46,6 +46,14 @@ class SpellRow:
     #: Власне закляття: довідник його не знає, тому й опис — від гравця.
     custom: bool = False
     description: str | None = None
+    #: Короткі дані власного закляття (книжковим їх дописує довідник).
+    school: str | None = None
+    casting_time: str | None = None
+    range: str | None = None
+    duration: str | None = None
+    components: str | None = None
+    concentration: bool = False
+    ritual: bool = False
     #: Примітка: як чарується (від виклику, риси) або що змінює (Болісний розряд).
     note: str = ""
 
@@ -60,6 +68,21 @@ class FeatureRow:
     level: int
     class_key: str
     class_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class CustomFeatureRow:
+    """Власне вміння для екрана й експорту: текст гравця, без чисел."""
+
+    id: str
+    name: str
+    text: str
+    origin: str | None
+    level: int | None
+    uses: int | None
+    recharge: str | None
+    used: int
+    resource_key: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +122,28 @@ def feature_rows(character: Character) -> tuple[FeatureRow, ...]:
     return tuple(items)
 
 
+def custom_feature_rows(character: Character) -> tuple[CustomFeatureRow, ...]:
+    """Власні вміння в порядку, у якому їх додав гравець."""
+    return tuple(
+        CustomFeatureRow(
+            id=feature.id,
+            name=feature.name,
+            text=feature.text,
+            origin=feature.origin,
+            level=feature.level,
+            uses=feature.uses,
+            recharge=feature.recharge,
+            used=(
+                min(character.state.feature_used.get(feature.resource_key, 0), feature.uses)
+                if feature.resource_key is not None and feature.uses is not None
+                else 0
+            ),
+            resource_key=feature.resource_key,
+        )
+        for feature in character.custom_features
+    )
+
+
 #: Характеристика чарування в примітці до закляття поза класом.
 _ABILITY_UK = {
     "str": "Сила",
@@ -134,6 +179,13 @@ def spell_rows(character: Character, computed: ComputedSheet) -> tuple[SpellRow,
             source="class",
             custom=spell.custom,
             description=spell.description,
+            school=spell.school,
+            casting_time=spell.casting_time,
+            range=spell.range,
+            duration=spell.duration,
+            components=spell.components,
+            concentration=spell.concentration,
+            ritual=spell.ritual,
             note=computed.spell_notes.get(spell.name_en.casefold(), ""),
         )
         for spell in character.spells
