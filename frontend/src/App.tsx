@@ -1,7 +1,7 @@
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 import {
   fetchAuthConfig,
@@ -18,12 +18,12 @@ import { CharacterView } from "./features/character/CharacterView";
 import { LevelUpWizard } from "./features/character/LevelUp";
 import { CharacterCard } from "./features/home/CharacterCard";
 import { Home } from "./features/home/Home";
-import { KnowledgeBase, isKbSection } from "./features/knowledge/KnowledgeBase";
-import type { KbSection } from "./features/knowledge/KnowledgeBase";
 import { McpGuide } from "./features/mcp/McpGuide";
 import { ConnectedApps } from "./features/oauth/ConnectedApps";
 import { Consent } from "./features/oauth/Consent";
 import { CreateWizard } from "./features/wizard/CreateWizard";
+import { isKbSection, kbUrl, openServerPage } from "./seo/kbLinks";
+import type { KbSection } from "./seo/kbLinks";
 import {
   inTelegram,
   initialHash,
@@ -50,8 +50,16 @@ type Route =
   | { name: "oauth"; request: string }
   | { name: "mcp" };
 
+/** Сторінки SPA зі справжньою адресою; решта живе в `#/…` (сервер: `SPA_PATHS` в `api/app.py`). */
+const PATH_ROUTES: Record<string, Route> = { "/bugs": { name: "bugs" }, "/mcp": { name: "mcp" } };
+
 function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
+  // Хеш важливіший за шлях: посилання `#/…` усередині застосунку працюють і з /bugs.
+  if (!window.location.hash) {
+    const byPath = PATH_ROUTES[window.location.pathname.replace(/\/+$/, "")];
+    if (byPath) return byPath;
+  }
   if (hash === "create") return { name: "create" };
   // Посилання «лише читати»: #/s/<токен> — відкривається без входу.
   if (hash.startsWith("s/")) return { name: "shared", token: decodeURIComponent(hash.slice(2)) };
@@ -78,13 +86,52 @@ function parseRoute(): Route {
   return { name: "home" };
 }
 
+/** Адреса маршруту: справжній шлях для /bugs і /mcp, `/#/…` для решти. */
+export function routeUrl(next: Route): string {
+  if (next.name === "bugs") return "/bugs";
+  if (next.name === "mcp") return "/mcp";
+  if (next.name === "kb") return kbUrl(next.section, next.key);
+  const hash =
+    next.name === "home"
+      ? "#/"
+      : next.name === "oauth"
+        ? `#/oauth/${encodeURIComponent(next.request)}`
+        : next.name === "create"
+          ? "#/create"
+          : next.name === "levelup"
+            ? `#/character/${encodeURIComponent(next.id)}/level-up`
+            : next.name === "shared"
+              ? `#/s/${encodeURIComponent(next.token)}`
+              : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
+  return `/${hash}`;
+}
+
 function useRoute(): [Route, (next: Route) => void] {
   const [route, setRoute] = useState<Route>(parseRoute);
   useEffect(() => {
     const onChange = () => setRoute(parseRoute());
     window.addEventListener("hashchange", onChange);
-    return () => window.removeEventListener("hashchange", onChange);
+    window.addEventListener("popstate", onChange);
+    return () => {
+      window.removeEventListener("hashchange", onChange);
+      window.removeEventListener("popstate", onChange);
+    };
   }, []);
+  // Довідник — серверні сторінки: старе посилання `#/kb/...` веде на `/kb/...`.
+  // Старі `#/bugs` і `#/mcp` — на справжні адреси, без перезавантаження.
+  useEffect(() => {
+    if (route.name === "kb") {
+      openServerPage(routeUrl(route));
+      return;
+    }
+    if (route.name === "bugs" || route.name === "mcp") {
+      const url = routeUrl(route);
+      if (window.location.pathname !== url) window.history.replaceState(null, "", url);
+    } else if (window.location.pathname !== "/" && window.location.hash) {
+      // `#/…`-посилання зі сторінки /bugs: шлях лишився б від неї.
+      window.history.replaceState(null, "", `/${window.location.hash}`);
+    }
+  }, [route]);
   // Нова сторінка відкривається згори, а не на висоті, де гравець був на
   // попередній (наприклад, після «Створити персонажа» внизу візарда).
   const page = route.name + ("id" in route ? `:${route.id}` : "") + ("token" in route ? `:${route.token}` : "");
@@ -95,28 +142,24 @@ function useRoute(): [Route, (next: Route) => void] {
     window.scrollTo(0, 0);
   }, [page]);
   const navigate = useCallback((next: Route) => {
-    const target =
-      next.name === "home"
-        ? "#/"
-        : next.name === "bugs"
-          ? "#/bugs"
-          : next.name === "oauth"
-            ? `#/oauth/${encodeURIComponent(next.request)}`
-            : next.name === "mcp"
-              ? "#/mcp"
-              : next.name === "create"
-                ? "#/create"
-                : next.name === "kb"
-                  ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
-                  : next.name === "levelup"
-                    ? `#/character/${encodeURIComponent(next.id)}/level-up`
-                    : next.name === "shared"
-                      ? `#/s/${encodeURIComponent(next.token)}`
-                      : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
-    if (window.location.hash === target) setRoute(next);
-    else window.location.hash = target;
+    const target = routeUrl(next);
+    if (next.name === "kb") {
+      openServerPage(target);
+      return;
+    }
+    if (window.location.pathname + window.location.hash !== target) window.history.pushState(null, "", target);
+    setRoute(next);
   }, []);
   return [route, navigate];
+}
+
+/** Клік по посиланню на сторінку SPA — без перезавантаження; нова вкладка (Ctrl, середня кнопка) — як завжди. */
+function inApp(navigate: (next: Route) => void, next: Route) {
+  return (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigate(next);
+  };
 }
 
 /** Прокрутити до елемента, щойно сторінка його намалює (після переходу між сторінками). */
@@ -418,25 +461,23 @@ function Shell() {
   return (
     <main className={route.name === "character" || route.name === "shared" ? "app app--board" : "app"}>
       <div className="topbar">
-        <a className="badge badge--home" href="#/" title="На головну">
+        <a className="badge badge--home" href="/#/" title="На головну">
           Книга гравця 2014 ·{" "}
           {route.name === "create"
             ? "створення персонажа"
             : route.name === "levelup"
               ? "підвищення рівня"
-              : route.name === "kb"
-                ? "довідник"
-                : route.name === "shared"
-                  ? "лист персонажа · перегляд"
-                  : route.name === "home"
-                    ? "головна"
-                    : route.name === "bugs"
-                      ? "знайшли помилку"
-                      : route.name === "oauth"
-                        ? "підключення застосунку"
-                        : route.name === "mcp"
-                          ? "ІІ-асистент"
-                          : "лист персонажа"}
+              : route.name === "shared"
+                ? "лист персонажа · перегляд"
+                : route.name === "home"
+                  ? "головна"
+                  : route.name === "bugs"
+                    ? "знайшли помилку"
+                    : route.name === "oauth"
+                      ? "підключення застосунку"
+                      : route.name === "mcp"
+                        ? "ІІ-асистент"
+                        : "лист персонажа"}
         </a>
         <nav className="topnav" aria-label="Розділи">
           <button
@@ -452,14 +493,9 @@ function Shell() {
           >
             {user ? "Мої персонажі" : "Головна"}
           </button>
-          <button
-            type="button"
-            className="link-button"
-            aria-current={route.name === "kb" ? "page" : undefined}
-            onClick={() => navigate({ name: "kb" })}
-          >
+          <a className="link-button" href="/kb">
             Довідник
-          </button>
+          </a>
           <UserBar navigate={navigate} />
           {inTelegram ? null : (
             <button type="button" className="link-button theme-toggle" onClick={toggleTheme}>
@@ -468,13 +504,6 @@ function Shell() {
           )}
         </nav>
       </div>
-      {route.name === "kb" ? (
-        <KnowledgeBase
-          section={route.section}
-          entryKey={route.key}
-          go={(section, key) => navigate({ name: "kb", section, key })}
-        />
-      ) : null}
       {user === undefined && route.name !== "kb" && route.name !== "oauth" && route.name !== "mcp" ? (
         <p className="status">Перевіряємо вхід…</p>
       ) : null}
@@ -489,7 +518,6 @@ function Shell() {
       ) : null}
       {route.name === "home" ? (
         <Home
-          onOpenKb={(section) => navigate({ name: "kb", section: isKbSection(section) ? section : undefined })}
           onOpenMcp={() => navigate({ name: "mcp" })}
           account={
             user === undefined ? null : user ? (
@@ -520,9 +548,9 @@ function Shell() {
                   Увійти й створити персонажа
                 </button>
               )}
-              <button type="button" className="button" onClick={() => navigate({ name: "kb" })}>
+              <a className="button" href="/kb">
                 Відкрити довідник
-              </button>
+              </a>
             </>
           }
         />
@@ -537,10 +565,13 @@ function Shell() {
       {route.name === "oauth" ? <Consent requestId={route.request} /> : null}
       {route.name === "mcp" ? <McpGuide signedIn={Boolean(user)} /> : null}
       <footer className="site-footer">
-        <a href="#/bugs" className="site-footer__bug">
+        <a href="/bugs" className="site-footer__bug" onClick={inApp(navigate, { name: "bugs" })}>
           Знайшли помилку?
         </a>{" "}
-        · <a href="#/mcp">ІІ-асистент (MCP)</a>
+        ·{" "}
+        <a href="/mcp" onClick={inApp(navigate, { name: "mcp" })}>
+          ІІ-асистент (MCP)
+        </a>
         <span className="site-footer__note">
           {" "}
           · неофіційний некомерційний фанатський проєкт ·{" "}

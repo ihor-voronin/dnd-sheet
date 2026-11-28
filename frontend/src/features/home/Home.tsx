@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 
 import { fetchBooksOverview } from "../../api";
 import type { BookOverview } from "../../api";
+import { kbUrl } from "../../seo/kbLinks";
 
 /** Українська множина: 1 клас, 2 класи, 5 класів. */
 function plural(count: number, forms: [string, string, string]): string {
@@ -82,13 +83,11 @@ function checkedLabel(date: string | null): string {
 
 export function Home({
   account,
-  onOpenKb,
   onOpenMcp,
   actions,
 }: {
   /** Список персонажів або вхід — залежно від того, чи гравець увійшов. */
   account: ReactNode;
-  onOpenKb: (section?: string) => void;
   /** Сторінка «Як підключити ІІ-асистента». */
   onOpenMcp: () => void;
   actions: ReactNode;
@@ -164,14 +163,14 @@ export function Home({
         <ol className="home-toc">
           {CONTENTS.map((row) => (
             <li key={row.key}>
-              <button type="button" className="home-toc__row" onClick={() => onOpenKb(row.section)}>
+              <a className="home-toc__row" href={kbUrl(row.section)}>
                 <span className="home-toc__title">
                   {row.title}
                   {row.note && totals[row.key] ? <span className="home-toc__note"> {row.note(totals)}</span> : null}
                 </span>
                 <span className="home-toc__dots" aria-hidden="true" />
                 <span className="home-toc__count">{totals[row.key] ?? "…"}</span>
-              </button>
+              </a>
             </li>
           ))}
         </ol>

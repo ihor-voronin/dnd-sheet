@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ meta_title }}</title>
+<meta name="description" content="{{ description }}">
+{% if not index %}
+<meta name="robots" content="noindex, follow">
+{% endif %}
+<link rel="canonical" href="{{ base }}{{ path }}">
+<meta property="og:type" content="{{ og_type | default('article') }}">
+<meta property="og:site_name" content="Лист персонажа D&amp;D 5e">
+<meta property="og:locale" content="uk_UA">
+<meta property="og:url" content="{{ base }}{{ path }}">
+<meta property="og:title" content="{{ meta_title }}">
+<meta property="og:description" content="{{ description }}">
+<meta property="og:image" content="{{ base }}/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#11141b">
+{# Тема — та сама, що обрав гравець у застосунку (localStorage `dndsheet.theme`), до першого кадру. #}
+<script>try{if(localStorage.getItem("dndsheet.theme")==="day")document.documentElement.dataset.theme="day"}catch(e){}</script>
+<style>{{ css | safe }}</style>
+{% for item in jsonld | default([]) %}
+<script type="application/ld+json">{{ item | tojson }}</script>
+{% endfor %}
+</head>
+<body>
+<a class="skip" href="#content">До змісту</a>
+<header class="top">
+  <a class="brand" href="/">Лист персонажа <span>D&amp;D 5e</span></a>
+  <nav class="topnav" aria-label="Розділи сайту">
+    <a href="/kb"{% if path.startswith('/kb') and path != '/kb/glossary' %} aria-current="page"{% endif %}>Довідник</a>
+    <a href="/kb/glossary"{% if path == '/kb/glossary' %} aria-current="page"{% endif %}>Глосарій</a>
+    <a href="/guides/create-character"{% if path.startswith('/guides') %} aria-current="page"{% endif %}>Як почати</a>
+    <a class="button button--act" href="/#/create">Створити персонажа</a>
+    <button type="button" class="theme" data-theme-toggle hidden>Тема</button>
+  </nav>
+</header>
+<main id="content" class="page">
+{% if crumbs %}
+<nav class="crumbs" aria-label="Ви тут">
+  <ol>
+  {% for crumb in crumbs %}
+    <li>{% if not loop.last %}<a href="{{ crumb.path }}">{{ crumb.name }}</a>{% else %}<span aria-current="page">{{ crumb.name }}</span>{% endif %}</li>
+  {% endfor %}
+  </ol>
+</nav>
+{% endif %}
+{% block content %}{% endblock %}
+</main>
+<footer class="foot">
+  <p>
+    Безкоштовний неофіційний фанатський сайт для D&amp;D 5e (правила 2014): <a href="/#/create">створення персонажа</a>,
+    лист, що сам рахує числа, друк у PDF. Переклад — аматорський, для зручності за столом.
+  </p>
+  {% block attribution %}{% endblock %}
+  <p lang="en" class="foot__fcp">
+    This site is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards.
+    Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
+  </p>
+</footer>
+<script>
+(function () {
+  var button = document.querySelector("[data-theme-toggle]");
+  if (button) {
+    var label = function () {
+      button.textContent = document.documentElement.dataset.theme === "day" ? "Темна тема" : "Світла тема";
+    };
+    label();
+    button.hidden = false;
+    button.addEventListener("click", function () {
+      var day = document.documentElement.dataset.theme !== "day";
+      if (day) document.documentElement.dataset.theme = "day";
+      else delete document.documentElement.dataset.theme;
+      try { localStorage.setItem("dndsheet.theme", day ? "day" : "night"); } catch (e) {}
+      label();
+    });
+  }
+  var input = document.querySelector("[data-filter]");
+  if (input) {
+    var rows = Array.prototype.slice.call(document.querySelectorAll("[data-q]"));
+    var groups = Array.prototype.slice.call(document.querySelectorAll("[data-group]"));
+    var counter = document.querySelector("[data-count]");
+    var norm = function (value) { return value.toLocaleLowerCase("uk").replace(/[’ʼ']/g, "'").trim(); };
+    input.hidden = false;
+    input.addEventListener("input", function () {
+      var wanted = norm(input.value);
+      var shown = 0;
+      rows.forEach(function (row) {
+        var hit = !wanted || row.getAttribute("data-q").indexOf(wanted) !== -1;
+        row.hidden = !hit;
+        if (hit) shown += 1;
+      });
+      groups.forEach(function (group) { group.hidden = !group.querySelector("[data-q]:not([hidden])"); });
+      if (counter) counter.textContent = wanted ? "Знайдено: " + shown : "";
+    });
+  }
+})();
+</script>
+</body>
+</html>

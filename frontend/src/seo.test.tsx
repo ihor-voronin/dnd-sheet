@@ -42,6 +42,8 @@ describe("what search engines and link previews see (index.html)", () => {
     const noscript = html.match(/<noscript>(.*?)<\/noscript>/s)?.[1] ?? "";
     expect(noscript).toContain("<h1>");
     expect(noscript).toContain("довідник");
+    // Сторінки довідника — справжні адреси, які пошуковик знайде й без JavaScript.
+    expect(noscript).toContain('href="/kb/spells"');
   });
 });
 

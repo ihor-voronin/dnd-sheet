@@ -1,0 +1,29 @@
+{% extends "base.html.jinja" %}
+{% block content %}
+<header class="entry__head">
+  <p class="kicker">Dungeons &amp; Dragons 5e · правила 2014</p>
+  <h1>Довідник D&amp;D 5e українською</h1>
+  <p class="lead">
+    Закляття, класи й підкласи, раси, передісторії, риси, опційні вміння й предмети з Книги гравця та доповнень —
+    українською, з повним описом і назвами в оригіналі: «Вогняна куля (Fireball)».
+  </p>
+</header>
+<ul class="cards cards--sections">
+  {% for item in sections %}
+  <li class="card">
+    <h2><a href="/kb/{{ item.id }}">{{ item.label }}</a></h2>
+    <p class="meta">{{ counts.get(item.id, 0) }}{% if item.id == 'classes' %} класів і {{ subclass_count }} підкласів{% endif %} · {{ item.hint }}</p>
+  </li>
+  {% endfor %}
+  {% for path, title in static_pages %}
+  <li class="card card--soft">
+    <h2><a href="{{ path }}">{{ title.split(':')[0] }}</a></h2>
+    <p class="meta">{{ title.split(':', 1)[1] | trim if ':' in title else '' }}</p>
+  </li>
+  {% endfor %}
+</ul>
+<aside class="cta">
+  <p>Довідник — частина безкоштовного листа персонажа: обираєте вид, клас і передісторію, а лист сам рахує хіти, КЗ, атаки й закляття.</p>
+  <a class="button button--act" href="/#/create">Створити персонажа</a>
+</aside>
+{% endblock %}

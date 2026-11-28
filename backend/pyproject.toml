@@ -15,6 +15,7 @@ dependencies = [
     "pydantic>=2.7",
     "jinja2>=3.1",
     "mcp>=2.3,<3",
+    "pyyaml>=6",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +43,7 @@ where = ["src"]
 # and `pip install backend` gives a renderer that can't find 'sheet' (500 on /export/pdf).
 [tool.setuptools.package-data]
 "dndsheet.export.infrastructure" = ["templates/*", "templates/fonts/*"]
+"dndsheet.site.api" = ["templates/*", "static/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests/characters"]
@@ -82,6 +84,7 @@ source_modules = [
     "dndsheet.export.domain",
     "dndsheet.compendium.domain",
     "dndsheet.identity.domain",
+    "dndsheet.site.domain",
     "dndsheet.shared",
 ]
 forbidden_modules = [
@@ -100,6 +103,9 @@ forbidden_modules = [
     "dndsheet.identity.application",
     "dndsheet.identity.infrastructure",
     "dndsheet.identity.api",
+    "dndsheet.site.application",
+    "dndsheet.site.infrastructure",
+    "dndsheet.site.api",
     "fastapi",
     "sqlalchemy",
     "jinja2",
@@ -148,4 +154,13 @@ layers = [
     "dndsheet.identity.api",
     "dndsheet.identity.application",
     "dndsheet.identity.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "site: api -> application -> domain"
+type = "layers"
+layers = [
+    "dndsheet.site.api",
+    "dndsheet.site.application",
+    "dndsheet.site.domain",
 ]

@@ -1,0 +1,42 @@
+{% extends "base.html.jinja" %}
+{% import "macros.html.jinja" as m %}
+{% block content %}
+<header class="entry__head">
+  <p class="kicker">Довідник · {{ total }} записів</p>
+  <h1>{{ section.heading }}</h1>
+  <p class="lead">{{ section.intro }}</p>
+</header>
+<nav class="chips" aria-label="Розділи довідника">
+  {% for item in sections %}
+  <a class="chip{% if item.id == section.id %} chip--active{% endif %}" href="/kb/{{ item.id }}"{% if item.id == section.id %} aria-current="page"{% endif %}>{{ item.label }}</a>
+  {% endfor %}
+</nav>
+<input type="search" class="filter" data-filter hidden placeholder="Пошук українською чи англійською…" aria-label="Пошук у розділі">
+<p class="hint" data-count aria-live="polite"></p>
+{% if groups | length > 1 %}
+<nav class="chips chips--small" aria-label="Групи">
+  {% for name, records in groups %}
+  <a class="chip" href="#g-{{ loop.index }}">{% if section.id == 'spells' %}{{ 'заговори' if name == '0' else name ~ ' рівень' }}{% else %}{{ name }}{% endif %} <span class="meta">{{ records | length }}</span></a>
+  {% endfor %}
+</nav>
+{% endif %}
+{% for name, records in groups %}
+<section class="group" id="g-{{ loop.index }}" data-group>
+  {% if name %}<h2>{% if section.id == 'spells' %}{{ 'Заговори' if name == '0' else name ~ ' рівень' }}{% else %}{{ name }}{% endif %}</h2>{% endif %}
+  {% if section.id == 'classes' %}
+  <ul class="cards">
+    {% for record in records %}
+    <li class="card" data-q="{{ (record.name_en ~ ' ' ~ (record.name_uk or '')) | lower }}">
+      <h3><a href="{{ record.path }}">{{ record.title }}</a></h3>
+      {% if record.meta %}<p class="meta">Кість хітів {{ record.meta }}</p>{% endif %}
+      {% set subs = catalog.subclasses(record.slug) %}
+      {% if subs %}<p class="subs">{% for sub in subs %}<a href="{{ sub.path }}">{{ sub.name_uk or sub.name_en }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  {{ m.link_list(records, searchable=true) }}
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

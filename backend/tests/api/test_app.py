@@ -70,7 +70,9 @@ def test_robots_points_to_the_sitemap_and_hides_private_paths(client: TestClient
 
 
 def test_sitemap_lists_the_site(client: TestClient) -> None:
+    """Карта — індекс по розділах (подробиці: tests/site/test_site_pages.py)."""
     response = client.get("/sitemap.xml")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/xml")
-    assert "<loc>http://localhost:8000/</loc>" in response.text
+    assert "<loc>http://localhost:8000/sitemaps/pages.xml</loc>" in response.text
+    assert "<loc>http://localhost:8000/</loc>" in client.get("/sitemaps/pages.xml").text

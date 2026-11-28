@@ -269,7 +269,7 @@ Done (setup — `RUN.md`, section 3.2):
 - **Sheet sync**: polling the version every 4 s; writes are conditional
   (`WHERE version < new`), so two simultaneous changes won't overwrite each other, and
   after a conflict the screen shows the fresh version.
-- **Compendium without sign-in** (`#/kb`): species with subraces, classes with features by
+- **Compendium without sign-in** (server pages `/kb/…` since the SEO work, see [seo.md](seo.md); was `#/kb`): species with subraces, classes with features by
   level and all subclasses, backgrounds — the same cards as in the wizard; feats, spells
   (filter by level), optional features, items (the inventory catalog with filters). Search
   in Ukrainian and English.

@@ -9,13 +9,13 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Response
-from fastapi.responses import JSONResponse, PlainTextResponse
-from fastapi.responses import Response as RawResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from mcp.server.auth.routes import build_metadata
 from mcp.server.auth.settings import AuthSettings, ClientRegistrationOptions, RevocationOptions
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.routing import Route
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from dndsheet.assistant.server import build_server
 from dndsheet.characters.api.attacks import attacks_for
@@ -56,6 +56,7 @@ from dndsheet.identity.infrastructure.client_metadata import fetch_client_metada
 from dndsheet.identity.infrastructure.sqlite_identity import SqliteIdentityStore
 from dndsheet.identity.infrastructure.sqlite_oauth import SqliteOAuthStore
 from dndsheet.sheets.application.demo import build_demo_character, build_demo_document
+from dndsheet.site.api.router import router as site_router
 
 
 def _default_spa_dist() -> Path:
@@ -188,11 +189,14 @@ def create_app() -> FastAPI:
             headers={"Content-Disposition": f'attachment; filename="{result.filename}"'},
         )
 
-    # MCP і OAuth — до SPA: StaticFiles на «/» забрав би їхні адреси собі.
-    _configure_mcp(app, database)
-    _configure_crawlers(app)
-
+    # MCP, OAuth і сторінки довідника — до SPA: StaticFiles на «/» забрав би їхні адреси собі.
     dist = Path(os.environ.get("DNDSHEET_SPA_DIST", _default_spa_dist()))
+    app.state.spa_dist = dist
+    _configure_mcp(app, database, dist / "index.html")
+    _configure_crawlers(app)
+    app.include_router(site_router)
+    _configure_spa_paths(app, dist / "index.html")
+
     if dist.is_dir():
         # TODO(етап 3): SPA-fallback на index.html для клієнтських маршрутів.
         app.mount("/", StaticFiles(directory=str(dist), html=True), name="spa")
@@ -246,10 +250,10 @@ _DISALLOW = (
 
 
 def _configure_crawlers(app: FastAPI) -> None:
-    """robots.txt і sitemap.xml: без них сайт для пошуковиків — порожня сторінка без карти.
+    """robots.txt; карта сайту (`/sitemap.xml`) — у `site.api.router`, вона знає всі сторінки довідника.
 
     Ботів ІІ-пошуку не відганяємо: довідник українською — те, що варто знаходити.
-    Решта API відкрита: рендер сторінки пошуковиком теж читає довідник через API.
+    Решта API відкрита: рендер головної пошуковиком теж читає дані через API.
     """
     base = public_url()
     robots = "\n".join(
@@ -261,23 +265,50 @@ def _configure_crawlers(app: FastAPI) -> None:
             "",
         ]
     )
-    sitemap = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        f"  <url><loc>{base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n"
-        "</urlset>\n"
-    )
 
     @app.get("/robots.txt", include_in_schema=False)
     def robots_txt() -> PlainTextResponse:
         return PlainTextResponse(robots, headers={"Cache-Control": "public, max-age=3600"})
 
-    @app.get("/sitemap.xml", include_in_schema=False)
-    def sitemap_xml() -> RawResponse:
-        return RawResponse(sitemap, media_type="application/xml", headers={"Cache-Control": "public, max-age=3600"})
+
+#: Сторінки SPA зі справжньою адресою (решта — `#/…`): їх віддає той самий index.html.
+SPA_PATHS = ("/bugs",)
 
 
-def _configure_mcp(app: FastAPI, database: Path) -> None:
+def _configure_spa_paths(app: FastAPI, index: Path) -> None:
+    """`/bugs` відкривається напряму: сервер віддає SPA, а маршрут SPA читає `location.pathname`."""
+
+    def spa_page() -> Response:
+        if not index.is_file():
+            raise HTTPException(status_code=404, detail="SPA не зібрано")
+        return FileResponse(index, media_type="text/html", headers={"Cache-Control": "no-cache"})
+
+    for path in SPA_PATHS:
+        app.add_api_route(path, spa_page, methods=["GET", "HEAD"], include_in_schema=False)
+
+
+class _BrowserOrMcp:
+    """`/mcp` для людей — сторінка SPA про асистента, для клієнтів MCP — сам протокол.
+
+    Браузер просить `text/html`; клієнт MCP — `application/json` чи `text/event-stream`
+    і ніколи не HTML. Тож одна адреса й для посилань, і для підключення.
+    """
+
+    def __init__(self, mcp_app: ASGIApp, index: Path) -> None:
+        self.mcp_app = mcp_app
+        self.index = index
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope["method"] in {"GET", "HEAD"} and self.index.is_file():
+            accept = dict(scope.get("headers") or ()).get(b"accept", b"").decode("latin-1")
+            if "text/html" in accept:
+                page = FileResponse(self.index, media_type="text/html", headers={"Cache-Control": "no-cache"})
+                await page(scope, receive, send)
+                return
+        await self.mcp_app(scope, receive, send)
+
+
+def _configure_mcp(app: FastAPI, database: Path, index: Path) -> None:
     """MCP на `/mcp` і сайт як сервер авторизації для застосунків (ADR 0005).
 
     Без входу (`DNDSHEET_AUTH=off`) — MCP без токенів від імені локального гравця.
@@ -357,7 +388,7 @@ def _configure_mcp(app: FastAPI, database: Path) -> None:
         path = getattr(route, "path", None)
         if path and path not in taken:
             # Увесь застосунок SDK як кінцева точка: він сам маршрутизує й тримає свої middleware.
-            app.router.routes.append(Route(path, endpoint=mcp_app))
+            app.router.routes.append(Route(path, endpoint=_BrowserOrMcp(mcp_app, index)))
 
 
 def _demo_document(app: FastAPI):

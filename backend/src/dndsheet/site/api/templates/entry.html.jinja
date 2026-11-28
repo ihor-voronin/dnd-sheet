@@ -1,0 +1,49 @@
+{% extends "base.html.jinja" %}
+{% import "macros.html.jinja" as m %}
+{% set record = page.record %}
+{% block content %}
+<article class="entry">
+  <header class="entry__head">
+    <p class="kicker">{{ page.kind }}</p>
+    <h1>{% if record.name_uk and record.name_uk != record.name_en %}{{ record.name_uk }} <span class="en" lang="en">{{ record.name_en }}</span>{% else %}<span lang="en">{{ record.name_en }}</span>{% endif %}</h1>
+  </header>
+  {{ m.facts(page.facts, glossary_keys) }}
+  {% for section in page.sections %}
+  <section class="block"{% if section.anchor %} id="{{ section.anchor }}"{% endif %}>
+    {% if section.heading %}<h{{ section.level }}>{{ section.heading }}</h{{ section.level }}>{% endif %}
+    {{ m.facts(section.facts, glossary_keys) }}
+    {% if section.blocks %}{{ m.blocks(section.blocks) }}{% endif %}
+    {% if section.english %}<p class="hint">Перекладу ще немає — текст книги англійською.</p>{% endif %}
+  </section>
+  {% endfor %}
+  {% if page.withheld %}
+  <p class="hint hint--box">
+    Повний текст — у книзі {% if page.source.url %}<a href="{{ page.source.url }}" rel="nofollow noopener">{{ page.source.title }}</a>{% else %}{{ page.source.title }}{% endif %}.
+    У <a href="/#/create">застосунку</a> він є на листі персонажа.
+  </p>
+  {% endif %}
+  {% if page.source.title %}
+  <p class="source">Джерело: {% if page.source.url %}<a href="{{ page.source.url }}" rel="nofollow noopener">{{ page.source.title }}</a>{% else %}{{ page.source.title }}{% endif %}{% if page.source.title_en and page.source.title_en != page.source.title %} <span lang="en">({{ page.source.title_en }})</span>{% endif %}</p>
+  {% endif %}
+  <aside class="cta">
+    <p>Потрібен герой із цим у листі? Візард підкаже кожен крок і порахує числа сам.</p>
+    <a class="button button--act" href="/#/create">Створити персонажа</a>
+  </aside>
+  {% for group in page.links %}
+  <section class="related">
+    <h{{ group.level }}>{{ group.heading }}</h{{ group.level }}>
+    {% if group.records %}{{ m.link_list(group.records) }}{% endif %}
+  </section>
+  {% endfor %}
+</article>
+{% endblock %}
+{% block attribution %}
+{% if page.record.license == "srd" %}
+<p lang="en" class="foot__fcp">
+  This work includes material taken from the System Reference Document 5.1 (“SRD 5.1”) by Wizards of the Coast LLC
+  and available at <a href="https://dnd.wizards.com/resources/systems-reference-document">dnd.wizards.com</a>. The SRD 5.1
+  is licensed under the <a href="https://creativecommons.org/licenses/by/4.0/legalcode">Creative Commons Attribution 4.0
+  International License</a>. The Ukrainian translation is ours.
+</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "abilities": { "str": "Сила", "dex": "Спритність", "con": "Статура", "int": "Інтелект", "wis": "Мудрість", "cha": "Харизма" },
+  "ability_genitive": { "cha": "Харизми", "int": "Інтелекту" },
+  "ability_short": { "con": "СТА", "str": "СИЛ" },
+  "skills": { "arcana": "Магія", "deception": "Обман", "insight": "Проникливість", "religion": "Релігія" },
+  "sizes": { "medium": "середній", "small": "малий" },
+  "languages": { "common": "спільна", "dwarvish": "дворфська" },
+  "tools": {},
+  "proficiency_values": { "light": "легка броня", "simple": "проста зброя" },
+  "damage_types": { "poison": "отрута" },
+  "schools": { "evocation": "втілення" },
+  "sources": { "phb": "Книга гравця" },
+  "class_guide": { "warlock": { "primary": ["cha", "con"], "role": "магія пакту, заговори", "complexity": "середній" } },
+  "glossary": {
+    "hit_die": { "term": "Кість хітів", "en": "Hit Die", "what": "Кістка, якою кидають хіти на кожному рівні.", "play": "Нею лікуються на короткому відпочинку." },
+    "saving_throw": { "term": "Рятівний кидок", "en": "Saving Throw", "what": "Кидок d20, щоб уникнути небезпеки." },
+    "darkvision": { "term": "Темний зір", "en": "Darkvision", "what": "Бачите в темряві, як у сутінках." }
+  },
+  "species": { "dwarf": "Дворф", "hill dwarf": "Пагорбовий дворф" },
+  "terms": { "warlock": "Чаклун", "wizard": "Чарівник", "acolyte": "Послушник" },
+  "items": { "battleaxe": "Бойова сокира", "handaxe": "Ручна сокира" },
+  "feats": {}
+}
