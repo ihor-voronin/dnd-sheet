@@ -25,7 +25,7 @@ from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from typing import Any, Iterable, Mapping
 
-from dndsheet.characters.domain.character import Character
+from dndsheet.characters.domain.character import Character, normalize_gender
 from dndsheet.characters.domain.class_level import CharacterClass
 from dndsheet.characters.domain.inventory import Inventory, InventoryItem
 from dndsheet.characters.domain.pick_rules import count_picks, validate_pick
@@ -173,6 +173,8 @@ class Draft:
     rules: RulesSource = field(repr=False, compare=False)
     revision: int = 0
     name: str = ""
+    #: Стать (необовʼязково): `female` / `male` — для портрета.
+    gender: str | None = None
     species_key: str | None = None
     subspecies_key: str | None = None
     ability_choices: tuple[Ability, ...] = ()
@@ -273,6 +275,7 @@ class Draft:
         species_feat_ability: Ability | None = None,
         species_source: str | None = None,
         species_feat_choices: Mapping[str, Iterable[str]] | None = None,
+        gender: str | None = None,
     ) -> None:
         species = self.rules.species_mechanics(species_key)
         if species is None:
@@ -292,6 +295,7 @@ class Draft:
         choices = () if effective.ability_choice is None else tuple(ability_choices)
         candidate = replace(self)
         candidate.name = name.strip()
+        candidate.gender = normalize_gender(gender)
         candidate.species_key = species.key
         candidate.subspecies_key = subspecies.key if subspecies else None
         candidate.ability_choices = choices
@@ -498,6 +502,7 @@ class Draft:
             background_key=self.background_key,
             custom_background=dict(self.custom_background) if self.custom_background else None,
             alignment=self.alignment,
+            gender=self.gender,
             chosen=Proficiencies(items=self.picks),
             inventory=Inventory(items=self.items, money=self.money),
             spells=self.spells,

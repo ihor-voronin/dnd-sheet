@@ -105,6 +105,7 @@ class WizardService:
             feat_key = _optional_text(body, "species_feat")
             draft.apply_species(
                 name=_text(body, "name"),
+                gender=_optional_text(body, "gender"),
                 species_key=_text(body, "species_key"),
                 subspecies_key=_optional_text(body, "subspecies_key"),
                 ability_choices=_abilities(body.get("ability_choices")),

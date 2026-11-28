@@ -148,6 +148,12 @@ class SheetService:
                 raise ValidationError("notes має бути обʼєктом")
             state = state.with_notes({str(key): str(value) for key, value in notes.items()})
 
+        # Хто це: стать і портрет. Не числа листа, але так само під версією (409 на чужу зміну).
+        if "gender" in patch:
+            character.set_gender(_optional_identity(patch["gender"], "gender"))
+        if "avatar" in patch:
+            character.set_avatar(_optional_identity(patch["avatar"], "avatar"))
+
         equip = patch.get("equip")
         if equip is not None:
             if not isinstance(equip, Mapping):
@@ -552,6 +558,14 @@ class SheetService:
             if count:
                 used[die] = count
         return used
+
+
+def _optional_identity(value: Any, field: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValidationError(f"{field} має бути рядком або null")
+    return value.strip() or None
 
 
 def _int(value: Any, what: str) -> int:

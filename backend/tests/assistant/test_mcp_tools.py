@@ -20,7 +20,7 @@ BASE = "http://localhost:8000"
 HEADERS = {"Accept": "application/json, text/event-stream", "MCP-Protocol-Version": "2025-11-25"}
 
 FIGHTER = [
-    ("species", {"name": "Дарія", "species_key": "human"}),
+    ("species", {"name": "Дарія", "gender": "female", "species_key": "human"}),
     ("class", {"class_key": "fighter"}),
     (
         "abilities",
@@ -115,7 +115,8 @@ def test_tools_are_annotated(site: TestClient) -> None:
     assert tools["manage_inventory"]["annotations"]["destructiveHint"] is True
     assert tools["update_character"]["annotations"]["idempotentHint"] is True
     assert tools["manage_custom_features"]["annotations"]["destructiveHint"] is True
-    assert len(tools) == 21
+    assert tools["set_avatar"]["annotations"]["idempotentHint"] is True
+    assert len(tools) == 22
 
 
 def test_sheet_summary_is_short_and_has_numbers(site: TestClient, fighter: str) -> None:
@@ -444,3 +445,27 @@ def test_limit_is_explained_to_the_assistant(site: TestClient, monkeypatch: pyte
     monkeypatch.setattr(characters_router, "CHARACTER_LIMIT", total)
     message = tool_error(site, "start_character")
     assert "межа" in message and "видаліть" in message
+
+
+def test_portrait_suggestions_and_choice(site: TestClient, fighter: str) -> None:
+    offer = tool(site, "set_avatar", character_id=fighter)
+    assert offer["gender"] == "female"
+    assert offer["portrait"]["chosen"] is False
+    suggestions = offer["suggestions"]
+    assert 20 <= len(suggestions) <= 30
+    assert suggestions[0]["id"].startswith("human-f-fighter-")
+    assert suggestions[0]["url"].startswith(BASE + "/assets/avatars/")
+
+    chosen = suggestions[3]["id"]
+    result = tool(site, "set_avatar", character_id=fighter, avatar=chosen, version=offer["version"])
+    assert result["sheet"]["portrait"] == chosen
+    assert result["sheet"]["gender"] == "female"
+
+    cleared = tool(site, "set_avatar", character_id=fighter, gender="unset", version=result["version"])
+    assert cleared["sheet"]["gender"] is None
+    assert cleared["sheet"]["portrait"] == chosen
+
+    assert "version" in tool_error(site, "set_avatar", character_id=fighter, avatar=chosen)
+    assert "портрет" in tool_error(
+        site, "set_avatar", character_id=fighter, avatar="elf-f-nobody-1", version=cleared["version"]
+    )
