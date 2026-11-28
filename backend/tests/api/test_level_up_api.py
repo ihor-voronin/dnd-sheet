@@ -171,6 +171,26 @@ def test_level_up_returns_new_sheet(client: TestClient) -> None:
     assert "Action Surge" in names
 
 
+def test_report_shows_hit_points_after_the_gain(client: TestClient) -> None:
+    """Пораненому персонажу рівень додає хіти й до поточних — і звіт показує саме їх."""
+    fighter = next(case for case in client.app.state.golden_cases if case.key == "fighter-1")
+    client.app.state.characters.save(replace(fighter.character, id="level-up-hurt"))
+    version = client.get("/api/v1/characters/level-up-hurt").json()["sheet"]["character"]["version"]
+    hurt = client.patch("/api/v1/characters/level-up-hurt", json={"hp": {"damage": 4}, "version": version}).json()
+    current = hurt["sheet"]["hit_points"]["current"]
+
+    response = client.post(
+        "/api/v1/characters/level-up-hurt/level-up",
+        json={"class_key": "fighter", "hp": {"mode": "average"}, "version": hurt["version"]},
+    )
+    assert response.status_code == 200, response.text
+    report = response.json()["level_up"]
+    gain = report["hp_max_after"] - report["hp_max_before"]
+    assert report["hp_current_before"] == current
+    assert report["hp_current_after"] == current + gain
+    assert response.json()["sheet"]["hit_points"]["current"] == report["hp_current_after"]
+
+
 def test_stale_version_conflicts(client: TestClient) -> None:
     response = client.post(
         "/api/v1/characters/level-up-fighter/level-up",
