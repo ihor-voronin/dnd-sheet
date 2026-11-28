@@ -1,7 +1,22 @@
 # Rendered by scripts/deploy_app.py. Caddy obtains the Let's Encrypt certificate for the
 # domain itself and redirects http:// to https://.
 ${domain} {
-	encode gzip
+	encode zstd gzip
+
+	# Built files carry a content hash in their name (Vite): they never change, so browsers
+	# keep them for a year. index.html has no hash and is revalidated every time.
+	@hashed path /assets/*
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+
+	# HTTPS only from now on; no MIME sniffing; the full URL doesn't leak to other sites.
+	# No X-Frame-Options: the Telegram Mini App shows the site in a frame.
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
 	reverse_proxy app:8000
 }
 

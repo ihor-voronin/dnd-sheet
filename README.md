@@ -223,6 +223,7 @@ docs/                   plan, ADRs, per-area descriptions (below)
 | [docs/export.md](docs/export.md) | printing and PDF |
 | [docs/api-compendium.md](docs/api-compendium.md) | compendium API |
 | [docs/mcp.md](docs/mcp.md) | MCP server for AI assistants, OAuth sign-in |
+| [docs/seo.md](docs/seo.md) | search engines and link previews: what's done, what's next |
 | [docs/format.md](docs/format.md) | corpus record format |
 | [docs/books.md](docs/books.md) | the 2014 book line and what each book provides |
 | [docs/translation-rules.md](docs/translation-rules.md), [docs/translation.md](docs/translation.md) | translation rules and status |

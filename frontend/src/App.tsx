@@ -367,11 +367,30 @@ function UserBar({ navigate }: { navigate: (next: Route) => void }) {
   );
 }
 
+/** Назва вкладки для кожної сторінки (лист персонажа ставить своє імʼя сам, у CharacterView). */
+const SITE_TITLE = "Лист персонажа D&D 5e українською — створення й довідник";
+const PAGE_TITLES: Partial<Record<Route["name"], string>> = {
+  kb: "Довідник D&D 5e українською — види, класи, закляття, предмети",
+  create: "Створення персонажа D&D 5e — покроково за правилами 2014",
+  levelup: "Підвищення рівня — лист персонажа D&D 5e",
+  mcp: "ІІ-асистент (MCP) для листа персонажа D&D 5e",
+  bugs: "Знайшли помилку? — лист персонажа D&D 5e",
+  oauth: "Підключення застосунку — лист персонажа D&D 5e",
+};
+
+export function pageTitle(route: Route): string {
+  return PAGE_TITLES[route.name] ?? SITE_TITLE;
+}
+
 function Shell() {
   const [route, navigate] = useRoute();
   const [theme, toggleTheme] = useTheme();
   const user = useCurrentUser();
   const needsUser = route.name === "create" || route.name === "character" || route.name === "levelup";
+
+  useEffect(() => {
+    if (route.name !== "character" && route.name !== "shared") document.title = pageTitle(route);
+  }, [route]);
 
   // Telegram: його кнопка «Назад» — усюди, крім головної.
   useEffect(

@@ -4,7 +4,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Alegreya fonts come from @fontsource in the build (see src/main.tsx), not Google Fonts. -->
-    <title>Листок персонажа · D&amp;D 5e</title>
+    <!--
+      Search and link previews. The SPA is one page, so this is what search engines, AI
+      crawlers and Telegram/Discord previews see. The image: scripts/make_og_image.py.
+    -->
+    <title>Лист персонажа D&amp;D 5e українською — створення й довідник</title>
+    <meta
+      name="description"
+      content="Безкоштовний лист персонажа D&amp;D 5e українською: створення героя за правилами 2014, розрахунок чисел, довідник заклять і класів, друк у PDF."
+    />
+    <link rel="canonical" href="https://dnd.voronin.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Лист персонажа D&amp;D 5e" />
+    <meta property="og:locale" content="uk_UA" />
+    <meta property="og:url" content="https://dnd.voronin.app/" />
+    <meta property="og:title" content="Лист персонажа D&amp;D 5e українською" />
+    <meta
+      property="og:description"
+      content="Створення героя за правилами 2014, автоматичний розрахунок, довідник, друк у PDF — і ІІ-асистент. Безкоштовно."
+    />
+    <meta property="og:image" content="https://dnd.voronin.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Лист персонажа D&amp;D 5e українською та надрукований аркуш" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Лист персонажа D&D 5e",
+        "url": "https://dnd.voronin.app/",
+        "description": "Лист персонажа D&D 5e (2014) українською: створення героя, розрахунок чисел за правилами, довідник, друк у PDF.",
+        "inLanguage": "uk",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Web",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "UAH" }
+      }
+    </script>
     <!-- Icons: a d20 in the site's colors (scripts/make_icons.py). -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
@@ -29,6 +66,20 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- For crawlers and readers without JavaScript: what the site is, in plain HTML. -->
+    <noscript>
+      <h1>Лист персонажа D&amp;D 5e українською</h1>
+      <p>
+        Безкоштовний неофіційний фанатський застосунок для Dungeons &amp; Dragons 5e (правила 2014): створення героя
+        покроково — вид, клас, характеристики, передісторія, спорядження, закляття; лист, що сам рахує числа; підвищення
+        рівня й мультиклас; друк у PDF; довідник видів, класів, передісторій, рис, заклять і предметів українською.
+      </p>
+      <p>
+        Вхід через Telegram; є Mini App у Telegram і сервер MCP для ІІ-асистентів (Claude). Для роботи сайту потрібен
+        JavaScript.
+      </p>
+      <p><a href="https://github.com/ihor-voronin/dnd-sheet">Код на GitHub</a></p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
