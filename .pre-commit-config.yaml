@@ -40,6 +40,13 @@ repos:
       - id: check-yaml
       - id: check-toml
 
+  # uv.lock must match pyproject.toml: a changed dependency without a new lock fails here,
+  # not later in the Docker build (`uv sync --frozen`).
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.13.10
+    hooks:
+      - id: uv-lock
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.10
     hooks:

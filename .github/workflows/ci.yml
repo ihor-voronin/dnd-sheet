@@ -1,11 +1,12 @@
 # CI: every PR into main and every push to main.
 #
-# Three checks — required by the main branch ruleset (.github/rulesets/main.json):
-#   pre-commit — the same hooks as locally (.pre-commit-config.yaml) + the PR title;
-#   backend    — the full tests and import contracts in the test Docker image
-#                (the book corpus is unlocked with the git-crypt key from the GIT_CRYPT_KEY secret);
-#   frontend   — types, ESLint, build.
-# After a green CI on main, .github/workflows/deploy.yml runs the deploy.
+# Four checks — required by the main branch ruleset (.github/rulesets/main.json):
+#   pre-commit    — the same hooks as locally (.pre-commit-config.yaml) + the PR title;
+#   backend       — the full tests with coverage ≥ 80% and import contracts in the test Docker
+#                   image (the book corpus is unlocked with the git-crypt key from GIT_CRYPT_KEY);
+#   frontend      — types, ESLint, tests with coverage ≥ 80%, build;
+#   diff-coverage — PRs only: the lines a PR adds or changes are ≥ 80% covered.
+# On main, `badges` refreshes the README badges, and deploy.yml runs the deploy.
 name: CI
 
 on:
@@ -97,8 +98,24 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Tests and import contracts
-        run: docker run --rm dndsheet:test
+      # Below 80% the run fails (backend/pyproject.toml). The reports land in ./coverage:
+      # backend.xml for the diff coverage of PRs, backend-junit.xml for the test count badge.
+      - name: Tests, coverage and import contracts
+        run: |
+          mkdir -p coverage
+          docker run --rm -v "$PWD/coverage:/coverage" dndsheet:test
+
+      - name: Corpus size (for the badge)
+        id: corpus
+        run: echo "records=$(cat content/compendium/*/*.jsonl content/bestiary/*/*.jsonl | wc -l)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: backend-coverage
+          path: coverage/
+          retention-days: 7
+    outputs:
+      records: ${{ steps.corpus.outputs.records }}
 
   frontend:
     name: frontend
@@ -116,4 +133,76 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      # Below 80% of lines or statements the run fails (vitest.config.ts).
+      - name: Tests and coverage
+        run: npm run test:coverage -- --reporter=default --reporter=junit --outputFile.junit=coverage/junit.xml
       - run: npm run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
+  # New and changed lines of a PR must be covered by tests: at least 80%, backend and
+  # frontend together. Lines the PR doesn't touch don't count — old gaps don't block it.
+  diff-coverage:
+    name: diff-coverage
+    if: github.event_name == 'pull_request'
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          name: backend-coverage
+          path: coverage/
+      - uses: actions/download-artifact@v8
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+      # pipx is preinstalled on the runner: no extra action to pin.
+      - name: Coverage of the changed lines
+        run: |
+          pipx run diff-cover coverage/backend.xml frontend/coverage/cobertura-coverage.xml \
+            --compare-branch "origin/${{ github.base_ref }}" \
+            --fail-under 80 \
+            --markdown-report diff-coverage.md
+      - name: Summary
+        if: always()
+        run: if [ -f diff-coverage.md ]; then cat diff-coverage.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+  # After a green main: the numbers for the README badges go to the `badges` branch as
+  # shields.io endpoint JSON. No third-party service and no token beyond GITHUB_TOKEN.
+  badges:
+    name: badges
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: backend-coverage
+          path: coverage/
+      - uses: actions/download-artifact@v8
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+      - name: Badge JSON
+        env:
+          RECORDS: ${{ needs.backend.outputs.records }}
+        run: python3 scripts/coverage_badges.py --out "$RUNNER_TEMP/badges"
+      - name: Publish to the badges branch
+        working-directory: ${{ runner.temp }}/badges
+        run: |
+          git init -q -b badges
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Badges for ${GITHUB_SHA::7}"
+          # One commit, replaced every time: the branch holds no history.
+          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" badges

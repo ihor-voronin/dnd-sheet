@@ -1,5 +1,33 @@
 # dndsheet — D&D 5e (2014) character sheet in Ukrainian
 
+[![CI](https://github.com/ihor-voronin/dnd-sheet/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ihor-voronin/dnd-sheet/actions/workflows/ci.yml)
+[![Deploy](https://github.com/ihor-voronin/dnd-sheet/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/ihor-voronin/dnd-sheet/actions/workflows/deploy.yml)
+[![dnd.voronin.app](https://img.shields.io/website?url=https%3A%2F%2Fdnd.voronin.app%2Fhealthz&label=dnd.voronin.app&up_message=rolling%20initiative&down_message=resting&logo=caddy)](https://dnd.voronin.app)
+[![Backend coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fihor-voronin%2Fdnd-sheet%2Fbadges%2Fbackend-coverage.json)](docs/ci.md#coverage)
+[![Frontend coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fihor-voronin%2Fdnd-sheet%2Fbadges%2Ffrontend-coverage.json)](docs/ci.md#coverage)
+[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fihor-voronin%2Fdnd-sheet%2Fbadges%2Ftests.json)](docs/ci.md#coverage)
+[![New code coverage](https://img.shields.io/badge/new%20code%20coverage-%E2%89%A5%2080%25-blue?logo=githubactions&logoColor=white)](docs/ci.md#coverage)
+
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](backend/pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](backend/src/dndsheet)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](frontend/package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](frontend/tsconfig.json)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)](frontend/vite.config.ts)
+[![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?logo=sqlite&logoColor=white)](docs/deploy.md)
+[![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?logo=docker&logoColor=white)](Dockerfile)
+[![uv](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fastral-sh%2Fuv%2Fmain%2Fassets%2Fbadge%2Fv0.json)](https://github.com/astral-sh/uv)
+[![Ruff](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fastral-sh%2Fruff%2Fmain%2Fassets%2Fbadge%2Fv2.json)](ruff.toml)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-FAB040?logo=pre-commit&logoColor=white)](.pre-commit-config.yaml)
+[![Terraform](https://img.shields.io/badge/Terraform-844FBA?logo=terraform&logoColor=white)](deploy/terraform)
+
+[![D&D 5e](https://img.shields.io/badge/D%26D%205e-2014%20rules-ED1C24?logo=dungeonsanddragons&logoColor=white)](docs/books.md)
+[![Compendium](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fihor-voronin%2Fdnd-sheet%2Fbadges%2Frecords.json)](docs/books.md)
+[![Ukrainian](https://img.shields.io/badge/%D0%BC%D0%BE%D0%B2%D0%B0-%D1%83%D0%BA%D1%80%D0%B0%D1%97%D0%BD%D1%81%D1%8C%D0%BA%D0%B0-0057B7?labelColor=FFD700)](docs/translation-rules.md)
+[![Telegram](https://img.shields.io/badge/Telegram-Mini%20App-26A5E4?logo=telegram&logoColor=white)](https://t.me/DnD_Sheet_VoroninAppBot)
+[![Secrets](https://img.shields.io/badge/secrets-git--crypt%20%F0%9F%94%92-555)](deploy/README.md)
+[![Natural 20](https://img.shields.io/badge/roll-natural%2020-gold?logo=dungeonsanddragons)](https://dnd.voronin.app)
+[![Found a bug?](https://img.shields.io/badge/found%20a%20bug%3F-roll%20for%20a%20PR-8A2BE2)](https://dnd.voronin.app/#/bugs)
+
 A website where a player builds a hero by the 2014 Player's Handbook rules, keeps
 the sheet during play and prints it like a paper one. The site itself is in
 Ukrainian, with the original English names next to every term.
@@ -97,8 +125,7 @@ by name** is enabled (`DNDSHEET_DEV_LOGIN=1` in compose). Data lives in `./var`
 Without Docker (faster development with reload):
 
 ```powershell
-py -3 -m venv .venv
-.venv\Scripts\python -m pip install -e "backend[dev]"
+uv sync                                                        # .venv from uv.lock: backend + dev tools
 $env:DNDSHEET_DEV_LOGIN = "1"
 .venv\Scripts\python -m uvicorn dndsheet.main:app --reload     # API :8000
 
@@ -116,21 +143,29 @@ key the compendium is empty and part of the tests fail. Unlocking is described i
 ## Development
 
 ```
-branch ──► commit (pre-commit) ──► PR into main ──► CI: pre-commit · backend · frontend
+branch ──► commit (pre-commit) ──► PR into main ──► CI: pre-commit · backend · frontend · diff-coverage
                                                           │ green
-                             https://dnd.voronin.app ◄── squash-merge → deploy.yml
+                             https://dnd.voronin.app ◄── squash-merge → deploy.yml (+ badges)
 ```
 
+- **Dependencies:** the backend is managed by [uv](https://docs.astral.sh/uv/) — one
+  `uv.lock` for the repository (`pyproject.toml` at the root is a uv workspace with
+  `backend/` as its member). Test tools are a dev group: the production image is
+  built with `uv sync --frozen --no-dev` and has none of them. The frontend uses npm.
 - **pre-commit** (`pre-commit install`, [RUN.md § 5.1](RUN.md)): ruff, prettier with
-  import sorting, ESLint, tsc, shellcheck, terraform fmt, TruffleHog, gitlint and a
-  check that secrets and the corpus go into git only encrypted.
-- **Tests:** `.venv\Scripts\python -m pytest backend` (900+ tests: rules, reference
-  characters, 20 levels of every class, multiclass, API, printing),
-  `.venv\Scripts\lint-imports --config backend/pyproject.toml` (context boundaries),
-  `cd frontend; npm run typecheck; npm run lint`.
+  import sorting, ESLint, tsc, shellcheck, terraform fmt, TruffleHog, gitlint, `uv lock`
+  check and a check that secrets and the corpus go into git only encrypted.
+- **Tests:** `uv run pytest backend --cov --cov-config=backend/pyproject.toml`
+  (900+ tests: rules, reference characters, 20 levels of every class, multiclass, API,
+  printing), `uv run lint-imports --config backend/pyproject.toml` (context boundaries),
+  `cd frontend; npm run test:coverage` (vitest + Testing Library over the real screens,
+  answering `fetch` from API responses recorded by `scripts/record_frontend_tape.py`).
+- **Coverage:** at least 80% for the backend and the frontend, and at least 80% of the
+  lines each PR adds or changes ([`docs/ci.md`](docs/ci.md#coverage)).
 - **CI** ([`docs/ci.md`](docs/ci.md)) — GitHub Actions on every PR: the same hooks,
-  the full backend suite in a Docker image with the corpus unlocked, the frontend.
-  `main` accepts changes only through a PR with green checks, squash-merged.
+  the full backend suite in a Docker image with the corpus unlocked, the frontend tests
+  and build, the coverage of new code. `main` accepts changes only through a PR with
+  green checks, squash-merged.
 - **Auto-deploy** — after CI on `main` is green.
 
 ## Production

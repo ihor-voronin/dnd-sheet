@@ -1,0 +1,9 @@
+# uv workspace root (virtual: no package of its own). The backend package lives in
+# backend/; one lockfile (uv.lock) for the whole repository, one .venv in its root.
+#
+#   uv sync --all-extras        # backend (editable) + PDF + the dev group (pytest, coverage…)
+#   uv run pytest backend       # anything in that environment
+#
+# Lint settings live in ruff.toml, pytest/coverage/import-linter in backend/pyproject.toml.
+[tool.uv.workspace]
+members = ["backend"]

@@ -31,7 +31,8 @@
         "required_status_checks": [
           { "context": "pre-commit", "integration_id": 15368 },
           { "context": "backend", "integration_id": 15368 },
-          { "context": "frontend", "integration_id": 15368 }
+          { "context": "frontend", "integration_id": 15368 },
+          { "context": "diff-coverage", "integration_id": 15368 }
         ]
       }
     }

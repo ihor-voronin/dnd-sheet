@@ -8,8 +8,8 @@ export PATH := $(BIN):$(PATH)
 .PHONY: help install test arch contract dev web-dev web-build docker-build docker-up docker-down clean
 
 help:
-	@echo "install    - create a venv and install backend[dev]"
-	@echo "test       - pytest"
+	@echo "install    - uv sync: .venv with the backend, PDF and the dev group"
+	@echo "test       - backend and frontend tests with coverage (80%+)"
 	@echo "arch       - import-linter (DDD gates)"
 	@echo "contract   - regenerate TS types from the JSON Schema"
 	@echo "format     - bring both corpora (content/compendium, content/bestiary) to contract/compendium-format.json"
@@ -23,12 +23,11 @@ help:
 	@echo "clean      - remove caches"
 
 install:
-	$(PY) -m venv $(VENV)
-	$(BIN)/python -m pip install -U pip
-	$(BIN)/python -m pip install -e "backend[dev]"
+	uv sync --all-extras
 
 test:
-	$(BIN)/python -m pytest backend
+	$(BIN)/python -m pytest backend --cov --cov-config=backend/pyproject.toml
+	cd frontend && npm run test:coverage
 
 arch:
 	$(BIN)/lint-imports --config backend/pyproject.toml

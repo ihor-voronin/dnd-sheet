@@ -7,7 +7,9 @@ venv/
 .pytest_cache/
 pytest-of-*/
 .coverage
+coverage.xml
 htmlcov/
+/coverage/
 .mypy_cache/
 .ruff_cache/
 .import_linter_cache/
@@ -15,6 +17,7 @@ htmlcov/
 # --- Node ---
 node_modules/
 frontend/dist/
+frontend/coverage/
 *.tsbuildinfo
 
 # --- Data/secrets ---

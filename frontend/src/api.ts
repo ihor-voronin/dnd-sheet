@@ -1,4 +1,3 @@
-import type { SheetDocument } from "./contract/sheetDocument";
 import type { ClassChoiceGroup } from "./features/wizard/types";
 import type {
   BackgroundView,
@@ -117,12 +116,6 @@ export async function logout(): Promise<{ user: null }> {
   const result = await request<{ user: null }>("/api/v1/auth/logout", { method: "POST", body: "{}" });
   setSessionToken(null);
   return result;
-}
-
-// --- демо-документ (PDF-контракт) ----------------------------------------
-
-export function fetchDemoSheet(): Promise<SheetDocument> {
-  return getJson<SheetDocument>("/api/v1/demo/sheet");
 }
 
 // --- візард ---------------------------------------------------------------
@@ -482,10 +475,6 @@ export type ExportFormat = "pdf" | "markdown";
 /** Адреса файлу листа. Це не fetch: браузер сам віддасть вкладення. */
 export function exportUrl(id: string, format: ExportFormat): string {
   return `/api/v1/characters/${encodeURIComponent(id)}/export/${format}`;
-}
-
-export function demoExportUrl(format: ExportFormat): string {
-  return `/api/v1/demo/export/${format}`;
 }
 
 export function fetchRenderers(): Promise<{ formats: ExportFormat[]; available: ExportFormat[] }> {
