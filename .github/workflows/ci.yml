@@ -162,10 +162,10 @@ jobs:
         with:
           name: frontend-coverage
           path: frontend/coverage/
-      - uses: astral-sh/setup-uv@v10
+      # pipx is preinstalled on the runner: no extra action to pin.
       - name: Coverage of the changed lines
         run: |
-          uvx diff-cover coverage/backend.xml frontend/coverage/cobertura-coverage.xml \
+          pipx run diff-cover coverage/backend.xml frontend/coverage/cobertura-coverage.xml \
             --compare-branch "origin/${{ github.base_ref }}" \
             --fail-under 80 \
             --markdown-report diff-coverage.md
