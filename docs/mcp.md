@@ -39,11 +39,13 @@ an app's access at once.
 | `share_link` | the read-only link for the table or the DM |
 | `export_pdf` | a PDF download link (5 minutes) |
 | `search_compendium`, `get_compendium_entry` | the rules: spells, items, feats, species… |
+| `delete_character` | delete a character for good — only with its exact name, after you confirm |
 
 Also a resource, `character://<id>` (the sheet as Markdown), and three prompts: a character
 from an idea, level-up advice, applying a session recap to the sheet.
 
-There's no deleting characters through MCP.
+Up to 50 characters per player, as on the site. Step-by-step instructions in Ukrainian are on
+the site itself: [dnd.voronin.app/#/mcp](https://dnd.voronin.app/#/mcp).
 
 ## Security in short
 

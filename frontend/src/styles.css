@@ -1606,6 +1606,34 @@ body {
   padding: 0;
 }
 
+.home-mcp {
+  margin: 34px 0 0;
+}
+
+.mcp-guide h3 {
+  margin: 22px 0 8px;
+}
+
+.mcp-steps li + li {
+  margin-top: 8px;
+}
+
+.mcp-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.mcp-copy code {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  overflow-wrap: anywhere;
+}
+
 .home-note {
   max-width: 46em;
   margin: 0 0 22px;

@@ -20,6 +20,7 @@ import { CharacterCard } from "./features/home/CharacterCard";
 import { Home } from "./features/home/Home";
 import { KnowledgeBase, isKbSection } from "./features/knowledge/KnowledgeBase";
 import type { KbSection } from "./features/knowledge/KnowledgeBase";
+import { McpGuide } from "./features/mcp/McpGuide";
 import { ConnectedApps } from "./features/oauth/ConnectedApps";
 import { Consent } from "./features/oauth/Consent";
 import { CreateWizard } from "./features/wizard/CreateWizard";
@@ -46,7 +47,8 @@ type Route =
   | { name: "shared"; token: string }
   | { name: "kb"; section?: KbSection; key?: string }
   | { name: "bugs" }
-  | { name: "oauth"; request: string };
+  | { name: "oauth"; request: string }
+  | { name: "mcp" };
 
 function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
@@ -54,6 +56,7 @@ function parseRoute(): Route {
   // Посилання «лише читати»: #/s/<токен> — відкривається без входу.
   if (hash.startsWith("s/")) return { name: "shared", token: decodeURIComponent(hash.slice(2)) };
   if (hash === "bugs") return { name: "bugs" };
+  if (hash === "mcp") return { name: "mcp" };
   // Застосунок (MCP) просить доступ: сюди веде сервер авторизації з `/authorize`.
   if (hash.startsWith("oauth/")) return { name: "oauth", request: decodeURIComponent(hash.slice("oauth/".length)) };
   if (hash === "kb" || hash.startsWith("kb/")) {
@@ -99,15 +102,17 @@ function useRoute(): [Route, (next: Route) => void] {
           ? "#/bugs"
           : next.name === "oauth"
             ? `#/oauth/${encodeURIComponent(next.request)}`
-            : next.name === "create"
-              ? "#/create"
-              : next.name === "kb"
-                ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
-                : next.name === "levelup"
-                  ? `#/character/${encodeURIComponent(next.id)}/level-up`
-                  : next.name === "shared"
-                    ? `#/s/${encodeURIComponent(next.token)}`
-                    : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
+            : next.name === "mcp"
+              ? "#/mcp"
+              : next.name === "create"
+                ? "#/create"
+                : next.name === "kb"
+                  ? `#/kb${next.section ? `/${next.section}` : ""}${next.key ? `/${encodeURIComponent(next.key)}` : ""}`
+                  : next.name === "levelup"
+                    ? `#/character/${encodeURIComponent(next.id)}/level-up`
+                    : next.name === "shared"
+                      ? `#/s/${encodeURIComponent(next.token)}`
+                      : `#/character/${encodeURIComponent(next.id)}${next.tab ? `?tab=${next.tab}` : ""}`;
     if (window.location.hash === target) setRoute(next);
     else window.location.hash = target;
   }, []);
@@ -163,6 +168,12 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
           </button>
         </p>
       ) : null}
+      {data?.limit && data.total >= data.limit ? (
+        <p className="hint hint--warn">
+          У вас {data.total} персонажів — це межа ({data.limit}). Щоб створити нового, видаліть когось на його листі:
+          «Дії з листом» → «Видалити персонажа».
+        </p>
+      ) : null}
       {data && data.total === 0 ? (
         <p className="hint">
           Поки що нікого немає. Візард збере чернетку на кожному кроці — навіть якщо закрити вкладку.
@@ -182,6 +193,7 @@ function CharactersList({ navigate }: { navigate: (next: Route) => void }) {
 }
 
 function CharacterPage({ id, tab, navigate }: { id: string; tab?: string; navigate: (next: Route) => void }) {
+  const queryClient = useQueryClient();
   const { data, isPending, error } = useQuery({
     queryKey: ["character", id],
     queryFn: () => fetchCharacter(id),
@@ -203,7 +215,16 @@ function CharacterPage({ id, tab, navigate }: { id: string; tab?: string; naviga
         </button>
       </p>
       {/* key: інший персонаж — новий лист, а не стан попереднього (версії різних листів не порівнюються). */}
-      <CharacterView key={id} initial={data.sheet} initialTab={tab} />
+      <CharacterView
+        key={id}
+        initial={data.sheet}
+        initialTab={tab}
+        onDeleted={() => {
+          queryClient.removeQueries({ queryKey: ["character", id] });
+          void queryClient.invalidateQueries({ queryKey: ["characters"] });
+          navigate({ name: "home" });
+        }}
+      />
     </>
   );
 }
@@ -373,7 +394,9 @@ function Shell() {
                       ? "знайшли помилку"
                       : route.name === "oauth"
                         ? "підключення застосунку"
-                        : "лист персонажа"}
+                        : route.name === "mcp"
+                          ? "ІІ-асистент"
+                          : "лист персонажа"}
         </a>
         <nav className="topnav" aria-label="Розділи">
           <button
@@ -412,7 +435,7 @@ function Shell() {
           go={(section, key) => navigate({ name: "kb", section, key })}
         />
       ) : null}
-      {user === undefined && route.name !== "kb" && route.name !== "oauth" ? (
+      {user === undefined && route.name !== "kb" && route.name !== "oauth" && route.name !== "mcp" ? (
         <p className="status">Перевіряємо вхід…</p>
       ) : null}
       {user === null && needsUser ? (
@@ -427,6 +450,7 @@ function Shell() {
       {route.name === "home" ? (
         <Home
           onOpenKb={(section) => navigate({ name: "kb", section: isKbSection(section) ? section : undefined })}
+          onOpenMcp={() => navigate({ name: "mcp" })}
           account={
             user === undefined ? null : user ? (
               <>
@@ -471,10 +495,12 @@ function Shell() {
       {route.name === "shared" ? <SharedPage token={route.token} /> : null}
       {route.name === "bugs" ? <BugReport /> : null}
       {route.name === "oauth" ? <Consent requestId={route.request} /> : null}
+      {route.name === "mcp" ? <McpGuide signedIn={Boolean(user)} /> : null}
       <footer className="site-footer">
         <a href="#/bugs" className="site-footer__bug">
           Знайшли помилку?
-        </a>
+        </a>{" "}
+        · <a href="#/mcp">ІІ-асистент (MCP)</a>
         <span className="site-footer__note">
           {" "}
           · неофіційний некомерційний фанатський проєкт ·{" "}

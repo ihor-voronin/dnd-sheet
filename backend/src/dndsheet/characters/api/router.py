@@ -108,6 +108,24 @@ def _guard(request: Request) -> None:
 
 router = APIRouter(prefix="/api/v1/characters", tags=["characters"], dependencies=[Depends(_guard)])
 
+#: Скільки персонажів може мати один гравець. Межа рятує базу від скрипта чи
+#: асистента, що «створює» в циклі; живому гравцю 50 героїв вистачає з запасом.
+CHARACTER_LIMIT = 50
+
+
+def _own_ids(request: Request) -> tuple[str, ...]:
+    """Персонажі того, хто питає; без входу — усі персонажі бази."""
+    store = request.app.state.characters
+    return store.ids_of(require_user(request).id) if request.app.state.auth_enabled else store.ids()
+
+
+def _check_limit(request: Request) -> None:
+    if len(_own_ids(request)) >= CHARACTER_LIMIT:
+        raise HTTPException(
+            status_code=409,
+            detail=f"у вас уже {CHARACTER_LIMIT} персонажів — це межа; видаліть когось, щоб створити нового",
+        )
+
 
 def build_cases(service: CompendiumService) -> tuple[GoldenCase, ...]:
     """Зібрати еталонні листи над справжнім довідником.
@@ -397,6 +415,7 @@ def _step_payload(request: Request, draft: Draft, step: WizardStep) -> dict[str,
 @router.post("/wizard")
 def start_wizard(request: Request) -> dict:
     """Нова чернетка. Повертає перший крок із його вибором."""
+    _check_limit(request)
     try:
         draft = _wizard(request).start()
     except DomainError as exc:
@@ -555,6 +574,8 @@ def write_step(
 @router.post("/wizard/{draft_id}/finish")
 def finish_draft(draft_id: str, request: Request) -> dict:
     """Зібрати персонажа, зберегти й показати його лист."""
+    # Ще раз на фініші: чернетку могли почати, коли місце ще було.
+    _check_limit(request)
     try:
         # Навичка з риси виду не має дублювати навичку передісторії чи класу.
         duplicates = duplicate_picks(_wizard(request).load(draft_id).to_character("probe"))
@@ -598,13 +619,26 @@ def saved_characters(request: Request) -> dict:
     store = request.app.state.characters
     user = require_user(request)
     # Без входу — усі персонажі бази (тести й старі записи можуть не мати власника).
-    identifiers = store.ids_of(user.id) if request.app.state.auth_enabled else store.ids()
-    characters = [found for identifier in identifiers if (found := store.get(identifier)) is not None]
+    characters = [found for identifier in _own_ids(request) if (found := store.get(identifier)) is not None]
     compendium = _compendium(request)
     items = [_roster_entry(character, compendium) for character in characters]
     # Незавершена чернетка — щоб продовжити створення з іншого пристрою.
     draft_id = request.app.state.drafts.latest_of(user.id)
-    return {"items": items, "total": len(items), "draft_id": draft_id}
+    return {"items": items, "total": len(items), "limit": CHARACTER_LIMIT, "draft_id": draft_id}
+
+
+@router.delete("/{character_id}")
+def delete_character(character_id: str, request: Request) -> dict:
+    """Видалити персонажа назавжди. Посилання «лише читати» на нього перестає працювати.
+
+    Чужий персонаж виглядає як відсутній (`_guard`), тож видалити можна лише свого.
+    """
+    try:
+        request.app.state.shares.revoke(character_id)
+        request.app.state.characters.delete(character_id)
+    except DomainError as exc:
+        raise _http_error(exc) from exc
+    return {"deleted": character_id}
 
 
 @router.get("/{character_id}/version")

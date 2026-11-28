@@ -36,7 +36,10 @@ The site computes every number (AC, HP, attack bonuses, slots); never compute or
   get_creation_step (it lists the only options the rules allow, with their keys) and
   set_creation_step, then finish_character. Use the keys from the options, never guesses.
 - Names and errors come back in Ukrainian; answer the player in their language.
-- There is no deletion of characters.
+- A player can have at most `limit` characters (list_characters shows it); at the limit, starting
+  or finishing a character fails until one is deleted.
+- delete_character is permanent. Use it only when the player explicitly asks to delete a
+  specific character, and confirm the name with them first.
 """
 
 READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=False)
@@ -291,6 +294,31 @@ def build_server(
         return await changed(
             "POST", f"{_API}/{segment(character_id)}/expertise", {"expertise": skills, "version": version}
         )
+
+    @server.tool(title="Delete a character", annotations=DESTRUCTIVE)
+    async def delete_character(
+        character_id: CharacterId,
+        name: Annotated[
+            str,
+            Field(description="The character's exact name from list_characters, confirmed with the player"),
+        ],
+    ) -> dict[str, Any]:
+        """Delete a character for good, with its read-only share link. Irreversible: only on the
+        player's explicit request. The name must match, so a wrong id can't delete someone else."""
+        listed = await api("GET", _API)
+        found = next((item for item in listed.get("items") or [] if item.get("id") == character_id), None)
+        if found is None:
+            raise ToolError(f"немає персонажа {character_id!r}")
+        actual = str(found.get("name") or "")
+        if actual.strip().casefold() != name.strip().casefold():
+            raise ToolError(f"імʼя не збігається: це «{actual}». Видалення скасовано — уточніть у гравця")
+        await api("DELETE", f"{_API}/{segment(character_id)}")
+        return {
+            "deleted": character_id,
+            "name": actual,
+            "characters_left": max(int(listed.get("total") or 1) - 1, 0),
+            "limit": listed.get("limit"),
+        }
 
     # --- посилання ---------------------------------------------------------
 

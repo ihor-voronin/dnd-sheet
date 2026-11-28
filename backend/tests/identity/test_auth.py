@@ -277,6 +277,53 @@ def test_share_link_is_read_only_and_revocable(monkeypatch: pytest.MonkeyPatch) 
     assert guest.get(f"/api/v1/shared/{fresh}").status_code == 404
 
 
+def test_player_deletes_own_character_for_good(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Видалення: лист, посилання «лише читати» й рядок у списку зникають; чужого не видалити."""
+    owner = _app(monkeypatch, "delete")
+    owner.post("/api/v1/auth/dev", json={"name": "Аня"})
+    keep = _create(owner)
+    gone = _create(owner)
+    token = owner.post(f"/api/v1/characters/{gone}/share").json()["token"]
+
+    stranger = TestClient(owner.app)
+    stranger.post("/api/v1/auth/dev", json={"name": "Богдан"})
+    assert stranger.delete(f"/api/v1/characters/{gone}").status_code == 404
+    assert TestClient(owner.app).delete(f"/api/v1/characters/{gone}").status_code == 401
+
+    response = owner.delete(f"/api/v1/characters/{gone}")
+    assert response.status_code == 200
+    assert response.json() == {"deleted": gone}
+    assert owner.get(f"/api/v1/characters/{gone}").status_code == 404
+    assert TestClient(owner.app).get(f"/api/v1/shared/{token}").status_code == 404
+    assert [item["id"] for item in owner.get("/api/v1/characters").json()["items"]] == [keep]
+    assert owner.delete(f"/api/v1/characters/{gone}").status_code == 404
+
+
+def test_character_limit_blocks_new_ones(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Межа на гравця: новий візард не почати, а почату чернетку не завершити."""
+    from dndsheet.characters.api import router as characters_router  # noqa: PLC0415
+
+    monkeypatch.setattr(characters_router, "CHARACTER_LIMIT", 1)
+    client = _app(monkeypatch, "limit")
+    client.post("/api/v1/auth/dev", json={"name": "Аня"})
+    early = client.post("/api/v1/characters/wizard").json()["draft"]["id"]
+    for step, body in FIGHTER:
+        assert client.put(f"/api/v1/characters/wizard/{early}/steps/{step}", json=body).status_code == 200
+    _create(client)
+    listed = client.get("/api/v1/characters").json()
+    assert (listed["total"], listed["limit"]) == (1, 1)
+
+    refused = client.post("/api/v1/characters/wizard")
+    assert refused.status_code == 409
+    assert "межа" in refused.json()["detail"]
+    assert client.post(f"/api/v1/characters/wizard/{early}/finish").status_code == 409
+
+    # Інший гравець має власну межу.
+    other = TestClient(client.app)
+    other.post("/api/v1/auth/dev", json={"name": "Богдан"})
+    assert other.post("/api/v1/characters/wizard").status_code == 200
+
+
 # --- Mini App у Telegram ------------------------------------------------------
 
 
