@@ -225,3 +225,17 @@ def test_wizard_cards_carry_pictures(client: TestClient) -> None:
     classes = client.get(f"{API}/wizard/{draft_id}/steps/class").json()["options"]["classes"]
     wizard = next(item for item in classes if item["key"] == "wizard")
     assert wizard["emblem"].startswith("/assets/emblems/") and wizard["emblem"].endswith("/class-wizard.svg")
+
+
+def test_print_sheet_has_a_paper_portrait(client: TestClient) -> None:
+    import base64
+    import re
+
+    sheet = _clone(client, "fighter-1", "avatar-print")
+    client.patch(f"{API}/avatar-print", json={"version": sheet["character"]["version"], "avatar": "elf-f-wizard-1"})
+    html = client.get(f"{API}/avatar-print/print").text
+    found = re.search(r'<img class="portrait" src="data:image/svg\+xml;base64,([^"]+)"', html)
+    assert found, "портрет у шапці аркуша"
+    body = base64.b64decode(found.group(1)).decode("utf-8")
+    assert 'fill="#ffffff"' in body and "clipPath" in body and "url(#bg)" not in body
+    assert avatars.paper_data_uri("nobody-x-bard-1") is None

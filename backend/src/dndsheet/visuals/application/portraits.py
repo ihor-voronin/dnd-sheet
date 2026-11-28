@@ -1385,7 +1385,9 @@ SPECIAL_HEADS = {
 # ---------------------------------------------------------------------------
 
 
-def render(item: Portrait) -> str:
+def render(item: Portrait, *, paper: bool = False) -> str:
+    """SVG портрета. `paper` — для друку: біле тло в шестикутнику з тонкою рамкою, без
+    затемнення (не витрачати фарбу на темне тло аркуша «чорним по білому»)."""
     look = look_of(item)
     kind = look.kind
     sx, sy, dy = kind.scale
@@ -1406,9 +1408,6 @@ def render(item: Portrait) -> str:
         head_layers += [back_hair, _ears(look), _p(_head_path(look), look.skin)]
         head_layers += [_eyes(look), _nose_mouth(look), _marks(look), _beard(look), front_hair]
         head_layers += [_headgear(look), _top_extras(look)]
-    if special is not None and look.headgear == "hood":
-        # Каптур поверх морди: його тінь і край.
-        pass
     tint = look.outfit.tint
     defs = (
         '<radialGradient id="bg" cx=".5" cy=".38" r=".72">'
@@ -1419,12 +1418,20 @@ def render(item: Portrait) -> str:
         '<stop offset="1" stop-color="#000" stop-opacity=".34"/></linearGradient>'
     )
     head_svg = "".join(head_layers)
+    figure = (
+        _back_items(look) + f"<g{head_transform}>{behind}</g>" + _torso(look) + f"<g{head_transform}>{head_svg}</g>"
+    )
+    if paper:
+        hexagon = "50,4 93,26.5 93,71.5 50,94 7,71.5 7,26.5"
+        return (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="5 3 90 92">'
+            f'<defs><clipPath id="hx"><polygon points="{hexagon}"/></clipPath>{"".join(look.defs)}</defs>'
+            f'<g clip-path="url(#hx)"><rect width="100" height="100" fill="#ffffff"/>{figure}</g>'
+            f'<polygon points="{hexagon}" fill="none" stroke="#000" stroke-width="1.2"/></svg>'
+        )
     body = (
         '<rect width="100" height="100" fill="url(#bg)"/>'
-        + _back_items(look)
-        + f"<g{head_transform}>{behind}</g>"
-        + _torso(look)
-        + f"<g{head_transform}>{head_svg}</g>"
+        + figure
         + '<rect width="100" height="100" fill="url(#lt)"/>'
     )
     return (

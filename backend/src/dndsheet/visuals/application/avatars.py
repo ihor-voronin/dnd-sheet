@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import zlib
 from functools import lru_cache
@@ -37,6 +38,15 @@ def url(portrait_id: str) -> str:
 def svg(portrait_id: str) -> str | None:
     found = catalog.portrait(portrait_id)
     return portraits.render(found) if found is not None else None
+
+
+def paper_data_uri(portrait_id: str) -> str | None:
+    """Портрет для друку й PDF — вбудований у сторінку (WeasyPrint не ходить у мережу)."""
+    found = catalog.portrait(portrait_id)
+    if found is None:
+        return None
+    body = portraits.render(found, paper=True)
+    return "data:image/svg+xml;base64," + base64.b64encode(body.encode("utf-8")).decode("ascii")
 
 
 def card(item: Portrait) -> dict[str, str | int]:
