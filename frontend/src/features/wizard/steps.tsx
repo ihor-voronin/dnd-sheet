@@ -68,6 +68,7 @@ import type {
   ClassView,
   EntryBrief,
   EquipmentAnswers,
+  Gender,
   ItemPayload,
   MoneyPayload,
   PickPayload,
@@ -238,6 +239,7 @@ export function SpeciesStep({
 }>) {
   const initial = answers as unknown as SpeciesAnswers;
   const [name, setName] = useState(initial.name ?? "");
+  const [gender, setGender] = useState<Gender | "">(initial.gender ?? "");
   const [speciesKey, setSpeciesKey] = useState(initial.species_key ?? "");
   const [subspeciesKey, setSubspeciesKey] = useState(initial.subspecies_key ?? "");
   const [choices, setChoices] = useState<string[]>(initial.ability_choices ?? []);
@@ -382,6 +384,14 @@ export function SpeciesStep({
             onChange={(event) => setName(event.target.value)}
             placeholder="напр. Дарія Залізний Крок"
           />
+        </label>
+        <label className="field field--small">
+          <span>Стать (необовʼязково)</span>
+          <select value={gender} onChange={(event) => setGender(event.target.value as Gender | "")}>
+            <option value="">не вказано</option>
+            <option value="female">жіноча</option>
+            <option value="male">чоловіча</option>
+          </select>
         </label>
       </div>
 
@@ -699,6 +709,7 @@ export function SpeciesStep({
         onClick={() =>
           onSubmit({
             name: name.trim(),
+            gender: gender || null,
             species_key: speciesKey,
             subspecies_key: subspeciesKey || null,
             ability_choices: choices,

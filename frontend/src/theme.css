@@ -1657,3 +1657,220 @@ textarea:focus {
     scroll-margin-top: 64px;
   }
 }
+
+/* --- Портрети -------------------------------------------------------------
+ * Картинка — SVG із сервера з власним темним тлом, тож однаково читається в
+ * обох темах. Шестикутник — той самий `--hex-v`, що й у монограми раніше.
+ * Кільце навколо (hover — латунь, фокус — колір тексту, обраний — малиновий)
+ * — псевдоелемент позаду: `clip-path` обрізав би звичайний `outline`.
+ */
+.portrait-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portrait-monogram {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.sheet-portrait,
+.roster-card__portrait {
+  overflow: hidden;
+  padding: 0;
+}
+
+.character-view .sheet-portrait {
+  width: 84px;
+  height: 84px;
+}
+
+.roster-card__portrait {
+  border: 0;
+  border-radius: 0;
+  clip-path: var(--hex-v);
+  background: var(--act);
+  box-shadow: none;
+  color: var(--act-ink);
+}
+
+.character-view .sheet-portrait--button {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  clip-path: none;
+  border: 0;
+  background: transparent !important;
+  cursor: pointer;
+  font: inherit;
+}
+
+.sheet-portrait--button > .portrait-img,
+.sheet-portrait--button > .portrait-monogram {
+  clip-path: var(--hex-v);
+  background: var(--act);
+  color: var(--act-ink);
+  font-family: var(--serif);
+  font-size: 26px;
+}
+
+.sheet-portrait--button::before,
+.avatar-tile::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  clip-path: var(--hex-v);
+  background: transparent;
+  transition: background-color 0.12s ease;
+}
+
+.sheet-portrait--button:hover::before,
+.avatar-tile:hover:not(:disabled)::before {
+  background: var(--brass);
+}
+
+.sheet-portrait--button:focus-visible,
+.avatar-tile:focus-visible {
+  outline: none;
+}
+
+.sheet-portrait--button:focus-visible::before,
+.avatar-tile:focus-visible::before {
+  inset: -4px;
+  background: var(--ink);
+}
+
+.sheet-portrait__edit {
+  position: absolute;
+  right: -4px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--brass);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 45%);
+  color: var(--paper);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.avatar-panel {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+}
+
+.avatar-panel__title {
+  margin: 16px 0 8px;
+  font-family: var(--serif);
+  font-size: var(--t-lg);
+}
+
+.avatar-gender {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.avatar-gender legend {
+  float: left;
+  margin-right: 6px;
+  padding: 0;
+  color: var(--graphite);
+  font-size: var(--t-xs);
+}
+
+.avatar-gender .chip {
+  cursor: pointer;
+}
+
+.avatar-gender .chip:has(input:focus-visible) {
+  outline: 2px solid var(--act);
+  outline-offset: 2px;
+}
+
+.avatar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 10px 8px;
+  margin: 0 0 12px;
+  padding: 4px;
+  list-style: none;
+}
+
+.avatar-tile {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.avatar-tile > .portrait-img {
+  clip-path: var(--hex-v);
+}
+
+.avatar-tile:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.avatar-tile[aria-pressed="true"]::before {
+  background: var(--act);
+}
+
+/* Обраний — не лише кольором кільця (WCAG 1.4.1): ще й галочка. */
+.avatar-tile[aria-pressed="true"]::after {
+  content: "✓";
+  position: absolute;
+  right: 0;
+  bottom: 8%;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--act);
+  color: var(--act-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 620px) {
+  .character-view .sheet-portrait {
+    width: 64px;
+    height: 64px;
+  }
+
+  .avatar-panel {
+    padding: 12px;
+  }
+
+  .avatar-grid {
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  }
+}

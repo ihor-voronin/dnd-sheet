@@ -1,3 +1,4 @@
+import type { PortraitCard } from "./components/Portrait";
 import type { ClassChoiceGroup } from "./features/wizard/types";
 import type {
   ClassSpell,
@@ -586,6 +587,7 @@ export type CharacterRosterEntry = {
   }[];
   hit_points?: { maximum: number; current: number; temporary: number };
   armor_class?: number;
+  portrait?: PortraitCard;
 };
 
 export function fetchCharacters(): Promise<{
@@ -602,6 +604,35 @@ export function fetchCharacters(): Promise<{
 /** Видалити персонажа назавжди (і посилання «лише читати» на нього). */
 export function deleteCharacter(id: string): Promise<{ deleted: string }> {
   return request<{ deleted: string }>(`/api/v1/characters/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+// --- портрети --------------------------------------------------------------
+
+/** Каталог портретів: `items` — [id, група, стать f|m|x, клас]; адреса = base + id + ".svg". */
+export interface AvatarCatalog {
+  version: string;
+  base: string;
+  groups: { key: string; label: string }[];
+  classes: { key: string; label: string }[];
+  items: [string, string, "f" | "m" | "x", string][];
+  total: number;
+}
+
+export function fetchAvatarCatalog(): Promise<AvatarCatalog> {
+  return getJson("/api/v1/avatars");
+}
+
+export function fetchRecommendedAvatars(query: {
+  species?: string | null;
+  classKey?: string | null;
+  gender?: string | null;
+}): Promise<{ group: string | null; items: PortraitCard[] }> {
+  const params = new URLSearchParams();
+  if (query.species) params.set("species", query.species);
+  if (query.classKey) params.set("class", query.classKey);
+  if (query.gender) params.set("gender", query.gender);
+  const suffix = params.toString();
+  return getJson(`/api/v1/avatars/recommended${suffix ? `?${suffix}` : ""}`);
 }
 
 // --- експорт --------------------------------------------------------------

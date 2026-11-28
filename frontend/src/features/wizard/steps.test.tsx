@@ -72,6 +72,17 @@ describe("species step", () => {
     await user.type(search, "нічого такого");
     await user.clear(search);
     await user.type(screen.getByPlaceholderText(/Дарія/), "Тікі");
+    // Стать — необовʼязкова, лише для порад портрета; іде в тій самій відповіді кроку.
+    await user.selectOptions(screen.getByRole("combobox", { name: "Стать (необовʼязково)" }), "female");
+    const next = screen
+      .getAllByRole("button", { name: /^Далі/ })
+      .find((button) => !(button as HTMLButtonElement).disabled);
+    if (next) {
+      await user.click(next);
+      await waitFor(() =>
+        expect(requests.filter((item) => item.method === "PUT").at(-1)?.body).toMatchObject({ gender: "female" }),
+      );
+    }
     const grid = screen.queryAllByRole("button", { name: /усі види|сіткою|списком/i });
     for (const button of grid) await user.click(button);
   });
