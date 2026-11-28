@@ -327,7 +327,7 @@ const BACKGROUNDS: Record<string, UkBackground> = {
 };
 
 /** Назви істот, класів, підкласів і передісторій. */
-const TERMS: Record<string, string> = {
+export const TERMS: Record<string, string> = {
   human: "Людина",
   elf: "Ельф",
   dwarf: "Дворф",
@@ -512,7 +512,7 @@ const TERMS: Record<string, string> = {
  * Назви підрас у корпусі — це «ознака + батько» («Wood Elf», «Variant; Mark of
  * Storm Half-Elf»), тому й переклад іде тим самим порядком: «Лісовий ельф».
  */
-const SPECIES_UK: Record<string, string> = {
+export const SPECIES_UK: Record<string, string> = {
   // --- види -------------------------------------------------------------
   aarakocra: "Ааракокра",
   aasimar: "Аазімар",
@@ -648,7 +648,7 @@ const SPECIES_UK: Record<string, string> = {
 };
 
 /** Назви предметів (ключ — нижній регістр). */
-const ITEMS: Record<string, string> = {
+export const ITEMS: Record<string, string> = {
   "chain mail": "Кольчуга",
   "chain shirt": "Кольчужна сорочка",
   "scale mail": "Луската броня",
@@ -713,7 +713,7 @@ const ITEMS: Record<string, string> = {
  * (машинні) варіанти були буквальними — «Кільчаста броня» замість
  * «Байдана», «Шинна броня» замість «Бригантина».
  */
-const ITEM_SRD: Record<string, string> = {
+export const ITEM_SRD: Record<string, string> = {
   padded: "Гамбезон",
   "leather armor": "Шкіряна броня",
   "studded leather armor": "Шипована шкіра",

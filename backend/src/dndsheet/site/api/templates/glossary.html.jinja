@@ -1,0 +1,37 @@
+{% extends "base.html.jinja" %}
+{% block content %}
+<header class="entry__head">
+  <p class="kicker">Довідник · {{ entries | length }} термінів</p>
+  <h1>Глосарій D&amp;D 5e українською</h1>
+  <p class="lead">
+    Що означають слова з листа персонажа — коротко й людською мовою, з назвою в оригіналі. Пояснення — ті самі,
+    що спливають у застосунку біля кожного терміна.
+  </p>
+</header>
+<nav class="chips chips--small" aria-label="Терміни">
+  {% for key, entry in entries %}<a class="chip" href="#{{ key }}">{{ entry.term }}</a>{% endfor %}
+</nav>
+<dl class="glossary">
+  {% for key, entry in entries %}
+  <div class="glossary__row" id="{{ key }}">
+    <dt>{{ entry.term }}{% if entry.en %} <span class="en" lang="en">{{ entry.en }}</span>{% endif %}</dt>
+    <dd>
+      <p>{{ entry.what }}</p>
+      {% if entry.play %}<p class="muted">У грі: {{ entry.play }}</p>{% endif %}
+    </dd>
+  </div>
+  {% endfor %}
+</dl>
+{% if terminology %}
+<section class="block" id="terminology">
+  <h2>Словник термінів: українською — англійською</h2>
+  <p class="hint">Як сайт перекладає терміни правил ({{ terminology | length }} пар). Переклад власний, звіряється з офіційним.</p>
+  <div class="table-wrap"><table class="terms">
+    <thead><tr><th>Українською</th><th>English</th></tr></thead>
+    <tbody>
+      {% for uk, en, group in terminology %}<tr><td>{{ uk }}</td><td lang="en">{{ en }}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endif %}
+{% endblock %}

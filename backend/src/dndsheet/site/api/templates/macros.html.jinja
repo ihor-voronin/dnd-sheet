@@ -1,0 +1,45 @@
+{# Спільні шматки сторінок довідника. #}
+
+{% macro facts(rows, glossary_keys) %}
+{% if rows %}
+<dl class="facts">
+  {% for fact in rows %}
+  <div class="facts__row">
+    <dt>{% if fact.term and fact.term in glossary_keys %}<a class="term" href="/kb/glossary#{{ fact.term }}">{{ fact.label }}</a>{% else %}{{ fact.label }}{% endif %}</dt>
+    <dd>{{ fact.value }}</dd>
+  </div>
+  {% endfor %}
+</dl>
+{% endif %}
+{% endmacro %}
+
+{% macro blocks(items) %}
+<div class="rules">
+{% for block in items %}
+  {% if block.kind == "h" %}
+  <h4>{{ block.text }}</h4>
+  {% elif block.kind == "ul" %}
+  <ul>{% for item in block["items"] %}<li>{{ item }}</li>{% endfor %}</ul>
+  {% elif block.kind == "table" %}
+  <div class="table-wrap"><table>
+    <thead><tr>{% for cell in block.header %}<th>{{ cell }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in block.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  </table></div>
+  {% elif block.lead %}
+  <p><strong>{{ block.lead }}</strong> {{ block.text }}</p>
+  {% else %}
+  <p{% if block.muted %} class="muted"{% endif %}>{{ block.text }}</p>
+  {% endif %}
+{% endfor %}
+</div>
+{% endmacro %}
+
+{% macro link_list(records, searchable=false) %}
+<ul class="links">
+  {% for record in records %}
+  <li{% if searchable %} data-q="{{ (record.name_en ~ ' ' ~ (record.name_uk or '')) | lower }}"{% endif %}>
+    <a href="{{ record.path }}">{{ record.title }}</a>{% if record.meta %} <span class="meta">{{ record.meta }}</span>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
