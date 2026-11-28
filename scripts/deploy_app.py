@@ -150,6 +150,13 @@ def wait_https(domain: str) -> None:
     log(f"warning: {url} isn't responding yet (first certificate? docker logs dndsheet-caddy)")
 
 
+def app_env(prod_env: str, domain: str) -> str:
+    """prod.env + the site's public address (MCP and OAuth need it), unless prod.env sets its own."""
+    if any(line.strip().startswith("DNDSHEET_PUBLIC_URL=") for line in prod_env.splitlines()):
+        return prod_env
+    return prod_env.rstrip("\n") + f"\nDNDSHEET_PUBLIC_URL=https://{domain}\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--build", action="store_true", help="docker compose build app first")
@@ -179,7 +186,7 @@ def main() -> int:
     caddyfile = caddyfile.replace("${domain}", domain).replace("${server_ip}", host)
     server.write(f"{REMOTE}/compose.yml", (FILES / "compose.yml").read_text(encoding="utf-8"))
     server.write(f"{REMOTE}/Caddyfile", caddyfile)
-    server.write(f"{REMOTE}/.env", (SECRETS / "prod.env").read_text(encoding="utf-8"), mode="600")
+    server.write(f"{REMOTE}/.env", app_env((SECRETS / "prod.env").read_text(encoding="utf-8"), domain), mode="600")
 
     log("docker compose up -d…")
     server.run(

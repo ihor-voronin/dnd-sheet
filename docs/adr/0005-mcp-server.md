@@ -1,6 +1,6 @@
 # ADR 0005 — An MCP server for managing characters, with our own OAuth
 
-Status: proposed.
+Status: accepted (implemented). How to connect: [`docs/mcp.md`](../mcp.md).
 
 ## Context
 
@@ -15,161 +15,132 @@ Constraints that shape the design:
   login itself, and the claude.ai apps — the ones that are at the table, on a phone — only
   connect to remote servers through OAuth.
 - The rules live only on the server (ADR 0002). Whatever the assistant does must go through
-  the same services as the SPA, so it can't build a character the site would reject.
-- Ownership is checked in the HTTP layer today (`characters/api/router.py`, `_guard`):
-  services don't know who is asking.
+  the same code as the SPA, so it can't build a character the site would reject.
+- A lot of that code lives in the HTTP layer (`characters/api/router.py`): ownership
+  (`_guard`), request validation, the enriched sheet payload, error codes.
 
-Spec versions this ADR follows: MCP 2026-07-28 (authorization), Python SDK `mcp` 2.x.
+Spec versions this ADR follows: MCP 2026-07-28 (authorization), Python SDK `mcp` 2.3.
 
 ## Decision
 
-### 1. One process, one more route
+### 1. One process, one more route; tools call the site's own HTTP handlers
 
-The MCP server runs inside the existing FastAPI app, at `https://dnd.voronin.app/mcp`,
-over Streamable HTTP in stateless mode (`MCPServer` from `mcp.server`,
-`streamable_http_app(stateless_http=True, json_response=True)`, mounted before the SPA
-fallback; `mcp.session_manager.run()` joins the app's lifespan).
+The MCP server (`dndsheet/assistant/`) runs inside the existing FastAPI app, at
+`https://dnd.voronin.app/mcp`, over Streamable HTTP in stateless mode with JSON responses.
+The SDK's Starlette app is attached by its exact paths before the SPA's `StaticFiles`, and
+its session manager runs in the app's lifespan.
 
-- Tools call the application services directly (`SheetService`, `WizardService`,
-  `LevelUpService`, the compendium service) — not the REST API. Same rules, same SQLite,
-  same tests; no second deploy and no client to keep in sync with our own API.
-- `TransportSecuritySettings(allowed_hosts=["dnd.voronin.app"], allowed_origins=[...])`:
-  the SDK answers only localhost by default (421 otherwise).
-- Stateless: no per-session memory between requests, so restarts and redeploys don't
-  break a conversation, and Caddy needs no sticky sessions.
-- stdio isn't offered: the data is on the server, and a local process would need the same
-  OAuth anyway.
+Each tool is a thin adapter: it calls the same HTTP handler the SPA calls, **in-process**
+(`assistant/inprocess.py` builds an ASGI request and awaits the app — no network). The user
+travels in `scope["state"]["user"]`, a key only the server can set, which `current_user`
+reads. So the tools get ownership checks, validation, payloads and error codes for free,
+and nothing about the rules is written twice.
 
-### 2. The site becomes its own OAuth 2.1 authorization server
+This replaces the first idea — calling the application services directly and moving
+`_guard` into a `CharacterAccess` service: that would have meant duplicating the router's
+validation and payload code (most of `router.py`) for a second door.
 
-The MCP endpoint is the resource server; the same app is the authorization server, and
-the person behind a token is a Telegram user we already know.
+- `TransportSecuritySettings`: the host and origin of `DNDSHEET_PUBLIC_URL` only.
+- Stateless: restarts and redeploys don't break a conversation; Caddy needs nothing new.
+- No stdio: the data is on the server.
+
+### 2. The site is its own OAuth 2.1 authorization server — with the SDK's handlers
+
+The SDK ships a complete authorization server (`auth_server_provider`): `/authorize`,
+`/token`, `/register`, `/revoke`, PKCE S256, redirect matching, error formats. We implement
+its provider interface (`identity/api/oauth_provider.py`) on top of our own service
+(`identity/application/oauth.py`) and storage (`identity/infrastructure/sqlite_oauth.py`),
+instead of writing the protocol ourselves.
 
 | Endpoint | What it does |
 | --- | --- |
-| `GET /.well-known/oauth-protected-resource/mcp` | RFC 9728 metadata, added by the SDK: `resource`, `authorization_servers`, `scopes_supported` |
-| `GET /.well-known/oauth-authorization-server` | RFC 8414 metadata: endpoints, `code_challenge_methods_supported: ["S256"]`, `client_id_metadata_document_supported: true`, `authorization_response_iss_parameter_supported: true`, `registration_endpoint` |
-| `GET /oauth/authorize` | Validates the request, then hands over to the SPA screen `#/oauth/consent` |
-| `POST /oauth/authorize` | The consent decision (needs the site session, CSRF-safe: SameSite cookie + a one-time `request_id`) → redirect with `code`, `state`, `iss` |
-| `POST /oauth/token` | `authorization_code` (PKCE S256 required) and `refresh_token` (rotated every time) |
-| `POST /oauth/register` | Dynamic Client Registration (RFC 7591) — deprecated by the spec, kept because existing clients still use it |
-| `POST /oauth/revoke` | RFC 7009 |
+| `GET /.well-known/oauth-protected-resource[/mcp]` | RFC 9728 — ours, not the SDK's (the SDK appends `/` to the issuer, and clients compare it literally) |
+| `GET /.well-known/oauth-authorization-server` | RFC 8414 — ours, to add `client_id_metadata_document_supported` and the `none` auth method |
+| `GET /authorize` | SDK: validates, then our provider stores the request and redirects to `/#/oauth/<id>` |
+| `GET/POST /api/v1/oauth/requests/<id>` | The consent screen's data and the decision (JSON only, needs the site session) |
+| `POST /token` | SDK: `authorization_code` (PKCE) and `refresh_token` (rotated) |
+| `POST /register` | SDK: Dynamic Client Registration — deprecated by the spec, kept for existing clients; at most 30 per 10 minutes |
+| `POST /revoke` | SDK: RFC 7009 |
+| `GET/DELETE /api/v1/oauth/grants` | "Connected apps" on the home page |
 
-The flow the player sees: Claude opens the site → if not signed in, the usual Telegram
-login → a consent screen in Ukrainian: who asks (client name and the redirect **host**,
-always shown; a warning for localhost-only clients), which scopes, "Allow" / "Deny".
+**Only existing accounts.** The consent screen signs in with Telegram as usual, but with
+`?existing_only=1`: a Telegram account that has never been on the site is refused ("sign in
+on the site first"). Apps never create players.
+
+The player sees who asks (client name, and the redirect **host**, always), what for, a
+warning for localhost-only clients and for self-registered (not URL-verified) ones, and
+"Allow" / "Deny". The redirect carries `code`, `state` and `iss`.
 
 Client identification, in the spec's order of preference:
 
-1. **Client ID Metadata Documents**: `client_id` is an https URL; we fetch it (https only,
-   no private or loopback addresses, 5 s timeout, 64 KB cap, cached by HTTP headers),
-   check that its `client_id` equals the URL and take `client_name` and `redirect_uris`.
-2. **DCR**: `/oauth/register` stores the client; open, but rate-limited and with clients
-   that never completed an authorization purged after a day.
+1. **Client ID Metadata Documents**: `client_id` is an https URL; we fetch it (https on
+   443 only, with a path, no credentials; every resolved address must be public; no
+   redirects; 5 s; 64 KB), check that its `client_id` equals the URL, take `client_name` and
+   `redirect_uris`, and keep it for an hour.
+2. **DCR**: `/register` stores the client; registrations that never got a token are purged
+   after a day.
 
-Rules for redirect URIs: https or `localhost` only, exact match against the registered list.
+Redirect URIs: https or `localhost`/`127.0.0.1` only, exact match.
 
-Tokens:
+Tokens: opaque random strings, only SHA-256 stored. Access 1 hour; refresh 30 days,
+rotated on every use; reuse of an old refresh token revokes the whole grant (theft
+detection). Codes: 60 s, single use, bound to the client, redirect, PKCE and resource. Every
+token is bound to the resource `…/mcp` (`validate_token_resource`); an `/authorize` request
+for another resource gets `invalid_target`. Site sessions don't work on `/mcp`, MCP tokens
+don't work on the REST API.
 
-- Opaque random strings; only their SHA-256 is stored (like site sessions today).
-- Access token: 1 hour. Refresh token: 30 days, rotated on every use; reuse of an old
-  refresh token revokes the whole grant (theft detection).
-- Every token is bound to its resource: the `resource` parameter (RFC 8707) must be
-  `https://dnd.voronin.app/mcp`, and `TokenVerifier` rejects tokens issued for anything
-  else. Tokens are never accepted by the REST API, and site sessions are never accepted
-  by `/mcp`.
-- Authorization codes: 60 seconds, single use, bound to `client_id`, `redirect_uri`,
-  `code_challenge` and `resource`.
+### 3. One scope
 
-Storage: three new tables in the identity database — `oauth_clients`, `oauth_codes`,
-`oauth_grants` (one row per user × client: scopes, refresh-token hash, access-token hash,
-expiry, last use). A new "Connected apps" block on the profile lists the grants and
-revokes them.
-
-### 3. Scopes
-
-| Scope | Allows |
-| --- | --- |
-| `characters:read` | list and read your characters, read the compendium |
-| `characters:write` | everything in read, plus create, edit, rest, level up, share |
-
-`write` implies `read`. A read-only token calling a write tool gets 403 with
-`WWW-Authenticate: Bearer error="insufficient_scope", scope="characters:write", resource_metadata=…`,
-so the client can ask for more (step-up). No `offline_access` in `scopes_supported`.
+`characters` — see and change your characters. A read-only split (`characters:read` /
+`:write`) was planned, but step-up for a write tool needs an HTTP-level 403 while tools
+run inside one JSON-RPC endpoint; it adds risk without a player asking for it. The
+"Connected apps" block revokes everything at once.
 
 ### 4. Tools
 
-Grouped by what a player does, not mirroring the ~70 REST endpoints. Every tool takes the
-user from the token; a character that isn't yours is "not found", exactly like the API.
-Changing tools take the character's `version` and fail with a conflict if the sheet changed
-since it was read — the SPA and the assistant can't overwrite each other.
+Grouped by what a player does (19 tools), not mirroring the ~70 REST endpoints. Changing
+tools take the sheet's `version`, so the SPA and the assistant can't overwrite each other.
+Answers are short: a sheet summary (numbers and state, a few KB instead of ~20 KB), wizard
+options with prose cut to 160 characters.
 
-| Tool | Scope | Annotations | Service |
-| --- | --- | --- | --- |
-| `list_characters` | read | read-only | store `ids_of` + summaries |
-| `get_character` (`detail`: summary / full) | read | read-only | `SheetService.load` + sheet payload |
-| `update_character` (HP and damage/healing, spell and pact slots, feature uses, death saves, exhaustion, inspiration, notes, equipped items) | write | idempotent | `SheetService.update` |
-| `start_character` | write | — | `WizardService.start` |
-| `get_creation_step` (options for a step, with keys and Ukrainian names) | read | read-only | wizard step options |
-| `set_creation_step` | write | idempotent | `WizardService.apply` |
-| `finish_character` | write | — | `WizardService.finish` |
-| `manage_inventory` (`add` / `update` / `remove`) | write | destructive for `remove` | `add_item`, `update_item`, `remove_item` |
-| `manage_spells` (`learn` / `forget` / `prepare`) | write | — | `add_spell`, `remove_spell`, `prepare_spells` |
-| `rest` (`short` / `long`) | write | — | `SheetService.rest` |
-| `spend_hit_dice` | write | — | `SheetService.spend_hit_die` |
-| `level_up_options` | read | read-only | `LevelUpService.preview` |
-| `level_up` | write | — | `LevelUpService.apply` |
-| `set_class_choices` (fighting style, expertise, species feat…) | write | idempotent | `set_class_choice`, `set_expertise`, `set_species_feat` |
-| `share_link` (`create` / `revoke`) | write | destructive for `revoke` | sharing |
-| `export_pdf` | read | read-only | export + a 5-minute link token |
-| `search_compendium` | read | read-only | compendium `entries` |
-| `get_compendium_entry` | read | read-only | compendium entry |
+| Tool | Annotations |
+| --- | --- |
+| `list_characters`, `get_character` (summary / full) | read-only |
+| `update_character` (HP, damage/healing, slots, feature uses, death saves, exhaustion, inspiration, notes, equipped) | idempotent |
+| `start_character`, `get_creation_step`, `set_creation_step`, `finish_character` | — / read-only / idempotent / — |
+| `manage_inventory` (`add` / `update` / `remove`) | destructive |
+| `manage_spells` (`learn` / `forget` / `prepare`) | — |
+| `rest`, `spend_hit_dice` | — |
+| `level_up_options`, `level_up` | read-only / — |
+| `set_class_choice`, `set_expertise` | idempotent |
+| `share_link` (`status` / `create` / `revoke`) | destructive |
+| `export_pdf` (a 5-minute link) | read-only |
+| `search_compendium`, `get_compendium_entry` | read-only |
 
-There is no delete tool: the API has none, and losing a character to a misread sentence
-is the worst failure this server could have.
-
-Creation follows the wizard's own steps (species → class → abilities → background →
-equipment → spells). `get_creation_step` returns only options the rules allow, and
-`set_creation_step` validates on the server, so the assistant can't invent a subrace or
-pick a spell the class doesn't have.
+No delete tool: the API has none, and losing a character to a misread sentence is the worst
+failure this server could have.
 
 ### 5. Resources and prompts
 
-- Resources: `character://{id}` (the sheet as Markdown — the existing renderer) and
-  `compendium://{entry_id}`.
-- Prompts: "a character from an idea", "level-up advice", "apply a session recap to the
-  sheet" (HP, spell slots, hit dice, items found).
+- Resource `character://{id}` — the sheet as the site's Markdown export.
+- Prompts: "a character from an idea", "level-up advice", "apply a session recap".
 
 ### 6. Language
 
-Tool names, descriptions and parameter docs are in English (models choose tools better
-that way). Data and errors stay Ukrainian, as on the site; every option carries its key,
-so the assistant never has to translate back.
-
-### 7. Ownership moves into the application layer
-
-The `_guard` check moves from the router into a small application service
-(`CharacterAccess.require(user, character_id)` / `require_draft`), used by both the REST
-router and the MCP tools. One check, two doors.
+Tool names and descriptions in English (models choose tools better that way); data and
+errors stay Ukrainian, as on the site; options carry their keys.
 
 ## Consequences
 
-- Players can create and run characters from Claude on a phone, signing in with the same
-  Telegram account; the site stays the single source of truth.
-- We now run an authorization server. It's the riskiest code in the project and gets its
-  own tests: PKCE, code reuse, redirect mismatch, refresh rotation and reuse detection,
-  audience mismatch, CIMD fetch limits, scope step-up, revocation.
-- `DNDSHEET_AUTH=off` (tests, local runs) skips OAuth: `/mcp` works as the local player.
-- New dependency: `mcp` 2.x (Python ≥ 3.11 — we run 3.12).
-- Every MCP call is logged (user, client, tool, character, result — no arguments with free
-  text), and each grant is rate-limited.
-- Not now: server-initiated notifications, sampling, elicitation; a stdio transport;
-  MCP access to other players' shared characters.
-
-## Plan
-
-1. `CharacterAccess` in the application layer; the router uses it (no behaviour change).
-2. OAuth authorization server: tables, endpoints, consent screen, "Connected apps".
-3. `/mcp`: `TokenVerifier`, read tools, then write tools, resources, prompts.
-4. Tests against an in-process client, and a manual run with Claude (custom connector).
-5. `docs/mcp.md`: how to connect, what each tool does.
+- Players can create and run characters from Claude, signing in with the same Telegram
+  account; the site stays the single source of truth.
+- We run an authorization server. Its tests: PKCE, code reuse, redirect mismatch, wrong
+  resource, refresh rotation and reuse detection, revocation and disconnect, session ≠ token,
+  other players' characters, CIMD limits (SSRF), the registration limit.
+- `DNDSHEET_AUTH=off` (tests, local runs): `/mcp` without tokens, as the local player.
+- `DNDSHEET_PUBLIC_URL` is required in production (the deploy script sets it from the domain).
+- New dependency: `mcp` 2.x.
+- Known SDK quirks: `/revoke` wants a `client_secret` field even from public clients (empty
+  works); DCR client secrets are stored as the SDK compares them (plain), unlike our tokens.
+- Not yet: a log of MCP calls and per-grant rate limits; a `compendium://` resource;
+  notifications, sampling, elicitation.

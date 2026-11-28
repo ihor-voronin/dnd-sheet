@@ -30,6 +30,9 @@ from dndsheet.shared.errors import ValidationError
 #: Скільки живе сесія: 30 днів.
 SESSION_TTL = 30 * 24 * 60 * 60
 
+#: Відповідь на вхід «лише для наявних акаунтів», коли акаунта ще немає.
+NO_ACCOUNT = "спершу увійдіть на сайті dnd.voronin.app через Telegram, а тоді поверніться сюди"
+
 #: Скільки живе посилання для завантаження (PDF з Mini App): Telegram качає файл
 #: сам, без нашої сесії, тож у посиланні — окремий короткий токен.
 LINK_TTL = 5 * 60
@@ -54,9 +57,12 @@ class AuthService:
     bot_token: str = ""
     dev_login_enabled: bool = False
 
-    def login_telegram(self, payload: Mapping[str, Any], *, now: float | None = None) -> LoginResult:
+    def login_telegram(
+        self, payload: Mapping[str, Any], *, now: float | None = None, existing_only: bool = False
+    ) -> LoginResult:
+        """`existing_only` — вхід лише для того, хто вже має акаунт (екран дозволу для застосунків)."""
         profile = verify_telegram_login(payload, self.bot_token, now=now)
-        return self._login(profile, now)
+        return self._login(profile, now, existing_only=existing_only)
 
     def login_telegram_webapp(self, init_data: str, *, now: float | None = None) -> LoginResult:
         """Вхід із Mini App: Telegram уже підписав, хто відкрив застосунок."""
@@ -70,7 +76,7 @@ class AuthService:
         self.sessions.create(user.id, token_hash(token), moment + LINK_TTL)
         return token
 
-    def login_dev(self, name: str, *, now: float | None = None) -> LoginResult:
+    def login_dev(self, name: str, *, now: float | None = None, existing_only: bool = False) -> LoginResult:
         if not self.dev_login_enabled:
             raise ValidationError("вхід для розробки вимкнено")
         cleaned = " ".join((name or "").split())[:64]
@@ -79,7 +85,7 @@ class AuthService:
         # Стабільний відʼємний id з імені: той самий «гравець» — той самий користувач.
         fake_id = -int(hashlib.sha256(cleaned.casefold().encode("utf-8")).hexdigest()[:12], 16)
         profile = TelegramProfile(telegram_id=fake_id, first_name=cleaned, last_name="", username="", photo_url="")
-        return self._login(profile, now)
+        return self._login(profile, now, existing_only=existing_only)
 
     def current(self, token: str | None, *, now: float | None = None) -> User | None:
         if not token:
@@ -91,7 +97,10 @@ class AuthService:
         if token:
             self.sessions.delete(token_hash(token))
 
-    def _login(self, profile: TelegramProfile, now: float | None) -> LoginResult:
+    def _login(self, profile: TelegramProfile, now: float | None, *, existing_only: bool = False) -> LoginResult:
+        # Застосунки (MCP) не заводять нових гравців: дозвіл дає лише той, хто вже був на сайті.
+        if existing_only and not self.users.exists_telegram(profile.telegram_id):
+            raise ValidationError(NO_ACCOUNT)
         user, created = self.users.upsert_telegram(profile)
         token = secrets.token_urlsafe(32)
         moment = time.time() if now is None else now

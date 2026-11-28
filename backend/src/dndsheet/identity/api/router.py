@@ -123,12 +123,20 @@ def me(request: Request) -> dict[str, Any]:
     return {"user": None if user is None else _user_payload(user)}
 
 
+def _existing_only(request: Request) -> bool:
+    """`?existing_only=1` — вхід з екрана дозволу: нових акаунтів не заводити.
+
+    Прапорець у рядку запиту, а не в тілі: тіло віджета Telegram підписане, зайве поле зламало б підпис.
+    """
+    return request.query_params.get("existing_only", "").strip().casefold() in {"1", "true", "yes", "on"}
+
+
 @router.post("/telegram")
 def login_telegram(
     request: Request, response: Response, payload: dict[str, Any] = Body(default_factory=dict)
 ) -> dict[str, Any]:
     try:
-        result = _service(request).login_telegram(payload)
+        result = _service(request).login_telegram(payload, existing_only=_existing_only(request))
     except ValidationError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     return _start_session(request, response, result)
@@ -164,7 +172,7 @@ def login_dev(
     if not service.dev_login_enabled:
         raise HTTPException(status_code=404, detail="вхід для розробки вимкнено")
     try:
-        result = service.login_dev(str(payload.get("name") or ""))
+        result = service.login_dev(str(payload.get("name") or ""), existing_only=_existing_only(request))
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return _start_session(request, response, result)

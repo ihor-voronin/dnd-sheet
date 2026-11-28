@@ -86,9 +86,17 @@ export function fetchMe(): Promise<{ user: AuthUser | null }> {
   return getJson<{ user: AuthUser | null }>("/api/v1/auth/me");
 }
 
+/** `?existing_only=1`: вхід з екрана дозволу застосунку — нових акаунтів він не заводить. */
+function loginQuery(existingOnly: boolean): string {
+  return existingOnly ? "?existing_only=1" : "";
+}
+
 /** Дані з віджета Telegram як є: сервер сам перевіряє підпис. */
-export function loginTelegram(payload: Record<string, unknown>): Promise<{ user: AuthUser }> {
-  return request<{ user: AuthUser }>("/api/v1/auth/telegram", { method: "POST", body: JSON.stringify(payload) });
+export function loginTelegram(payload: Record<string, unknown>, existingOnly = false): Promise<{ user: AuthUser }> {
+  return request<{ user: AuthUser }>(`/api/v1/auth/telegram${loginQuery(existingOnly)}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 /** Вхід із Mini App: `initData` від Telegram; сервер повертає токен для заголовка. */
@@ -108,8 +116,58 @@ export async function linkWithToken(path: string): Promise<string> {
   return `${path}${path.includes("?") ? "&" : "?"}link=${encodeURIComponent(token)}`;
 }
 
-export function loginDev(name: string): Promise<{ user: AuthUser }> {
-  return request<{ user: AuthUser }>("/api/v1/auth/dev", { method: "POST", body: JSON.stringify({ name }) });
+export function loginDev(name: string, existingOnly = false): Promise<{ user: AuthUser }> {
+  return request<{ user: AuthUser }>(`/api/v1/auth/dev${loginQuery(existingOnly)}`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+// --- застосунки (MCP): згода й підключені --------------------------------------
+
+export interface OAuthRequestView {
+  client: {
+    client_id: string;
+    name: string;
+    uri: string | null;
+    redirect_hosts: string[];
+    local_only: boolean;
+    verified_by_url: boolean;
+  };
+  redirect_host: string;
+  scopes: { key: string; title: string }[];
+  expires_at: number;
+  signed_in: boolean;
+}
+
+export function fetchOAuthRequest(id: string): Promise<OAuthRequestView> {
+  return getJson<OAuthRequestView>(`/api/v1/oauth/requests/${encodeURIComponent(id)}`);
+}
+
+/** Рішення гравця → адреса, куди повернути браузер до застосунку. */
+export function decideOAuthRequest(id: string, approve: boolean): Promise<{ redirect: string }> {
+  return request<{ redirect: string }>(`/api/v1/oauth/requests/${encodeURIComponent(id)}`, {
+    method: "POST",
+    body: JSON.stringify({ approve }),
+  });
+}
+
+export interface ConnectedApp {
+  client_id: string;
+  name: string;
+  scopes: string[];
+  connected_at: number;
+  last_used_at: number | null;
+}
+
+export function fetchConnectedApps(): Promise<{ items: ConnectedApp[] }> {
+  return getJson<{ items: ConnectedApp[] }>("/api/v1/oauth/grants");
+}
+
+export function disconnectApp(clientId: string): Promise<{ items: ConnectedApp[] }> {
+  return request<{ items: ConnectedApp[] }>(`/api/v1/oauth/grants?client_id=${encodeURIComponent(clientId)}`, {
+    method: "DELETE",
+  });
 }
 
 export async function logout(): Promise<{ user: null }> {
