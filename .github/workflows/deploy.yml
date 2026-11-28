@@ -1,8 +1,9 @@
-# Deploys the app to https://dnd.voronin.app — after a green CI on main.
+# Deploys the app to https://dnd.voronin.app after a green CI on main.
 #
-# Builds the image here (with the corpus unlocked) and hands it to scripts/deploy_app.py:
-# the same script as from Windows (`deploy\terraform\deploy.ps1`). Terraform doesn't
-# run here — infrastructure (DNS, server setup) is changed by hand.
+# The deploy itself lives in vps-infra (the shared VPS): its reusable workflow checks this
+# repository out, unlocks git-crypt (secrets and the corpus), builds the `runtime` image and
+# runs its scripts/deploy_app.py with deploy/project.toml. A failed release rolls back to the
+# previous one. docs/deploy.md; vps-infra docs/deploys.md.
 #
 # The production environment: Settings → Environments can add a required approval
 # before every deploy and allow deploys from main only.
@@ -19,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-production
+  group: deploy-dndsheet
   cancel-in-progress: false
 
 jobs:
@@ -31,35 +32,10 @@ jobs:
         && github.event.workflow_run.conclusion == 'success'
         && github.event.workflow_run.event == 'push')
       || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-24.04
-    environment:
-      name: production
+    uses: ihor-voronin/vps-infra/.github/workflows/deploy-app.yml@v1
+    with:
+      platform-ref: v1 # keep equal to the tag in `uses:`
+      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      target: runtime
       url: https://dnd.voronin.app
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - name: Unlock secrets and corpus (git-crypt)
-        env:
-          GIT_CRYPT_KEY: ${{ secrets.GIT_CRYPT_KEY }}
-        run: |
-          if [ -z "$GIT_CRYPT_KEY" ]; then echo "::error::The GIT_CRYPT_KEY secret is missing (docs/ci.md)"; exit 1; fi
-          sudo apt-get install -y --no-install-recommends git-crypt
-          echo "$GIT_CRYPT_KEY" | base64 -d > "$RUNNER_TEMP/git-crypt.key"
-          git-crypt unlock "$RUNNER_TEMP/git-crypt.key"
-          rm -f "$RUNNER_TEMP/git-crypt.key"
-
-      - uses: docker/setup-buildx-action@v4
-      - name: Build image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          target: runtime
-          tags: dndsheet:local
-          load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Deploy to the server
-        run: python3 scripts/deploy_app.py
+    secrets: inherit # GIT_CRYPT_KEY

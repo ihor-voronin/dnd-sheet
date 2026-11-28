@@ -1,0 +1,15 @@
+# How vps-infra deploys this project (its scripts/deploy_app.py and the reusable
+# .github/workflows/deploy-app.yml): https://github.com/ihor-voronin/vps-infra/blob/main/docs/deploys.md
+slug = "dndsheet"
+image = "dndsheet:local"
+compose = "deploy/compose.yml"
+site = "deploy/site.caddy"
+container = "dndsheet-app"
+health_url = "https://dnd.voronin.app/healthz"
+server = "deploy/secrets/server.toml"        # host, user, port
+ssh_key = "deploy/secrets/ssh/deploy_ed25519" # this project's own deploy key
+# The PostgreSQL step adds: migrate = ["python", "-m", "dndsheet.db", "migrate"],
+# migrate_env = "deploy/secrets/migrate.env" and "database.env" in [files].
+
+[files] # → /opt/dndsheet/<name>, mode 600
+".env" = "deploy/secrets/prod.env"

@@ -1,0 +1,23 @@
+# Production on the shared VPS (vps-infra): the app only. The edge Caddy of vps-infra serves
+# HTTPS and reaches the app by its container name on the `edge` network (deploy/site.caddy).
+# Written to /opt/dndsheet/compose.yml by vps-infra's scripts/deploy_app.py (deploy/project.toml).
+name: dndsheet
+
+services:
+  app:
+    image: ${DEPLOY_IMAGE:-dndsheet:local}
+    container_name: dndsheet-app
+    env_file: [.env] # the PostgreSQL cutover adds database.env (docs/database.md § 4)
+    environment:
+      DNDSHEET_DATA_DIR: /app/var
+      DNDSHEET_CONTENT_DIR: /app/content
+      DNDSHEET_SPA_DIST: /app/frontend/dist
+    volumes:
+      - /opt/dndsheet/var:/app/var # SQLite until the cutover
+    mem_limit: 768m # WeasyPrint peaks; swap absorbs the rest
+    networks: [edge]
+    restart: unless-stopped
+
+networks:
+  edge:
+    external: true

@@ -57,7 +57,7 @@ character sheet. Our assets are thousands of Ukrainian entries with both names
 | Real paths for SPA pages: `/bugs`, `/mcp` (a browser gets the SPA, an MCP client gets the protocol) | `api/app.py` (`SPA_PATHS`, `_BrowserOrMcp`), `frontend/src/App.tsx` (`PATH_ROUTES`) |
 | title, description, canonical, Open Graph, JSON-LD `WebApplication` for the home page | `frontend/index.html` |
 | the preview image, 1200×630 | `frontend/public/og-image.png`, drawn by `scripts/make_og_image.py` |
-| a year of caching for hashed `/assets/*`, gzip/zstd, HSTS | `deploy/terraform/files/Caddyfile.tftpl` |
+| a year of caching for hashed `/assets/*`, gzip/zstd, HSTS | `deploy/site.caddy` |
 
 Every entry page has a unique `<title>` ("Вогняна куля (Fireball) — закляття D&D 5e
 українською"), a meta description from the Ukrainian text, a canonical URL, one H1 with

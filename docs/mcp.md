@@ -73,7 +73,7 @@ claude mcp add --transport http dnd-local http://localhost:8000/mcp
 
 With sign-in on, set `DNDSHEET_PUBLIC_URL` to the address the client uses (for example
 `http://localhost:8000`): it's the token issuer, the resource the tokens are bound to and
-the only allowed `Host`. Production gets `https://<domain>` from `scripts/deploy_app.py`.
+the only allowed `Host`. Production sets it in `deploy/secrets/prod.env`.
 
 Code: `backend/src/dndsheet/assistant/` (tools), `backend/src/dndsheet/identity/` (OAuth),
 `frontend/src/features/oauth/` (consent screen and connected apps). Tests:

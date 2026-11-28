@@ -318,7 +318,6 @@ From then on every `git commit` checks the changed files:
 | eslint | frontend: lint (`frontend/eslint.config.js`), zero warnings |
 | tsc | frontend: type check |
 | shellcheck, shfmt | `.sh` scripts (2-space indent) |
-| terraform fmt | `deploy/terraform/*.tf` |
 | trufflehog | secrets in changed files (Docker image) |
 | secrets-encrypted | everything git-crypt should encrypt (secrets, corpus) is ciphertext in the index |
 | end-of-file, trailing-whitespace, BOM, json/yaml/toml, large files, conflicts | small checks from pre-commit-hooks |

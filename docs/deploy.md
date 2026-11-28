@@ -1,55 +1,43 @@
-# Deploy: server, Terraform, CI and secrets
+# Deploy: the shared VPS, CI and secrets
 
-The site runs at **https://dnd.voronin.app** — a RackNerd VPS, domain in Cloudflare.
-Everything needed to deploy is in the repository: the code in plain text; credentials,
-Terraform state and the book corpus encrypted with git-crypt.
+The site runs at **https://dnd.voronin.app** on a RackNerd VPS that several projects share.
+The server itself (DNS in Cloudflare, Docker, firewall, swap, the shared Caddy, PostgreSQL,
+backups) belongs to the **[vps-infra](https://github.com/ihor-voronin/vps-infra/blob/main/docs/platform.md)** repository. This repository
+only says what dnd-sheet is: its image, `deploy/compose.yml`, `deploy/site.caddy` and
+`deploy/project.toml`, plus its encrypted secrets.
 
-- **Normally** GitHub Actions deploys: PR merged into `main` → CI green →
-  `deploy.yml` (see [docs/ci.md](ci.md)).
-- **By hand from Windows** — the same logic in one command:
+- **Normally** GitHub Actions deploys: PR merged into `main` → CI green → `deploy.yml`
+  calls vps-infra's reusable `deploy-app.yml@v1` (see [docs/ci.md](ci.md)).
+- **By hand from Windows** the same script runs (vps-infra checked out next to this
+  repository):
 
 ```powershell
-.\deploy\terraform\deploy.ps1
+.\deploy\deploy.ps1
 ```
 
 ## How it works
 
-Two parts that change at different rates:
-
 ```
-APP — with every merge into main                  VPS (Ubuntu 24.04, 192.227.140.142)
-GitHub Actions (deploy.yml) or deploy.ps1         ─────────────────────────────────
-  docker build (runtime)  ──► dndsheet:local
-  scripts/deploy_app.py (SSH)
-     ├─ image: docker save + gzip ──────────────► docker load (if the id is new)
-     └─ compose.yml, Caddyfile, .env ───────────► /opt/dndsheet → docker compose up -d
-                                                    ├─ caddy  :80/:443  (Let's Encrypt)
-                                                    └─ app    :8000     (dndsheet:local)
-
-INFRASTRUCTURE — rarely, by hand
-deploy.ps1 -Infra ─► terraform apply
-  ├─ cloudflare_dns_record ─────────────────────► Cloudflare: dnd.voronin.app → IP (no proxy)
-  └─ bootstrap (SSH) ───────────────────────────► Docker, ufw, swap, backups, key-only SSH
+GitHub Actions: deploy.yml → vps-infra deploy-app.yml@v1     VPS (Ubuntu 24.04)
+  docker build (runtime) ──► dndsheet:local                  ─────────────────────────────
+  vps-infra scripts/deploy_app.py --project deploy/project.toml (SSH, deploy_ed25519)
+     ├─ keep the running release: dndsheet:previous, /opt/dndsheet/previous/
+     ├─ image: docker save + gzip ─────────────────────────► docker load (if the id is new)
+     ├─ compose.yml, .env ─────────────────────────────────► /opt/dndsheet → compose -p dndsheet up -d
+     └─ site.caddy ────────────────────────────────────────► /opt/edge/sites/dndsheet.caddy
+                                                             ├─ edge-caddy :80/:443 (vps-infra, every site)
+                                                             └─ dndsheet-app :8000 on the `edge` network
 ```
 
-**The app — `scripts/deploy_app.py`.** Stateless: every run brings the server to what's
-in the repository. The image is uploaded only when its id changed (the last id is in
-`/opt/dndsheet/IMAGE_ID`), Caddy reloads its config, and the script waits for the app to
-become healthy and for HTTPS to answer. CI (Linux) and `deploy.ps1` (Windows) run the
-same script.
+The script is stateless: every run brings the server to what's in the repository. The
+image is uploaded only when its id changed (`/opt/dndsheet/IMAGE_ID`). The site file is
+validated before Caddy reloads, so a broken one never takes the other sites down. The
+script waits for the container's health and for `https://dnd.voronin.app/healthz`. If any
+step fails it **rolls back** to the release that ran before (below, "A deploy failed").
 
-**Infrastructure — Terraform.** RackNerd has no Terraform API, so the server was bought
-by hand; Terraform brings it to the desired state over SSH and manages the DNS record in
-Cloudflare. Each step reruns only when what it depends on changes:
-
-| Step | Reruns when | What it does |
-| --- | --- | --- |
-| `cloudflare_dns_record.site` | IP or domain changes | A record `dnd.voronin.app` → IP, "grey cloud" (traffic goes straight to the server) |
-| `terraform_data.bootstrap` | `files/bootstrap.sh` changes | Docker from the official repository, ufw (22, 80, 443), 2 GB swap, daily database backup, `PasswordAuthentication no` |
-
-**Why the app isn't in Terraform.** It used to be — but then the Terraform state would
-have to be committed back into the protected `main` branch after every CI deploy. The
-stateless script doesn't need that.
+**Infrastructure** (the DNS record, the server setup, the shared Caddy) changes only from
+vps-infra: `python scripts/terraform.py plan|apply` and its manual platform deploy
+([vps-infra docs/deploys.md](https://github.com/ihor-voronin/vps-infra/blob/main/docs/deploys.md)).
 
 **Why the image isn't built on the server.** The compendium corpus (`content/compendium`,
 `bestiary`, `index`) is book text: in git it exists only encrypted. CI (the
@@ -59,17 +47,15 @@ stateless script doesn't need that.
 
 | Path | What it is | In git |
 | --- | --- | --- |
-| `scripts/deploy_app.py` | app deploy (CI and Windows) | plain |
-| `deploy/terraform/*.tf` | infrastructure: DNS, server setup | plain |
-| `deploy/terraform/files/` | `bootstrap.sh`, `compose.yml`, `Caddyfile.tftpl` | plain (LF) |
-| `deploy/terraform/deploy.ps1` | Windows entry point: the app or `-Infra` | plain |
+| `deploy/project.toml` | what vps-infra deploys: image, compose, site, container, health URL, which secrets go where | plain |
+| `deploy/compose.yml` | the app container on the `edge` network (no Caddy here any more) | plain |
+| `deploy/site.caddy` | the site block in the shared Caddy: compression, caching of `/assets/*`, security headers | plain |
+| `deploy/deploy.ps1` | Windows entry point: build, then vps-infra's `deploy_app.py` | plain |
 | `.github/workflows/` | CI and deploy (docs/ci.md) | plain |
-| `deploy/secrets/prod.env` | app variables → `.env` on the server | encrypted |
-| `deploy/secrets/cloudflare.env` | `CLOUDFLARE_API_TOKEN` (DNS for zone `voronin.app`) | encrypted |
-| `deploy/secrets/racknerd.env` | VPS panel and root password (for the panel console) | encrypted |
-| `deploy/secrets/ssh/id_ed25519` | the key used to reach the server | encrypted |
-| `deploy/secrets/terraform/terraform.tfvars` | IP, domain, zone | encrypted |
-| `deploy/secrets/terraform/terraform.tfstate` | Terraform state (infrastructure only) | encrypted |
+| `deploy/secrets/prod.env` | app variables → `/opt/dndsheet/.env` (mode 600) | encrypted |
+| `deploy/secrets/server.toml` | server address, user, port | encrypted |
+| `deploy/secrets/ssh/deploy_ed25519` | this project's deploy key (its public half is in vps-infra's `projects/dndsheet.toml`) | encrypted |
+| `deploy/secrets/ssh/id_ed25519`, `cloudflare.env`, `racknerd.env`, `terraform/` | the old copies from before vps-infra; removed in step 8 of the move | encrypted |
 | `content/compendium`, `bestiary`, `index` | compendium corpus (book texts) | encrypted |
 | `deploy/local/` | temporary: git-crypt key for the GitHub secret | no (`.gitignore`) |
 
@@ -82,27 +68,28 @@ and CI) checks that all of it really is ciphertext in the index.
 Through a PR: merge into `main` → CI → the deploy runs by itself. By hand from Windows:
 
 ```powershell
-.\deploy\terraform\deploy.ps1                # build the image and update the app
-.\deploy\terraform\deploy.ps1 -NoBuild       # no rebuild (only config or .env changed)
-.\deploy\terraform\deploy.ps1 -Infra -Plan   # what Terraform would change
-.\deploy\terraform\deploy.ps1 -Infra         # apply infrastructure (asks for "yes")
+.\deploy\deploy.ps1            # build the image and deploy
+.\deploy\deploy.ps1 -NoBuild   # deploy the dndsheet:local image as it is
+.\deploy\deploy.ps1 -DryRun    # only print the steps
 ```
 
-`deploy.ps1` refuses to run while anything in `deploy/secrets/` is still encrypted.
+It expects vps-infra in `..\vps-infra` (or `-VpsInfra <path>`), and refuses to run while
+anything it needs in `deploy/secrets/` is still encrypted.
 
-**After `-Infra`, commit the state** — otherwise Terraform on another machine will think
-nothing has been created yet:
+### A deploy failed
 
-```powershell
-git add deploy/secrets/terraform
-git commit -m "Terraform state after infra change"
-```
+Before it changes anything, the deploy tags the running image `dndsheet:previous` and
+copies `compose.yml`, `IMAGE_ID`, `.env` and the site file to `/opt/dndsheet/previous/`.
+When a later step fails (the app never gets healthy, a command on the server fails), it
+puts them back, reloads Caddy and runs `up -d` again, so the site keeps the previous
+release. The job still fails, and its last lines say whether the previous release is
+healthy. By hand: [vps-infra docs/deploys.md](https://github.com/ihor-voronin/vps-infra/blob/main/docs/deploys.md#what-a-failure-does).
+The SQLite database isn't touched by a rollback.
 
 ## First run on a new machine
 
-1. Tools: `winget install --id Hashicorp.Terraform -e`,
-   `winget install --id AGWA.git-crypt -e`, Docker Desktop, Python 3, GnuPG with
-   your key.
+1. Tools: `winget install --id AGWA.git-crypt -e`, Docker Desktop, Python 3, GnuPG with
+   your key; `git clone https://github.com/ihor-voronin/vps-infra ..\vps-infra`.
 2. Unlock secrets and the corpus:
 
    ```powershell
@@ -112,29 +99,30 @@ git commit -m "Terraform state after infra change"
 
    `gpg.program` is needed because the key lives in GnuPG for Windows, not in the `gpg`
    bundled with Git Bash.
-3. `.\deploy\terraform\deploy.ps1 -Infra -Plan` — should report "No changes".
+3. `.\deploy\deploy.ps1 -DryRun` prints every step without touching the server.
 
 ## Server access
 
 ```powershell
-ssh -i deploy\secrets\ssh\id_ed25519 root@192.227.140.142
+ssh -i deploy\secrets\ssh\deploy_ed25519 root@192.227.140.142
 ```
 
 Password login over SSH is disabled. If the key is lost — the VNC console in the
 RackNerd panel (credentials in `deploy/secrets/racknerd.env`), root password.
 
 On Windows, OpenSSH rejects a key with "foreign" permissions — once:
-`icacls deploy\secrets\ssh\id_ed25519 /inheritance:r /grant:r "$env:USERNAME:R"`.
+`icacls deploy\secrets\ssh\deploy_ed25519 /inheritance:r /grant:r "$env:USERNAME:R"`.
 On Linux — `chmod 600`.
 
 On the server:
 
 | What | Where |
 | --- | --- |
-| app | `/opt/dndsheet` (`compose.yml`, `Caddyfile`, `.env`) |
+| app | `/opt/dndsheet` (`compose.yml`, `.env`, `previous/` for the rollback) |
+| site in the shared Caddy | `/opt/edge/sites/dndsheet.caddy` (vps-infra's `/opt/edge`) |
 | database | `/opt/dndsheet/var/dndsheet.sqlite3` (SQLite, WAL) |
 | backups | `/opt/dndsheet/backups/dndsheet-YYYY-MM-DD.sqlite3`, 14 days (`/etc/cron.daily/dndsheet-backup`) |
-| logs | `docker logs dndsheet-app`, `docker logs dndsheet-caddy` |
+| logs | `docker logs dndsheet-app`, `docker logs edge-caddy` |
 
 The database is a host folder mounted into the container (not a Docker volume), so
 deploys, image changes and even `docker compose down -v` don't touch it. Backups are on
@@ -144,21 +132,23 @@ the same disk — an off-server copy is not set up yet.
 
 ```bash
 cd /opt/dndsheet
-docker compose -f compose.yml stop app
+docker compose -p dndsheet -f compose.yml stop app
 cp backups/dndsheet-2026-11-27.sqlite3 var/dndsheet.sqlite3
 chown 10001:10001 var/dndsheet.sqlite3
-docker compose -f compose.yml start app
+docker compose -p dndsheet -f compose.yml start app
 ```
 
 ## Domain and HTTPS
 
-- DNS: Cloudflare, zone `voronin.app`, the record is managed by Terraform (`dns.tf`).
+- DNS: Cloudflare, zone `voronin.app`; the record is managed by vps-infra's Terraform
+  (`dns.tf`, the domain from its `projects/dndsheet.toml`).
   No Cloudflare proxy: Let's Encrypt issues the certificate through Caddy (HTTP-01),
   and the Telegram widget sees the real domain.
-- Caddy renews the certificate itself; `http://` and the bare IP redirect to
-  `https://dnd.voronin.app`.
-- To change the domain: `domain` in `deploy/secrets/terraform/terraform.tfvars` →
-  `deploy.ps1 -Infra` (Terraform removes the old record) and `deploy.ps1 -NoBuild`.
+- The shared Caddy (vps-infra's `edge-caddy`) renews the certificate itself; `http://`
+  and the bare IP redirect to `https://dnd.voronin.app`.
+- To change the domain: `domain` in vps-infra's `projects/dndsheet.toml` and its
+  Terraform apply, then the new name in `deploy/site.caddy`, `deploy/project.toml`
+  (`health_url`), `DNDSHEET_PUBLIC_URL` in `prod.env`, and a deploy.
 
 ## Telegram sign-in and the Mini App
 
@@ -228,12 +218,12 @@ without backend sources; uvicorn without `[standard]`.
 ## Pitfalls (already worked around)
 
 - **Terraform `local-exec` on Windows**: the `external` provider can't reach Docker
-  Desktop, and `cmd` breaks quotes in paths. That's why the image and app moved out of
-  Terraform into `scripts/deploy_app.py` (Python behaves the same on Windows and in CI).
+  Desktop, and `cmd` breaks quotes in paths. That's why the app deploy is a Python script
+  (now vps-infra's `deploy_app.py`), not Terraform.
 - **PowerShell 5 reads `.ps1` without a BOM as cp1251** — Cyrillic breaks parsing; the
   `fix-byte-order-marker` hook leaves `.ps1` files alone.
-- **Files for the server must have LF** — `deploy/terraform/files/.gitattributes`
-  (`eol=lf`), and the scripts also strip `\r` before uploading.
+- **Files for the server must have LF**: vps-infra's scripts strip `\r` before
+  uploading.
 - **`deploy/local/` is temporary only**: credentials and keys belong in `deploy/secrets/`.
 
 ## When something goes wrong
@@ -241,7 +231,6 @@ without backend sources; uvicorn without `[standard]`.
 | Symptom | Where to look |
 | --- | --- |
 | `deploy.ps1` or CI: "… is encrypted" | `git-crypt unlock`; in CI — the `GIT_CRYPT_KEY` secret |
-| "app did not become healthy" | the output shows the last 60 lines of `docker logs dndsheet-app`; usually `.env` |
-| HTTPS doesn't answer yet | `docker logs dndsheet-caddy`: DNS not propagated yet or port 80 closed |
-| Terraform wants to create everything again | state not committed or not unlocked |
+| "did not become healthy" … "rolled back" | the new release failed and the previous one runs again: the logs are in the output |
+| HTTPS doesn't answer yet | `docker logs edge-caddy`: DNS not propagated yet or port 80 closed |
 | SSH: `Permission denied (publickey)` | key permissions (see above) or the wrong key |

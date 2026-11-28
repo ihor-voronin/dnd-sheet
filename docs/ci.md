@@ -81,16 +81,17 @@ badges say "resource not found".
 
 - triggered by `workflow_run` (CI on `main`, push, success) or by hand
   (Actions → Deploy → Run workflow, only from `main`);
-- unlocks secrets and the corpus, builds the image (GitHub Actions layer cache),
-  runs `scripts/deploy_app.py` — the same script `deploy.ps1` uses;
+- calls vps-infra's reusable `deploy-app.yml@v1`: it unlocks secrets and the corpus,
+  builds the image (GitHub Actions layer cache) and runs vps-infra's `deploy_app.py` with
+  `deploy/project.toml`, the same script `deploy\deploy.ps1` uses;
 - `production` environment with a link to the site; deploys never overlap.
 
-Terraform doesn't run in CI: infrastructure changes rarely and by hand
-(`deploy.ps1 -Infra`, docs/deploy.md).
+Infrastructure (DNS, server setup, the shared Caddy) doesn't run from here: it lives in
+[vps-infra](https://github.com/ihor-voronin/vps-infra/blob/main/docs/deploys.md).
 
-There is no automatic rollback: if the new version doesn't become healthy the deploy
-fails, but the container has already been replaced. Roll back by reverting the PR (the
-next deploy restores the old version) or by re-running an earlier successful Deploy run.
+A failed release rolls back by itself: the previous image and files run again and the job
+fails (docs/deploy.md, "A deploy failed"). To go back further, revert the PR (the next
+deploy ships the old code) or re-run an earlier successful Deploy run.
 
 ## Rules for main
 

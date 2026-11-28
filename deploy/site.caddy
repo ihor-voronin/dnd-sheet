@@ -1,6 +1,7 @@
-# Rendered by scripts/deploy_app.py. Caddy obtains the Let's Encrypt certificate for the
-# domain itself and redirects http:// to https://.
-${domain} {
+# The site block of dnd.voronin.app in vps-infra's edge Caddy (/opt/edge/sites/dndsheet.caddy).
+# Caddy obtains the certificate itself and redirects http:// to https://. Global options
+# and the bare-IP redirect live in vps-infra's edge/Caddyfile, not here.
+dnd.voronin.app {
 	encode zstd gzip
 
 	# Built files carry a content hash in their name (Vite): they never change, so browsers
@@ -17,10 +18,5 @@ ${domain} {
 		-Server
 	}
 
-	reverse_proxy app:8000
-}
-
-# Requests to the bare IP are redirected to the domain.
-http://${server_ip} {
-	redir https://${domain}{uri} permanent
+	reverse_proxy dndsheet-app:8000
 }

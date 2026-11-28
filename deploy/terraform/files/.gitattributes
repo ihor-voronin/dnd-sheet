@@ -1,2 +1,0 @@
-# These files run on the Linux server: LF only, otherwise bash trips over \r.
-* text eol=lf

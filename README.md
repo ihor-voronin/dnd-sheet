@@ -18,7 +18,7 @@
 [![uv](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fastral-sh%2Fuv%2Fmain%2Fassets%2Fbadge%2Fv0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fastral-sh%2Fruff%2Fmain%2Fassets%2Fbadge%2Fv2.json)](ruff.toml)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-FAB040?logo=pre-commit&logoColor=white)](.pre-commit-config.yaml)
-[![Terraform](https://img.shields.io/badge/Terraform-844FBA?logo=terraform&logoColor=white)](deploy/terraform)
+[![Terraform](https://img.shields.io/badge/Terraform-844FBA?logo=terraform&logoColor=white)](https://github.com/ihor-voronin/vps-infra)
 
 [![D&D 5e](https://img.shields.io/badge/D%26D%205e-2014%20rules-ED1C24?logo=dungeonsanddragons&logoColor=white)](docs/books.md)
 [![Compendium](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fihor-voronin%2Fdnd-sheet%2Fbadges%2Frecords.json)](docs/books.md)
@@ -190,8 +190,8 @@ daily backup. Details, server access and database restore:
 
 | What | With | When |
 | --- | --- | --- |
-| the app (image, compose, Caddy, `.env`) | `scripts/deploy_app.py` | CI after a merge into `main`; by hand — `deploy\terraform\deploy.ps1` |
-| infrastructure (DNS, Docker, firewall, swap, backups, key-only SSH) | Terraform (`deploy/terraform`) | rarely, by hand: `deploy.ps1 -Infra` |
+| the app (image, compose, site in the shared Caddy, `.env`) | vps-infra's `deploy_app.py` with `deploy/project.toml` | CI after a merge into `main`; by hand — `deploy\deploy.ps1` |
+| infrastructure (DNS, Docker, firewall, swap, the shared Caddy, backups) | [vps-infra](https://github.com/ihor-voronin/vps-infra/blob/main/docs/platform.md) | rarely, from that repository |
 
 **Secrets and the corpus are in git, but encrypted with [git-crypt](https://github.com/AGWA/git-crypt):**
 `deploy/secrets/` (tokens, SSH key, `.env`, Terraform state) and
