@@ -23,6 +23,7 @@ from xml.sax.saxutils import escape
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from markupsafe import Markup
 
 from dndsheet.characters.api import knowledge
 from dndsheet.characters.api.router import class_features, subclass_details
@@ -30,11 +31,13 @@ from dndsheet.compendium.application.service import CompendiumService
 from dndsheet.compendium.domain.entry import Category, CompendiumEntry
 from dndsheet.compendium.domain.query import MAX_LIMIT, EntryQuery
 from dndsheet.shared.errors import DomainError
-from dndsheet.site.api import pages
+from dndsheet.site.api import pages, visuals
 from dndsheet.site.application.catalog import SECTION_BY_ID, SECTIONS, KbCatalog, Record
 from dndsheet.site.application.labels import Labels
 from dndsheet.site.domain.publication import Policy
 from dndsheet.site.infrastructure.files import load_json, load_terminology
+from dndsheet.visuals.application import emblems
+from dndsheet.visuals.domain.catalog import CLASS_UK
 
 log = logging.getLogger(__name__)
 
@@ -207,7 +210,19 @@ def _glossary_keys(catalog_: KbCatalog) -> set[str]:
 def _render(request: Request, template: str, *, status: int = 200, index: bool = True, **context: Any) -> HTMLResponse:
     base = public_base()
     css = f"{_font_faces(str(_dist(request) / 'assets'))}\n{_CSS}"
-    html = _ENV.get_template(template).render(base=base, css=css, index=index, sections=SECTIONS, **context)
+    # Емблеми сторінки: шаблон кличе `emblem(...)`, а форми лише використаних іконок
+    # вставляє `sprite.markup()` у кінці `<body>` — без зайвих запитів.
+    sprite = emblems.Sprite()
+    html = _ENV.get_template(template).render(
+        base=base,
+        css=css,
+        index=index,
+        sections=SECTIONS,
+        sprite=sprite,
+        emblem=lambda name, css="emblem", size=None: Markup(sprite.use(name, css)),
+        record_emblem=visuals.record_emblem,
+        **context,
+    )
     headers = {"Cache-Control": _CACHE}
     if not index:
         headers["X-Robots-Tag"] = "noindex"
@@ -351,6 +366,40 @@ def guide_create_character(request: Request) -> HTMLResponse:
     )
 
 
+#: Підписи емблем на сторінці подяк.
+_EMBLEM_LABELS = {
+    **{f"class-{key}": f"клас: {label}" for key, label in CLASS_UK.items()},
+    "school-abjuration": "школа: захисна",
+    "school-conjuration": "школа: виклик",
+    "school-divination": "школа: віщування",
+    "school-enchantment": "школа: чари",
+    "school-evocation": "школа: втілення",
+    "school-illusion": "школа: ілюзія",
+    "school-necromancy": "школа: некромантія",
+    "school-transmutation": "школа: перетворення",
+    **{f"section-{section.id}": f"розділ: {section.label}" for section in SECTIONS},
+    "section-glossary": "розділ: глосарій",
+    "section-guide": "посібник",
+}
+
+
+@router.api_route("/kb/credits", methods=["GET", "HEAD"])
+def credits_page(request: Request) -> HTMLResponse:
+    """Звідки картинки: game-icons.net (CC BY 3.0) з авторами, власні портрети, шрифти."""
+    crumbs = [pages.Crumb("Головна", "/"), pages.Crumb("Довідник", "/kb"), pages.Crumb("Подяки", "/kb/credits")]
+    return _render(
+        request,
+        "credits.html.jinja",
+        path="/kb/credits",
+        meta_title="Подяки й ліцензії зображень — довідник D&D 5e",
+        description="Автори емблем game-icons.net (CC BY 3.0), власні портрети персонажів і шрифти сайту.",
+        crumbs=crumbs,
+        credits=emblems.credits(),
+        labels=_EMBLEM_LABELS,
+        jsonld=[_breadcrumbs_ld(public_base(), crumbs)],
+    )
+
+
 @router.api_route("/kb/{section}", methods=["GET", "HEAD"])
 def kb_section(section: str, request: Request) -> Response:
     if section not in SECTION_BY_ID:
@@ -389,6 +438,7 @@ def _entry_response(request: Request, page: pages.EntryPage, built: KbCatalog) -
         description=page.description,
         crumbs=page.crumbs,
         page=page,
+        portraits=visuals.entry_portraits(page.record),
         glossary_keys=_glossary_keys(built),
         jsonld=[_breadcrumbs_ld(public_base(), page.crumbs)],
     )

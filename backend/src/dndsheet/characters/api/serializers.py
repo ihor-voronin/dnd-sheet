@@ -24,6 +24,7 @@ from dndsheet.characters.domain.services.spell_slots import Spellcasting
 from dndsheet.characters.domain.wizard import STEP_ORDER, Draft, WizardStep
 from dndsheet.shared.kernel import SKILL_ABILITY, Ability, Skill
 from dndsheet.shared.rules import stealth_disadvantage
+from dndsheet.visuals.application import avatars
 
 #: Лічильники рис, яких немає в перекладі класів.
 _RESOURCE_UK = {"Superiority Dice": "Кістки переваги", "Luck Points": "Очки удачі"}
@@ -209,11 +210,22 @@ def character_brief(character: Character) -> dict[str, Any]:
     species = character.species
     background = character.background
     waiver_keys = {waiver.class_key for waiver in character.multiclass_waivers}
+    first_class = character.classes[0].class_key if character.classes else None
     return {
         "id": character.id,
         "name": character.name,
         "total_level": character.total_level,
         "alignment": character.alignment,
+        "gender": character.gender,
+        "avatar": character.avatar,
+        # Портрет для шапки листа й картки: обраний або типовий за видом, класом і статтю.
+        "portrait": avatars.portrait_of(
+            character.id,
+            chosen=character.avatar,
+            species=avatars.species_name(species.name_en if species else None, character.subspecies_key),
+            class_key=first_class,
+            gender=character.gender,
+        ),
         "species": (
             {
                 "key": species.key,
@@ -426,6 +438,7 @@ def step_answers(draft: Draft, step: WizardStep) -> dict[str, Any]:
     if step is WizardStep.SPECIES:
         return {
             "name": draft.name,
+            "gender": draft.gender,
             "species_key": draft.species_key,
             "subspecies_key": draft.subspecies_key,
             "ability_choices": [ability.value for ability in draft.ability_choices],

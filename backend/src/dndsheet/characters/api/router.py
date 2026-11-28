@@ -74,6 +74,7 @@ from dndsheet.shared.rules import (
     natural_weapon_for,
 )
 from dndsheet.sheets.application.build_document import build_sheet_document
+from dndsheet.visuals.domain import catalog as avatar_catalog
 
 #: Без входу відкриті лише еталонні листи й довідкові тексти класів і підкласів.
 _PUBLIC_PREFIXES = (
@@ -675,6 +676,10 @@ def update_character(
     version = body.pop("version", None)
     if version is not None and (isinstance(version, bool) or not isinstance(version, int)):
         raise HTTPException(status_code=422, detail="version має бути цілим числом")
+    avatar = body.get("avatar")
+    # Домен знає лише форму id; чи є такий портрет — знає каталог.
+    if isinstance(avatar, str) and avatar.strip() and not avatar_catalog.is_known(avatar.strip()):
+        raise HTTPException(status_code=422, detail=f"невідомий портрет {avatar!r}")
     try:
         character = _sheet_service(request).update(character_id, body, expected_version=version)
     except DomainError as exc:

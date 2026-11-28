@@ -72,6 +72,22 @@ describe("species step", () => {
     await user.type(search, "нічого такого");
     await user.clear(search);
     await user.type(screen.getByPlaceholderText(/Дарія/), "Тікі");
+    // Людина не просить нічого більше (підраси, рис), тож крок можна відправити.
+    const human = step().querySelector<HTMLButtonElement>('button[aria-label="Human"]');
+    if (human) await user.click(human);
+    // Стать — необовʼязкова, лише для порад портрета; іде в тій самій відповіді кроку.
+    await user.selectOptions(screen.getByRole("combobox", { name: "Стать (необовʼязково)" }), "female");
+    // Сама кнопка кроку (не «Далі» в панелі переходів — та лише гортає до неї).
+    const next = screen
+      .getAllByRole("button", { name: /^Далі: клас/ })
+      .find((button) => button.classList.contains("button--primary")) as HTMLButtonElement;
+    expect(next).toBeEnabled();
+    await user.click(next);
+    await waitFor(() =>
+      expect(
+        requests.filter((item) => item.method === "PUT" && item.url.endsWith("/steps/species")).at(-1)?.body,
+      ).toMatchObject({ gender: "female" }),
+    );
     const grid = screen.queryAllByRole("button", { name: /усі види|сіткою|списком/i });
     for (const button of grid) await user.click(button);
   });

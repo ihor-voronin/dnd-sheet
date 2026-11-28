@@ -4,6 +4,7 @@
  * `options` кожного кроку — те, з чого гравець обирає, `answers` — те, що вже
  * обрано. Обидві структури приходять у формі, яку приймає `PUT` кроку.
  */
+import type { PortraitCard } from "../../components/Portrait";
 
 export interface EntryBrief {
   id: string;
@@ -30,6 +31,8 @@ export interface TraitView {
 }
 
 export interface SpeciesView {
+  /** Портрет-приклад виду (адреса SVG). */
+  portrait?: string | null;
   key: string;
   name_en: string;
   source_id: string;
@@ -96,6 +99,8 @@ export interface SubclassView {
 }
 
 export interface ClassView {
+  /** Емблема класу (адреса SVG для маски). */
+  emblem?: string | null;
   key: string;
   name_en: string;
   hit_die: number;
@@ -401,6 +406,8 @@ export interface SheetItem {
 
 export interface SpeciesAnswers {
   name: string;
+  /** Стать (необовʼязково) — лише для порад портрета. */
+  gender?: Gender | null;
   species_key: string | null;
   subspecies_key: string | null;
   ability_choices: string[];
@@ -500,11 +507,19 @@ export interface SheetAbility {
   modifier: number;
 }
 
+export type Gender = "female" | "male";
+
 export interface SheetCharacter {
   id: string;
   name: string;
   total_level: number;
   alignment: string | null;
+  /** Стать (необовʼязково) — для порад портрета. */
+  gender?: Gender | null;
+  /** Обраний портрет; null — типовий. */
+  avatar?: string | null;
+  /** Що показати: обраний або типовий портрет. */
+  portrait?: PortraitCard;
   species: { key: string; name_en: string; subspecies: string | null } | null;
   background: { key: string; name_en: string } | null;
   classes: {

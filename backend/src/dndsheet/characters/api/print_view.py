@@ -27,6 +27,7 @@ from dndsheet.sheets.domain.labels import (
     LANGUAGE_LABELS,
     NOTE_LABELS,
 )
+from dndsheet.visuals.application import avatars
 
 ABILITY_ORDER = (Ability.STR, Ability.DEX, Ability.CON, Ability.INT, Ability.WIS, Ability.CHA)
 ABILITY_SHORT = {
@@ -391,6 +392,8 @@ def build_print_view(
 
     view: dict[str, Any] = {
         "name": character["name"],
+        # Портрет у шапці аркуша: світла версія, вбудована в сторінку.
+        "portrait": avatars.paper_data_uri(str((character.get("portrait") or {}).get("id") or "")),
         "header": [
             {"label": "Клас і рівень", "value": class_line or "—", "small": ", ".join(subclasses)},
             {"label": "Вид", "value": _uk(display_name(species_name)) if species_name else "—", "small": species_name},

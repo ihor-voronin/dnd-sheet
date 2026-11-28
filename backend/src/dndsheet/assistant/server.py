@@ -41,6 +41,8 @@ The site computes every number (AC, HP, attack bonuses, slots); never compute or
 - Things the player's table has but the books don't (homebrew, a DM's boon, an item's power) go
   in as custom entries: manage_custom_features for features, manage_spells with `custom: true`
   for spells. Write their text as the player gives it; the site adds no numbers from them.
+- Every character has a portrait the site draws (no uploads): set_avatar lists suggestions for
+  its species, class and gender and sets one; the species step also takes an optional gender.
 - delete_character is permanent. Use it only when the player explicitly asks to delete a
   specific character, and confirm the name with them first.
 """
@@ -128,7 +130,8 @@ def build_server(
                     "Any of: hp {current?, temporary?} or {damage: n} or {heal: n}; "
                     'slots {"1": used, ...}; pact_used n; feature_used {key: used}; '
                     "death_saves {successes, failures}; exhaustion 0-6; inspiration bool; "
-                    "notes {section: text}; equip {index: bool}"
+                    "notes {section: text}; equip {index: bool}; gender female/male/null; "
+                    "avatar: a portrait id (see set_avatar)"
                 )
             ),
         ],
@@ -136,6 +139,52 @@ def build_server(
         """Change the play state of a sheet: hit points, spent slots and feature uses, death saves,
         exhaustion, inspiration, notes, equipped items. Returns the recomputed sheet."""
         return await changed("PATCH", f"{_API}/{segment(character_id)}", {**changes, "version": version})
+
+    @server.tool(title="Choose a portrait", annotations=IDEMPOTENT)
+    async def set_avatar(
+        character_id: CharacterId,
+        avatar: Annotated[
+            str | None,
+            Field(description="Portrait id from `suggestions` (e.g. elf-f-wizard-1); omit to only list suggestions"),
+        ] = None,
+        gender: Annotated[
+            Literal["female", "male", "unset"] | None,
+            Field(description="The character's gender, used to pick portraits; unset clears it"),
+        ] = None,
+        version: Annotated[int | None, Field(description="The sheet's `version`; required to change")] = None,
+    ) -> dict[str, Any]:
+        """The character's portrait (the site draws them; no uploads). Without `avatar` and `gender`
+        returns the current portrait and 24 suggestions for the character's species, class and gender.
+        With them sets the portrait and/or gender (needs `version`)."""
+        path = f"{_API}/{segment(character_id)}"
+        if avatar is None and gender is None:
+            sheet = (await api("GET", path))["sheet"]
+            character = sheet.get("character") or {}
+            species = character.get("species") or {}
+            classes = character.get("classes") or []
+            query = {
+                "species": " ".join(filter(None, (species.get("subspecies"), species.get("name_en")))) or None,
+                "class": classes[0].get("key") if classes else None,
+                "gender": character.get("gender"),
+            }
+            advice = await api("GET", "/api/v1/avatars/recommended", query={k: v for k, v in query.items() if v})
+            return {
+                "version": character.get("version"),
+                "gender": character.get("gender"),
+                "portrait": character.get("portrait"),
+                "suggestions": [
+                    {"id": item["id"], "label": item["label"], "url": public_url + item["url"]}
+                    for item in advice["items"]
+                ],
+            }
+        if version is None:
+            raise ToolError("щоб змінити портрет чи стать, потрібна `version` листа")
+        body: dict[str, Any] = {"version": version}
+        if avatar is not None:
+            body["avatar"] = avatar or None
+        if gender is not None:
+            body["gender"] = None if gender == "unset" else gender
+        return await changed("PATCH", path, body)
 
     # --- створення -----------------------------------------------------------
 
@@ -158,7 +207,7 @@ def build_server(
             dict[str, Any],
             Field(
                 description=(
-                    'species: {"name", "species_key", "subspecies_key", "ability_choices", "spell_choices"}; '
+                    'species: {"name", "gender"?, "species_key", "subspecies_key", "ability_choices", "spell_choices"}; '
                     'class: {"class_key", "subclass_key"}; '
                     'abilities: {"method": "standard_array"|"point_buy"|"manual", "scores": {"str": 15, ...}}; '
                     'background: {"background_key", "alignment", "picks": [{"kind", "value", "source"}]}; '

@@ -178,6 +178,12 @@ in `Character.ability_spread` (and in the draft), is checked by
 shows where the number came from: "13 + 1 = 14". The cap of 20 applies here too. Without
 the choice the step doesn't complete.
 
+**Gender** (optional, `gender: "female" | "male" | null` in the species answer) sits next to
+the name. It only steers the portrait suggestions ([visuals.md](visuals.md)). Species cards
+show a sample portrait of the species (`portrait` URL in the options), class cards the class
+emblem (`emblem` URL, drawn as a CSS mask in the theme colour). The wizard's background is
+a faint "summoning circle" mask.
+
 ## The Class step
 
 The same approach as for species: the chosen class shows **as a card at the top**, the

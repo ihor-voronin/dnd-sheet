@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field, replace
 from typing import Any, Iterable, Mapping
 
@@ -59,6 +60,18 @@ from dndsheet.shared.rules import (
 #: Ключ експертизи для злодійських інструментів (плут, PHB p. 96).
 THIEVES_TOOLS = "thieves' tools"
 
+GENDERS = ("female", "male")
+#: Форма id портрета: `група-стать-клас-номер`.
+AVATAR_ID = re.compile(r"^[a-z][a-z-]{1,24}-[fmx]-[a-z]{3,10}-[1-9]$")
+
+
+def normalize_gender(value: str | None) -> str | None:
+    """`female` / `male` або None (не вказано). Інше — помилка, а не мовчазне «не вказано»."""
+    cleaned = (value or "").strip().casefold() or None
+    if cleaned is not None and cleaned not in GENDERS:
+        raise ValidationError(f"стать — female, male або порожньо, а не {value!r}")
+    return cleaned
+
 
 @dataclass(slots=True)
 class Character:
@@ -83,6 +96,10 @@ class Character:
     #: риса, спорядження). Правила вибору при цьому стандартні.
     custom_background: dict[str, Any] | None = None
     alignment: str | None = None
+    #: Стать (`female` / `male`) — необовʼязкова; лише для портрета й листа, на числа не впливає.
+    gender: str | None = None
+    #: Обраний портрет (`elf-f-wizard-1`, каталог `visuals.domain.catalog`); None — типовий за видом і класом.
+    avatar: str | None = None
     #: Володіння, які гравець обрав або додав сам. Похідні від класу, виду й
     #: передісторії не дублюються тут — їх збирає `all_proficiencies()`.
     chosen: Proficiencies = field(default_factory=Proficiencies)
@@ -410,6 +427,23 @@ class Character:
         if cleaned == self.alignment:
             return
         self.alignment = cleaned
+        self.bump_version()
+
+    def set_gender(self, gender: str | None) -> None:
+        cleaned = normalize_gender(gender)
+        if cleaned == self.gender:
+            return
+        self.gender = cleaned
+        self.bump_version()
+
+    def set_avatar(self, avatar: str | None) -> None:
+        """Портрет — лише id з каталогу; чи такий є, перевіряє той, хто знає каталог (API)."""
+        cleaned = avatar.strip() if avatar else None
+        if cleaned is not None and not AVATAR_ID.match(cleaned):
+            raise ValidationError(f"невідомий портрет {avatar!r}")
+        if cleaned == self.avatar:
+            return
+        self.avatar = cleaned
         self.bump_version()
 
     def ability(self, ability: Ability) -> AbilityScore:

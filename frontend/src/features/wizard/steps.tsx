@@ -6,7 +6,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { fetchClassFeatures, fetchEntry, fetchFeats, fetchWizardFeatChoices, searchItems } from "../../api";
 import type { ClassFeatureRow } from "../../api";
@@ -68,6 +68,7 @@ import type {
   ClassView,
   EntryBrief,
   EquipmentAnswers,
+  Gender,
   ItemPayload,
   MoneyPayload,
   PickPayload,
@@ -238,6 +239,7 @@ export function SpeciesStep({
 }>) {
   const initial = answers as unknown as SpeciesAnswers;
   const [name, setName] = useState(initial.name ?? "");
+  const [gender, setGender] = useState<Gender | "">(initial.gender ?? "");
   const [speciesKey, setSpeciesKey] = useState(initial.species_key ?? "");
   const [subspeciesKey, setSubspeciesKey] = useState(initial.subspecies_key ?? "");
   const [choices, setChoices] = useState<string[]>(initial.ability_choices ?? []);
@@ -383,6 +385,14 @@ export function SpeciesStep({
             placeholder="напр. Дарія Залізний Крок"
           />
         </label>
+        <label className="field">
+          <span>Стать (необовʼязково)</span>
+          <select value={gender} onChange={(event) => setGender(event.target.value as Gender | "")}>
+            <option value="">не вказано</option>
+            <option value="female">жіноча</option>
+            <option value="male">чоловіча</option>
+          </select>
+        </label>
       </div>
 
       {selected ? (
@@ -513,6 +523,17 @@ export function SpeciesStep({
                 aria-label={item.name_en}
                 onClick={() => pickSpecies(item.key)}
               >
+                {item.portrait ? (
+                  <img
+                    className="choice-portrait"
+                    src={item.portrait}
+                    width={52}
+                    height={52}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : null}
                 <strong>{speciesLabel(item.name_en)}</strong>
                 <span className="choice-meta">
                   {SIZE_LABELS[item.size] ?? item.size} · {item.speed} фт
@@ -699,6 +720,7 @@ export function SpeciesStep({
         onClick={() =>
           onSubmit({
             name: name.trim(),
+            gender: gender || null,
             species_key: speciesKey,
             subspecies_key: subspeciesKey || null,
             ability_choices: choices,
@@ -1029,6 +1051,13 @@ export function ClassStep({ answers, options, busy, onSubmit }: StepProps<{ clas
               aria-label={item.name_en}
               onClick={() => pickClass(item.key)}
             >
+              {item.emblem ? (
+                <span
+                  className="choice-emblem"
+                  aria-hidden="true"
+                  style={{ "--emblem": `url("${item.emblem}")` } as CSSProperties}
+                />
+              ) : null}
               <strong>{termLabel(item.name_en)}</strong>
               {classGuide(item.key) ? (
                 <span className="choice-meta choice-meta--lead">{classGuide(item.key)?.role}</span>

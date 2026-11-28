@@ -22,6 +22,9 @@ export default defineConfig({
       "/sitemaps": api,
       "/robots.txt": api,
       "/llms.txt": api,
+      // Portraits are drawn by the server (backend/src/dndsheet/visuals).
+      "/assets/avatars": api,
+      "/assets/emblems": api,
     },
   },
   build: {

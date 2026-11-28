@@ -42,6 +42,8 @@ def summary(sheet: dict[str, Any]) -> dict[str, Any]:
         "name": character.get("name"),
         "version": character.get("version"),
         "level": character.get("total_level"),
+        "gender": character.get("gender"),
+        "portrait": (character.get("portrait") or {}).get("id"),
         "species": character.get("species"),
         "background": character.get("background"),
         "classes": [

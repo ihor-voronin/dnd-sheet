@@ -2,13 +2,13 @@
  * Картка персонажа у «Моїх персонажах» (головна сторінка й список).
  *
  * За столом гравець шукає свого героя не за іменем, а за «хто це»: гірський
- * дворф-маг 4 рівня. Тому картка — як шапка листа в мініатюрі: ініціали,
+ * дворф-маг 4 рівня. Тому картка — як шапка листа в мініатюрі: портрет,
  * рівень у шестикутнику, вид і передісторія, класи з підкласами, і стан —
  * хіти смужкою (поранений герой видно ще до відкриття) та КЗ.
  */
 import type { CharacterRosterEntry } from "../../api";
+import { PortraitImage } from "../../components/Portrait";
 import { subclassLabel } from "../../labels";
-import { initials } from "../character/sheetParts";
 import { speciesLabel, termLabel, ukSubclass, withEnglish } from "../character/uk";
 
 /** «Маг (Wizard)» → ["Маг", "Wizard"]: українська — головна, англійська — дрібно поруч. */
@@ -33,8 +33,9 @@ export function CharacterCard({ entry }: { entry: CharacterRosterEntry }) {
 
   return (
     <a className="roster-card" href={`#/character/${encodeURIComponent(entry.id)}`}>
-      <span className="roster-card__portrait" aria-hidden="true">
-        {initials(entry.name)}
+      {/* Імʼя героя — поруч, тож портрет для читача екрана лише прикраса (alt=""). */}
+      <span className="roster-card__portrait">
+        <PortraitImage portrait={entry.portrait} name={entry.name} size={64} alt="" />
       </span>
 
       <span className="roster-card__head">

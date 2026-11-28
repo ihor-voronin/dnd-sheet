@@ -11,7 +11,7 @@
  * ініціатива з навичками, робоча панель із вкладками.
  */
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import type { MouseEvent, ReactNode } from "react";
 
 import {
@@ -42,6 +42,7 @@ import {
   updateCustomSpell,
 } from "../../api";
 import type { CustomFeatureBody, CustomSpellFields, ItemBody, SpellBody } from "../../api";
+import { PortraitImage } from "../../components/Portrait";
 import {
   ABILITY_LABELS,
   ALIGNMENT_LABELS,
@@ -66,9 +67,12 @@ import { InventoryPanel } from "./inventory";
 import { NotesPanel, downloadNotes } from "./notes";
 import type { NoteStatus } from "./notes";
 import { CastingBlock, FeatsList, FeatureResources, FeaturesList, ProficienciesList, SpellsKnownList } from "./panels";
-import { AbilityHex, HexStat, PassiveList, ProficiencyGroups, SavePills, SkillTable, initials } from "./sheetParts";
+import { AbilityHex, HexStat, PassiveList, ProficiencyGroups, SavePills, SkillTable } from "./sheetParts";
 import { AddSpellForm, EditCustomSpellForm, SpellsPreparePanel } from "./spells";
 import { speciesLabel, termLabel, ukSubclass, withEnglish } from "./uk";
+
+// Вибір портрета — окремий шматок: тисяча плиток і фільтри потрібні лише тим, хто його відкрив.
+const AvatarPicker = lazy(() => import("./AvatarPicker"));
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
 
@@ -191,6 +195,7 @@ export function CharacterView({
 }) {
   const readOnly = Boolean(shareToken);
   const [shareOpen, setShareOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
   // На телефоні дії з листом (відпочинок, рівень, експорт) сховані під одну кнопку:
   // за столом першими мають бути хіти й атаки, а не ряд службових кнопок.
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -709,9 +714,26 @@ export function CharacterView({
     <article className="sheet character-view">
       <header className="sheet-top">
         <div className="sheet-identity">
-          <span className="sheet-portrait" aria-hidden="true">
-            {initials(character.name)}
-          </span>
+          {readOnly ? (
+            <span className="sheet-portrait">
+              <PortraitImage portrait={character.portrait} name={character.name} size={96} eager />
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="sheet-portrait sheet-portrait--button"
+              aria-expanded={avatarOpen}
+              aria-controls="avatar-panel"
+              aria-label={`Змінити портрет${character.portrait ? ` (зараз: ${character.portrait.label.replace(/^Портрет: /, "")})` : ""}`}
+              title="Змінити портрет"
+              onClick={() => setAvatarOpen((open) => !open)}
+            >
+              <PortraitImage portrait={character.portrait} name={character.name} size={96} alt="" eager />
+              <span className="sheet-portrait__edit" aria-hidden="true">
+                ✎
+              </span>
+            </button>
+          )}
           <div>
             <p className="sheet-kicker">Лист персонажа · {originText}</p>
             <h1 className="sheet-name">{character.name}</h1>
@@ -830,6 +852,24 @@ export function CharacterView({
       </header>
 
       {shareOpen && !readOnly ? <SharePanel characterId={id} onClose={() => setShareOpen(false)} /> : null}
+
+      {avatarOpen && !readOnly ? (
+        <div id="avatar-panel">
+          <Suspense fallback={<p className="meta">Відкриваємо портрети…</p>}>
+            <AvatarPicker
+              name={character.name}
+              species={[character.species?.subspecies, character.species?.name_en].filter(Boolean).join(" ") || null}
+              classKey={character.classes[0]?.key ?? null}
+              gender={character.gender ?? null}
+              current={character.portrait}
+              busy={busy}
+              onChoose={(avatar) => void patch({ avatar })}
+              onGender={(gender) => void patch({ gender })}
+              onClose={() => setAvatarOpen(false)}
+            />
+          </Suspense>
+        </div>
+      ) : null}
 
       {waiverText ? (
         <p className="sheet-waiver-note" role="note">

@@ -34,11 +34,11 @@
 </div>
 {% endmacro %}
 
-{% macro link_list(records, searchable=false) %}
+{% macro link_list(records, searchable=false, emblem=none, record_emblem=none) %}
 <ul class="links">
   {% for record in records %}
   <li{% if searchable %} data-q="{{ (record.name_en ~ ' ' ~ (record.name_uk or '')) | lower }}"{% endif %}>
-    <a href="{{ record.path }}">{{ record.title }}</a>{% if record.meta %} <span class="meta">{{ record.meta }}</span>{% endif %}
+    {% if emblem %}{{ emblem(record_emblem(record), 'emblem emblem--inline', 18) }}{% endif %}<a href="{{ record.path }}">{{ record.title }}</a>{% if record.meta %} <span class="meta">{{ record.meta }}</span>{% endif %}
   </li>
   {% endfor %}
 </ul>

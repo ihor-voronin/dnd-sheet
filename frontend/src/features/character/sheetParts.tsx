@@ -29,12 +29,6 @@ const SKILL_ORDER = Object.keys(SKILL_LABELS);
 /** Редагування числа в місці: підставляється з CharacterView. */
 export type RenderValue = (key: string, value: number, title: string, suffix?: string) => ReactNode;
 
-export function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  const letters = words.slice(0, 2).map((word) => Array.from(word)[0] ?? "");
-  return letters.join("").toUpperCase() || "?";
-}
-
 export function AbilityHex({ code, ability }: { code: string; ability: SheetViewPayload["abilities"][string] }) {
   const basis = `База ${ability.base}${ability.bonus ? `, бонус ${modifierLabel(ability.bonus)}` : ""}`;
   return (

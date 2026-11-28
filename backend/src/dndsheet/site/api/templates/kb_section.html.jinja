@@ -26,7 +26,8 @@
   {% if section.id == 'classes' %}
   <ul class="cards">
     {% for record in records %}
-    <li class="card" data-q="{{ (record.name_en ~ ' ' ~ (record.name_uk or '')) | lower }}">
+    <li class="card card--emblem" data-q="{{ (record.name_en ~ ' ' ~ (record.name_uk or '')) | lower }}">
+      {{ emblem(record_emblem(record), 'emblem emblem--card', 40) }}
       <h3><a href="{{ record.path }}">{{ record.title }}</a></h3>
       {% if record.meta %}<p class="meta">Кість хітів {{ record.meta }}</p>{% endif %}
       {% set subs = catalog.subclasses(record.slug) %}
@@ -35,7 +36,7 @@
     {% endfor %}
   </ul>
   {% else %}
-  {{ m.link_list(records, searchable=true) }}
+  {{ m.link_list(records, searchable=true, emblem=emblem if section.id == 'spells' else none, record_emblem=record_emblem) }}
   {% endif %}
 </section>
 {% endfor %}

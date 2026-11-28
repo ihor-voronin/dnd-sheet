@@ -85,6 +85,7 @@ source_modules = [
     "dndsheet.compendium.domain",
     "dndsheet.identity.domain",
     "dndsheet.site.domain",
+    "dndsheet.visuals.domain",
     "dndsheet.shared",
 ]
 forbidden_modules = [
@@ -106,6 +107,8 @@ forbidden_modules = [
     "dndsheet.site.application",
     "dndsheet.site.infrastructure",
     "dndsheet.site.api",
+    "dndsheet.visuals.application",
+    "dndsheet.visuals.api",
     "fastapi",
     "sqlalchemy",
     "jinja2",
@@ -163,4 +166,13 @@ layers = [
     "dndsheet.site.api",
     "dndsheet.site.application",
     "dndsheet.site.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "visuals: api -> application -> domain"
+type = "layers"
+layers = [
+    "dndsheet.visuals.api",
+    "dndsheet.visuals.application",
+    "dndsheet.visuals.domain",
 ]

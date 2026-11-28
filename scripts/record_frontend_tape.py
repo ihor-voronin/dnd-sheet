@@ -481,6 +481,10 @@ def main() -> int:
         {"class_key": "fighter", "hp": {"mode": "average"}, "version": fighter["version"]},
     )
 
+    # Portraits: the catalogue for the picker and the advice for the fighter-1 sheet.
+    rec.get("/api/v1/avatars")
+    rec.get("/api/v1/avatars/recommended?species=Human&class=fighter")
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     # Identical bodies (a wizard step read and written, two rests) are stored once.
     bodies: dict[str, object] = {}

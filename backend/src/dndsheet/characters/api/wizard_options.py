@@ -12,6 +12,7 @@ point buy, списки заклять класу.
 
 from __future__ import annotations
 
+import zlib
 from typing import Any
 
 from dndsheet.characters.api import classes_uk, subclasses_uk
@@ -40,6 +41,8 @@ from dndsheet.shared.rules import (
     natural_weapon_for,
     requires_subspecies,
 )
+from dndsheet.visuals.application import avatars, emblems
+from dndsheet.visuals.domain import catalog as avatar_catalog
 
 #: Розділи книги, які є в тексті класу, але не є «вміннями»: без них крок
 #: «Клас» не показав би, що клас дає на 1 рівні з поясненням.
@@ -78,6 +81,16 @@ def build_options(
 
 
 # ---------------------------------------------------------------------------
+
+
+def species_portrait(species_name: str, *, seed: str) -> str | None:
+    """Адреса портрета-прикладу для виду: група виду, «воїн», стать — за хешем."""
+    group = avatar_catalog.species_group(species_name)
+    info = avatar_catalog.GROUP_BY_KEY.get(group or "")
+    if info is None:
+        return None
+    gender = ("f", "m")[zlib.crc32(seed.encode()) % 2] if info.gendered else "x"
+    return avatars.url(f"{info.key}-{gender}-fighter-1")
 
 
 def _species_options(
@@ -156,6 +169,9 @@ def _species_entry(
     # Підраса обовʼязкова лише там, де вона визначає числа (PHB: дворф, ельф,
     # гном, напіврослик; EEPC: genasi; ERLW: shifter; EGtW: aasimar; gith).
     payload["subspecies_required"] = requires_subspecies(item.key)
+    # Портрет-приклад виду для картки (власні малюнки сайту): жіночий чи чоловічий — за хешем ключа,
+    # щоб у сітці були обидва.
+    payload["portrait"] = species_portrait(f"{item.key} {parent or ''} {item.name_en}", seed=item.key)
     return payload
 
 
@@ -178,6 +194,9 @@ def _class_options(
     classes: list[dict[str, Any]] = []
     for definition in service.class_definitions():
         payload = class_mechanics_full(definition)
+        # Емблема класу (game-icons.net, CC BY 3.0) — маска в кольорі теми.
+        emblem = emblems.class_emblem(definition.key)
+        payload["emblem"] = emblems.url(emblem) if emblem else None
         payload["skill_options"] = [skill.value for skill in definition.skill_options()]
         payload["cantrips_at_level_1"] = definition.cantrips_at(1)
         payload["spells_known_at_level_1"] = definition.spells_known_at(1)

@@ -57,6 +57,7 @@ from dndsheet.identity.infrastructure.sqlite_identity import SqliteIdentityStore
 from dndsheet.identity.infrastructure.sqlite_oauth import SqliteOAuthStore
 from dndsheet.sheets.application.demo import build_demo_character, build_demo_document
 from dndsheet.site.api.router import router as site_router
+from dndsheet.visuals.api.router import router as visuals_router
 
 
 def _default_spa_dist() -> Path:
@@ -150,6 +151,7 @@ def create_app() -> FastAPI:
     app.include_router(knowledge_router)
     app.include_router(sharing_router)
     app.include_router(characters_router)
+    app.include_router(visuals_router)
 
     # HEAD too: uptime checks (the README badge via shields.io) send HEAD, not GET.
     @app.api_route("/healthz", methods=["GET", "HEAD"], tags=["ops"])
