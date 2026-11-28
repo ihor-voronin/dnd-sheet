@@ -68,7 +68,7 @@ exclude_also = [
 ]
 
 # ---------------------------------------------------------------------------
-# DDD gates. Run: lint-imports --config backend/pyproject.toml
+# DDD gates. Run: lint-imports backend/pyproject.toml
 # ---------------------------------------------------------------------------
 
 [tool.importlinter]
