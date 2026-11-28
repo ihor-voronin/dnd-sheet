@@ -241,7 +241,25 @@ without backend sources; uvicorn without `[standard]`.
 | Symptom | Where to look |
 | --- | --- |
 | `deploy.ps1` or CI: "… is encrypted" | `git-crypt unlock`; in CI — the `GIT_CRYPT_KEY` secret |
-| "app did not become healthy" | the output shows the last 60 lines of `docker logs dndsheet-app`; usually `.env` |
+| "app did not become healthy" | the output shows the last 60 lines of `docker logs dndsheet-app`; usually `.env`. The deploy has already rolled back (below) |
 | HTTPS doesn't answer yet | `docker logs dndsheet-caddy`: DNS not propagated yet or port 80 closed |
 | Terraform wants to create everything again | state not committed or not unlocked |
 | SSH: `Permission denied (publickey)` | key permissions (see above) or the wrong key |
+
+### A deploy failed
+
+`deploy_app.py` sets aside what runs before it changes anything: the image is tagged
+`dndsheet:previous`, and `compose.yml`, `Caddyfile`, `.env` and `IMAGE_ID` are copied to
+`/opt/dndsheet/previous/`. When a later step fails (the app never gets healthy, a command on
+the server fails), it puts them back and runs `up -d` again, so the site keeps the previous
+release. The job still fails. Its last lines say "rolled back: the previous release is
+running and healthy", or that the previous one isn't healthy either. The very first deploy
+has nothing to go back to.
+
+The same by hand, after a deploy that left the server broken:
+
+```sh
+cd /opt/dndsheet && cp -p previous/compose.yml previous/Caddyfile previous/.env previous/IMAGE_ID .   && docker tag dndsheet:previous dndsheet:local   && DNDSHEET_IMAGE=dndsheet:local docker compose -f compose.yml up -d
+```
+
+SQLite isn't touched by a rollback: the data stays as the new release left it.

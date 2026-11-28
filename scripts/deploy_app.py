@@ -16,6 +16,11 @@ Steps:
    otherwise `docker save` + gzip → scp → `docker load`;
 3. compose.yml, Caddyfile (the domain from terraform.tfvars), .env from prod.env;
 4. `docker compose up -d`, wait for healthy and for HTTPS through Caddy.
+
+Before step 2 what runs now is set aside: the image as `dndsheet:previous`, the files in
+/opt/dndsheet/previous/. If a later step fails (the app never gets healthy, a command on the
+server fails), they go back and `up -d` runs again: the site keeps the previous release, and
+the job still fails. By hand: docs/deploy.md, "A deploy failed".
 """
 
 from __future__ import annotations
@@ -36,6 +41,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SECRETS = ROOT / "deploy" / "secrets"
 FILES = ROOT / "deploy" / "terraform" / "files"
 REMOTE = "/opt/dndsheet"
+PREVIOUS = f"{REMOTE}/previous"
+KEPT = "compose.yml Caddyfile .env IMAGE_ID"
 MAGIC = b"\x00GITCRYPT\x00"
 
 
@@ -125,15 +132,59 @@ def ship_image(server: Server, image: str, image_id: str) -> None:
     log("image uploaded")
 
 
-def wait_healthy(server: Server) -> None:
-    for _ in range(45):
+def healthy(server: Server, attempts: int) -> bool:
+    for _ in range(attempts):
         status = server.run("docker inspect -f '{{.State.Health.Status}}' dndsheet-app 2>/dev/null || true")
         if status == "healthy":
-            log("app: healthy")
-            return
+            return True
         time.sleep(2)
+    return False
+
+
+def wait_healthy(server: Server) -> None:
+    if healthy(server, 45):
+        log("app: healthy")
+        return
     sys.stderr.write(server.run(f"cd {REMOTE} && docker compose -f compose.yml logs --tail 60 app", check=False))
     fail("the app did not become healthy")
+
+
+def keep_previous(server: Server, image: str) -> bool:
+    """What runs now, set aside for a rollback; False on the first deploy (nothing to keep)."""
+    previous = f"{image.rpartition(':')[0] or image}:previous"
+    answer = server.run(
+        f"rm -rf {PREVIOUS} && mkdir -p {PREVIOUS}"
+        f" && for f in {KEPT}; do if [ -f {REMOTE}/$f ]; then cp -p {REMOTE}/$f {PREVIOUS}/; fi; done"
+        f" && if docker image inspect {image} >/dev/null 2>&1; then docker tag {image} {previous} && echo kept; fi"
+    )
+    return answer.endswith("kept")
+
+
+def roll_back(server: Server, image: str) -> None:
+    """Put the previous release back and start it; says whether it is healthy. Never raises."""
+    log("the deploy failed: rolling back to the previous release…")
+    previous = f"{image.rpartition(':')[0] or image}:previous"
+    result = subprocess.run(
+        [
+            "ssh",
+            *server.common,
+            "-p",
+            server.port,
+            server.target,
+            f"for f in {KEPT}; do if [ -f {PREVIOUS}/$f ]; then cp -p {PREVIOUS}/$f {REMOTE}/; fi; done"
+            f" && docker tag {previous} {image}"
+            f" && cd {REMOTE} && DNDSHEET_IMAGE={image} docker compose -f compose.yml up -d --remove-orphans"
+            " && (docker exec dndsheet-caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null 2>&1 || true)",
+        ],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        log(f"the rollback failed too: {result.stderr.decode('utf-8', 'replace').strip()}")
+    elif healthy(server, 30):
+        log("rolled back: the previous release is running and healthy")
+    else:
+        log("rolled back, but the previous release isn't healthy either: docker logs dndsheet-app")
 
 
 def wait_https(domain: str) -> None:
@@ -180,7 +231,23 @@ def main() -> int:
             fail("the image build failed")
 
     image_id = local_image_id(args.image)
-    ship_image(server, args.image, image_id)
+    had_previous = keep_previous(server, args.image)
+    try:
+        release(server, args.image, image_id, host, domain)
+    except SystemExit:
+        if had_previous:
+            roll_back(server, args.image)
+        else:
+            log("nothing to roll back to (the first deploy)")
+        raise
+    wait_https(domain)
+    log(f"done: https://{domain}/")
+    return 0
+
+
+def release(server: Server, image: str, image_id: str, host: str, domain: str) -> None:
+    """Steps 2–4 up to a healthy container; any failure exits through fail()."""
+    ship_image(server, image, image_id)
 
     caddyfile = (FILES / "Caddyfile.tftpl").read_text(encoding="utf-8")
     caddyfile = caddyfile.replace("${domain}", domain).replace("${server_ip}", host)
@@ -190,15 +257,12 @@ def main() -> int:
 
     log("docker compose up -d…")
     server.run(
-        f"cd {REMOTE} && DNDSHEET_IMAGE={args.image} docker compose -f compose.yml up -d --remove-orphans"
+        f"cd {REMOTE} && DNDSHEET_IMAGE={image} docker compose -f compose.yml up -d --remove-orphans"
         " && docker image prune -f >/dev/null"
         # If only the Caddyfile changed, the container isn't recreated, so reload the config explicitly.
         " && docker exec dndsheet-caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null 2>&1 || true"
     )
     wait_healthy(server)
-    wait_https(domain)
-    log(f"done: https://{domain}/")
-    return 0
 
 
 if __name__ == "__main__":
